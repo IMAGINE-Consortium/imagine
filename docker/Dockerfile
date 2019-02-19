@@ -1,11 +1,11 @@
 FROM ubuntu:latest
 
-# users may need python3-tk, please install it manually: # apt-get install python3-tk
+# users may need python3-tk, please install it manually: apt-get install python3-tk
 
 RUN apt-get update
 RUN apt-get install -y build-essential python3 python3-pip python3-dev git gfortran autoconf gsl-bin libgsl-dev wget unzip vim cmake
 RUN pip3 install numpy scipy cython astropy healpy matplotlib progressbar
- 
+
 RUN mkdir /home/lab
 WORKDIR /home/lab
 
@@ -43,7 +43,7 @@ WORKDIR /home/lab/googletest
 RUN mkdir /home/lab/googletest/build
 WORKDIR /home/lab/googletest/build
 RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make && make install && cp ../googletest/src/* /usr/local/src
-WORKDIR /home/lab 
+WORKDIR /home/lab
 
 #(Py)MultiNest
 RUN apt-get install -y libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
@@ -55,7 +55,7 @@ WORKDIR /home/lab
 
 RUN git clone https://github.com/JohannesBuchner/PyMultiNest.git
 WORKDIR /home/lab/PyMultiNest
-RUN python setup.py install
+RUN python3 setup.py install
 WORKDIR /home/lab
 
 #mpi4py
@@ -66,24 +66,10 @@ RUN pip3 install mpi4py
 RUN apt-get install -y libhdf5-100 libhdf5-dev libhdf5-openmpi-100 libhdf5-openmpi-dev hdf5-tools
 
 #h5py
-#RUN wget https://api.github.com/repos/h5py/h5py/tags -O - | grep tarball_url | grep -v rc | head -n 1 | cut -d '"' -f 4 | #wget -i - -O h5py.tar.gz
-#RUN mkdir h5py
-#RUN tar xzf h5py.tar.gz -C h5py --strip-components=1
-#WORKDIR /home/lab/h5py
-#ENV CC=mpicc
-#ENV HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/openmpi
-#RUN python setup.py configure --mpi
-#RUN python setup.py build
-#RUN python setup.py install
-#WORKDIR /home/lab
 RUN pip3 install h5py
 
 #NIFTy
-#RUN git clone https://gitlab.mpcdf.mpg.de/ift/NIFTy.git
-#WORKDIR /home/lab/NIFTy
-#RUN python setup.py install
-#WORKDIR /home/lab
-pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty.git@NIFTy_5
+RUN pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty.git@NIFTy_5
 
 # HAMMURABI X
 RUN git clone https://bitbucket.org/hammurabicode/hamx hamx
@@ -95,11 +81,12 @@ RUN cmake .. && make && make install
 # SET PATH
 ENV PATH /usr/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}
+WORKDIR /home/lab
 
 #IMAGINE
-RUN git clone git@bitbucket.org:ricphy/imagine.git
+RUN git clone https://ricphy@bitbucket.org/ricphy/imagine.git imagine
 WORKDIR /home/lab/imagine
-RUN python setup.py install
+RUN python3 setup.py install
 WORKDIR /home/lab
 
 # CLEAN PACKAGES

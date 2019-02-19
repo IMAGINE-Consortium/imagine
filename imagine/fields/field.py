@@ -23,7 +23,7 @@ class GeneralField(object):
         self.ensemble_size = ensemble_size
         # if checklist has 'random_seed' entry
         if 'random_seed' in self.simulator_checklist:
-            self.parameters.update({'random_seed':int(random_seed)})
+            self.parameters.update({'random_seed':round(random_seed)})
     
     @property
     def simulator_checklist(self):
@@ -35,7 +35,7 @@ class GeneralField(object):
 
     @ensemble_size.setter
     def ensemble_size(self, ensemble_size):
-        self._ensemble_size = int(ensemble_size)
+        self._ensemble_size = round(ensemble_size)
 
     @property
     def parameters(self):

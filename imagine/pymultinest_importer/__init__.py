@@ -1,1 +1,0 @@
-from pymultinest_importer import pymultinest

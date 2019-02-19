@@ -3,11 +3,11 @@ import numpy as np
 from mpi4py import MPI
 from keepers import Loggable
 
-from imagine.likelihoods import Likelihood
-from imagine.fields import GeneralFieldFactory
-from imagine.simulators import Simulator
-from imagine.priors import Prior
-from imagine import pymultinest
+from imagine.likelihoods.likelihood import Likelihood
+from imagine.fields.field_factory import GeneralFieldFactory
+from imagine.simulators.simulator import Simulator
+from imagine.priors.prior import Prior
+import pymultinest
 '''
 from scipy import optimize
 from imagine.sample import Sample

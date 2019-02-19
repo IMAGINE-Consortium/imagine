@@ -5,7 +5,7 @@ from keepers import Loggable
 from nifty import FieldArray, RGSpace
 '''
 from imagine.tools.carrier_mapper import unity_mapper
-from general_field import GeneralField
+from imagine.fields.field import GeneralField
 
 '''
 GeneralFieldFactory is designed for generating

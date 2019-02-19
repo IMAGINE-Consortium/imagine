@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 
-from imagine.observables import Observable
+from imagine.observables.observable import Observable
 from imagine.likelihoods.likelihood import Likelihood
 
 class EnsembleLikelihood(Likelihood):
@@ -72,14 +72,13 @@ class EnsembleLikelihood(Likelihood):
             # get observational info
             data = deepcopy(self.measurements[name])
             data_cov = deepcopy(self.covariance[name])
-            if data_cov is None:
-                data_cov = np.eye(len(data))
-            full_cov = data_cov + obs_cov
+            if data_cov is not None:
+                obs_cov = obs_cov + data_cov
             diff = data - obs_mean
             diff = np.nan_to_num(diff)
             # calc loglikeli
-            (sign,logdet) = np.linalg.slogdet((full_cov)*2.*np.pi)
-            likelicache += float(-0.5)*float(np.vdot(diff,np.linalg.solve(full_cov,diff))+sign*logdet)
+            (sign,logdet) = np.linalg.slogdet((obs_cov)*2.*np.pi)
+            likelicache += float(-0.5)*float(np.vdot(diff,np.linalg.solve(obs_cov,diff))+sign*logdet)
         #}
         return likelicache
 

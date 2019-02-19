@@ -10,7 +10,7 @@ class TestFeilds(unittest.TestCase):
         gf = im.GeneralField({},2.2)
         
         self.assertEqual (gf.simulator_checklist, {})
-        self.assertEqual (gf.ensemble_size, int(2))
+        self.assertEqual (gf.ensemble_size, round(2))
         self.assertEqual (gf.parameters, {})
     
     def test_testfield_init(self):
@@ -21,22 +21,22 @@ class TestFeilds(unittest.TestCase):
                           {'a': ('./Test/Regular/a','value'),
                            'random_seed': ('./Test/Random','seed'),
                            'b': ('./Test/Random/b','value')})
-        self.assertEqual (tf.ensemble_size, int(128.3))
+        self.assertEqual (tf.ensemble_size, round(128.3))
         self.assertEqual (tf.parameters,
                           {'a':float(3),
                            'b':float(4.2),
-                           'random_seed':int(34.8)})
+                           'random_seed':round(34.8)})
     
     def test_generalfieldfactory_init(self):
         test_box = (float(10),float(20),float(30))
-        test_res = [int(5),int(4),int(6)]
+        test_res = [round(5),round(4),round(6)]
         gff = im.GeneralFieldFactory(test_box,test_res)
         
         self.assertEqual (gff.field_type, 1)
         self.assertEqual (gff.name, 'general')
         self.assertEqual (gff.field_class, im.GeneralField)
         self.assertEqual (gff.boxsize, test_box)
-        self.assertEqual (gff.resolution, (int(5),int(4),int(6)))
+        self.assertEqual (gff.resolution, (round(5),round(4),round(6)))
         self.assertEqual (gff.active_parameters, ())
         self.assertEqual (gff.default_parameters, {})
         self.assertEqual (gff.parameter_ranges, {})
@@ -44,7 +44,7 @@ class TestFeilds(unittest.TestCase):
     
     def test_testfieldfactory_init(self):
         test_box = (float(10),float(20),float(30))
-        test_res = [int(5),int(4),int(6)]
+        test_res = [round(5),round(4),round(6)]
         tff = im.TestFieldFactory(test_box,test_res,('a',))
         
         self.assertEqual (tff.name, 'test')
@@ -61,8 +61,8 @@ class TestFeilds(unittest.TestCase):
                           
         self.assertEqual (tmp_field.parameters, {'a':float(0.1)*float(12),
                                                  'b':float(2.0),
-                                                 'random_seed':int(23)})
-        self.assertEqual (tmp_field.ensemble_size, int(4))
+                                                 'random_seed':round(23)})
+        self.assertEqual (tmp_field.ensemble_size, round(4))
 
 if __name__ == '__main__':
     unittest.main()

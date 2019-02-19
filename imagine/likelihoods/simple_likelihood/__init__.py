@@ -1,1 +1,0 @@
-from simple_likelihood import SimpleLikelihood

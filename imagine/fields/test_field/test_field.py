@@ -1,4 +1,4 @@
-from imagine.fields.general_field import GeneralField
+from imagine.fields.field import GeneralField
 
 '''
 test field is designed purely for testing purpose

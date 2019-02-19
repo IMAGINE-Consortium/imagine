@@ -1,1 +1,0 @@
-from ensemble_likelihood import EnsembleLikelihood

@@ -23,7 +23,7 @@ class TestLikeli(unittest.TestCase):
         sims.val = arr_b
         rslt = l({'test':sims}) # calc by likelihood
         diff = (np.mean(arr_b,axis=0) - arr_a) # calc by hand
-        baseline = -float(0.5)*float(np.vdot(diff,diff)+np.log(2*np.pi*3))
+        baseline = -float(0.5)*float(np.vdot(diff,diff))
         self.assertEqual (rslt, baseline)
     
     def test_with_cov(self):

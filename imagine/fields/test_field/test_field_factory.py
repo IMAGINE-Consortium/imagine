@@ -1,5 +1,5 @@
-from imagine.fields.general_field.general_field_factory import GeneralFieldFactory
-from test_field import TestField
+from imagine.fields.field_factory import GeneralFieldFactory
+from imagine.fields.test_field.test_field import TestField
 
 class TestFieldFactory(GeneralFieldFactory):
 

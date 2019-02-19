@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 
-from imagine.observables import Observable
+from imagine.observables.observable import Observable
 from imagine.likelihoods.likelihood import Likelihood
 
 class SimpleLikelihood(Likelihood):
@@ -71,9 +71,10 @@ class SimpleLikelihood(Likelihood):
             data = deepcopy(self.measurements[name])
             diff = data - obs_mean
             cov = deepcopy(self.covariances[name])
-            if cov is None: # no covariance matrix, take eye matrix
-                cov = np.eye(len(diff))
-            (sign,logdet) = np.linalg.slogdet(cov*2.*np.pi)
-            likelicache += -float(0.5)*float(np.vdot(diff,np.linalg.solve(cov,diff))+sign*logdet)
+            if cov is None: # no covariance matrix
+                likelicache += -float(0.5)*float(np.vdot(diff,diff))
+            else:
+                (sign,logdet) = np.linalg.slogdet(cov*2.*np.pi)
+                likelicache += -float(0.5)*float(np.vdot(diff,np.linalg.solve(cov,diff))+sign*logdet)
         #}
         return likelicache
