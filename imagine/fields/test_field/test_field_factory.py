@@ -1,10 +1,13 @@
+import logging as log
+
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.fields.test_field.test_field import TestField
 
 class TestFieldFactory(GeneralFieldFactory):
 
-    def __init__(self, boxsize, resolution, active_parameters=tuple()):
+    def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
         super(TestFieldFactory,self).__init__(boxsize, resolution)
+        log.debug('initialise TestFieldFactory')
         self.field_type = 1
         self.name = 'test'
         self.field_class = TestField

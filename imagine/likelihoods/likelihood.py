@@ -1,6 +1,3 @@
-from keepers import Loggable
-from nifty import FieldArray
-
 '''
 Likelihood class defines likelihood posterior function
 to be used in Bayesian analysis
@@ -32,17 +29,18 @@ observable name/unit convention:
         -- polarisation angle (in unit rad, IAU convention)
         
 '''
-class Likelihood(Loggable, object):
+
+from nifty5 import Field
+
+class Likelihood(object):
     
     def __call__(self, observable_names):
         raise NotImplementedError
 
-    # applies to NIFTy.Field input
+    # applies to NIFTy5.Field input
     # acts trivially on normal input
     def _strip_data(self, data):
-        # if the first element in the domain tuple is a FieldArray
-        # we must extract the data
-        if hasattr(data, 'domain'):
-            return data.val.get_full_data()
+        if isinstance(data, Field):
+            return data.to_global_data()
         else:
             return data

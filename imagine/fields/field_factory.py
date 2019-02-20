@@ -1,12 +1,3 @@
-import numpy as np
-from copy import deepcopy
-from keepers import Loggable
-'''
-from nifty import FieldArray, RGSpace
-'''
-from imagine.tools.carrier_mapper import unity_mapper
-from imagine.fields.field import GeneralField
-
 '''
 GeneralFieldFactory is designed for generating
 ensemble of field configuration DIRECTLY
@@ -52,24 +43,33 @@ members:
     and send it to field class, which will hand in to simualtor.
     Theo's legacy version has more opertions undeciphered yet
 
-# Theo's legacy waiting to be deciphered
+# undeciphered Theo's legacy
 ._grid_space
 ._vector
 ._ensemble_cache
 .generate
 ._get_ensemble
 '''
-class GeneralFieldFactory(Loggable, object):
+
+import numpy as np
+from copy import deepcopy
+import logging as log
+
+from imagine.tools.carrier_mapper import unity_mapper
+from imagine.fields.field import GeneralField
+
+class GeneralFieldFactory(object):
 
     '''
+    # un-necessary arguments
     boxsize -- list/tuple of float, physical size of simulation box (3D Cartesian frame)
     resolution -- list/tuple of int, discretization size in corresponding dimension
 
     (extra argument in derived classes)
     active_parameters -- list/tuple of string, active varialbe names concerned in constraints
     '''
-    def __init__(self, boxsize, resolution):
-        self.logger.debug("setting up GeneralFieldFactory.")
+    def __init__(self, boxsize=None, resolution=None):
+        log.debug('initialise GeneralFieldFactory')
         self.field_type = 1
         self.name = 'general'
         self.field_class = GeneralField
@@ -79,14 +79,7 @@ class GeneralFieldFactory(Loggable, object):
         # the following two must after .default_parameters initialisation
         self.active_parameters = tuple()
         self.parameter_ranges = dict()
-        '''
-        # undeciphered
-        # allocate nifty regular Euclidean grid
-        self._grid_space = RGSpace(shape=self.resolution,
-                                   distances=(np.array(self.boxsize)/np.array(self.resolution)))
-        self._vector = FieldArray(shape=(3,))
-        self._ensemble_cache = {}
-        '''
+        
     @property
     def field_type(self):
         # field type, scaler -> 1, vector -> 3
@@ -119,10 +112,13 @@ class GeneralFieldFactory(Loggable, object):
 
     @boxsize.setter
     def boxsize(self, boxsize):
-        assert isinstance(boxsize, (list,tuple))
-        assert (len(boxsize) == 3)
-        # force size in float
-        self._boxsize = tuple(np.array(boxsize, dtype=np.float))
+        if boxsize is None:
+            self._boxsize = None
+        else:
+            assert isinstance(boxsize, (list,tuple))
+            assert (len(boxsize) == 3)
+            # force size in float
+            self._boxsize = tuple(np.array(boxsize, dtype=np.float))
 
     @property
     def resolution(self):
@@ -130,10 +126,13 @@ class GeneralFieldFactory(Loggable, object):
 
     @resolution.setter
     def resolution(self, resolution):
-        assert isinstance(resolution, (list,tuple))
-        assert (len(resolution) == 3)
-        # force resolutioin in int
-        self._resolution = tuple(np.array(resolution, dtype=np.int))
+        if resolution is None:
+            self._resolution = None
+        else:
+            assert isinstance(resolution, (list,tuple))
+            assert (len(resolution) == 3)
+            # force resolutioin in int
+            self._resolution = tuple(np.array(resolution, dtype=np.int))
 
     @property
     def default_parameters(self):
@@ -142,7 +141,13 @@ class GeneralFieldFactory(Loggable, object):
     @default_parameters.setter
     def default_parameters(self, new_defaults):
         assert isinstance(new_defaults, dict)
-        self._default_parameters = new_defaults # dont use update
+        try:
+            self._default_parameters
+            self._default_parameters.update(new_defaults)
+            log.debug('update default_parameters %s' % str(new_defaults))
+        except AttributeError:
+            self._default_parameters = new_defaults
+            log.debug('set default_parameters %s' % str(new_defaults))
 
     @property
     def active_parameters(self):
@@ -156,6 +161,7 @@ class GeneralFieldFactory(Loggable, object):
         for av in active_parameters:
             assert (av in self.default_parameters)
         self._active_parameters = tuple(active_parameters)
+        log.debug('set active_parameters %s' % str(active_parameters))
 
     @property
     def parameter_ranges(self):
@@ -172,14 +178,18 @@ class GeneralFieldFactory(Loggable, object):
         assert (len(new_ranges) == len(self.default_parameters))
         for k, v in new_ranges.items():#{
             # check if k is inside default
-            assert (k in self.default_parameters)
+            assert (k in self.default_parameters.keys())
             assert isinstance(v,(list,tuple))
             assert (len(v) == 2)
         #}
-        self._parameter_ranges = new_ranges # dont use udpate here
-        self.logger.debug('updated parameter_ranges %s' % str(new_ranges))
-        
-
+        try:
+            self._parameter_ranges
+            self._parameter_ranges.update(new_ranges)
+            log.debug('update parameter_ranges %s' % str(new_ranges))
+        except AttributeError:
+            self._parameter_ranges = new_ranges
+            log.debug('set parameter_ranges %s' % str(new_ranges))
+    
     '''
     translate default parameter into default (logic) variable
     notice that all variables range is always fixed as [0,1]
@@ -225,27 +235,11 @@ class GeneralFieldFactory(Loggable, object):
         work_parameters = deepcopy(self.default_parameters)
         # update is safe
         work_parameters.update(mapped_variables)
-        '''
-        # undeciphered
-        domain = (self._get_ensemble(ensemble_size), self._grid_space, self._vector)
-        result_magnetic_field = self.magnetic_field_class(parameters=work_parameters,
-                                                          domain=domain,
-                                                          distribution_strategy='equal',
-                                                          random_seed=random_seed)
-        '''
         result_field = self.field_class(parameters=work_parameters,
                                         ensemble_size=ensemble_size,
                                         random_seed=random_seed)
-        self.logger.debug('generated field with work-parameters %s' % work_parameters)
+        log.debug('generated field with work-parameters %s' % work_parameters)
         return result_field
-
-    '''
-    # undeciphered
-    def _get_ensemble(self, ensemble_size):
-        if ensemble_size not in self._ensemble_cache:
-            self._ensemble_cache[ensemble_size] = FieldArray(shape=(ensemble_size,))
-        return self._ensemble_cache[ensemble_size]
-    '''
 
     @staticmethod
     def _interval(mean, sigma, n):

@@ -67,7 +67,7 @@ class SimpleLikelihood(Likelihood):
         for name in self.observable_names:#{
             obs = observables[name]
             assert isinstance(obs,Observable)
-            obs_mean = obs.ensemble_mean().val.get_full_data()
+            obs_mean = obs.ensemble_mean()
             data = deepcopy(self.measurements[name])
             diff = data - obs_mean
             cov = deepcopy(self.covariances[name])

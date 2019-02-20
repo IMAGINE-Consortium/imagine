@@ -1,24 +1,12 @@
 import os
 import numpy as np
-from mpi4py import MPI
-from keepers import Loggable
+import logging as log
 
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.simulators.simulator import Simulator
 from imagine.priors.prior import Prior
 import pymultinest
-'''
-from scipy import optimize
-from imagine.sample import Sample
-'''
-
-comm = MPI.COMM_WORLD
-size = comm.size
-rank = comm.rank
-
-WORK_TAG = 0
-DIE_TAG = 1
 
 '''
 Pipeline class defines methods for running Bayeisan analysis
@@ -52,7 +40,7 @@ undeciphered:
 .find_minimum
 
 '''
-class Pipeline(Loggable, object):
+class Pipeline(object):
 
     '''
     field_factory -- list or tuple of FieldFactory objects
@@ -62,7 +50,7 @@ class Pipeline(Loggable, object):
     '''
     def __init__(self, field_factory, simulator, likelihood, prior,
                  ensemble_size=1, pymultinest_parameters={}, sample_callback=None):
-        self.logger.debug('setting up pipeline')
+        log.debug('setting up pipeline')
         self.field_factory = field_factory
         self.simulator = simulator
         self.likelihood = likelihood
@@ -92,7 +80,7 @@ class Pipeline(Loggable, object):
     @field_factory.setter
     def field_factory(self, field_factory):
         assert isinstance(field_factory, (list,tuple))
-        self.logger.debug('setting field_factory, registering active_variables')
+        log.debug('setting field_factory, registering active_variables')
         # record all active variables' name
         self.active_variables = ()
         # extract active_variables from each factory
@@ -115,7 +103,7 @@ class Pipeline(Loggable, object):
 
     @simulator.setter
     def simulator(self, simulator):
-        self.logger.debug('setting simulator')
+        log.debug('setting simulator')
         assert isinstance(simulator, Simulator)
         self._simulator = simulator
 
@@ -125,7 +113,7 @@ class Pipeline(Loggable, object):
 
     @likelihood.setter
     def likelihood(self, likelihood):
-        self.logger.debug('setting likelihood')
+        log.debug('setting likelihood')
         assert isinstance(likelihood, Likelihood)
         self._likelihood = likelihood
 
@@ -135,7 +123,7 @@ class Pipeline(Loggable, object):
 
     @prior.setter
     def prior(self, prior):
-        self.logger.debug('setting prior')
+        log.debug('setting prior')
         assert isinstance(prior, Prior)
         self._prior = prior
 
@@ -151,13 +139,13 @@ class Pipeline(Loggable, object):
     def ensemble_size(self, ensemble_size):
         ensemble_size = int(ensemble_size)
         assert (ensemble_size > 0)
-        self.logger.debug('Setting ensemble size to %i' % ensemble_size)
+        log.debug('Setting ensemble size to %i' % ensemble_size)
         self._ensemble_size = ensemble_size
 
     def __call__(self):
         if rank == 0:#{
             # kickstart pymultinest
-            self.logger.info('starting pymultinest')
+            log.info('starting pymultinest')
             # make a new directory for storing chains
             if not os.path.exists('chains'):
                 os.mkdir('chains')
@@ -166,10 +154,10 @@ class Pipeline(Loggable, object):
                             self.prior,
                             len(self.active_variables),
                             **self.pymultinest_parameters)
-            self.logger.info('pymultinest finished')
+            log.info('pymultinest finished')
             # send DIE_TAG to all salves
             for i in xrange(1, size):#{
-                self.logger.debug('sending DIE_TAG to slave %i' % i)
+                log.debug('sending DIE_TAG to slave %i' % i)
                 comm.send(None, dest=i, tag=DIE_TAG)
             #}
         #}
@@ -182,10 +170,10 @@ class Pipeline(Loggable, object):
         while True:#{
             cube = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
             if status == DIE_TAG:#{
-                self.logger.debug('received DIE_TAG from master')
+                log.debug('received DIE_TAG from master')
                 break
             #} cube is sent in _multinest_likelihood
-            self.logger.debug('received cube from master')
+            log.debug('received cube from master')
             # invoke _core_likelihood on slaves
             self._core_likelihood(cube)
         #}
@@ -200,7 +188,7 @@ class Pipeline(Loggable, object):
         # if a parameter value from outside of the cube is requested, return
         # the worst possible likelihood value
         if np.any(cube_content > 1.) or np.any(cube_content < 0.):#{
-            self.logger.info('cube %s requested. returned most negative possible number' % cube_content)
+            log.info('cube %s requested. returned most negative possible number' % cube_content)
             return np.nan_to_num(-np.inf)
         #}
         if rank != 0:#{
@@ -213,7 +201,7 @@ class Pipeline(Loggable, object):
         '''
         while True:
             # sending cube to all slaves
-            self.logger.debug('sent multinest-cube to slaves')
+            log.debug('sent multinest-cube to slaves')
             for i in xrange(1, size):
                 comm.send(cube_content, dest=i, tag=WORK_TAG)
             # invoke _core_likelihood on master
@@ -223,12 +211,12 @@ class Pipeline(Loggable, object):
             if likelihood < self.likelihood_threshold or not self.check_threshold:
                 break
             else:
-                self.logger.error('positive log-likelihood value encountered! redoing calculation')
+                log.error('positive log-likelihood value encountered! redoing calculation')
         #}
         return likelihood
     
     def _core_likelihood(self, cube):
-        self.logger.debug('beginning Likelihood-calculation for %s' % str(cube))
+        log.debug('beginning Likelihood-calculation for %s' % str(cube))
         # translate cube to variables for each field
         head_idx = 0
         tail_idx = 0
@@ -239,7 +227,7 @@ class Pipeline(Loggable, object):
             ff_cube = cube[head_idx:tail_idx]
             for i,av in enumerate(ff.active_variables):
                 ff_variables[av] = ff_cube[i]
-            self.logger.debug('creating '+ff.name+' field')
+            log.debug('creating '+ff.name+' field')
             multi_field[ff.name] = ff.generate(variables=ff_variables,
                                                ensemble_size=self.ensemble_size,
                                                random_seed=self.fixed_random_seed)
@@ -248,13 +236,13 @@ class Pipeline(Loggable, object):
         assert(head_idx == tail_idx)
         assert(head_idx == len(self.active_variables))
         # create observables
-        self.logger.debug('creating observables')
+        log.debug('creating observables')
         observables = self.simulator(self.likelihood.observable_names,
                                      multi_field)
         # add up individual log-likelihood terms
-        self.logger.debug('evaluating likelihood(s).')
+        log.debug('evaluating likelihood(s).')
         current_likelihood = self.likelihood(observables)
-        self.logger.info('evaluated likelihood: %f for %s' % (current_likelihood, str(cube)))
+        log.info('evaluated likelihood: %f for %s' % (current_likelihood, str(cube)))
         '''
         sample_callback relic
         '''

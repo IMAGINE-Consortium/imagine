@@ -71,6 +71,7 @@ class EnsembleLikelihood(Likelihood):
             (obs_mean,obs_cov) = self._oas(obs)
             # get observational info
             data = deepcopy(self.measurements[name])
+            assert (len(data) == len(obs_mean))
             data_cov = deepcopy(self.covariance[name])
             if data_cov is not None:
                 obs_cov = obs_cov + data_cov
@@ -88,7 +89,7 @@ class EnsembleLikelihood(Likelihood):
         (n,p) = observable.shape
         assert (p>0)
         mean = observable.ensemble_mean().val.get_full_data()
-        u = observable.val.get_full_data() - mean
+        u = observable.val.get_full_data() - mean # should broadcast to all rows
         S = np.dot(np.transpose(u),u)/n # emprical covariance S
         TrS = np.trace(S) # Tr(S), equivalent to np.vdot(u,u)/n
         TrS2 = np.trace(np.dot(S,S)) # Tr(S^2), equivalent to (np.einsum(u,[0,1],u,[2,1])**2).sum() / (n**2)

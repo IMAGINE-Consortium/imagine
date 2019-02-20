@@ -12,6 +12,3 @@ from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior
 from .pipelines.pipeline import Pipeline
 from .tools.carrier_mapper import infinity_mapper, unity_mapper
-
-import nifty
-nifty.nifty_configuration['default_distribution_strategy'] = 'equal'

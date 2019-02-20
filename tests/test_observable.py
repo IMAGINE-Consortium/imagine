@@ -1,49 +1,102 @@
 import unittest
-from nifty import Field, FieldArray, HPSpace
-from imagine.observables.observable import Observable
 import numpy as np
 
-class TestNIFTy(unittest.TestCase):
-
-    def test_array(self):
-        # field with 2 by 3 array in each
-        field = Field(val=1,
-                      domain=FieldArray(shape=(2,3)),
-                      distribution_strategy='equal')
-        self.assertEqual (len(field.val), 2) # 2 rows
-        self.assertEqual (len(field.val[0]),3) # 3 cols
-        for i in field.val[0]:
-            self.assertEqual (i,1.)
-        inputlist = [2,6,21]
-        field.val[1] = inputlist# reassign array
-        for i in range(len(field.val[1])):
-            self.assertEqual (field.val[1][i], inputlist[i])
-    
-    def test_healpix(self):
-        # fieldarray & healpix fits
-        temp = (FieldArray(shape=(3,)),HPSpace(nside=2)) # 3 healpix array with Nside 2
-        field = Field(val=0,
-                      domain=temp,
-                      distribution_strategy='equal')
-        self.assertEqual (len(field.val), 3) # 3 rows
-        self.assertEqual (len(field.val[1]), 48)
+from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
+from imagine.observables.observable import Observable
     
 class TestObservalbe(unittest.TestCase):
-    
-    def test_healpix_ensemblemean(self):
-        domain = (FieldArray(shape=(2,)),HPSpace(nside=2))
-        obs = Observable(val=0,
-                         domain=domain,
-                         distribution_strategy='equal')
-        self.assertEqual (len(obs.val), 2) # 3 rows
-        self.assertEqual (len(obs.val[1]), 48)
-        pix = np.random.rand (2,48)
-        obs.val = pix # input shape must fit in
-        pix_mean = np.mean(pix,axis=0)
-        obs_mean = obs.ensemble_mean().val.get_full_data()
-        self.assertEqual (len(pix_mean),len(obs_mean))
-        for i in range(len(pix_mean)):
-            self.assertEqual (pix_mean[i],obs_mean[i])
+
+    def test_init(self):
+        # test __init__
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test domain shape
+        self.assertEqual (obs.domain, dtuple)
+        # test function stripped
+        raw = obs.stripped
+        for i in range(len(val)):
+            self.assertListEqual (list(raw[i]), list(val[i]))
+        # test function ensemble_mean
+        mean = obs.ensemble_mean
+        val_mean = np.mean(val,axis=0)
+        self.assertListEqual (list(mean), list(val_mean))
+
+    def test_append_list(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test function append with list
+        new_data = list(np.random.rand(48))
+        obs.append(new_data)
+        raw_obs = obs.stripped
+        new_val = np.vstack([val,new_data])
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+
+    def test_append_tuple(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test function append with tuple
+        new_data = tuple(np.random.rand(48))
+        obs.append(new_data)
+        raw_obs = obs.stripped
+        new_val = np.vstack([val,new_data])
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+
+    def test_append_array(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test function append with 1d array
+        new_data = np.random.rand(48)
+        obs.append(new_data)
+        raw_obs = obs.stripped
+        new_val = np.vstack([val,new_data])
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+
+    def test_append_ndarray(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test function append with nd array
+        new_data = np.random.rand(6,48)
+        obs.append(new_data)
+        raw_obs = obs.stripped
+        new_val = np.vstack([val,new_data])
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+
+    def test_append_field(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test function append with Field
+        dtuple = DomainTuple.make((RGSpace(shape=(2,)),HPSpace(nside=2)))
+        new_data = np.random.rand(2,48)
+        new_field = Field.from_global_data(dtuple,new_data)
+        obs.append(new_field)
+        raw_obs = obs.stripped
+        new_val = np.vstack([val,new_data])
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+
+    def test_append_observable(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2)))
+        val = np.random.rand(3,48)
+        obs = Observable(dtuple,val)
+        # test function append with Observable
+        dtuple = DomainTuple.make((RGSpace(shape=(8,)),HPSpace(nside=2)))
+        new_data = np.random.rand(8,48)
+        new_obs = Observable(dtuple,new_data)
+        obs.append(new_obs)
+        raw_obs = obs.stripped
+        new_val = np.vstack([val,new_data])
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
            
 if __name__ == '__main__':
     unittest.main()
