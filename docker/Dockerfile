@@ -83,12 +83,6 @@ ENV PATH /usr/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}
 WORKDIR /home/lab
 
-#Keepers
-RUN git clone https://gitlab.mpcdf.mpg.de/ift/keepers.git keepers
-WORKDIR /home/lab/keepers
-RUN pip3 setup.py install
-WORKDIR /home/lab
-
 #IMAGINE
 RUN git clone https://ricphy@bitbucket.org/ricphy/imagine.git imagine
 WORKDIR /home/lab/imagine
