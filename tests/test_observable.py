@@ -97,6 +97,19 @@ class TestObservalbe(unittest.TestCase):
         new_val = np.vstack([val,new_data])
         for i in range(len(val)):
             self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+
+    def test_append_with_replace(self):
+        dtuple = DomainTuple.make((RGSpace(shape=(1,)),HPSpace(nside=2)))
+        obs = Observable(dtuple)
+        self.assertTrue(obs.rw_flag)
+        # test with empty observable
+        dtuple = DomainTuple.make((RGSpace(shape=(8,)),HPSpace(nside=2)))
+        new_data = np.random.rand(8,48)
+        new_obs = Observable(dtuple,new_data)
+        obs.append(new_obs)
+        raw_obs = obs.stripped
+        for i in range(len(val)):
+            self.assertListEqual (list(raw_obs[i]), list(new_data[i]))
            
 if __name__ == '__main__':
     unittest.main()

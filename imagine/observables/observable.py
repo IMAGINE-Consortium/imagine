@@ -26,6 +26,7 @@ _to/from_hdf5
 '''
 
 import numpy as np
+import logging as log
 
 from nifty5 import Field, RGSpace, DomainTuple
 
@@ -44,9 +45,9 @@ class Observable(object):
     domain = nifty5.DomainTuple.make((nifty5.RGSpace(shape=(10,)),nifty5.HPSpace(nside=128)))
     then the corresponding val should be in shape (10,12*128*128)
     '''
-    def __init__(self, domain=None, val=None):
+    def __init__(self, domain=None, val=float(0)):
         self.domain = domain
-        self._field = Field.from_global_data(self.domain,val) # recommended in NIFTy5
+        self.field = val # should be after domain setter
 
     @property
     def domain(self):
@@ -59,6 +60,28 @@ class Observable(object):
         for d in domain: # restrict to 1D
             assert (len(d.shape), int(1))
         self._domain = domain
+
+    @property
+    def field(self):
+        return self._field
+
+    @field.setter
+    def field(self, val):
+        self.rw_flag = False # re-write flag for empty case
+        if isinstance(val, float): # empty case
+            self._field = Field.full(self.domain,val)
+            self.rw_flag = True
+        else:
+            self._field = Field.from_global_data(self.domain,val)
+
+    @property
+    def rw_flag(self):
+        return self._rw_flag
+
+    @rw_flag.setter
+    def rw_flag(self, rw_flag):
+        self._rw_flag = rw_flag
+        log.debug('set observable rewrite flag as %' % str(rw_flag))
     
     @property
     def ensemble_mean(self):
@@ -85,34 +108,27 @@ class Observable(object):
 
     since Field is read only, to append new data
     we need to strip ndarray out, extend, then update Field
+
+    append also handle ._flag is True case
+    which means instead of append new data
+    we should rewrite
     '''
     def append(self, new_data):
         assert isinstance(new_data,(np.ndarray,list,tuple,Field,Observable))
-        if isinstance(new_data, Field): # from raw Field
-            assert (new_data.domain[1] == self._domain[1]) # check domain
-            new_cache = np.vstack([self._field.to_global_data(),new_data.to_global_data()])
-            assert (new_cache.shape[0] == self._domain[0].shape[0] + new_data.domain[0].shape[0])
-            assert (new_cache.shape[1] == self._domain[1].shape[0])
-        elif isinstance(new_data, Observable): # from Observable
-            assert (new_data.domain[1] == self._domain[1]) # check domain
-            new_cache = np.vstack([self._field.to_global_data(),new_data.stripped])
-            assert (new_cache.shape[0] == self._domain[0].shape[0] + new_data.domain[0].shape[0])
-            assert (new_cache.shape[1] == self._domain[1].shape[0])
+        # strip data
+        if isinstance(new_data, (Field,Observable)): # from Field/Observable
+            raw_new = new_data.to_global_data()
         elif isinstance(new_data, (np.ndarray,list,tuple)): # from list/tuple/ndarray
-            if (len(np.shape(new_data)) == 1): # single row
-                assert (len(new_data) == self._domain.shape[1])
-                new_cache = np.vstack([self._field.to_global_data(),new_data])
-                assert (new_cache.shape[0] == self._domain[0].shape[0] + int(1))
-                assert (new_cache.shape[1] == self._domain[1].shape[0])
-            else: # multi row
-                assert (np.shape(new_data)[1] == self._domain.shape[1])
-                new_cache = np.vstack([self._field.to_global_data(),new_data])
-                assert (new_cache.shape[0] == self._domain[0].shape[0] + np.shape(new_data)[0])
-                assert (new_cache.shape[1] == self._domain[1].shape[0])
+            raw_new = new_data
         else:
             raise TypeError('shouldnt happen')
+        # assemble new_cache
+        if self.rw_flag:
+            new_cache = raw_new
+            log.debug('new data rewrite to observable')
+        else:
+            new_cache = np.vstack([self._field.to_global_data(),raw_new])
+            log.debug('new data append to observable')
         # update new_cache to ._field
         new_domain = DomainTuple.make((RGSpace(shape=(new_cache.shape[0],)),self._domain[1]))
         self._field = Field.from_global_data(new_domain,new_cache)
-            
-        
