@@ -7,6 +7,7 @@ from .fields.field import GeneralField
 from .fields.test_field.test_field_factory import TestFieldFactory
 from .fields.test_field.test_field import TestField
 from .observables.observable import Observable
+from .observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances
 from .simulators.simulator import Simulator
 from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior

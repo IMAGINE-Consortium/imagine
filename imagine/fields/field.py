@@ -28,10 +28,11 @@ class GeneralField(object):
     def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
         self.parameters = parameters
         self.ensemble_size = ensemble_size
+        self.random_seed = random_seed
         # if checklist has 'random_seed' entry
         if 'random_seed' in self.simulator_checklist.keys():
-            self.parameters.update({'random_seed':round(random_seed)})
-            log.debug('update field random seed %s' % str(random_seed))
+            self.parameters.update({'random_seed':self.random_seed})
+            log.debug('update field random seed %s' % str(self.random_seed))
     
     @property
     def simulator_checklist(self):
@@ -46,6 +47,17 @@ class GeneralField(object):
         assert (ensemble_size>0)
         self._ensemble_size = round(ensemble_size)
         log.debug('set field ensemble size %s' % str(ensemble_size))
+
+    @property
+    def random_seed(self):
+        return self._random_seed
+
+    @random_seed.setter
+    def random_seed(self, random_seed):
+        if random_seed is None:
+            self._random_seed = int(0)
+        else:
+            self._random_seed = round(random_seed)
 
     @property
     def parameters(self):

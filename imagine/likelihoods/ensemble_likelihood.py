@@ -1,3 +1,8 @@
+'''
+ensemble likelihood, described in IMAGINE techincal report
+in principle
+it adds covariance matrices from both observation and simulation
+'''
 import numpy as np
 from copy import deepcopy
 

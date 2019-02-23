@@ -89,11 +89,11 @@ class TestFeilds(unittest.TestCase):
         self.assertEqual (tff.default_variables, {'a':float(6)/float(12),
                                                   'b':float(2)/float(4.5)})
         
-        tmp_field = tff.generate({'a':0.1},4,23)
+        tmp_field = tff.generate({'a':0.1},4,None)
                           
         self.assertEqual (tmp_field.parameters, {'a':float(0.1)*float(12),
                                                  'b':float(2.0),
-                                                 'random_seed':round(23)})
+                                                 'random_seed':int(0)})
         self.assertEqual (tmp_field.ensemble_size, round(4))
 
 if __name__ == '__main__':

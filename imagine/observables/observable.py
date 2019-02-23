@@ -11,7 +11,7 @@ extracting ndarray from Field
 members:
 .field
     -- NIFTy5 Field object for storing observable ensemble
-.stripped
+.to_global_data
     -- stripping out ndarray from ._field
     designed for accessing ._field
 .ensemble_mean
@@ -58,7 +58,7 @@ class Observable(object):
         assert (len(domain) == 2)
         assert isinstance(domain[0], RGSpace)
         for d in domain: # restrict to 1D
-            assert (len(d.shape), int(1))
+            assert (len(d.shape) == int(1))
         self._domain = domain
 
     @property
@@ -72,7 +72,8 @@ class Observable(object):
             self._field = Field.full(self.domain,val)
             self.rw_flag = True
         else:
-            self._field = Field.from_global_data(self.domain,val)
+            # use np.vstack to reinforce correct shape
+            self._field = Field.from_global_data(self.domain,np.vstack([val]))
 
     @property
     def rw_flag(self):
@@ -81,7 +82,7 @@ class Observable(object):
     @rw_flag.setter
     def rw_flag(self, rw_flag):
         self._rw_flag = rw_flag
-        log.debug('set observable rewrite flag as %' % str(rw_flag))
+        log.debug('set observable rewrite flag as %s' % str(rw_flag))
     
     @property
     def ensemble_mean(self):
@@ -95,8 +96,7 @@ class Observable(object):
     '''
     indirectly visit ._field
     '''
-    @property
-    def stripped(self):
+    def to_global_data(self):
         return self._field.to_global_data()
 
     '''
@@ -116,10 +116,13 @@ class Observable(object):
     def append(self, new_data):
         assert isinstance(new_data,(np.ndarray,list,tuple,Field,Observable))
         # strip data
-        if isinstance(new_data, (Field,Observable)): # from Field/Observable
-            raw_new = new_data.to_global_data()
-        elif isinstance(new_data, (np.ndarray,list,tuple)): # from list/tuple/ndarray
-            raw_new = new_data
+        if isinstance(new_data, (Field,Observable)):
+            try:
+                raw_new = new_data.to_global_data() # from Field
+            except AttributeError:
+                raw_new = new_data.field.to_global_data() # from Observable
+        elif isinstance(new_data, (np.ndarray,list,tuple)):
+            raw_new = new_data # from list/tuple/ndarray
         else:
             raise TypeError('shouldnt happen')
         # assemble new_cache
@@ -130,5 +133,5 @@ class Observable(object):
             new_cache = np.vstack([self._field.to_global_data(),raw_new])
             log.debug('new data append to observable')
         # update new_cache to ._field
-        new_domain = DomainTuple.make((RGSpace(shape=(new_cache.shape[0],)),self._domain[1]))
+        new_domain = DomainTuple.make((RGSpace(new_cache.shape[0]),self._domain[1]))
         self._field = Field.from_global_data(new_domain,new_cache)
