@@ -10,10 +10,10 @@
 -   [Python3](http://www.python.org/)
 -   [NumPy](http://www.numpy.org/)
 -   [pyMultiNest](https://github.com/JohannesBuchner/PyMultiNest)
--   [NIFTy5] (https://gitlab.mpcdf.mpg.de/ift/NIFTy)
--   [D2O] (https://gitlab.mpcdf.mpg.de/ift/D2O) (to be implemented)
--   [keepers] (https://gitlab.mpcdf.mpg.de/ift/keepers) (to be implemented)
--   [simplejson] (https://github.com/simplejson/simplejson) (to be implemented)
+-   [NIFTy5](https://gitlab.mpcdf.mpg.de/ift/NIFTy)
+-   [D2O](https://gitlab.mpcdf.mpg.de/ift/D2O) (to be implemented)
+-   [keepers](https://gitlab.mpcdf.mpg.de/ift/keepers) (to be implemented)
+-   [simplejson](https://github.com/simplejson/simplejson) (to be implemented)
 
 
 ### version
