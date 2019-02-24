@@ -11,6 +11,31 @@ separately
 notice covariance matrix should not have Observable structure,
 instead, it can be a single domain NIFTy5 Field or numpy ndarray,
 nevertheless, we make ObservableDict flexible enough
+
+bservable name/unit convention:
+* ('fd','nan',str(pix/nside),'nan')
+    -- Faraday depth (in unit 
+* ('dm','nan',str(pix),'nan')
+    -- dispersion measure (in unit
+* ('sync',str(freq),str(pix),X)
+    -- synchrotron emission
+    X stands for:
+    * 'I'
+        -- total intensity (in unit K-cmb)
+    * 'Q'
+        -- Stokes Q (in unit K-cmb, IAU convention)
+    * 'U'
+        -- Stokes U (in unit K-cmb, IAU convention)
+    * 'PI'
+        -- polarisation intensity (in unit K-cmb)
+    * 'PA'
+        -- polarisation angle (in unit rad, IAU convention)
+
+remarks on observable name:
+    -- str(freq), polarisation-related-flag are redundant for Faraday depth and dispersion measure
+    so we put 'nan' instead
+    -- str(pix/nside) stores either Healpix Nisde, or just number of pixels/points
+    we do this for flexibility, in case users have non-Healpix based in/output
 '''
 
 import numpy as np
@@ -31,6 +56,9 @@ class ObservableDict(object):
     @property
     def archive(self):
         return self._archive
+
+    def keys(self):
+        return self._archive.keys()
     
     def __getitem__(self, key):
         return self._archive[key]

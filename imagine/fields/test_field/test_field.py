@@ -18,7 +18,7 @@ class TestField(GeneralField):
         log.debug('initialise TestField')
 
     @property
-    def simulator_checklist(self):
+    def field_checklist(self):
         checklist = {'a': ('./Test/Regular/a','value'),
                      'random_seed': ('./Test/Random','seed'),
                      'b': ('./Test/Random/b','value')}

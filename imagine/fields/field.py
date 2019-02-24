@@ -4,7 +4,7 @@ which is passed down from field factory
 and prepare to hand in to simulators the default checklist is a dict
 
 members:
-.simulator_checklist
+.field_checklist
     -- dict, with parameter name as entry, parameter xml path as content
     defines the parameters to be checked out by simulator
     should be fixed upon class designing
@@ -30,12 +30,12 @@ class GeneralField(object):
         self.ensemble_size = ensemble_size
         self.random_seed = random_seed
         # if checklist has 'random_seed' entry
-        if 'random_seed' in self.simulator_checklist.keys():
+        if 'random_seed' in self.field_checklist.keys():
             self.parameters.update({'random_seed':self.random_seed})
             log.debug('update field random seed %s' % str(self.random_seed))
     
     @property
-    def simulator_checklist(self):
+    def field_checklist(self):
         return dict()
 
     @property
@@ -66,7 +66,7 @@ class GeneralField(object):
     @parameters.setter
     def parameters(self, parameters):
         for k in parameters:
-            assert (k in self.simulator_checklist.keys())
+            assert (k in self.field_checklist.keys())
         try:
             self._parameters
             self._parameters.update(parameters)

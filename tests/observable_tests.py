@@ -11,8 +11,9 @@ class TestObservalbe(unittest.TestCase):
         dtuple = DomainTuple.make((RGSpace(3),HPSpace(nside=2)))
         val = np.random.rand(3,48)
         obs = Observable(dtuple,val)
-        # test domain shape
+        # test domain/field shape
         self.assertEqual (obs.domain, dtuple)
+        self.assertEqual (obs.shape, val.shape)
         # test function to_global_data()
         raw = obs.to_global_data()
         for i in range(len(val)):
@@ -20,7 +21,7 @@ class TestObservalbe(unittest.TestCase):
         # test function ensemble_mean
         mean = obs.ensemble_mean
         val_mean = np.mean(val,axis=0)
-        self.assertListEqual (list(mean), list(val_mean))
+        self.assertListEqual (list(mean[0]), list(val_mean))
 
     def test_1dinit(self):
         dtuple = DomainTuple.make((RGSpace(1),HPSpace(nside=2)))

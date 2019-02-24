@@ -1,13 +1,3 @@
-import os
-import numpy as np
-import logging as log
-
-from imagine.likelihoods.likelihood import Likelihood
-from imagine.fields.field_factory import GeneralFieldFactory
-from imagine.simulators.simulator import Simulator
-from imagine.priors.prior import Prior
-import pymultinest
-
 '''
 Pipeline class defines methods for running Bayeisan analysis
 The default sampler is pyMultinest
@@ -40,6 +30,18 @@ undeciphered:
 .find_minimum
 
 '''
+
+import os
+import numpy as np
+import logging as log
+
+import pymultinest
+
+from imagine.likelihoods.likelihood import Likelihood
+from imagine.fields.field_factory import GeneralFieldFactory
+from imagine.simulators.simulator import Simulator
+from imagine.priors.prior import Prior
+
 class Pipeline(object):
 
     '''
@@ -48,7 +50,7 @@ class Pipeline(object):
     likelihood -- Likelihood object
     prior -- Prior object, multi-type-prior not supported yet
     '''
-    def __init__(self, field_factory, simulator, likelihood, prior,
+    def __init__(self, simulator, field_factory, likelihood, prior,
                  ensemble_size=1, pymultinest_parameters={}, sample_callback=None):
         log.debug('setting up pipeline')
         self.field_factory = field_factory

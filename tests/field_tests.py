@@ -9,7 +9,7 @@ class TestFeilds(unittest.TestCase):
     def test_generalfield_init(self):
         gf = im.GeneralField({},2.2)
         # test common base class init
-        self.assertEqual (gf.simulator_checklist, {})
+        self.assertEqual (gf.field_checklist, {})
         self.assertEqual (gf.ensemble_size, round(2))
         self.assertEqual (gf.parameters, {})
     
@@ -17,7 +17,7 @@ class TestFeilds(unittest.TestCase):
         test_list = {'a':float(3),'b':float(4.2)}
         tf = im.TestField(test_list,128.3,34.8)
         # test testfield init
-        self.assertEqual (tf.simulator_checklist,
+        self.assertEqual (tf.field_checklist,
                           {'a': ('./Test/Regular/a','value'),
                            'random_seed': ('./Test/Random','seed'),
                            'b': ('./Test/Random/b','value')})

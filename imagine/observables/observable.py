@@ -89,12 +89,18 @@ class Observable(object):
         try:
             self._ensemble_mean
         except AttributeError:
-            self._ensemble_mean = self._field.mean(spaces=0).to_global_data()
+            self._ensemble_mean = np.vstack([self._field.mean(spaces=0).to_global_data()])
         finally:
             return self._ensemble_mean
 
+    @property
+    def shape(self):
+        return self._field.shape
+    
     '''
     indirectly visit ._field
+    dont make it a preperty in order to be aligned with
+    the same method in NIFTy5.Field
     '''
     def to_global_data(self):
         return self._field.to_global_data()
