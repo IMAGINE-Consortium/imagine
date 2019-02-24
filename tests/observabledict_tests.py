@@ -6,7 +6,7 @@ from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
 from imagine.observables.observable import Observable
 from imagine.observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances
 
-class TestObservableDict(unittest.TestCase):
+class ObservableDictTests(unittest.TestCase):
 
     def test_basedict(self):
         basedict = ObservableDict()

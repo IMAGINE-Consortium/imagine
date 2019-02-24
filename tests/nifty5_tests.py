@@ -19,7 +19,7 @@ import unittest
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
 import numpy as np
 
-class TestNIFTy(unittest.TestCase):
+class NIFTyTests(unittest.TestCase):
     
     # test field domain shape
     def test_unstructured(self):

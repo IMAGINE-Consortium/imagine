@@ -4,7 +4,7 @@ import numpy as np
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
 from imagine.observables.observable import Observable
     
-class TestObservalbe(unittest.TestCase):
+class ObservalbeTests(unittest.TestCase):
 
     def test_init(self):
         # test __init__

@@ -26,6 +26,7 @@ class GeneralField(object):
         useful only when random field is active
     '''
     def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
+        self.name = 'general'
         self.parameters = parameters
         self.ensemble_size = ensemble_size
         self.random_seed = random_seed
@@ -33,6 +34,15 @@ class GeneralField(object):
         if 'random_seed' in self.field_checklist.keys():
             self.parameters.update({'random_seed':self.random_seed})
             log.debug('update field random seed %s' % str(self.random_seed))
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        assert isinstance(name, str)
+        self._name = name
     
     @property
     def field_checklist(self):

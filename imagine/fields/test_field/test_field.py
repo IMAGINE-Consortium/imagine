@@ -15,6 +15,7 @@ class TestField(GeneralField):
 
     def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
         super(TestField,self).__init__(parameters, ensemble_size, random_seed)
+        self.name = 'test'
         log.debug('initialise TestField')
 
     @property

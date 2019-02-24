@@ -7,7 +7,7 @@ from imagine.likelihoods.likelihood import Likelihood
 from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 
-class TestSimpleLikeli(unittest.TestCase):
+class SimpleLikeliTests(unittest.TestCase):
 
     def test_without_cov(self):
         simdict = Simulations()
