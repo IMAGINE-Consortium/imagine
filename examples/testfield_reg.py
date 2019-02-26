@@ -1,5 +1,8 @@
 """
 single TestField, regular field parameter constraints with mock data
+error propagation is considered
+which means measurements contain modelling but no observational uncertainty
+the estimation uncertainty should be no larger than modelling uncertainty as verification benchmark
 """
 
 import numpy as np
@@ -14,6 +17,7 @@ from imagine.tools.carrier_mapper import unity_mapper
 
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.fields.test_field.test_field_factory import TestFieldFactory
 from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.test_simulator import TestSimulator
@@ -48,18 +52,19 @@ def testfield():
 	# step 0, set 'a', 'std_a'
 
 	TestField is modeled as
-		y = a*sin(x) + gaussian_random(mean=0,std=b)
+		y = a*sin(x) + (gaussian_random(mean=0,std=b))**2
 		where x in (0,2pi)
 
 	for generating mock data we need
 	true values of a
-	observational uncertainties in a
+	theoretical uncertainties in a
 	observational points, positioned in (0,2pi) evenly, due to TestField modelling
+	parameter b is set by default, 0.
 	"""
 	true_a = 2.
-	mea_std = 0.1 # std of gaussian measurement error
-	mea_points = 100  # data points in measurements
-	mea_times = 100  # times of measures
+	err_a = 0.1 # std of gaussian modelling error
+	measure_points = 100  # data points in measurements
+	measure_times = 100  # times of measures
 	truths = [true_a]  # will be used in visualizing posterior
 
 	"""
@@ -69,21 +74,22 @@ def testfield():
 	"""
 	# 1.1, generate measurements and covariances
 	"""
-	x = np.linspace(0, 2. * np.pi, mea_points)
-	mea_arr = np.zeros((mea_times, mea_points))
-	for i in range(mea_arr.shape[0]):  # generate measurements with gaussian error
-		mea_arr[i,:] = true_a * np.sin(x) + np.random.normal(0., mea_std, mea_arr.shape[1])
-	mea_cov = oas(mea_arr)  # get measured mean and covariance
+	x = np.linspace(0, 2. * np.pi, measure_points)
+	measure_field = np.zeros((measure_times, measure_points))
+	for i in range(measure_field.shape[0]):
+		for j in range(measure_field.shape[1]):
+			measure_field[i,j] = np.random.normal(true_a,err_a,1) * np.sin(x[j])
+	measure_cov = oas(measure_field)  # get propagated covariance
 	mock_data = Measurements()  # create empty Measrurements object
 	mock_cov = Covariances()  # create empty Covariance object
-	# pick up a measurement
-	mock_data.append(('test', 'nan', str(mea_points), 'nan'), np.vstack([mea_arr[np.random.randint(mea_times)]]), True)
-	mock_cov.append(('test', 'nan', str(mea_points), 'nan'), mea_cov, True)
+	mock_data.append(('test', 'nan', str(measure_points), 'nan'),
+					 np.vstack([measure_field[np.random.randint(measure_times)]]), True)
+	mock_cov.append(('test', 'nan', str(measure_points), 'nan'), measure_cov, True)
 
 	"""
-		# 1.2, visualize mock data
-		"""
-	matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
+	# 1.2, visualize mock data
+	"""
+	matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(measure_points), 'nan')].to_global_data()[0])
 	matplotlib.pyplot.savefig('testfield_reg_mock.pdf')
 
 	"""
@@ -134,7 +140,7 @@ def testfield():
 			points[j, i] = unity_mapper(points[j, i], low, high)
 	figure = corner.corner(points[:, :len(params)],
 						   range=[0.99] * len(params),
-						   quantiles=[0.02, 0.5, 0.98], # 1 sigma -> [0.16, 0.5, 0.84]  2 sigma -> [0.02, 0.5, 0.98]
+						   quantiles=[0.16, 0.5, 0.84], # 1 sigma -> [0.16, 0.5, 0.84]  2 sigma -> [0.02, 0.5, 0.98]
 						   labels=params,
 						   show_titles=True,
 						   title_kwargs={"fontsize": 15},

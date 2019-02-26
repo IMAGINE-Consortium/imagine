@@ -1,5 +1,6 @@
 """
 single TestField, full parameter constraints with mock data
+observational/measreument covariance is pre-defined according to observational uncertainty
 """
 
 import numpy as np
@@ -19,37 +20,17 @@ from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.test_simulator import TestSimulator
 from imagine.pipelines.pipeline import Pipeline
 
-"""
-OAS covariance estimator, sample comes with (Nens,Ndim) matrix
-"""
-def oas(_sample):
-	[n, p] = np.shape(_sample)
-	m = np.median(_sample, axis=0)
-	u = _sample-m
-	s = np.dot(u.T,u)/n
-	trs = np.trace(s)
-	trs2 = np.trace(np.dot(s,s))
-	numerator = (1-2./p)*trs2+trs*trs
-	denominator = (n+1.-2./p)*(trs2-(trs*trs)/p)
-	if denominator == 0:
-		rho = 1
-	else:
-		rho = np.min([1,numerator/denominator])
-	return (1.-rho)*s+np.eye(p)*rho*trs/p
 
-
-"""
-activate parameters 'a' and 'b' in TestField
-"""
 def testfield():
 
 	log.basicConfig(filename='imagine.log', level=log.INFO)
 
 	"""
-	# step 0, set 'a' and 'b', 'std_a' and 'std_b'
+	# step 0,
 	
 	TestField is modeled as
-		y = a*sin(x) + gaussian_random(mean=0,std=b)
+		total_field = regular_field + variance_field
+		y = a*sin(x) + (gaussian_random(mean=0,std=b))**2
 		where x in (0,2pi)
 	
 	for generating mock data we need
@@ -57,11 +38,10 @@ def testfield():
 	observational uncertainties in a and b
 	observational points, positioned in (0,2pi) evenly, due to TestField modelling
 	"""
-	true_a = 3.
-	true_b = 6.
-	mea_std = 0.1 # std of gaussian measurement error
-	mea_points = 100 # data points in measurements
-	mea_times = 100 # times of measures
+	true_a = 6.
+	true_b = 3.
+	measure_err = 0.1 # std of gaussian measurement error
+	measure_points = 100 # data points in measurements
 	truths = [true_a, true_b]  # will be used in visualizing posterior
 
 	"""
@@ -70,24 +50,28 @@ def testfield():
 
 	"""
 	# 1.1, generate measurements and covariances
-	mock samples consist of true smooth + random term and measurement gaussian uncertainty
+	total_field = regular_field + variance_field + noise_field
 	"""
-	x = np.linspace(0,2.*np.pi,mea_points)
-	mea_arr = np.zeros((mea_times,mea_points))
-	true_random = np.random.normal(0., true_b, mea_arr.shape[1]) # true random field
-	for i in range(mea_arr.shape[0]): # generate measurements with gaussian error
-		mea_arr[i,:] = true_a*np.sin(x) + true_random + np.random.normal(0., mea_std, mea_arr.shape[1])
-	mea_cov = oas(mea_arr) # get measured mean and covariance
+	x = np.linspace(0,2.*np.pi,measure_points)
+	total_field = np.zeros((1,measure_points))
+	regular_field = true_a * np.sin(x)
+	np.random.seed(233)
+	variance_field = (np.random.normal(0.,true_b,total_field.shape[1]))**2
+	noise_field = np.random.normal(0.,measure_err,total_field.shape[1])
+
+	total_field[0,:] += regular_field + variance_field + noise_field
+	total_cov = (measure_err**2)*np.eye(total_field.shape[1])
+
+
 	mock_data = Measurements() # create empty Measrurements object
 	mock_cov = Covariances() # create empty Covariance object
-	# pick up a measurement
-	mock_data.append(('test', 'nan', str(mea_points), 'nan'), np.vstack([mea_arr[np.random.randint(mea_times)]]), True)
-	mock_cov.append(('test', 'nan', str(mea_points), 'nan'), mea_cov, True)
+	mock_data.append(('test', 'nan', str(measure_points), 'nan'), total_field, True)
+	mock_cov.append(('test', 'nan', str(measure_points), 'nan'), total_cov, True)
 
 	"""
 	# 1.2, visualize mock data
 	"""
-	matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
+	matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(measure_points), 'nan')].to_global_data()[0])
 	matplotlib.pyplot.savefig('testfield_full_mock.pdf')
 
 	"""
@@ -119,11 +103,11 @@ def testfield():
 	"""
 	# 2.5, pipeline
 	"""
-	ensemble_size = 100
+	ensemble_size = 30
 	pipe = Pipeline(simer, factory_list, likelihood, prior, ensemble_size)
 	pipe.random_seed = 0 # favor fixed seed? try a positive integer
 	pipe.pymultinest_parameter_dict = {'n_iter_before_update': 1, 'n_live_points': 400}
-	pipe() # run with pymultinest
+	result_dict = pipe() # run with pymultinest
 
 	"""
 	# step 3, visualize (with corner package)
