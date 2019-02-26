@@ -173,7 +173,6 @@ class GeneralFieldFactory(object):
         value: (min, max)
         """
         assert isinstance(new_ranges, dict)
-        assert (len(new_ranges) == len(self.default_parameters))
         for k, v in new_ranges.items():
             # check if k is inside default
             assert (k in self.default_parameters.keys())

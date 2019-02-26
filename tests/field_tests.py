@@ -68,16 +68,16 @@ class FieldTests(unittest.TestCase):
         self.assertEqual (tff.field_class, TestField)
         self.assertEqual (tff.active_parameters, tuple('a'))
         self.assertEqual (tff.default_parameters, {'a': 6.0,
-                                                   'b': 2.0})
+                                                   'b': 0.0})
         self.assertEqual (tff.parameter_ranges, {'a':(float(0),float(12)),
                                                  'b':(float(0),float(4.5))})
         self.assertEqual (tff.default_variables, {'a':float(6)/float(12),
-                                                  'b':float(2)/float(4.5)})
+                                                  'b':float(0)/float(4.5)})
         
         tmp_field = tff.generate({'a':0.1},4,23)
                           
         self.assertEqual (tmp_field.parameters, {'a':float(0.1)*float(12),
-                                                 'b':float(2.0),
+                                                 'b':float(0.0),
                                                  'random_seed':round(23)})
         self.assertEqual (tmp_field.ensemble_size, round(4))
 
@@ -88,16 +88,16 @@ class FieldTests(unittest.TestCase):
         self.assertEqual (tff.field_class, TestField)
         self.assertEqual (tff.active_parameters, tuple('a'))
         self.assertEqual (tff.default_parameters, {'a': 6.0,
-                                                   'b': 2.0})
+                                                   'b': 0.0})
         self.assertEqual (tff.parameter_ranges, {'a':(float(0),float(12)),
                                                  'b':(float(0),float(4.5))})
         self.assertEqual (tff.default_variables, {'a':float(6)/float(12),
-                                                  'b':float(2)/float(4.5)})
+                                                  'b':float(0)/float(4.5)})
         
         tmp_field = tff.generate({'a':0.1},4,None)
                           
         self.assertEqual (tmp_field.parameters, {'a':float(0.1)*float(12),
-                                                 'b':float(2.0),
+                                                 'b':float(0.0),
                                                  'random_seed':int(0)})
         self.assertEqual (tmp_field.ensemble_size, round(4))
 

@@ -11,7 +11,7 @@ class TestFieldFactory(GeneralFieldFactory):
         self.name = 'test'
         self.field_class = TestField
         self.default_parameters = {'a': 6.0,
-                                   'b': 2.0}
-        self.parameter_ranges = {'a': self._interval(6.0,2.0,3),
+                                   'b': 0.0} # by default, no random field
+        self.parameter_ranges = {'a': self._interval(6.,2.,3),
                                  'b': self._positive_interval(2.0,1.0,2.5)}
         self.active_parameters = active_parameters
