@@ -81,7 +81,7 @@ class TestEnsembleLikeli(unittest.TestCase):
             for j in range(len(arr_a)):
                 self.assertAlmostEqual (test_cov[i][j], null_cov[i][j])
     
-    def test_with_nullcov(self):
+    def test_with_nullobscov(self):
         # test with no sim cov, reduce to simplelikelihood
         simdict = Simulations()
         meadict = Measurements()
@@ -111,6 +111,32 @@ class TestEnsembleLikeli(unittest.TestCase):
         l_ensemble = EnsembleLikelihood (meadict, covdict)
         rslt_ensemble = l_ensemble(simdict)
         self.assertEqual (rslt_ensemble, rslt_simple)
+
+    def test_with_nocov(self):
+        # test with no sim nor measure cov, reduce to simplelikelihood
+        simdict = Simulations()
+        meadict = Measurements()
+        covdict = Covariances()
+        # mock measurements
+        dtuple = DomainTuple.make((RGSpace(1), HPSpace(nside=2)))
+        arr_a = np.random.rand(48)
+        mea = Observable(dtuple, arr_a)
+        meadict.append(('test', 'nan', '2', 'nan'), mea)
+        # mock observable with repeated single realisation
+        dtuple = DomainTuple.make((RGSpace(5), HPSpace(nside=2)))
+        arr_b = np.random.rand(48)
+        arr_ens = np.zeros((5, 48))
+        for i in range(len(arr_ens)):
+            arr_ens[i] = arr_b
+        sim = Observable(dtuple, arr_ens)
+        simdict.append(('test', 'nan', '2', 'nan'), sim)
+        # simplelikelihood
+        l_simple = SimpleLikelihood(meadict)
+        rslt_simple = l_simple(simdict)
+        # ensemblelikelihood
+        l_ensemble = EnsembleLikelihood(meadict)
+        rslt_ensemble = l_ensemble(simdict)
+        self.assertEqual(rslt_ensemble, rslt_simple)
     
 if __name__ == '__main__':
     unittest.main()

@@ -10,8 +10,6 @@ import logging as log
 import corner
 import json
 import matplotlib
-from typing import Any
-
 matplotlib.use('Agg')
 from imagine.tools.carrier_mapper import unity_mapper
 
@@ -60,10 +58,10 @@ def testfield():
 	observational uncertainties in a and b
 	observational points, positioned in (0,2pi) evenly, due to TestField modelling
 	"""
-	true_a = 2.
-	true_b = 5.
-	std_a = 0.2
-	std_b = 0.01
+	true_a = 6.
+	true_b = 3.
+	std_a = 0.6
+	std_b = 0.03
 	mea_points = 100 # data points in measurements
 	mea_times = 100 # times of measures
 	truths = [true_a, true_b]  # will be used in visualizing posterior
@@ -78,7 +76,10 @@ def testfield():
 	x = np.linspace(0,2.*np.pi,mea_points)
 	mea_arr = np.zeros((mea_times,mea_points))
 	for i in range(mea_arr.shape[0]): # generate measurements with gaussian error
-		mea_arr[i,:] = np.random.normal(true_a,std_a)*np.sin(x) + np.random.normal(0.,np.random.normal(true_b,std_b))
+		ainst = np.random.normal(true_a,std_a)
+		binst = np.random.normal(true_b,std_b)
+		for j in range(mea_arr.shape[1]):
+			mea_arr[i,j] = ainst*np.sin(x[j]) + np.random.normal(scale=binst)
 	mea_cov = oas(mea_arr) # get measured mean and covariance
 	mock_data = Measurements() # create empty Measrurements object
 	mock_cov = Covariances() # create empty Covariance object
@@ -87,13 +88,19 @@ def testfield():
 	mock_cov.append(('test', 'nan', str(mea_points), 'nan'), mea_cov, True)
 
 	"""
+	# 1.2, visualize mock data
+	"""
+	matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
+	matplotlib.pyplot.savefig('testfield_data.pdf')
+
+	"""
 	# step 2, prepare pipeline and execute analysis
 	"""
 
 	"""
 	# 2.1, ensemble likelihood
 	"""
-	likelihood = EnsembleLikelihood(mock_data,mock_cov) # initialize likelihood with measured info
+	likelihood = EnsembleLikelihood(mock_data) #,mock_cov) # initialize likelihood with measured info
 
 	"""
 	# 2.2, field factory list
@@ -115,8 +122,10 @@ def testfield():
 	"""
 	# 2.5, pipeline
 	"""
-	pipe = Pipeline(simer, factory_list, likelihood, prior, 10) # ensemble size 10
+	ensemble_size = 100
+	pipe = Pipeline(simer, factory_list, likelihood, prior, ensemble_size)
 	pipe.random_seed = 0 # favor fixed seed? try a positive integer
+	pipe.pymultinest_parameter_dict = {'n_iter_before_update': 1, 'n_live_points': 400}
 	pipe() # run with pymultinest
 
 	"""
@@ -179,7 +188,9 @@ def testfield_light():
 	x = np.linspace(0, 2. * np.pi, mea_points)
 	mea_arr = np.zeros((mea_times, mea_points))
 	for i in range(mea_arr.shape[0]):  # generate measurements with gaussian error
-		mea_arr[i, :] = np.random.normal(true_a, std_a) * np.sin(x)
+		ainst = np.random.normal(true_a, std_a)
+		for j in range(mea_arr.shape[1]):
+			mea_arr[i,j] =  ainst * np.sin(x[j])
 	mea_cov = oas(mea_arr)  # get measured mean and covariance
 	mock_data = Measurements()  # create empty Measrurements object
 	mock_cov = Covariances()  # create empty Covariance object
@@ -193,7 +204,9 @@ def testfield_light():
 
 	"""
 	# 2.1, ensemble likelihood
+	notice that with no random field, simulated ensemble has zero covariance
 	"""
+	# if discard mock_cov, ensemble likelihood acts like simple likelihood
 	likelihood = EnsembleLikelihood(mock_data, mock_cov)  # initialize likelihood with measured info
 
 	"""
@@ -216,7 +229,8 @@ def testfield_light():
 	"""
 	# 2.5, pipeline
 	"""
-	pipe = Pipeline(simer, factory_list, likelihood, prior, 10)  # ensemble size 10
+	ensemble_size = 10
+	pipe = Pipeline(simer, factory_list, likelihood, prior, ensemble_size)
 	pipe.random_seed = 0  # favor fixed seed? try a positive integer
 	pipe()  # run with pymultinest
 
@@ -245,5 +259,5 @@ def testfield_light():
 	matplotlib.pyplot.savefig('imagine_posterior.pdf')
 
 if __name__ == '__main__':
-	#testfield()
-	testfield_light()
+	testfield()
+	#testfield_light()
