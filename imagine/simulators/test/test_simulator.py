@@ -1,11 +1,14 @@
-'''
+"""
 test simulator is built only for testing purpose
-'''
+
+field model:
+    y = a*sin(x) + gaussian_rand(mean=0,std_div=b)
+    x in [0,2pi]
+    a and b are free parameters
+"""
 
 import numpy as np
 import logging as log
-import time
-import threading
 
 from imagine.simulators.simulator import Simulator
 from imagine.fields.test_field.test_field import TestField
@@ -13,11 +16,11 @@ from imagine.observables.observable_dict import Measurements, Simulations
 
 class TestSimulator(Simulator):
 
-    '''
+    """
     measurements
-        -- Measruments object
+        -- Measurements object
         for testing, only key ('test',...,...,...) is valid
-    '''
+    """
     def __init__(self, measurements):
         self.output_checklist = measurements
 
@@ -30,10 +33,10 @@ class TestSimulator(Simulator):
         assert isinstance(measurements, Measurements)
         self._output_checklist = tuple(measurements.keys())
 
-    '''
+    """
     filed_list
         -- a list/tuple of field object
-    '''
+    """
     def __call__(self, field_list):
         assert (len(self._output_checklist) == 1)
         assert (self._output_checklist[0][0] == 'test')
@@ -59,20 +62,11 @@ class TestSimulator(Simulator):
         par_a = parameters['a']
         par_b = parameters['b']
         par_s = parameters['random_seed']
-        # converting time to int (ns level)
-        ct = lambda: int(round(time.time()*1E+9))
         # get thread-time dependent random number
-        # if given seed is zero
-        if (par_s>0):
-            np.random.seed(par_s)
-        elif (par_s == 0):
-            # numpy seed int has 32 bit
-            np.random.seed(ct()%int(1E+8) + threading.get_ident()%int(1E+8))
-        else:
-            raise ValueError('unsupported random seed value')
+        np.random.seed(self.seed_generator(par_s))
         # coordinates
         out_arr = np.zeros((ensemble_size,length))
-        coo_x = np.linspace(0,1,length)
+        coo_x = np.linspace(0.,2.*np.pi,length)
         for i in range(ensemble_size):
-            out_arr[i] = par_a*coo_x**2 + np.random.normal(scale=par_b,size=length)
+            out_arr[i] = par_a*np.sin(coo_x) + np.random.normal(scale=par_b,size=length)
         return out_arr

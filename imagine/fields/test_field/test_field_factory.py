@@ -7,7 +7,6 @@ class TestFieldFactory(GeneralFieldFactory):
 
     def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
         super(TestFieldFactory,self).__init__(boxsize, resolution)
-        log.debug('initialise TestFieldFactory')
         self.field_type = 1
         self.name = 'test'
         self.field_class = TestField

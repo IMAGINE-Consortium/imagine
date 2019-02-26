@@ -1,4 +1,4 @@
-'''
+"""
 for convenience we define dictionary of Observable objects as
 ObservableDict and inherit from which,
 we define Measurements, Covariances and Simulations
@@ -14,7 +14,7 @@ nevertheless, we make ObservableDict flexible enough
 
 bservable name/unit convention:
 * ('fd','nan',str(pix/nside),'nan')
-    -- Faraday depth (in unit 
+    -- Faraday depth (in unit
 * ('dm','nan',str(pix),'nan')
     -- dispersion measure (in unit
 * ('sync',str(freq),str(pix),X)
@@ -36,7 +36,7 @@ remarks on observable name:
     so we put 'nan' instead
     -- str(pix/nside) stores either Healpix Nisde, or just number of pixels/points
     we do this for flexibility, in case users have non-Healpix based in/output
-'''
+"""
 
 import numpy as np
 import logging as log
@@ -47,9 +47,9 @@ from imagine.observables.observable import Observable
 
 class ObservableDict(object):
 
-    '''
+    """
     empty ctr, add/update name and data with function .append
-    '''
+    """
     def __init__(self):
         self._archive = dict()
 
@@ -63,7 +63,7 @@ class ObservableDict(object):
     def __getitem__(self, key):
         return self._archive[key]
 
-    '''
+    """
     name
         -- str tuple
         notice: name should follow convention
@@ -71,11 +71,12 @@ class ObservableDict(object):
         if data is independent from frequency, set 'nan'
         pol should be either 'I','Q','U','PI','PA' or 'nan'
     data
-        -- list/tuple/ndarray/Field/Observable
+        -- ndarray/Field/Observable
+        we require 1d ndarray not in 'vector' shape (n,) but (1,n)
     plain
         -- if True, means unstructured data
         if False(default), means healpix structured sky map
-    '''
+    """
     def append(self,name,data,plain=False):
         pass
 
@@ -83,6 +84,7 @@ class Measurements(ObservableDict):
 
     def __init__(self):
         super(Measurements,self).__init__()
+        log.debug ('initialize Measurements')
 
     def append(self,name,data,plain=False):
         assert (len(name) == 4)
@@ -92,14 +94,15 @@ class Measurements(ObservableDict):
         elif isinstance(data, (Field,Observable)):
             assert (data.domain.shape[0] == 1)
             self._archive[name] = Observable(data.domain,data.to_global_data())
-        if isinstance(data, (list,tuple,np.ndarray)):
+        if isinstance(data, np.ndarray):
+            assert (data.shape[0] == 1)
             if plain:
-                assert (len(data) == int(name[2]))
-                domain = DomainTuple.make((RGSpace(int(1)),RGSpace(len(data))))
+                assert (data.shape[1] == int(name[2]))
+                domain = DomainTuple.make((RGSpace(int(1)),RGSpace(data.shape[1])))
             else:
-                assert (len(data) == 12*int(name[2])*int(name[2]))
+                assert (data.shape[1] == 12*int(name[2])*int(name[2]))
                 domain = DomainTuple.make((RGSpace(int(1)),HPSpace(nside=int(name[2]))))
-            self._archive[name] = Observable(domain,np.array(data))
+            self._archive[name] = Observable(domain,data)
         log.debug ('measurements-dict appends data %s' % str(name))
         
 class Simulations(ObservableDict):
@@ -122,7 +125,7 @@ class Simulations(ObservableDict):
                 assert (data.shape[1] == 12*int(name[2])*int(name[2]))
                 domain = DomainTuple.make((RGSpace(data.shape[0]),HPSpace(nside=int(name[2]))))
             self._archive[name] = Observable(domain,data)
-        log.debug ('simulations-dict appends data %s' % str(name))
+        log.debug ('observable-dict appends data %s' % str(name))
 
 class Covariances(ObservableDict):
 
@@ -143,3 +146,4 @@ class Covariances(ObservableDict):
         elif isinstance(data, np.ndarray):
             domain = DomainTuple.make(RGSpace(shape=data.shape))
             self._archive[name] = Field.from_global_data(domain,data)
+        log.debug ('covariances-dict appends data %s' % str(name))

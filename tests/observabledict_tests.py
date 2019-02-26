@@ -12,42 +12,27 @@ class ObservableDictTests(unittest.TestCase):
         basedict = ObservableDict()
         self.assertEqual (basedict.archive, dict())
     
-    def test_measuredict_append_list(self):
-        arr = [1,2,3]
-        measuredict = Measurements()
-        measuredict.append(('test','nan','3','nan'),arr,True) # plain array
-        for i in range(len(arr)):
-            self.assertEqual ((measuredict[('test','nan','3','nan')].to_global_data())[0][i],arr[i])
-        hrr = list(np.random.rand(48))
-        measuredict.append(('test','nan','2','nan'),hrr) # healpix array
-        for i in range(len(hrr)):
-            self.assertEqual ((measuredict[('test','nan','2','nan')].to_global_data())[0][i],hrr[i])
-    
     def test_measuredict_append_array(self):
-        arr = np.random.rand(3)
+        arr = np.random.rand(1,3)
         measuredict = Measurements()
         measuredict.append(('test','nan','3','nan'),arr,True) # plain array
-        for i in range(len(arr)):
-            self.assertEqual ((measuredict[('test','nan','3','nan')].to_global_data())[0][i],arr[i])
-        hrr = np.random.rand(48)
+        self.assertListEqual (list(measuredict[('test','nan','3','nan')].to_global_data()[0]),list(arr[0]))
+        hrr = np.random.rand(1,48)
         measuredict.append(('test','nan','2','nan'),hrr) # healpix array
-        for i in range(len(hrr)):
-            self.assertEqual ((measuredict[('test','nan','2','nan')].to_global_data())[0][i],hrr[i])
+        self.assertListEqual (list(measuredict[('test','nan','2','nan')].to_global_data()[0]),list(hrr[0]))
 
     def test_measuredict_append_observable(self):
         dtuple = DomainTuple.make((RGSpace(1),HPSpace(nside=2)))
-        hrr = np.random.rand(48)
+        hrr = np.random.rand(1,48)
         obs1 = Observable(dtuple,hrr)
         measuredict = Measurements()
         measuredict.append(('test','nan','2','nan'),obs1) # healpix Observable
-        for i in range(len(hrr)):
-            self.assertEqual ((measuredict[('test','nan','2','nan')].to_global_data())[0][i],hrr[i])
+        self.assertListEqual (list(measuredict[('test','nan','2','nan')].to_global_data()[0]),list(hrr[0]))
         dtuple = DomainTuple.make((RGSpace(1),RGSpace(3)))
-        arr = np.random.rand(3)
+        arr = np.random.rand(1,3)
         obs2 = Observable(dtuple,arr)
         measuredict.append(('test','nan','3','nan'),obs2) # plain Observable
-        for i in range(len(arr)):
-            self.assertEqual ((measuredict[('test','nan','3','nan')].to_global_data())[0][i],arr[i])
+        self.assertListEqual (list(measuredict[('test','nan','3','nan')].to_global_data()[0]),list(arr[0]))
     
     def test_simdict_append_array(self):
         arr = np.random.rand(2,3)

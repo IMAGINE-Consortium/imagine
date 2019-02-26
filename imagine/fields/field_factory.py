@@ -1,4 +1,4 @@
-'''
+"""
 GeneralFieldFactory is designed for generating
 ensemble of field configuration DIRECTLY
 and/or
@@ -49,7 +49,7 @@ members:
 ._ensemble_cache
 .generate
 ._get_ensemble
-'''
+"""
 
 import numpy as np
 from copy import deepcopy
@@ -60,16 +60,15 @@ from imagine.fields.field import GeneralField
 
 class GeneralFieldFactory(object):
 
-    '''
+    """
     # un-necessary arguments
     boxsize -- list/tuple of float, physical size of simulation box (3D Cartesian frame)
     resolution -- list/tuple of int, discretization size in corresponding dimension
 
     (extra argument in derived classes)
     active_parameters -- list/tuple of string, active varialbe names concerned in constraints
-    '''
+    """
     def __init__(self, boxsize=None, resolution=None):
-        log.debug('initialise GeneralFieldFactory')
         self.field_type = 1
         self.name = 'general'
         self.field_class = GeneralField
@@ -142,12 +141,11 @@ class GeneralFieldFactory(object):
     def default_parameters(self, new_defaults):
         assert isinstance(new_defaults, dict)
         try:
-            self._default_parameters
             self._default_parameters.update(new_defaults)
-            log.debug('update default_parameters %s' % str(new_defaults))
+            log.debug('update default parameters %s' % str(new_defaults))
         except AttributeError:
             self._default_parameters = new_defaults
-            log.debug('set default_parameters %s' % str(new_defaults))
+            log.debug('set default parameters %s' % str(new_defaults))
 
     @property
     def active_parameters(self):
@@ -161,7 +159,7 @@ class GeneralFieldFactory(object):
         for av in active_parameters:
             assert (av in self.default_parameters)
         self._active_parameters = tuple(active_parameters)
-        log.debug('set active_parameters %s' % str(active_parameters))
+        log.debug('set active parameters %s' % str(active_parameters))
 
     @property
     def parameter_ranges(self):
@@ -169,44 +167,41 @@ class GeneralFieldFactory(object):
 
     @parameter_ranges.setter
     def parameter_ranges(self, new_ranges):
-        '''
+        """
         The parameter-ranges must be a dictionary with
         key: parameter-name
         value: (min, max)
-        '''
+        """
         assert isinstance(new_ranges, dict)
         assert (len(new_ranges) == len(self.default_parameters))
-        for k, v in new_ranges.items():#{
+        for k, v in new_ranges.items():
             # check if k is inside default
             assert (k in self.default_parameters.keys())
             assert isinstance(v,(list,tuple))
             assert (len(v) == 2)
-        #}
         try:
-            self._parameter_ranges
             self._parameter_ranges.update(new_ranges)
-            log.debug('update parameter_ranges %s' % str(new_ranges))
+            log.debug('update parameter ranges %s' % str(new_ranges))
         except AttributeError:
             self._parameter_ranges = new_ranges
-            log.debug('set parameter_ranges %s' % str(new_ranges))
-    
-    '''
+            log.debug('set parameter ranges %s' % str(new_ranges))
+
+    """
     translate default parameter into default (logic) variable
     notice that all variables range is always fixed as [0,1]
-    '''
+    """
     @property
     def default_variables(self):
         tmp = {}
-        for par, def_val in self.default_parameters.items():#{
+        for par, def_val in self.default_parameters.items():
             low, high = self.parameter_ranges[par]
             tmp[par] = float(def_val - low)/float(high - low)
-        #}
         return tmp
     
-    '''
+    """
     map input dict of type {'parameter-name', logic-value}
     into {'parameter-name', physical-value}
-    '''
+    """
     def _map_variables_to_parameters(self, variables):
         assert isinstance(variables, dict)
         parameter_dict = {}
@@ -219,14 +214,17 @@ class GeneralFieldFactory(object):
             mapped_variable = unity_mapper(variables[variable_name], low, high)
             parameter_dict[variable_name] = mapped_variable
         return parameter_dict
-    
-    '''
+
+    """
     return a field object
     argument:
-    variables -- a dict of variables with name and value
-    ensemble_size -- number of instances in a field ensemble
-    random_seed -- seed for generating random numbers in realising instances in field ensemble
-    '''
+    variables 
+        -- a dict of variables with name and value
+    ensemble_size 
+        -- number of instances in a field ensemble
+    random_seed 
+        -- seed for generating random numbers in realising instances in field ensemble
+    """
     def generate(self, variables={}, ensemble_size=1, random_seed=None):
         # map variable value to parameter value
         # in mapping, variable name will be checked in default_parameters
@@ -243,8 +241,8 @@ class GeneralFieldFactory(object):
 
     @staticmethod
     def _interval(mean, sigma, n):
-        return (float(mean-n*sigma), float(mean+n*sigma))
+        return float(mean - n * sigma), float(mean + n * sigma)
 
     @staticmethod
     def _positive_interval(mean, sigma, n):
-        return (max(float(0), float(mean-n*sigma)), float(mean+n*sigma))
+        return max(float(0), float(mean - n * sigma)), float(mean + n * sigma)

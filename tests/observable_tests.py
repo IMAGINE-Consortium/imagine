@@ -25,44 +25,17 @@ class ObservalbeTests(unittest.TestCase):
 
     def test_1dinit(self):
         dtuple = DomainTuple.make((RGSpace(1),HPSpace(nside=2)))
-        val = np.random.rand(48)
+        val = np.random.rand(1,48)
         obs = Observable(dtuple,val)
         raw = obs.to_global_data()
-        # val has shape (48,)
-        # raw has shape (1,48)
-        for i in range(len(val)):
-            self.assertEqual (raw[0][i], val[i])
-        
-    def test_append_list(self):
-        dtuple = DomainTuple.make((RGSpace(3),HPSpace(nside=2)))
-        val = np.random.rand(3,48)
-        obs = Observable(dtuple,val)
-        # test function append with list
-        new_data = list(np.random.rand(48))
-        obs.append(new_data)
-        raw_obs = obs.to_global_data()
-        new_val = np.vstack([val,new_data])
-        for i in range(len(val)):
-            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
-
-    def test_append_tuple(self):
-        dtuple = DomainTuple.make((RGSpace(3),HPSpace(nside=2)))
-        val = np.random.rand(3,48)
-        obs = Observable(dtuple,val)
-        # test function append with tuple
-        new_data = tuple(np.random.rand(48))
-        obs.append(new_data)
-        raw_obs = obs.to_global_data()
-        new_val = np.vstack([val,new_data])
-        for i in range(len(val)):
-            self.assertListEqual (list(raw_obs[i]), list(new_val[i]))
+        self.assertListEqual (list(raw[0]), list(val[0]))
 
     def test_append_array(self):
         dtuple = DomainTuple.make((RGSpace(3),HPSpace(nside=2)))
         val = np.random.rand(3,48)
         obs = Observable(dtuple,val)
         # test function append with 1d array
-        new_data = np.random.rand(48)
+        new_data = np.random.rand(1,48)
         obs.append(new_data)
         raw_obs = obs.to_global_data()
         new_val = np.vstack([val,new_data])

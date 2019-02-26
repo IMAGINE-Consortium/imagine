@@ -1,4 +1,4 @@
-'''
+"""
 field class register the full default parameter value
 which is passed down from field factory
 and prepare to hand in to simulators the default checklist is a dict
@@ -8,14 +8,14 @@ members:
     -- dict, with parameter name as entry, parameter xml path as content
     defines the parameters to be checked out by simulator
     should be fixed upon class designing
-    
-'''
+
+"""
 
 import logging as log
 
 class GeneralField(object):
 
-    '''
+    """
     parameters
         -- dict of full parameter set {name: value}
     ensemble_size
@@ -24,7 +24,7 @@ class GeneralField(object):
     random_seed
         -- random seed for generating random field realisations (likely in simulators)
         useful only when random field is active
-    '''
+    """
     def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
         self.name = 'general'
         self.parameters = parameters
@@ -33,7 +33,7 @@ class GeneralField(object):
         # if checklist has 'random_seed' entry
         if 'random_seed' in self.field_checklist.keys():
             self.parameters.update({'random_seed':self.random_seed})
-            log.debug('update field random seed %s' % str(self.random_seed))
+        log.debug ('initialize GeneralField')
 
     @property
     def name(self):
@@ -56,7 +56,6 @@ class GeneralField(object):
     def ensemble_size(self, ensemble_size):
         assert (ensemble_size>0)
         self._ensemble_size = round(ensemble_size)
-        log.debug('set field ensemble size %s' % str(ensemble_size))
 
     @property
     def random_seed(self):
@@ -78,7 +77,6 @@ class GeneralField(object):
         for k in parameters:
             assert (k in self.field_checklist.keys())
         try:
-            self._parameters
             self._parameters.update(parameters)
             log.debug('update full parameters %s' % str(parameters))
         except AttributeError:

@@ -1,4 +1,5 @@
 import numpy as np
+import logging as log
 from copy import deepcopy
 
 from imagine.observables.observable import Observable
@@ -7,14 +8,14 @@ from imagine.likelihoods.likelihood import Likelihood
 
 class SimpleLikelihood(Likelihood):
 
-    '''
+    """
     measurement_dict
         -- Measurements object
     covariance_dict
         -- Covariances object
     observable_dict (in __call__)
         -- Simulations object
-    '''
+    """
     def __init__(self, measurement_dict, covariance_dict=None):
         self.measurement_dict = measurement_dict
         self.covariance_dict = covariance_dict

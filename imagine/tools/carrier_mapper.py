@@ -1,9 +1,9 @@
 import numpy as np
 
-def infinity_mapper(x, a=-np.inf, m=0, b=np.inf):
-    '''
+"""
     Maps x from [-inf, inf] into the interval [a, b], where x=0 -> m
-    '''
+"""
+def infinity_mapper(x, a=-np.inf, m=0, b=np.inf):
     if a == -np.inf and b == np.inf and m == 0:
         return x
     x = np.float(x)
@@ -26,8 +26,8 @@ def infinity_mapper(x, a=-np.inf, m=0, b=np.inf):
     y = y*(b-a) + a
     return y
 
-def unity_mapper(x, a=0, b=1):
-    '''
+"""
     Maps x from [0, 1] into the interval [a, b]
-    '''
+"""
+def unity_mapper(x, a=0, b=1):
     return float(x) * (float(b)-float(a)) + float(a)

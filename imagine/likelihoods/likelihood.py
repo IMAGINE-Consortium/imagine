@@ -1,4 +1,4 @@
-'''
+"""
 Likelihood class defines likelihood posterior function
 to be used in Bayesian analysis
 
@@ -13,9 +13,10 @@ __call__
     -- running LOG-likelihood calculation requires
     ObservableDict object
 
-'''
+"""
 
 import numpy as np
+import logging as log
 
 from nifty5 import Field
 

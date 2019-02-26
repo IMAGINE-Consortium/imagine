@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 
+from imagine.simulators.simulator import Simulator
 from imagine.simulators.test.test_simulator import TestSimulator
 from imagine.fields.test_field.test_field import TestField
 from imagine.observables.observable_dict import Simulations, Measurements
@@ -8,7 +9,7 @@ from imagine.observables.observable_dict import Simulations, Measurements
 class SimulatorTests(unittest.TestCase):
 
     def test_init(self):
-        arr = np.random.rand(3)
+        arr = np.random.rand(1,3)
         measuredict = Measurements()
         measuredict.append(('test','nan','3','nan'),arr,True)
         simer = TestSimulator(measuredict)
@@ -17,11 +18,17 @@ class SimulatorTests(unittest.TestCase):
 
     def test_generator(self):
         # mock measures
-        arr = np.random.rand(3)
+        arr = np.random.rand(1,3)
         measuredict = Measurements()
         measuredict.append(('test','nan','3','nan'),arr,True)
         # simulator
         simer = TestSimulator(measuredict)
+        # test seed gen
+        s1 = simer.seed_generator(0)
+        s2 = simer.seed_generator(0)
+        self.assertNotEqual (s1, s2)
+        s3 = simer.seed_generator(48)
+        self.assertEqual (s3, 48)
         # mock parameters, take short cut without fields
         mock_par = {'a':2.,'b':0.2,'random_seed':23}
         obs_arr = simer.obs_generator(mock_par,2,20)
@@ -43,7 +50,7 @@ class SimulatorTests(unittest.TestCase):
 
     def test_generator_inout(self):
         # mock measures
-        arr = np.random.rand(10)
+        arr = np.random.rand(1,10)
         measuredict = Measurements()
         measuredict.append(('test','nan','10','nan'),arr,True)
         # mock field
@@ -53,7 +60,7 @@ class SimulatorTests(unittest.TestCase):
         # simulator
         simer = TestSimulator(measuredict)
         # generating observable ensemble
-        simdict = simer((mock_field,))
+        simdict = simer([mock_field])
         self.assertEqual (type(simdict), Simulations)
         self.assertEqual (len(simdict.keys()), 1)
         self.assertEqual (simdict[('test','nan','10','nan')].shape, (5,10))

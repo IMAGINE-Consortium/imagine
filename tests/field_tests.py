@@ -1,6 +1,6 @@
-'''
+"""
 check functions as much as possible in base classes
-'''
+"""
 import unittest
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.fields.field import GeneralField
@@ -23,9 +23,9 @@ class FieldTests(unittest.TestCase):
         # test testfield init
         self.assertEqual (tf.name, 'test')
         self.assertEqual (tf.field_checklist,
-                          {'a': ('./Test/Regular/a','value'),
-                           'random_seed': ('./Test/Random','seed'),
-                           'b': ('./Test/Random/b','value')})
+                          {'a': ('dummypath','dummy'),
+                           'random_seed': ('dummypath','dummy'),
+                           'b': ('dummypath','dummy')})
         self.assertEqual (tf.ensemble_size, round(128.3))
         self.assertEqual (tf.parameters,
                           {'a':float(3),
@@ -62,11 +62,11 @@ class FieldTests(unittest.TestCase):
     def test_testfactory_init(self):
         test_box = (float(10),float(20),float(30))
         test_res = [round(5),round(4),round(6)]
-        tff = TestFieldFactory(test_box,test_res,('a',))
+        tff = TestFieldFactory(test_box,test_res, tuple('a'))
         # test test factory
         self.assertEqual (tff.name, 'test')
         self.assertEqual (tff.field_class, TestField)
-        self.assertEqual (tff.active_parameters, ('a',))
+        self.assertEqual (tff.active_parameters, tuple('a'))
         self.assertEqual (tff.default_parameters, {'a': 6.0,
                                                    'b': 2.0})
         self.assertEqual (tff.parameter_ranges, {'a':(float(0),float(12)),
@@ -82,11 +82,11 @@ class FieldTests(unittest.TestCase):
         self.assertEqual (tmp_field.ensemble_size, round(4))
 
     def test_testfactory_light_init(self):
-        tff = TestFieldFactory(active_parameters=('a',))
+        tff = TestFieldFactory(active_parameters=tuple('a'))
         # test init with only active parameters
         self.assertEqual (tff.name, 'test')
         self.assertEqual (tff.field_class, TestField)
-        self.assertEqual (tff.active_parameters, ('a',))
+        self.assertEqual (tff.active_parameters, tuple('a'))
         self.assertEqual (tff.default_parameters, {'a': 6.0,
                                                    'b': 2.0})
         self.assertEqual (tff.parameter_ranges, {'a':(float(0),float(12)),

@@ -1,4 +1,4 @@
-'''
+"""
 # nifty5 has dramatically changed from NIFTy3
 # 1) Field values are read only
 # 2) no distribution_strategy argument in Field
@@ -13,7 +13,7 @@
 
 directly construct Field is not recommended in NIFTy5
 we do so for testing purpose
-'''
+"""
 
 import unittest
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
@@ -32,7 +32,7 @@ class NIFTyTests(unittest.TestCase):
     # test field multidomain shape
     def test_unstructuredhealpix(self):
         # fieldarray & healpix fits
-        dtuple = DomainTuple.make((UnstructuredDomain(shape=(3,)),HPSpace(nside=2))) # 3 healpix array with Nside 2
+        dtuple = DomainTuple.make((UnstructuredDomain(3),HPSpace(nside=2))) # 3 healpix array with Nside 2
         field = Field(domain=dtuple,val=0)
         self.assertEqual (len(field.val), 3) # 3 rows
         self.assertEqual (len(field.val[1]), 48)
@@ -72,7 +72,7 @@ class NIFTyTests(unittest.TestCase):
         for i in range(len(rndarr)): # check values
             self.assertListEqual (list(field.val[i]), list(rndarr[i]))
         # multi domain
-        dtuple = DomainTuple.make((UnstructuredDomain(shape=(3,)),HPSpace(nside=2))) # 3 healpix array with Nside 2
+        dtuple = DomainTuple.make((UnstructuredDomain(3),HPSpace(nside=2))) # 3 healpix array with Nside 2
         rndarr = np.random.rand(3,48)
         field = Field(domain=dtuple, val=rndarr)
         fulldata = field.to_global_data() # returns a numpy.ndarray
@@ -90,7 +90,7 @@ class NIFTyTests(unittest.TestCase):
     # test mean over ensemble, works with default RGSpace
     def test_mean(self):
         # multi domain
-        dtuple = DomainTuple.make((RGSpace(shape=(3,)),HPSpace(nside=2))) # 3 healpix array with Nside 2
+        dtuple = DomainTuple.make((RGSpace(3),HPSpace(nside=2))) # 3 healpix array with Nside 2
         rndarr = np.random.rand(3,48)
         field = Field(domain=dtuple, val=rndarr)
         field_mean = field.mean(0) # average over UnstructuredDomain, return a new field

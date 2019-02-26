@@ -1,4 +1,4 @@
-'''
+"""
 Observable hosts NIFTy5.Field with two domains' product,
 which is designed for ensemble of simulated maps.
 
@@ -15,15 +15,15 @@ members:
     -- stripping out ndarray from ._field
     designed for accessing ._field
 .ensemble_mean
-    -- calculate mean through realisations of ensemble
-    return a single ndarray
+    -- mean value among realisations of ensemble
+    decorated as property without setter
 .append
-    -- append new observable data with various form
+    -- append new observable data in various form
 
 #undeciphered Theo's legacy
 _to/from_hdf5
 
-'''
+"""
 
 import numpy as np
 import logging as log
@@ -32,7 +32,7 @@ from nifty5 import Field, RGSpace, DomainTuple
 
 class Observable(object):
 
-    '''
+    """
     domain
         -- a tuple of NIFTy5.domain objects, in type NIFTy5.DomainTuple
         we restrict domain contains two NIFTy5.domain objects
@@ -44,10 +44,12 @@ class Observable(object):
     the correct domain setting reads:
     domain = nifty5.DomainTuple.make((nifty5.RGSpace(shape=(10,)),nifty5.HPSpace(nside=128)))
     then the corresponding val should be in shape (10,12*128*128)
-    '''
+    """
     def __init__(self, domain=None, val=float(0)):
         self.domain = domain
+        self.rw_flag = False
         self.field = val # should be after domain setter
+        self._ensemble_mean = np.zeros((1,self._field.shape[1]))
 
     @property
     def domain(self):
@@ -67,10 +69,9 @@ class Observable(object):
 
     @field.setter
     def field(self, val):
-        self.rw_flag = False # re-write flag for empty case
         if isinstance(val, float): # empty case
             self._field = Field.full(self.domain,val)
-            self.rw_flag = True
+            self._rw_flag = True
         else:
             # use np.vstack to reinforce correct shape
             self._field = Field.from_global_data(self.domain,np.vstack([val]))
@@ -86,26 +87,22 @@ class Observable(object):
     
     @property
     def ensemble_mean(self):
-        try:
-            self._ensemble_mean
-        except AttributeError:
-            self._ensemble_mean = np.vstack([self._field.mean(spaces=0).to_global_data()])
-        finally:
-            return self._ensemble_mean
+        self._ensemble_mean = np.vstack([self._field.mean(spaces=0).to_global_data()])
+        return self._ensemble_mean
 
     @property
     def shape(self):
         return self._field.shape
-    
-    '''
+
+    """
     indirectly visit ._field
     dont make it a preperty in order to be aligned with
     the same method in NIFTy5.Field
-    '''
+    """
     def to_global_data(self):
         return self._field.to_global_data()
 
-    '''
+    """
     should be able to append new data in type
     numpy array
     list/tuple
@@ -118,19 +115,16 @@ class Observable(object):
     append also handle ._flag is True case
     which means instead of append new data
     we should rewrite
-    '''
+    """
     def append(self, new_data):
         assert isinstance(new_data,(np.ndarray,list,tuple,Field,Observable))
         # strip data
         if isinstance(new_data, (Field,Observable)):
-            try:
-                raw_new = new_data.to_global_data() # from Field
-            except AttributeError:
-                raw_new = new_data.field.to_global_data() # from Observable
-        elif isinstance(new_data, (np.ndarray,list,tuple)):
-            raw_new = new_data # from list/tuple/ndarray
+            raw_new = new_data.to_global_data() # from Field/Observable
+        elif isinstance(new_data, np.ndarray):
+            raw_new = new_data # from ndarray
         else:
-            raise TypeError('shouldnt happen')
+            raise TypeError('unsupported type')
         # assemble new_cache
         if self.rw_flag:
             new_cache = raw_new
