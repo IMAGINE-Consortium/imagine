@@ -211,16 +211,20 @@ class Pipeline(object):
                                    n_dims=len(self._active_parameters),
                                    outputfiles_basename='chains/imagine_',
                                    **self._pymultinest_parameter_dict)
-        log.info ('evidence: %(logZ).1f +- %(logZerr).1f' % result)
-        result_dict = dict()
+        print ('evidence: %(logZ).1f +- %(logZerr).1f' % result)
+        print ('variable values:')
         for name, col in zip(self._active_parameters, result['samples'].transpose()):
-            result_dict[name] = (unity_mapper(col.mean(),
-                                              self._active_ranges[name][0],
-                                              self._active_ranges[name][1]),
-                                 unity_mapper(col.std(),
-                                              self._active_ranges[name][0],
-                                              self._active_ranges[name][1]))
-        return result_dict
+            print ('%15s : %.3f +- %.3f' % (name, col.mean(), col.std()))
+            """
+            # we think it's better to display raw variable values
+                                               #unity_mapper(col.mean(),
+                                               #             self._active_ranges[name][0],
+                                               #             self._active_ranges[name][1]),
+                                               #unity_mapper(col.std(),
+                                               #             self._active_ranges[name][0],
+                                               #             self._active_ranges[name][1])))
+            """
+        print ('detailed results dumped in %s' % str(path))
 
     """
     log-likelihood calculator

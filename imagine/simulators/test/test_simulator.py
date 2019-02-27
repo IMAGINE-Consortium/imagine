@@ -2,11 +2,9 @@
 test simulator is built only for testing purpose
 
 field model:
-    y = a*sin(x) + (gaussian_rand(mean=0,std_div=b))**2
+    y = a*sin(x) + gaussian_rand(mean=0,std_div=b)
     x in [0,2pi]
     a and b are free parameters
-    so test field model contains a 'sin' smooth/regular field
-    and a variance-like influence from gaussian random field
 """
 
 import numpy as np
@@ -70,5 +68,5 @@ class TestSimulator(Simulator):
         out_arr = np.zeros((ensemble_size,length))
         coo_x = np.linspace(0.,2.*np.pi,length)
         for i in range(ensemble_size):
-            out_arr[i,:] = par_a*np.sin(coo_x) + (np.random.normal(0.,par_b,length))**2
+            out_arr[i] = par_a*np.sin(coo_x) + np.random.normal(scale=par_b,size=length)
         return out_arr
