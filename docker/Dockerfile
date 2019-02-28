@@ -58,6 +58,9 @@ WORKDIR /home/lab/PyMultiNest
 RUN python3 setup.py install
 WORKDIR /home/lab
 
+#Dynesty
+RUN pip3 install dynesty
+
 #mpi4py
 RUN apt-get install -y libopenmpi-dev openmpi-bin openmpi-doc
 RUN pip3 install mpi4py 

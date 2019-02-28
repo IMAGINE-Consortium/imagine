@@ -19,13 +19,15 @@ class Simulator(object):
     
     def __call__(self, field_list):
         raise NotImplementedError
+
+    # converting time to int (ns level)
+    def ct(self):
+        return int(round(time.time()*1E+9))
     
     def seed_generator(self, seed):
-        # converting time to int (ns level)
-        ct = lambda: int(round(time.time()*1E+9))
         if seed > 0:
             return seed
         elif seed == 0:
-            return ct()%int(1E+8) + threading.get_ident()%int(1E+8)
+            return self.ct()%int(1E+8) + threading.get_ident()%int(1E+8)
         else:
             raise ValueError('unsupported random seed value')

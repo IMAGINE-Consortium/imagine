@@ -1,8 +1,10 @@
 """
 test simulator is built only for testing purpose
 
-field model:
-    y = a*sin(x) + gaussian_rand(mean=0,std_div=b)
+li field model:
+    mimicking Faraday rotation
+    field = gaussian_rand(mean=a,std=b)_x * cos(x)
+
     x in [0,2pi]
     a and b are free parameters
 """
@@ -14,7 +16,7 @@ from imagine.simulators.simulator import Simulator
 from imagine.fields.test_field.test_field import TestField
 from imagine.observables.observable_dict import Measurements, Simulations
 
-class TestSimulator(Simulator):
+class LiSimulator(Simulator):
 
     """
     measurements
@@ -68,5 +70,5 @@ class TestSimulator(Simulator):
         out_arr = np.zeros((ensemble_size,length))
         coo_x = np.linspace(0.,2.*np.pi,length)
         for i in range(ensemble_size):
-            out_arr[i] = par_a*np.sin(coo_x) + np.random.normal(scale=par_b,size=length)
+            out_arr[i,:] = np.multiply (np.cos(coo_x), np.random.normal(loc=par_a,scale=par_b,size=length))
         return out_arr

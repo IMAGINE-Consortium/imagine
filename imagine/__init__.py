@@ -9,8 +9,10 @@ from .fields.test_field.test_field import TestField
 from .observables.observable import Observable
 from .observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances
 from .simulators.simulator import Simulator
-from .simulators.test.test_simulator import TestSimulator
+from .simulators.test.li_simulator import LiSimulator
+from .simulators.test.bi_simulator import BiSimulator
 from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior
-from .pipelines.pipeline import Pipeline
+from .pipelines.multinest_pipeline import MultinestPipeline
+from .pipelines.dynesty_pipeline import DynestyPipeline
 from .tools.carrier_mapper import infinity_mapper, unity_mapper

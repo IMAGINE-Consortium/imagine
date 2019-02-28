@@ -4,7 +4,7 @@ import json
 import numpy as np
 import logging as log
 
-import pymultinest
+import dynesty
 
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.fields.field_factory import GeneralFieldFactory
@@ -12,7 +12,8 @@ from imagine.priors.prior import Prior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.carrier_mapper import unity_mapper
 
-class Pipeline(object):
+
+class DynestyPipeline(object):
 
     """
     simulator
@@ -29,8 +30,9 @@ class Pipeline(object):
 
     hidden controllers:
 
-    pymultinest_parameter_dict
-        -- extra parameters for running pymultinest routine
+    dynesty_parameter_dict
+        -- extra parameters for running dynesty routine
+        i.e., 'nlive', 'bound', 'sample'
     sample_callback
         -- not implemented yet
     likelihood_rescaler
@@ -52,11 +54,8 @@ class Pipeline(object):
         #
         # hidden controllers :)
         #
-        # setting defaults for pymultinest
-        self.pymultinest_parameter_dict = {'verbose': True,
-                                           'n_iter_before_update': 100,
-                                           'n_live_points': 400,
-                                           'resume': False}
+        # setting defaults for dynesty
+        self.dynesty_parameter_dict = dict()
         self.sample_callback = False
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
@@ -72,7 +71,7 @@ class Pipeline(object):
 
     @active_parameters.setter
     def active_parameters(self, parameter_list):
-        assert isinstance(parameter_list, (list,tuple))
+        assert isinstance(parameter_list, (list, tuple))
         self._active_parameters = tuple(parameter_list)
 
     @property
@@ -90,7 +89,7 @@ class Pipeline(object):
 
     @factory_list.setter
     def factory_list(self, factory_list):
-        assert isinstance(factory_list, (list,tuple))
+        assert isinstance(factory_list, (list, tuple))
         # extract active_parameters and their ranges from each factory
         # notice that once done
         # the parameter/variable ordering is fixed wrt factory ordering
@@ -139,20 +138,20 @@ class Pipeline(object):
         ensemble_size = int(ensemble_size)
         assert (ensemble_size > 0)
         self._ensemble_size = ensemble_size
-        log.debug ('set ensemble size to %i' % int(ensemble_size))
+        log.debug('set ensemble size to %i' % int(ensemble_size))
 
     @property
-    def pymultinest_parameter_dict(self):
-        return self._pymultinest_parameter_dict
+    def dynesty_parameter_dict(self):
+        return self._dynesty_parameter_dict
 
-    @pymultinest_parameter_dict.setter
-    def pymultinest_parameter_dict(self, pp_dict):
+    @dynesty_parameter_dict.setter
+    def dynesty_parameter_dict(self, pp_dict):
         try:
-            self._pymultinest_parameter_dict.update(pp_dict)
-            log.debug ('update pymultinest parameter %s' % str(pp_dict))
+            self._dynesty_parameter_dict.update(pp_dict)
+            log.debug('update dynesty parameter %s' % str(pp_dict))
         except AttributeError:
-            self._pymultinest_parameter_dict = pp_dict
-            log.debug ('set pymultinest parameter %s' % str(pp_dict))
+            self._dynesty_parameter_dict = pp_dict
+            log.debug('set dynesty parameter %s' % str(pp_dict))
 
     @property
     def sample_callback(self):
@@ -195,36 +194,19 @@ class Pipeline(object):
     def likelihood_threshold(self, likelihood_threshold):
         self._likelihood_threshold = likelihood_threshold
 
-    def __call__(self):
-        # create dir for storing pymultinest output
-        path = os.path.join(os.getcwd(),'chains')
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        else:
-            shutil.rmtree(path)
-            os.mkdir(path)
-        assert (os.path.exists(path))
-        json.dump(self._active_parameters,open('chains/imagine_params.json','w'))
-        # run pymultinest
-        result = pymultinest.solve(LogLikelihood=self._core_likelihood,
-                                   Prior=self.prior,
-                                   n_dims=len(self._active_parameters),
-                                   outputfiles_basename='chains/imagine_',
-                                   **self._pymultinest_parameter_dict)
-        print ('evidence: %(logZ).1f +- %(logZerr).1f' % result)
-        print ('variable values:')
-        for name, col in zip(self._active_parameters, result['samples'].transpose()):
-            print ('%15s : %.3f +- %.3f' % (name, col.mean(), col.std()))
-            """
-            # we think it's better to display raw variable values
-                                               #unity_mapper(col.mean(),
-                                               #             self._active_ranges[name][0],
-                                               #             self._active_ranges[name][1]),
-                                               #unity_mapper(col.std(),
-                                               #             self._active_ranges[name][0],
-                                               #             self._active_ranges[name][1])))
-            """
-        print ('detailed results dumped in %s' % str(path))
+    """
+    kwargs
+        -- extra input argument controlling sampling process
+        i.e., 'dlogz' for stopping criteria
+    """
+    def __call__(self, kwargs=dict()):
+        # init dynesty
+        sampler = dynesty.NestedSampler(self._core_likelihood,
+                                        self.prior,
+                                        len(self._active_parameters),
+                                        **self._dynesty_parameter_dict)
+        sampler.run_nested(**kwargs)
+        return sampler.results
 
     """
     log-likelihood calculator
@@ -233,9 +215,9 @@ class Pipeline(object):
         log.debug('sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug ('cube %s requested. returned most negative possible number' % str(instant_cube))
+            log.debug('cube %s requested. returned most negative possible number' % str(instant_cube))
             return np.nan_to_num(-np.inf)
-        # return active variables from pymultinest cube to factories
+        # return active variables from dynesty cube to factories
         # and then generate new field objects
         head_idx = int(0)
         tail_idx = int(0)
@@ -245,21 +227,21 @@ class Pipeline(object):
             variable_dict = dict()
             tail_idx = head_idx + len(factory.active_parameters)
             factory_cube = cube[head_idx:tail_idx]
-            for i,av in enumerate(factory.active_parameters):
+            for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
             field_list += (factory.generate(variables=variable_dict,
                                             ensemble_size=self.ensemble_size,
                                             random_seed=self._random_seed),)
-            log.debug ('create '+factory.name+' field')
+            log.debug('create '+factory.name+' field')
             head_idx += tail_idx
         assert(head_idx == tail_idx)
         assert(head_idx == len(self._active_parameters))
         # create observables from fresh fields
         observables = self._simulator(field_list)
-        log.debug ('create observables')
+        log.debug('create observables')
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
-        log.debug ('calc instant likelihood')
+        log.debug('calc instant likelihood')
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashould')

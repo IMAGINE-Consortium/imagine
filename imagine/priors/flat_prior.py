@@ -4,7 +4,7 @@ from imagine.priors.prior import Prior
 
 """
 uniform prior with range [0,1]
-check pymultinest documentation for more instruction
+check pymultinest/dynesty documentation for more instruction
 """
 class FlatPrior(Prior):
 
