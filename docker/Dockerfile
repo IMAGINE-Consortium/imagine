@@ -4,7 +4,7 @@ FROM ubuntu:latest
 
 RUN apt-get update
 RUN apt-get install -y build-essential python3 python3-pip python3-dev git gfortran autoconf gsl-bin libgsl-dev wget unzip vim cmake
-RUN pip3 install numpy scipy cython astropy healpy matplotlib progressbar corner
+RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corner
 
 RUN mkdir /home/lab
 WORKDIR /home/lab
