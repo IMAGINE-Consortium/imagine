@@ -47,3 +47,6 @@ sites
 #other results
 *.dat
 *.gze
+
+#jupyter checkpoints
+*/.ipynb_checkpoints/*.ipynb
