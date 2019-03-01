@@ -1,6 +1,3 @@
-import os
-import shutil
-import json
 import numpy as np
 import logging as log
 
@@ -11,38 +8,35 @@ from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import Prior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.carrier_mapper import unity_mapper
+from imagine.tools.icy_decorator import icy
 
+@icy
 class MultinestPipeline(object):
 
-    """
-    simulator
-        -- as you would imagine it should be
-    factory_list
-        -- list/tuple of factory objects
-    likelihood
-        -- Likelihood object
-    prior
-        -- Prior object
-    ensemble_size
-        -- number of observable realizations to be generated
-        in simulator
-
-    hidden controllers:
-
-    pymultinest_parameter_dict
-        -- extra parameters for running pymultinest routine
-        i.e., 'verbose', 'n_iter_before_update', 'n_live_points', 'resume'
-    sample_callback
-        -- not implemented yet
-    likelihood_rescaler
-        -- rescale log-likelihood value
-    random_seed
-        -- if 0 (default), use time-thread dependent random seed in simulator
-        costomised value should be positive int
-    likelihood_threshold
-        -- by default, log-likelihood should be negative
-    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
+        """
+        initialize Bayesian analysis pipeline with pyMultinest
+        :param simulator: Simulator object
+        :param factory_list: list/tuple of factory objects
+        :param likelihood: Likelihood object
+        :param prior: Prior object
+        :param ensemble_size: number of observable realizations to be generated in simulator
+
+        hidden controllers:
+
+        dynesty_parameter_dict
+            -- extra parameters for controlling Dynesty
+            i.e., 'nlive', 'bound', 'sample'
+        sample_callback
+            -- not implemented yet
+        likelihood_rescaler
+            -- rescale log-likelihood value
+        random_seed
+            -- if 0 (default), use time-thread dependent random seed in simulator
+            costomised value should be positive int
+        likelihood_threshold
+            -- by default, log-likelihood should be negative
+        """
         self.active_parameters = tuple()
         self.active_ranges = dict()
         self.factory_list = factory_list
@@ -50,11 +44,7 @@ class MultinestPipeline(object):
         self.likelihood = likelihood
         self.prior = prior
         self.ensemble_size = ensemble_size
-        #
-        # hidden controllers :)
-        #
-        # setting defaults for pymultinest
-        self.pymultinest_parameter_dict = dict()
+        self.sampling_controllers = dict()
         self.sample_callback = False
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
@@ -70,7 +60,7 @@ class MultinestPipeline(object):
 
     @active_parameters.setter
     def active_parameters(self, parameter_list):
-        assert isinstance(parameter_list, (list,tuple))
+        assert isinstance(parameter_list, (list, tuple))
         self._active_parameters = tuple(parameter_list)
 
     @property
@@ -88,11 +78,15 @@ class MultinestPipeline(object):
 
     @factory_list.setter
     def factory_list(self, factory_list):
-        assert isinstance(factory_list, (list,tuple))
-        # extract active_parameters and their ranges from each factory
-        # notice that once done
-        # the parameter/variable ordering is fixed wrt factory ordering
-        # which is useful in recovering variable logic value for each factory
+        """
+        extract active_parameters and their ranges from each factory
+        notice that once done
+        the parameter/variable ordering is fixed wrt factory ordering
+        which is useful in recovering variable logic value for each factory
+        :param factory_list:
+        :return:
+        """
+        assert isinstance(factory_list, (list, tuple))
         for factory in factory_list:
             assert isinstance(factory, GeneralFieldFactory)
             for ap_name in factory.active_parameters:
@@ -137,20 +131,20 @@ class MultinestPipeline(object):
         ensemble_size = int(ensemble_size)
         assert (ensemble_size > 0)
         self._ensemble_size = ensemble_size
-        log.debug ('set ensemble size to %i' % int(ensemble_size))
+        log.debug('set ensemble size to %i' % int(ensemble_size))
 
     @property
-    def pymultinest_parameter_dict(self):
-        return self._pymultinest_parameter_dict
+    def sampling_controllers(self):
+        return self._sampling_controllers
 
-    @pymultinest_parameter_dict.setter
-    def pymultinest_parameter_dict(self, pp_dict):
+    @sampling_controllers.setter
+    def sampling_controllers(self, pp_dict):
         try:
-            self._pymultinest_parameter_dict.update(pp_dict)
-            log.debug ('update pymultinest parameter %s' % str(pp_dict))
+            self._sampling_controllers.update(pp_dict)
+            log.debug('update pymultinest parameter %s' % str(pp_dict))
         except AttributeError:
-            self._pymultinest_parameter_dict = pp_dict
-            log.debug ('set pymultinest parameter %s' % str(pp_dict))
+            self._sampling_controllers = pp_dict
+            log.debug('set pymultinest parameter %s' % str(pp_dict))
 
     @property
     def sample_callback(self):
@@ -194,21 +188,27 @@ class MultinestPipeline(object):
         self._likelihood_threshold = likelihood_threshold
 
     def __call__(self):
+        """
+
+        :return: pyMultinest sampling results
+        """
         # run pymultinest
         results = pymultinest.solve(LogLikelihood=self._core_likelihood,
-                                   Prior=self.prior,
-                                   n_dims=len(self._active_parameters),
-                                   **self._pymultinest_parameter_dict)
+                                    Prior=self.prior,
+                                    n_dims=len(self._active_parameters),
+                                    **self._sampling_controllers)
         return results
 
-    """
-    log-likelihood calculator
-    """
     def _core_likelihood(self, cube):
+        """
+        log-likelihood calculator
+        :param cube: list of variable values
+        :return: log-likelihood value
+        """
         log.debug('sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug ('cube %s requested. returned most negative possible number' % str(instant_cube))
+            log.debug('cube %s requested. returned most negative possible number' % str(instant_cube))
             return np.nan_to_num(-np.inf)
         # return active variables from pymultinest cube to factories
         # and then generate new field objects
@@ -220,21 +220,21 @@ class MultinestPipeline(object):
             variable_dict = dict()
             tail_idx = head_idx + len(factory.active_parameters)
             factory_cube = cube[head_idx:tail_idx]
-            for i,av in enumerate(factory.active_parameters):
+            for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
             field_list += (factory.generate(variables=variable_dict,
                                             ensemble_size=self.ensemble_size,
                                             random_seed=self._random_seed),)
-            log.debug ('create '+factory.name+' field')
+            log.debug('create '+factory.name+' field')
             head_idx += tail_idx
         assert(head_idx == tail_idx)
         assert(head_idx == len(self._active_parameters))
         # create observables from fresh fields
         observables = self._simulator(field_list)
-        log.debug ('create observables')
+        log.debug('create observables')
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
-        log.debug ('calc instant likelihood')
+        log.debug('calc instant likelihood')
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashould')

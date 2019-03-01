@@ -96,6 +96,3 @@ WORKDIR /home/lab
 RUN rm -f *.tar.gz
 # SET PATH
 ENV LD_LIBRARY_PATH /usr/local/lib:${LD_LIBRARY_PATH}
-
-
-

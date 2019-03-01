@@ -6,94 +6,96 @@ from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.simulators.test.bi_simulator import BiSimulator
 from imagine.fields.test_field.test_field import TestField
 from imagine.observables.observable_dict import Simulations, Measurements
+from imagine.tools.random_seed import seed_generator
 
-class SimulatorTests(unittest.TestCase):
+
+class TestSimulators(unittest.TestCase):
 
     def test_init(self):
-        arr = np.random.rand(1,3)
+        arr = np.random.rand(1, 3)
         measuredict = Measurements()
-        measuredict.append(('test','nan','3','nan'),arr,True)
+        measuredict.append(('test', 'nan', '3', 'nan'), arr, True)
         simer = LiSimulator(measuredict)
-        self.assertEqual (len(simer.output_checklist), 1)
-        self.assertEqual (simer.output_checklist, (('test','nan','3','nan'),))
+        self.assertEqual(len(simer.output_checklist), 1)
+        self.assertEqual(simer.output_checklist, (('test', 'nan', '3', 'nan'),))
         simer = BiSimulator(measuredict)
         self.assertEqual(len(simer.output_checklist), 1)
         self.assertEqual(simer.output_checklist, (('test', 'nan', '3', 'nan'),))
 
     def test_li(self):
         # mock measures
-        arr = np.random.rand(1,3)
+        arr = np.random.rand(1, 3)
         measuredict = Measurements()
-        measuredict.append(('test','nan','3','nan'),arr,True)
+        measuredict.append(('test', 'nan', '3', 'nan'), arr, True)
         # simulator
         simer = LiSimulator(measuredict)
         # test seed gen, in base class
-        s1 = simer.seed_generator(0)
-        s2 = simer.seed_generator(0)
-        self.assertNotEqual (s1, s2)
-        s3 = simer.seed_generator(48)
-        self.assertEqual (s3, 48)
+        s1 = seed_generator(0)
+        s2 = seed_generator(0)
+        self.assertNotEqual(s1, s2)
+        s3 = seed_generator(48)
+        self.assertEqual(s3, 48)
         # regular field check
-        mock_par = {'a':2,'b':0,'random_seed':0}
-        obs_arr = simer.obs_generator(mock_par,1,20)
+        mock_par = {'a': 2, 'b': 0, 'random_seed': 0}
+        obs_arr = simer.obs_generator(mock_par, 1, 20)
         # calc by hand
-        x = np.linspace(0.,2.*np.pi,20)
-        baseline = 2.* np.cos(x)
-        self.assertListEqual (list(obs_arr[0]), list(baseline))
+        x = np.linspace(0., 2.*np.pi, 20)
+        baseline = 2.*np.cos(x)
+        self.assertListEqual(list(obs_arr[0]), list(baseline))
         # mock parameters, take short cut without fields
-        mock_par = {'a':2.,'b':0.2,'random_seed':23}
-        obs_arr = simer.obs_generator(mock_par,2,20)
-        self.assertEqual (obs_arr.shape, (2,20))
+        mock_par = {'a': 2., 'b': 0.2, 'random_seed': 23}
+        obs_arr = simer.obs_generator(mock_par, 2, 20)
+        self.assertEqual(obs_arr.shape, (2, 20))
         # test same random seed
-        obs_arr_re = simer.obs_generator(mock_par,2,20)
+        obs_arr_re = simer.obs_generator(mock_par, 2, 20)
         for i in range(obs_arr.shape[0]):
-            self.assertListEqual (list(obs_arr[i]), list(obs_arr_re[i]))
+            self.assertListEqual(list(obs_arr[i]), list(obs_arr_re[i]))
 
     def test_bi(self):
         # mock measures
-        arr = np.random.rand(1,3)
+        arr = np.random.rand(1, 3)
         measuredict = Measurements()
-        measuredict.append(('test','nan','3','nan'),arr,True)
+        measuredict.append(('test', 'nan', '3', 'nan'), arr, True)
         # simulator
         simer = BiSimulator(measuredict)
         # test seed gen, in base class
-        s1 = simer.seed_generator(0)
-        s2 = simer.seed_generator(0)
-        self.assertNotEqual (s1, s2)
-        s3 = simer.seed_generator(48)
-        self.assertEqual (s3, 48)
+        s1 = seed_generator(0)
+        s2 = seed_generator(0)
+        self.assertNotEqual(s1, s2)
+        s3 = seed_generator(48)
+        self.assertEqual(s3, 48)
         # regular field check
-        mock_par = {'a':2,'b':0,'random_seed':0}
-        obs_arr = simer.obs_generator(mock_par,1,20)
+        mock_par = {'a': 2, 'b': 0, 'random_seed': 0}
+        obs_arr = simer.obs_generator(mock_par, 1, 20)
         # calc by hand
-        x = np.linspace(0.,2.*np.pi,20)
-        baseline = np.square(2.* np.sin(x))
-        self.assertListEqual (list(obs_arr[0]), list(baseline))
+        x = np.linspace(0., 2.*np.pi, 20)
+        baseline = np.square(2.*np.sin(x))
+        self.assertListEqual(list(obs_arr[0]), list(baseline))
         # mock parameters, take short cut without fields
-        mock_par = {'a':2.,'b':0.2,'random_seed':23}
-        obs_arr = simer.obs_generator(mock_par,2,20)
-        self.assertEqual (obs_arr.shape, (2,20))
+        mock_par = {'a': 2., 'b': 0.2, 'random_seed': 23}
+        obs_arr = simer.obs_generator(mock_par, 2, 20)
+        self.assertEqual(obs_arr.shape, (2, 20))
         # test same random seed
-        obs_arr_re = simer.obs_generator(mock_par,2,20)
+        obs_arr_re = simer.obs_generator(mock_par, 2, 20)
         for i in range(obs_arr.shape[0]):
-            self.assertListEqual (list(obs_arr[i]), list(obs_arr_re[i]))
+            self.assertListEqual(list(obs_arr[i]), list(obs_arr_re[i]))
 
     def test_generator_inout(self):
         # mock measures
-        arr = np.random.rand(1,10)
+        arr = np.random.rand(1, 10)
         measuredict = Measurements()
-        measuredict.append(('test','nan','10','nan'),arr,True)
+        measuredict.append(('test', 'nan', '10', 'nan'), arr, True)
         # mock field
-        mock_par = {'a':2.,'b':0.2}
+        mock_par = {'a': 2., 'b': 0.2}
         # ensemble num and random seed injected here
-        mock_field = TestField(mock_par,5,23)
+        mock_field = TestField(mock_par, 5, 23)
         # simulator
         simer = LiSimulator(measuredict)
         # generating observable ensemble
         simdict = simer([mock_field])
-        self.assertEqual (type(simdict), Simulations)
-        self.assertEqual (len(simdict.keys()), 1)
-        self.assertEqual (simdict[('test','nan','10','nan')].shape, (5,10))
+        self.assertEqual(type(simdict), Simulations)
+        self.assertEqual(len(simdict.keys()), 1)
+        self.assertEqual(simdict[('test', 'nan', '10', 'nan')].shape, (5, 10))
         # simulator
         simer = BiSimulator(measuredict)
         # generating observable ensemble
@@ -101,7 +103,7 @@ class SimulatorTests(unittest.TestCase):
         self.assertEqual(type(simdict), Simulations)
         self.assertEqual(len(simdict.keys()), 1)
         self.assertEqual(simdict[('test', 'nan', '10', 'nan')].shape, (5, 10))
-        
-        
+
+
 if __name__ == '__main__':
     unittest.main()

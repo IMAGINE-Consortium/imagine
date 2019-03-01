@@ -1,29 +1,26 @@
 """
 ensemble likelihood, described in IMAGINE techincal report
 in principle
-it adds covariance matrices from both observation and simulation
+it combines covariance matrices from both observations and simulations
 """
 import numpy as np
-import logging as log
 from copy import deepcopy
 
 from imagine.observables.observable import Observable
 from imagine.observables.observable_dict import Measurements, Simulations, Covariances
 from imagine.likelihoods.likelihood import Likelihood
-from typing import Any
+from imagine.tools.covariance_estimator import oas_mcov
+from imagine.tools.icy_decorator import icy
 
-
+@icy
 class EnsembleLikelihood(Likelihood):
 
-    """
-    measurement_dict
-        -- Measurements object
-    covariance_dict
-        -- Covariances object
-    observable_dict (in __call__)
-        -- Simulations object
-    """
     def __init__(self, measurement_dict, covariance_dict=None):
+        """
+
+        :param measurement_dict: Measurements object
+        :param covariance_dict: Covariances object
+        """
         self.measurement_dict = measurement_dict
         self.covariance_dict = covariance_dict
 
@@ -46,51 +43,36 @@ class EnsembleLikelihood(Likelihood):
             assert isinstance(covariance_dict, Covariances)
         self._covariance_dict = covariance_dict
     
-    # notice the argument should be a dict of Observable objects
+    #
     def __call__(self, observable_dict):
+        """
+
+        :param observable_dict: Simulations object
+        :return: log-likelihood value
+        """
+        assert isinstance(observable_dict, Simulations)
         # check dict entries
         assert (observable_dict.keys() == self._measurement_dict.keys())
         likelicache = float(0)
         if self._covariance_dict is None:
             for name in self._measurement_dict.keys():
-                (obs_mean,obs_cov) = self._oas(observable_dict[name])
+                obs_mean, obs_cov = oas_mcov(observable_dict[name])
                 data = deepcopy(self._measurement_dict[name].to_global_data())
                 diff = np.nan_to_num(data - obs_mean)
-                if obs_cov.trace() < 1E-28: # zero will not be reached, at most E-32
-                    likelicache += -float(0.5)*float(np.vdot(diff,diff))
+                if obs_cov.trace() < 1E-28:  # zero will not be reached, at most E-32
+                    likelicache += -float(0.5)*float(np.vdot(diff, diff))
                 else:
-                    (sign, logdet) = np.linalg.slogdet(obs_cov * 2. * np.pi)
-                    likelicache += -float(0.5)*float(np.vdot(diff,np.linalg.solve(obs_cov,diff.T))+sign*logdet)
+                    sign, logdet = np.linalg.slogdet(obs_cov*2.*np.pi)
+                    likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(obs_cov, diff.T))+sign*logdet)
         else:
             for name in self._measurement_dict.keys():
-                (obs_mean,obs_cov) = self._oas(observable_dict[name])
+                obs_mean, obs_cov = oas_mcov(observable_dict[name])
                 data = deepcopy(self._measurement_dict[name].to_global_data())
                 full_cov = deepcopy(self._covariance_dict[name].to_global_data()) + obs_cov
                 diff = np.nan_to_num(data - obs_mean)
-                if full_cov.trace() < 1E-28: # zero will not be reached, at most E-32
-                    likelicache += -float(0.5)*float(np.vdot(diff,diff))
+                if full_cov.trace() < 1E-28:  # zero will not be reached, at most E-32
+                    likelicache += -float(0.5)*float(np.vdot(diff, diff))
                 else:
-                    (sign,logdet) = np.linalg.slogdet(full_cov*2.*np.pi)
-                    likelicache += -float(0.5)*float(np.vdot(diff,np.linalg.solve(full_cov,diff.T))+sign*logdet)
+                    sign, logdet = np.linalg.slogdet(full_cov*2.*np.pi)
+                    likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(full_cov, diff.T))+sign*logdet)
         return likelicache
-
-    # OAS estimator, observable comes with (ensemble_number,data_size) matrix
-    # take Observable object as input
-    def _oas(self, observable):
-        assert isinstance(observable, Observable)
-        (n,p) = observable.shape
-        assert (p>0 and n>1)
-        mean = observable.ensemble_mean
-        u = observable.to_global_data() - mean # should broadcast to all rows
-        s = np.dot(u.T,u)/n # empirical covariance S
-        assert (s.shape[0] == u.shape[1])
-        tr_s = np.trace(s) # Tr(S), equivalent to np.vdot(u,u)/n
-        tr_s2 = np.trace(np.dot(s,s)) # Tr(S^2), equivalent to (np.einsum(u,[0,1],u,[2,1])**2).sum() / (n**2)
-        # calc rho
-        numerator = (1.-2./p)*tr_s2 + tr_s*tr_s
-        denominator = (n+1.-2./p)*(tr_s2-(tr_s*tr_s)/p)
-        if denominator == 0:
-            rho = 1
-        else:
-            rho = np.min([1.,float(numerator/denominator)])
-        return mean, (1. - rho) * s + np.eye(p) * rho * tr_s / p

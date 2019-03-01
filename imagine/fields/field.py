@@ -8,32 +8,30 @@ members:
     -- dict, with parameter name as entry, parameter xml path as content
     defines the parameters to be checked out by simulator
     should be fixed upon class designing
-
 """
 
 import logging as log
 
+from imagine.tools.icy_decorator import icy
+
+@icy
 class GeneralField(object):
 
-    """
-    parameters
-        -- dict of full parameter set {name: value}
-    ensemble_size
-        -- number of realisations in field ensemble
-        useful only when random field is active
-    random_seed
-        -- random seed for generating random field realisations (likely in simulators)
-        useful only when random field is active
-    """
     def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
+        """
+
+        :param parameters: dict of full parameter set {name: value}
+        :param ensemble_size: number of realisations in field ensemble
+        :param random_seed: random seed for generating random field realisations
+        """
         self.name = 'general'
         self.parameters = parameters
         self.ensemble_size = ensemble_size
         self.random_seed = random_seed
         # if checklist has 'random_seed' entry
         if 'random_seed' in self.field_checklist.keys():
-            self.parameters.update({'random_seed':self.random_seed})
-        log.debug ('initialize GeneralField')
+            self._parameters.update({'random_seed': self._random_seed})
+        log.debug('initialize GeneralField')
 
     @property
     def name(self):
@@ -54,7 +52,7 @@ class GeneralField(object):
 
     @ensemble_size.setter
     def ensemble_size(self, ensemble_size):
-        assert (ensemble_size>0)
+        assert (ensemble_size > 0)
         self._ensemble_size = round(ensemble_size)
 
     @property

@@ -15,4 +15,8 @@ from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior
 from .pipelines.multinest_pipeline import MultinestPipeline
 from .pipelines.dynesty_pipeline import DynestyPipeline
-from .tools.carrier_mapper import infinity_mapper, unity_mapper
+
+from .tools.carrier_mapper import unity_mapper
+from .tools.covariance_estimator import oas_cov, oas_mcov
+from .tools.random_seed import seed_generator
+from .tools.icy_decorator import icy

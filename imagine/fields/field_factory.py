@@ -4,22 +4,17 @@ ensemble of field configuration DIRECTLY
 and/or
 handle of field to be conducted by simulators
 
-the former aim is undeiphered as Theo's legacy
-
-for the second aim, through member function .generate,
-factory object take a given set of variable values (can be at any chain point in bayesian analysis)
-and translate it into physical parameter value and return a field object with current parameter set.
-In terms of how to handle the field object and create field ensemble,
-it is not the concern of this class, nor the field class, but the simulators'.
-In default simulator, hammurabi, random field generator is intrinsically implemented.
-
-all physical fields class should inherit from this general base
+through member function .generate,
+factory object take a given set of variable values
+(can be at any chain point in bayesian analysis)
+and translate it into physical parameter value and
+return a field object with current parameter set
 
 members:
 .name
     -- factory name, useful as factory id
 .type
-    -- specify what field the factory produce, scalar, spinor, vector, tensor ...
+    -- specify what field the factory produce, 'scalar', 'spinor', 'vector', 'tensor' ...
 .boxsize
     -- physical size of simulation box, by default the box is 3D cartesian
 .resolution
@@ -40,36 +35,27 @@ members:
 .generate
     -- takes active variable dict, ensemble size and random seed value defined in Pipeline
     it translates active variable value to parameter value and update a copy of default parameter dict
-    and send it to field class, which will hand in to simualtor.
-    Theo's legacy version has more opertions undeciphered yet
-
-# undeciphered Theo's legacy
-._grid_space
-._vector
-._ensemble_cache
-.generate
-._get_ensemble
+    and send it to field class, which will hand in to simulator.
 """
 
 import numpy as np
 from copy import deepcopy
 import logging as log
 
-from imagine.tools.carrier_mapper import unity_mapper
 from imagine.fields.field import GeneralField
+from imagine.tools.carrier_mapper import unity_mapper
+from imagine.tools.icy_decorator import icy
 
+@icy
 class GeneralFieldFactory(object):
 
-    """
-    # un-necessary arguments
-    boxsize -- list/tuple of float, physical size of simulation box (3D Cartesian frame)
-    resolution -- list/tuple of int, discretization size in corresponding dimension
-
-    (extra argument in derived classes)
-    active_parameters -- list/tuple of string, active varialbe names concerned in constraints
-    """
     def __init__(self, boxsize=None, resolution=None):
-        self.field_type = 1
+        """
+
+        :param boxsize: list/tuple of float, physical size of simulation box (3D Cartesian frame)
+        :param resolution: list/tuple of int, discretization size in corresponding dimension
+        """
+        self.field_type = 'scalar'
         self.name = 'general'
         self.field_class = GeneralField
         self.boxsize = boxsize
@@ -81,12 +67,12 @@ class GeneralFieldFactory(object):
         
     @property
     def field_type(self):
-        # field type, scaler -> 1, vector -> 3
         return self._field_type
 
     @field_type.setter
     def field_type(self, field_type):
-        self._field_type = round(field_type)
+        assert isinstance(field_type, str)
+        self._field_type = field_type
 
     @property
     def name(self):
@@ -114,7 +100,7 @@ class GeneralFieldFactory(object):
         if boxsize is None:
             self._boxsize = None
         else:
-            assert isinstance(boxsize, (list,tuple))
+            assert isinstance(boxsize, (list, tuple))
             assert (len(boxsize) == 3)
             # force size in float
             self._boxsize = tuple(np.array(boxsize, dtype=np.float))
@@ -128,7 +114,7 @@ class GeneralFieldFactory(object):
         if resolution is None:
             self._resolution = None
         else:
-            assert isinstance(resolution, (list,tuple))
+            assert isinstance(resolution, (list, tuple))
             assert (len(resolution) == 3)
             # force resolutioin in int
             self._resolution = tuple(np.array(resolution, dtype=np.int))
@@ -153,8 +139,7 @@ class GeneralFieldFactory(object):
 
     @active_parameters.setter
     def active_parameters(self, active_parameters):
-        print (type(active_parameters))
-        assert isinstance(active_parameters, (list,tuple))
+        assert isinstance(active_parameters, (list, tuple))
         # check if input is inside factory's parameter pool
         for av in active_parameters:
             assert (av in self.default_parameters)
@@ -168,15 +153,14 @@ class GeneralFieldFactory(object):
     @parameter_ranges.setter
     def parameter_ranges(self, new_ranges):
         """
-        The parameter-ranges must be a dictionary with
-        key: parameter-name
-        value: (min, max)
+        :param new_ranges: {'parameter-name': (min, max)}
+        :return:
         """
         assert isinstance(new_ranges, dict)
         for k, v in new_ranges.items():
             # check if k is inside default
             assert (k in self.default_parameters.keys())
-            assert isinstance(v,(list,tuple))
+            assert isinstance(v, (list, tuple))
             assert (len(v) == 2)
         try:
             self._parameter_ranges.update(new_ranges)
@@ -185,25 +169,27 @@ class GeneralFieldFactory(object):
             self._parameter_ranges = new_ranges
             log.debug('set parameter ranges %s' % str(new_ranges))
 
-    """
-    translate default parameter into default (logic) variable
-    notice that all variables range is always fixed as [0,1]
-    """
     @property
     def default_variables(self):
-        tmp = {}
+        """
+        translate default parameter into default (logic) variable
+        notice that all variables range is always fixed as [0,1]
+        :return: default variable dict
+        """
+        tmp = dict()
         for par, def_val in self.default_parameters.items():
             low, high = self.parameter_ranges[par]
             tmp[par] = float(def_val - low)/float(high - low)
         return tmp
-    
-    """
-    map input dict of type {'parameter-name', logic-value}
-    into {'parameter-name', physical-value}
-    """
+
     def _map_variables_to_parameters(self, variables):
+        """
+
+        :param variables: {'parameter-name', logic-value}
+        :return: {'parameter-name', physical-value}
+        """
         assert isinstance(variables, dict)
-        parameter_dict = {}
+        parameter_dict = dict()
         for variable_name in variables:
             # variable_name must have been registered in .default_parameters
             # and, also being active
@@ -214,17 +200,14 @@ class GeneralFieldFactory(object):
             parameter_dict[variable_name] = mapped_variable
         return parameter_dict
 
-    """
-    return a field object
-    argument:
-    variables 
-        -- a dict of variables with name and value
-    ensemble_size 
-        -- number of instances in a field ensemble
-    random_seed 
-        -- seed for generating random numbers in realising instances in field ensemble
-    """
-    def generate(self, variables={}, ensemble_size=1, random_seed=None):
+    def generate(self, variables=dict(), ensemble_size=1, random_seed=None):
+        """
+
+        :param variables: a dict of variables with name and value
+        :param ensemble_size: number of instances in a field ensemble
+        :param random_seed: seed for generating random numbers in realising instances in field ensemble
+        :return: a GeneralField object
+        """
         # map variable value to parameter value
         # in mapping, variable name will be checked in default_parameters
         mapped_variables = self._map_variables_to_parameters(variables)

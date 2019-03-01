@@ -1,6 +1,3 @@
-import os
-import shutil
-import json
 import numpy as np
 import logging as log
 
@@ -11,39 +8,35 @@ from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import Prior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.carrier_mapper import unity_mapper
+from imagine.tools.icy_decorator import icy
 
-
+@icy
 class DynestyPipeline(object):
 
-    """
-    simulator
-        -- as you would imagine it should be
-    factory_list
-        -- list/tuple of factory objects
-    likelihood
-        -- Likelihood object
-    prior
-        -- Prior object
-    ensemble_size
-        -- number of observable realizations to be generated
-        in simulator
-
-    hidden controllers:
-
-    dynesty_parameter_dict
-        -- extra parameters for running dynesty routine
-        i.e., 'nlive', 'bound', 'sample'
-    sample_callback
-        -- not implemented yet
-    likelihood_rescaler
-        -- rescale log-likelihood value
-    random_seed
-        -- if 0 (default), use time-thread dependent random seed in simulator
-        costomised value should be positive int
-    likelihood_threshold
-        -- by default, log-likelihood should be negative
-    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
+        """
+        initialize Bayesian analysis pipeline with Dyensty
+        :param simulator: Simulator object
+        :param factory_list: list/tuple of factory objects
+        :param likelihood: Likelihood object
+        :param prior: Prior object
+        :param ensemble_size: number of observable realizations to be generated in simulator
+
+        hidden controllers:
+
+        sampling_controllers
+            -- extra parameters for controlling Dynesty
+            i.e., 'nlive', 'bound', 'sample'
+        sample_callback
+            -- not implemented yet
+        likelihood_rescaler
+            -- rescale log-likelihood value
+        random_seed
+            -- if 0 (default), use time-thread dependent random seed in simulator
+            costomised value should be positive int
+        likelihood_threshold
+            -- by default, log-likelihood should be negative
+        """
         self.active_parameters = tuple()
         self.active_ranges = dict()
         self.factory_list = factory_list
@@ -51,11 +44,7 @@ class DynestyPipeline(object):
         self.likelihood = likelihood
         self.prior = prior
         self.ensemble_size = ensemble_size
-        #
-        # hidden controllers :)
-        #
-        # setting defaults for dynesty
-        self.dynesty_parameter_dict = dict()
+        self.sampling_controllers = dict()
         self.sample_callback = False
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
@@ -89,11 +78,15 @@ class DynestyPipeline(object):
 
     @factory_list.setter
     def factory_list(self, factory_list):
+        """
+        extract active_parameters and their ranges from each factory
+        notice that once done
+        the parameter/variable ordering is fixed wrt factory ordering
+        which is useful in recovering variable logic value for each factory
+        :param factory_list:
+        :return:
+        """
         assert isinstance(factory_list, (list, tuple))
-        # extract active_parameters and their ranges from each factory
-        # notice that once done
-        # the parameter/variable ordering is fixed wrt factory ordering
-        # which is useful in recovering variable logic value for each factory
         for factory in factory_list:
             assert isinstance(factory, GeneralFieldFactory)
             for ap_name in factory.active_parameters:
@@ -141,16 +134,16 @@ class DynestyPipeline(object):
         log.debug('set ensemble size to %i' % int(ensemble_size))
 
     @property
-    def dynesty_parameter_dict(self):
-        return self._dynesty_parameter_dict
+    def sampling_controllers(self):
+        return self._sampling_controllers
 
-    @dynesty_parameter_dict.setter
-    def dynesty_parameter_dict(self, pp_dict):
+    @sampling_controllers.setter
+    def sampling_controllers(self, pp_dict):
         try:
-            self._dynesty_parameter_dict.update(pp_dict)
+            self._sampling_controllers.update(pp_dict)
             log.debug('update dynesty parameter %s' % str(pp_dict))
         except AttributeError:
-            self._dynesty_parameter_dict = pp_dict
+            self._sampling_controllers = pp_dict
             log.debug('set dynesty parameter %s' % str(pp_dict))
 
     @property
@@ -194,24 +187,27 @@ class DynestyPipeline(object):
     def likelihood_threshold(self, likelihood_threshold):
         self._likelihood_threshold = likelihood_threshold
 
-    """
-    kwargs
-        -- extra input argument controlling sampling process
-        i.e., 'dlogz' for stopping criteria
-    """
     def __call__(self, kwargs=dict()):
+        """
+
+        :param kwargs: extra input argument controlling sampling process
+        i.e., 'dlogz' for stopping criteria
+        :return: Dynesty sampling results
+        """
         # init dynesty
         sampler = dynesty.NestedSampler(self._core_likelihood,
                                         self.prior,
                                         len(self._active_parameters),
-                                        **self._dynesty_parameter_dict)
+                                        **self._sampling_controllers)
         sampler.run_nested(**kwargs)
         return sampler.results
 
-    """
-    log-likelihood calculator
-    """
     def _core_likelihood(self, cube):
+        """
+        log-likelihood calculator
+        :param cube: list of variable values
+        :return: log-likelihood value
+        """
         log.debug('sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
