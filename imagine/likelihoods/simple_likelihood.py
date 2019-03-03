@@ -7,6 +7,7 @@ from imagine.observables.observable_dict import Measurements, Simulations, Covar
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class SimpleLikelihood(Likelihood):
 

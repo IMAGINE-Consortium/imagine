@@ -17,6 +17,7 @@ from imagine.observables.observable_dict import Measurements, Simulations
 from imagine.tools.random_seed import seed_generator
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class LiSimulator(Simulator):
 

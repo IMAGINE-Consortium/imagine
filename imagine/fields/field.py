@@ -14,6 +14,7 @@ import logging as log
 
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class GeneralField(object):
 

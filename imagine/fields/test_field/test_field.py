@@ -12,6 +12,7 @@ import logging as log
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class TestField(GeneralField):
 
@@ -21,7 +22,7 @@ class TestField(GeneralField):
 
     @property
     def field_checklist(self):
-        checklist = {'a': ('dummypath', 'dummy'),
-                     'random_seed': ('dummypath', 'dummy'),
-                     'b': ('dummypath', 'dummy')}
+        checklist = {'a': (['key', 'chain'], 'attribute'),
+                     'random_seed': (['key', 'chain'], 'attribute'),
+                     'b': (['key', 'chain'], 'attribute')}
         return checklist

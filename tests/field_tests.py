@@ -1,6 +1,3 @@
-"""
-check functions as much as possible in base classes
-"""
 import unittest
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.fields.field import GeneralField
@@ -22,9 +19,9 @@ class TestFields(unittest.TestCase):
         field = TestField(parameters, 128.3, 34.8)
         self.assertEqual(field.name, 'test')
         self.assertEqual(field.field_checklist,
-                         {'a': ('dummypath', 'dummy'),
-                          'random_seed': ('dummypath', 'dummy'),
-                          'b': ('dummypath', 'dummy')})
+                         {'a': (['key', 'chain'], 'attribute'),
+                          'random_seed': (['key', 'chain'], 'attribute'),
+                          'b': (['key', 'chain'], 'attribute')})
         self.assertEqual(field.ensemble_size, round(128.3))
         self.assertEqual(field.parameters,
                          {'a': float(3),

@@ -7,6 +7,7 @@ import logging as log
 from imagine.priors.prior import Prior
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class FlatPrior(Prior):
 

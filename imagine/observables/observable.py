@@ -27,6 +27,7 @@ import numpy as np
 from nifty5 import Field, RGSpace, DomainTuple
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class Observable(object):
 

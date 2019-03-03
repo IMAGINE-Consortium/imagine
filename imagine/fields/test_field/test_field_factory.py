@@ -4,6 +4,7 @@ from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.fields.test_field.test_field import TestField
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class TestFieldFactory(GeneralFieldFactory):
 

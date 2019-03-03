@@ -4,6 +4,7 @@ simulator base class
 
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class Simulator(object):
 

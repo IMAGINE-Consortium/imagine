@@ -12,6 +12,7 @@ from imagine.likelihoods.likelihood import Likelihood
 from imagine.tools.covariance_estimator import oas_mcov
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class EnsembleLikelihood(Likelihood):
 

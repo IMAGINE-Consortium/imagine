@@ -3,7 +3,7 @@ FROM ubuntu:latest
 # users may need python3-tk, please install it manually: apt-get install python3-tk
 
 RUN apt-get update
-RUN apt-get install -y build-essential python3 python3-pip python3-dev git gfortran autoconf gsl-bin libgsl-dev wget unzip vim cmake
+RUN apt-get install -y build-essential python3 python3-pip python3-dev git gfortran autoconf gsl-bin libgsl-dev wget unzip vim cmake valgrind
 RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corner
 
 RUN mkdir /home/lab

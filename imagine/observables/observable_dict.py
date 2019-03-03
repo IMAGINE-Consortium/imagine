@@ -46,6 +46,7 @@ from nifty5 import Field, RGSpace, HPSpace, DomainTuple
 from imagine.observables.observable import Observable
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class ObservableDict(object):
     """

@@ -10,6 +10,7 @@ from imagine.simulators.simulator import Simulator
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class DynestyPipeline(object):
 

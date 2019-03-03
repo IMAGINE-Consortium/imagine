@@ -14,6 +14,7 @@ __call__
 
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class Likelihood(object):
 

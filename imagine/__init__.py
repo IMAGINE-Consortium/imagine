@@ -11,6 +11,7 @@ from .observables.observable_dict import ObservableDict, Measurements, Simulatio
 from .simulators.simulator import Simulator
 from .simulators.test.li_simulator import LiSimulator
 from .simulators.test.bi_simulator import BiSimulator
+from .simulators.hammurabi.hammurabi import Hammurabi
 from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior
 from .pipelines.multinest_pipeline import MultinestPipeline
