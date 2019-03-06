@@ -45,6 +45,14 @@ class TestObservableDicts(unittest.TestCase):
         simdict.append(('test', 'nan', '2', 'nan'), hrr)  # healpix array
         for i in range(len(hrr)):
             self.assertListEqual(list((simdict[('test', 'nan', '2', 'nan')].to_global_data())[i]), list(hrr[i]))
+
+    def test_simdict_append_array_twice(self):
+        arr = np.random.rand(2, 3)
+        simdict = Simulations()
+        simdict.append(('test', 'nan', '3', 'nan'), arr, True)  # plain array
+        self.assertEqual(simdict[('test', 'nan', '3', 'nan')].shape, (2,3))
+        simdict.append(('test', 'nan', '3', 'nan'), arr, True)  # plain array
+        self.assertEqual(simdict[('test', 'nan', '3', 'nan')].shape, (4,3))
     
     def test_simdict_append_observable(self):
         dtuple = DomainTuple.make((RGSpace(2), HPSpace(nside=2)))

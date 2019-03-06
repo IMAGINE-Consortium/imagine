@@ -69,11 +69,18 @@ class EnsembleLikelihood(Likelihood):
             for name in self._measurement_dict.keys():
                 obs_mean, obs_cov = oas_mcov(observable_dict[name])
                 data = deepcopy(self._measurement_dict[name].to_global_data())
-                full_cov = deepcopy(self._covariance_dict[name].to_global_data()) + obs_cov
                 diff = np.nan_to_num(data - obs_mean)
-                if full_cov.trace() < 1E-28:  # zero will not be reached, at most E-32
-                    likelicache += -float(0.5)*float(np.vdot(diff, diff))
+                if name in self._covariance_dict.keys():  # not all measurements have cov
+                    full_cov = deepcopy(self._covariance_dict[name].to_global_data()) + obs_cov
+                    if full_cov.trace() < 1E-28:  # zero will not be reached, at most E-32
+                        likelicache += -float(0.5)*float(np.vdot(diff, diff))
+                    else:
+                        sign, logdet = np.linalg.slogdet(full_cov*2.*np.pi)
+                        likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(full_cov, diff.T))+sign*logdet)
                 else:
-                    sign, logdet = np.linalg.slogdet(full_cov*2.*np.pi)
-                    likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(full_cov, diff.T))+sign*logdet)
+                    if obs_cov.trace() < 1E-28:  # zero will not be reached, at most E-32
+                        likelicache += -float(0.5)*float(np.vdot(diff, diff))
+                    else:
+                        sign, logdet = np.linalg.slogdet(obs_cov*2.*np.pi)
+                        likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(obs_cov, diff.T))+sign*logdet)
         return likelicache

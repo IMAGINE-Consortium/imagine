@@ -54,6 +54,17 @@ class TestObservalbes(unittest.TestCase):
         for i in range(len(val)):
             self.assertListEqual(list(raw_obs[i]), list(new_val[i]))
 
+    def test_append_twice(self):
+        dtuple = DomainTuple.make((RGSpace(1), HPSpace(nside=2)))
+        val = np.random.rand(1, 48)
+        obs = Observable(dtuple, val)
+        # test function append with 1d array
+        new_data = np.random.rand(1, 48)
+        obs.append(new_data)
+        self.assertEqual (obs.shape, (2,48))
+        obs.append(new_data)
+        self.assertEqual (obs.shape, (3,48))
+
     def test_append_field(self):
         dtuple = DomainTuple.make((RGSpace(3), HPSpace(nside=2)))
         val = np.random.rand(3, 48)
@@ -94,6 +105,17 @@ class TestObservalbes(unittest.TestCase):
         raw_obs = obs.to_global_data()
         for i in range(len(raw_obs)):
             self.assertListEqual(list(raw_obs[i]), list(new_data[i]))
+
+    def test_append_after_replace(self):
+        dtuple = DomainTuple.make((RGSpace(1), HPSpace(nside=2)))
+        obs = Observable(dtuple)
+        self.assertTrue(obs.rw_flag)
+        # test function append with 1d array
+        new_data = np.random.rand(1, 48)
+        obs.append(new_data)
+        self.assertEqual (obs.shape, (1,48))
+        obs.append(new_data)
+        self.assertEqual (obs.shape, (2,48))
 
 
 if __name__ == '__main__':

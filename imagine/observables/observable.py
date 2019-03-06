@@ -123,6 +123,7 @@ class Observable(object):
         # assemble new_cache
         if self.rw_flag:
             new_cache = raw_new
+            self.rw_flag = False  # rw only once by default
         else:
             new_cache = np.vstack([self._field.to_global_data(), raw_new])
         # update new_cache to ._field

@@ -219,22 +219,22 @@ class Hampyx(object):
         # copy base_file to temp_file
         root = self.tree.getroot()
         # count number of sync output files
-        if root.find("./Obsout/Sync[@cue='1']") is not None:
+        if root.find("./observable/sync[@cue='1']") is not None:
             self._do_sync = True
             # for each sync output
-            for sync in root.findall("./Obsout/Sync[@cue='1']"):
+            for sync in root.findall("./observable/sync[@cue='1']"):
                 freq = str(sync.get('freq'))
                 nside = str(sync.get('nside'))
                 self.sim_map_name[('sync', freq, nside)] = os.path.join(self.wk_dir,
-                                                                        'iqu_sync_'+freq+'_'+nside+'_'+rnd_idx+'.fits')
+                                                                        'sync_'+freq+'_'+nside+'_'+rnd_idx+'.fits')
                 sync.set('filename', self.sim_map_name[('sync', freq, nside)])
-        fd = root.find("./Obsout/Faraday[@cue='1']")
+        fd = root.find("./observable/faraday[@cue='1']")
         if fd is not None:
             self._do_fd = True
             nside = str(fd.get('nside'))
             self.sim_map_name[('fd', 'nan', nside)] = os.path.join(self.wk_dir, 'fd_'+nside+'_'+rnd_idx+'.fits')
             fd.set('filename', self.sim_map_name[('fd', 'nan', nside)])
-        dm = root.find("./Obsout/DM[@cue='1']")
+        dm = root.find("./observable/dm[@cue='1']")
         if dm is not None:
             self._do_dm = True
             nside = str(dm.get('nside'))
@@ -370,7 +370,7 @@ class Hampyx(object):
 
     """        
     print a certain parameter
-    argument of type ['path','to','key'] (e.g. ['Grid','SunPosition','x'])
+    argument of type ['path','to','key'] (e.g. ['grid','observer','x'])
     print all parameters down to the keychain children level
     """
     def print_par(self, keychain=None):
@@ -393,7 +393,7 @@ class Hampyx(object):
 
     """        
     deletes an parameter and all of its children
-    argument of type ['keys','to','target'] (e.g. ['Grid','SunPosition','x'])
+    argument of type ['keys','to','target'] (e.g. ['grid','observer','x'])
     if opt='all', delete all parameters that match given keychain
     """
     def del_par(self, keychain=None, opt=None):

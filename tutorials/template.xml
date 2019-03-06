@@ -60,6 +60,21 @@
             <lon_min value=""/> <!--  (default) -->
             <lon_max value=""/> <!--  (default) -->
         </shell>
+        
+        <!-- turbulent GMF grid -->
+        <box_brnd> <!-- (optional) if no brnd I/O AND no internal brnd model -->
+            <!-- grid vertex size -->
+            <nx value="100"/>
+            <ny value="100"/>
+            <nz value="20"/>
+            <!-- box limit, in galactic-centric frame -->
+            <x_min value=""/> <!-- kpc (default) -->
+            <x_max value=""/> <!-- kpc (default) -->
+            <y_min value=""/> <!-- kpc (default) -->
+            <y_max value=""/> <!-- kpc (default) -->
+            <z_min value=""/> <!-- kpc (default) -->
+            <z_max value=""/> <!-- kpc (default) -->
+        </box_brnd>
     </grid>
     <!-- magnetic fields -->
     <magneticfield>
@@ -166,14 +181,91 @@
         <regular cue="" type="">
             <!-- YMW16 -->
             <ymw16>
-                <warp></warp>
-                <thickdisk></thickdisk>
-                <thindisk></thindisk>
-                <spiralarm></spiralarm>
-                <galcenter></galcenter>
-                <gumnebula></gumnebula>
-                <localbubble></localbubble>
-                <loopi></loopi>
+                <warp>
+                    <r_warp value=""/> <!-- galactic warp, kpc, (default) -->
+                    <gamma_w value=""/> <!-- warp ratio, (default) -->
+                    <r0 value=""/> <!-- Sun radial position, kpc, (default) -->
+                </warp>
+                <thickdisk>
+                    <ad value=""/> <!-- (default) -->
+                    <bd value=""/> <!-- (default) -->
+                    <n1 value=""/> <!-- (default) -->
+                    <h1 value=""/> <!-- (default) -->
+                </thickdisk>
+                <thindisk>
+                    <a2 value=""/> <!-- (default) -->
+                    <b2 value=""/> <!-- (default) -->
+                    <n2 value=""/> <!-- (default) -->
+                    <k2 value=""/> <!-- (default) -->
+                </thindisk>
+                <!-- using HH14 SpiralArms -->
+                <spiralarm>
+                    <b2s value=""/> <!-- (default) -->
+                    <ele_arm_0 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_1 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_2 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_3 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_4 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <wid_arm_0 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_1 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_2 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_3 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_4 value=""/> <!-- typical arm width, pc, (default) -->
+                    <rref_arm_0 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_1 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_2 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_3 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_4 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <phiref_arm_0 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <phiref_arm_1 value=""/> <!-- arm reference azimuthal angle, deg, (default)-->
+                    <phiref_arm_2 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <phiref_arm_3 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <phiref_arm_4 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <pitch_arm_0 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_1 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_2 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_3 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_4 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <aa value=""/> <!-- (default) -->
+                    <ka value=""/> <!-- (default) -->
+                    <ncn value=""/> <!-- (default) -->
+                    <wcn value=""/> <!-- (default) -->
+                    <thetacn value=""/> <!-- (default) -->
+                    <nsg value=""/> <!-- (default) -->
+                    <wsg value=""/> <!-- (default) -->
+                    <thetasg value=""/> <!-- (default) -->
+                </spiralarm>
+                <galcenter>
+                    <ngc value=""/> <!-- (default) -->
+                    <agc value=""/> <!-- (default) -->
+                    <hgc value=""/> <!-- (default) -->
+                </galcenter>
+                <gumnebula>
+                    <ngn value=""/> <!-- (default) -->
+                    <wgn value=""/> <!-- (default) -->
+                    <agn value=""/> <!-- (default) -->
+                    <kgn value=""/> <!-- (default) -->
+                </gumnebula>
+                <localbubble>
+                    <j_lb value=""/> <!-- (default) -->
+                    <nlb1 value=""/> <!-- (default) -->
+                    <detlb1 value=""/> <!-- (default) -->
+                    <wlb1 value=""/> <!-- (default) -->
+                    <hlb1 value=""/> <!-- (default) -->
+                    <thetalb1 value=""/> <!-- (default) -->
+                    <nlb2 value=""/> <!-- (default) -->
+                    <detlb2 value=""/> <!-- (default) -->
+                    <wlb2 value=""/> <!-- (default) -->
+                    <hlb2 value=""/> <!-- (default) -->
+                    <thetalb2 value=""/> <!-- (default) -->
+                </localbubble>
+                <loopi>
+                    <nli value=""/> <!-- (default) -->
+                    <rli value=""/> <!-- (default) -->
+                    <wli value=""/> <!-- (default) -->
+                    <detthetali value=""/> <!-- (default) -->
+                    <thetali value=""/> <!-- (default) -->
+                </loopi>
             </ymw16>
             <!-- uniform -->
             <unif>

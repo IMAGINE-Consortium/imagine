@@ -56,12 +56,14 @@ class SimpleLikelihood(Likelihood):
                 diff = np.nan_to_num(data - obs_mean)
                 likelicache += -float(0.5)*float(np.vdot(diff, diff))
         else:
-            assert (observable_dict.keys() == self._covariance_dict.keys())
             for name in self._measurement_dict.keys():
                 obs_mean = deepcopy(observable_dict[name].ensemble_mean)
                 data = deepcopy(self._measurement_dict[name].to_global_data())
-                cov = deepcopy(self._covariance_dict[name].to_global_data())
                 diff = np.nan_to_num(data - obs_mean)
-                (sign, logdet) = np.linalg.slogdet(cov*2.*np.pi)
-                likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(cov, diff.T))+sign*logdet)
+                if name in self._covariance_dict.keys():  # not all measreuments have cov
+                    cov = deepcopy(self._covariance_dict[name].to_global_data())
+                    (sign, logdet) = np.linalg.slogdet(cov*2.*np.pi)
+                    likelicache += -float(0.5)*float(np.vdot(diff, np.linalg.solve(cov, diff.T))+sign*logdet)
+                else:
+                    likelicache += -float(0.5)*float(np.vdot(diff, diff))
         return likelicache

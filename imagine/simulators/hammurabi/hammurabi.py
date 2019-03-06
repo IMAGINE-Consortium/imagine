@@ -10,6 +10,8 @@ to accommodate updates of Hampyx in future
 only register_observables/fields need modifications
 """
 
+import numpy as np
+
 from imagine.simulators.simulator import Simulator
 from imagine.fields.field import GeneralField
 from imagine.observables.observable_dict import Measurements, Simulations
@@ -21,119 +23,119 @@ from .hampyx import Hampyx
 @icy
 class Hammurabi(Simulator):
 
-	def __init__(self, measurements,
-				 exe_path='/usr/local/hammurabi/bin/hamx',
-				 xml_path='./params.xml'):
-		"""
-		upon initialization, a Hampyx object is initialized
-		and its XML tree should be modified according to measurements
-		without changing its base file
-		:param measurements: Measurements object
-		:param exe_path: hammurabi executable path
-		:param xml_path: hammurabi xml parameter file path
-		"""
-		self.exe_path = exe_path
-		self.xml_path = xml_path
-		self.output_checklist = measurements
-		self._ham = Hampyx(self._exe_path, self._xml_path)
-		self.register_observables()
-		self.ensemble_size = int(0)
+    def __init__(self, measurements,
+                 exe_path='/usr/local/hammurabi/bin/hamx',
+                 xml_path='./params.xml'):
+        """
+        upon initialization, a Hampyx object is initialized
+        and its XML tree should be modified according to measurements
+        without changing its base file
+        :param measurements: Measurements object
+        :param exe_path: hammurabi executable path
+        :param xml_path: hammurabi xml parameter file path
+        """
+        self.exe_path = exe_path
+        self.xml_path = xml_path
+        self.output_checklist = measurements
+        self._ham = Hampyx(self._exe_path, self._xml_path)
+        self.register_observables()
+        self.ensemble_size = int(0)
 
-	@property
-	def exe_path(self):
-		return self._exe_path
+    @property
+    def exe_path(self):
+        return self._exe_path
 
-	@exe_path.setter
-	def exe_path(self, exe_path):
-		self._exe_path = exe_path
+    @exe_path.setter
+    def exe_path(self, exe_path):
+        self._exe_path = exe_path
 
-	@property
-	def xml_path(self):
-		return self._xml_path
+    @property
+    def xml_path(self):
+        return self._xml_path
 
-	@xml_path.setter
-	def xml_path(self, xml_path):
-		self._xml_path = xml_path
+    @xml_path.setter
+    def xml_path(self, xml_path):
+        self._xml_path = xml_path
 
-	@property
-	def output_checklist(self):
-		return self._output_checklist
+    @property
+    def output_checklist(self):
+        return self._output_checklist
 
-	@output_checklist.setter
-	def output_checklist(self, measurements):
-		assert isinstance(measurements, Measurements)
-		self._output_checklist = tuple(measurements.keys())
+    @output_checklist.setter
+    def output_checklist(self, measurements):
+        assert isinstance(measurements, Measurements)
+        self._output_checklist = tuple(measurements.keys())
 
-	@property
-	def ensemble_size(self):
-		return self._ensemble_size
+    @property
+    def ensemble_size(self):
+        return self._ensemble_size
 
-	@ensemble_size.setter
-	def ensemble_size(self, ensemble_size):
-		assert isinstance(ensemble_size, int)
-		self._ensemble_size = ensemble_size
+    @ensemble_size.setter
+    def ensemble_size(self, ensemble_size):
+        assert isinstance(ensemble_size, int)
+        self._ensemble_size = ensemble_size
 
-	def register_observables(self):
-		"""
-		modify hammurabi XML tree according to known output_checklist
-		:return:
-		"""
-		# clean up
-		try:
-			self._ham.del_par(['observable', 'sync'], 'all')
-			self._ham.del_par(['observable', 'dm'], 'all')
-			self._ham.del_par(['observable', 'faraday'], 'all')
-		except ValueError:  # incase no entry in template xml file
-			pass
-		# refill
-		for key in self._output_checklist:
-			name, freq, nside, flag = key
-			if name == 'sync':
-				self._ham.add_par(['observable'], 'sync', {'cue': str(1), 'freq': freq, 'nside': nside})
-			elif name == 'fd':
-				self._ham.add_par(['observable'], 'faraday', {'cue': str(1), 'nside': nside})
-			elif name == 'dm':
-				self._ham.add_par(['observable'], 'dm', {'cue': str(1), 'nside': nside})
-			else:
-				raise ValueError('unrecognised name %s' % name)
-		self._ham.print_par(['observable'])
+    def register_observables(self):
+        """
+        modify hammurabi XML tree according to known output_checklist
+        :return:
+        """
+        # clean up
+        try:
+            self._ham.del_par(['observable', 'sync'], 'all')
+            self._ham.del_par(['observable', 'dm'], 'all')
+            self._ham.del_par(['observable', 'faraday'], 'all')
+        except ValueError:  # incase no entry in template xml file
+            pass
+        # refill
+        for key in self._output_checklist:
+            name, freq, nside, flag = key
+            if name == 'sync':
+                self._ham.add_par(['observable'], 'sync', {'cue': str(1), 'freq': freq, 'nside': nside})
+            elif name == 'fd':
+                self._ham.add_par(['observable'], 'faraday', {'cue': str(1), 'nside': nside})
+            elif name == 'dm':
+                self._ham.add_par(['observable'], 'dm', {'cue': str(1), 'nside': nside})
+            else:
+                raise ValueError('unrecognised name %s' % name)
+        self._ham.print_par(['observable'])
 
-	def register_fields(self, field_list):
-		"""
-		update hammurabi XML tree according to field list
-		:param field_list:
-		:return:
-		"""
-		for field in field_list:
-			# update logical parameters
-			controllist = field.field_controllist
-			for key, clue in controllist.items():
-				assert (len(clue) == 2)
-				self._ham.mod_par(clue[0], clue[1])
-			# update physical parameters
-			checklist = field.field_checklist
-			paramlist = field.parameters
-			for key, clue in checklist.items():
-				assert (len(clue) == 2)
-				self._ham.mod_par(clue[0], {clue[1]: str(paramlist[key])})
-			# update ensemble size
-			self.ensemble_size = field.ensemble_size
+    def register_fields(self, field_list):
+        """
+        update hammurabi XML tree according to field list
+        :param field_list:
+        :return:
+        """
+        for field in field_list:
+            # update logical parameters
+            controllist = field.field_controllist
+            for key, clue in controllist.items():
+                assert (len(clue) == 2)
+                self._ham.mod_par(clue[0], clue[1])
+            # update physical parameters
+            checklist = field.field_checklist
+            paramlist = field.parameters
+            for key, clue in checklist.items():
+                assert (len(clue) == 2)
+                self._ham.mod_par(clue[0], {clue[1]: str(paramlist[key])})
+            # update ensemble size
+            self.ensemble_size = field.ensemble_size
 
-	def __call__(self, field_list):
-		"""
-		run hammurabi executable
-		pack up outputs in IMAGINE convention
-		:param field_list: list of GeneralField objects
-		:return: Simulations object
-		"""
-		# update parameters
-		self.register_fields(field_list)
-		# execute hammurabi ensemble
-		sims = Simulations()
-		for i in range(self._ensemble_size):
-			self._ham()
-			# pack up outputs
-			for key, dat in self._ham.sim_map.items():
-				sims.append(key, dat)
-		# return
-		return sims
+    def __call__(self, field_list):
+        """
+        run hammurabi executable
+        pack up outputs in IMAGINE convention
+        :param field_list: list of GeneralField objects
+        :return: Simulations object
+        """
+        # update parameters
+        self.register_fields(field_list)
+        # execute hammurabi ensemble
+        sims = Simulations()
+        for i in range(self._ensemble_size):
+            self._ham()
+            # pack up outputs
+            for key in self._output_checklist:
+                sims.append(key, np.vstack([self._ham.sim_map[key]]))
+        # return
+        return sims
