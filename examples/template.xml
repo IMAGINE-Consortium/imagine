@@ -31,7 +31,7 @@
             <layer type="auto">
                 <auto>
                     <shell_num value="1"/> <!-- total shell number (default) -->
-                    <nside_min value="32"/> <!-- inner most shell resolution (default) -->
+                    <nside_min value="2"/> <!-- inner most shell resolution (default) -->
                 </auto>
                 <!-- set shell resolution from inside out -->
                 <!-- set shell cutting point from inside out -->
@@ -52,7 +52,7 @@
             <gc_z_min value=""/> <!-- kpc (default) -->
             <gc_z_max value=""/> <!-- kpc (default) -->
             <!-- radial integration resolution -->
-            <ec_r_res value=""/> <!-- kpc (default) -->
+            <ec_r_res value="0.1"/> <!-- kpc (default) -->
             <!-- galactic latitude limit, both poles -->
             <lat_min value=""/> <!--  (default) -->
             <lat_max value=""/> <!--  (default) -->

@@ -1,5 +1,5 @@
 """
-hammurabi + pyMultinest
+hammurabi + regular field example
 """
 
 import numpy as np
@@ -8,6 +8,7 @@ import logging as log
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 from imagine.priors.flat_prior import FlatPrior
+from imagine.pipelines.dynesty_pipeline import DynestyPipeline
 from imagine.pipelines.multinest_pipeline import MultinestPipeline
 
 from imagine.simulators.hammurabi.hammurabi import Hammurabi
@@ -28,6 +29,8 @@ matplotlib.use('Agg')
 
 
 def wmap():
+    log.basicConfig(filename='imagine.log', level=log.DEBUG)
+    
     """
     only WMAP regular magnetic field model in test, @ 23GHz
     Faraday rotation provided by YMW16 free electron model
@@ -88,9 +91,10 @@ def wmap():
     """
     likelihood = EnsembleLikelihood(mock_data, mock_cov)
 
-    breg_factory = BregWMAPFactory(active_parameters=('b0', ))
-    breg_factory.parameter_ranges = {'b0': (0., 10.)}
-    cre_factory = CREAnaFactory()
+    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0'))
+    breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.)}
+    cre_factory = CREAnaFactory(active_parameters=('alpha',))
+    cre_factory.parameter_ragnes = {'alpha': (1., 5.)}
     fereg_factory = FEregYMW16Factory()
     factory_list = [breg_factory, cre_factory, fereg_factory]
 
@@ -101,15 +105,19 @@ def wmap():
     ensemble_size = 2
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_seed = 0
-    pipe.sampling_controllers = {'n_iter_before_update': 1,
-                                 'n_live_points': 400,
-                                 'verbose': False,
-                                 'resume': False}
+    pipe.sampling_controllers = {'n_live_points': 1000, 'resume': False, 'verbose': True}
     results = pipe()
 
     """
     # step 3, visualize (with corner package)
     """
+    # screen printing
+    print('\n evidence: %(logZ).1f +- %(logZerr).1f \n' % results)
+    print('parameter values: \n')
+    for name, col in zip(pipe.active_parameters, results['samples'].transpose()):
+        print('%15s : %.3f +- %.3f \n' % (name, col.mean(), col.std()))
+
+    # posterior plotting
     samples = results['samples']
     for i in range(len(pipe.active_parameters)):  # convert variables into parameters
         low, high = pipe.active_ranges[pipe.active_parameters[i]]
@@ -128,7 +136,7 @@ def wmap():
                   plot_contours=True,
                   hist_kwargs={'linewidth': 2},
                   label_kwargs={'fontsize': 20})
-    matplotlib.pyplot.savefig('wmap_posterior.pdf')
+    matplotlib.pyplot.savefig('posterior.pdf')
 
 
 if __name__ == '__main__':
