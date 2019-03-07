@@ -55,7 +55,7 @@ def wmap():
     measuredict = Measurements()
     measuredict.append(('sync', '23', str(mea_nside), 'I'), x)  # only I map
     xmlpath = './template.xml'
-    mocker = Hammurabi(measurements=measuredict,xml_path=xmlpath)
+    mocker = Hammurabi(measurements=measuredict, xml_path=xmlpath)
     # BregWMAP field
     paramlist = {'b0': 6.0, 'psi0': 27.0, 'psi1': 0.9, 'chi0': 25.0}
     breg_wmap = BregWMAP(paramlist, 1)
@@ -79,9 +79,9 @@ def wmap():
     """
     # 1.2, visualize mock data
     """
-    import healpy as hp
-    sync_i_raw = outputs[('sync','23',str(mea_nside),'I')].to_global_data()
-    hp.write_map('mock.fits',sync_i_raw)
+    #import healpy as hp
+    #sync_i_raw = outputs[('sync','23',str(mea_nside),'I')].to_global_data()
+    #hp.write_map('mock.fits',sync_i_raw)
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -101,7 +101,10 @@ def wmap():
     ensemble_size = 2
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_seed = 0
-    pipe.sampling_controllers = {'nlive': 800}
+    pipe.sampling_controllers = {'n_iter_before_update': 1,
+                                 'n_live_points': 400,
+                                 'verbose': False,
+                                 'resume': False}
     results = pipe()
 
     """

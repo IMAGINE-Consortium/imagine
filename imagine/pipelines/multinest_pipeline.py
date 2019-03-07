@@ -227,7 +227,7 @@ class MultinestPipeline(object):
                                             ensemble_size=self.ensemble_size,
                                             random_seed=self._random_seed),)
             log.debug('create '+factory.name+' field')
-            head_idx += tail_idx
+            head_idx = tail_idx
         assert(head_idx == tail_idx)
         assert(head_idx == len(self._active_parameters))
         # create observables from fresh fields
