@@ -1,5 +1,15 @@
 """
 hammurabi + regular field example
+
+without random fields, ensemble likelihood will act like simple likelihood
+in order to check if the pipeline works as expected
+we first put theoretical uncertainties in mock models and with error propagation
+the mock data is produced with covariance with controlled source
+a well-designed Bayesian analysis should be able to recover the pre-defined uncertainties
+
+observables'/raidal integration resolutions are not very important in current example,
+we set radial resolution as 0.1kpc, which brings, at maximum
+2.5% relative integration error in simulated observables
 """
 
 import numpy as np
@@ -21,6 +31,8 @@ from imagine.fields.cre_analytic.hamx_factory import CREAnaFactory
 from imagine.fields.fereg_ymw16.hamx_field import FEregYMW16
 from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
 
+from imagine.tools.covariance_estimator import oas_cov
+
 # visualize posterior
 import corner
 import matplotlib
@@ -36,48 +48,55 @@ def wmap():
     Faraday rotation provided by YMW16 free electron model
     full WMAP parameter set {b0, psi0, psi1, chi0}
     """
+    # hammurabi parameter base file
+    xmlpath = './params_hammurabi_regular.xml'
     
-    true_b0 = 6.0
-    true_psi0 = 27.0
-    true_psi1 = 0.9
-    true_chi0 = 25.0
-    mea_std = 1.0e-4
-    mea_nside = 2
-    mea_pix = 12*mea_nside**2
-    truths = [true_b0, true_psi0, true_psi1, true_chi0]
+    # we take three active parameters
+    true_b0 = 6.0  # in breg wmap
+    true_psi0 = 27.0  # in breg wmap
+    true_alpha = 3.0  # in cre analytic
+    truths = [true_b0, true_psi0, true_alpha]
+    
+    mea_nside = 2  # observable Nside
+    mea_pix = 12*mea_nside**2  # observable pixel number
 
     """
     # step 1, prepare mock data
     """
-
-    """
-    # 1.1, generate measurements
-    mea_field = signal_field + noise_field
-    """
-    x = np.zeros((1, mea_pix))
-    measuredict = Measurements()
-    measuredict.append(('sync', '23', str(mea_nside), 'I'), x)  # only I map
-    xmlpath = './template.xml'
-    mocker = Hammurabi(measurements=measuredict, xml_path=xmlpath)
-    # BregWMAP field
-    paramlist = {'b0': 6.0, 'psi0': 27.0, 'psi1': 0.9, 'chi0': 25.0}
-    breg_wmap = BregWMAP(paramlist, 1)
-    # CREAna field
-    paramlist = {'alpha': 3.0, 'beta': 0.0, 'theta': 0.0,
-                 'r0': 5.0, 'z0': 1.0,
-                 'E0': 20.6, 'j0': 0.0217}
-    cre_ana = CREAna(paramlist, 1)
-    # FEregYMW16 field
-    paramlist = dict()
-    fereg_ymw16 = FEregYMW16(paramlist, 1)
-    # collect mock data and covariance
-    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+    x = np.zeros((1, mea_pix))  # only for triggering simulator
+    trigger = Measurements()
+    trigger.append(('sync', '23', str(mea_nside), 'I'), x)  # only I map
+    # initialize simulator
+    mocksize = 20  # ensemble of mock data
+    error = 0.1  # theoretical raltive uncertainty for each (active) parameter
+    mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
+    # prepare theoretical uncertainty
+    b0_var = np.random.normal(true_b0, error*true_b0, mocksize)
+    psi0_var = np.random.normal(true_psi0, error*true_psi0, mocksize)
+    alpha_var = np.random.normal(true_alpha, error*true_alpha, mocksize)
+    mock_ensemble = np.zeros((mocksize, mea_pix))
+    # start simulation
+    for i in range(mocksize):  # get one realization each time
+        # BregWMAP field
+        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': 0.9, 'chi0': 25.0}  # inactive parameters at default
+        breg_wmap = BregWMAP(paramlist, 1)
+        # CREAna field
+        paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
+                     'r0': 5.0, 'z0': 1.0,
+                     'E0': 20.6, 'j0': 0.0217}  # inactive parameters at default
+        cre_ana = CREAna(paramlist, 1)
+        # FEregYMW16 field
+        paramlist = dict()
+        fereg_ymw16 = FEregYMW16(paramlist, 1)
+        # collect mock data and covariance
+        outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+        mock_ensemble[i, :] = outputs[('sync', '23', str(mea_nside), 'I')].to_global_data()
+    # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
-    mea_cov = (mea_std**2) * np.eye(mea_pix)
-    for key in outputs.keys():
-        mock_data.append(key, outputs[key])
-        mock_cov.append(key, mea_cov)
+    cov_matrix = oas_cov(mock_ensemble)
+    mock_data.append(('sync', '23', str(mea_nside), 'I'), np.vstack([np.mean(mock_ensemble, axis=0)]))
+    mock_cov.append(('sync', '23', str(mea_nside), 'I'), cov_matrix)
 
     """
     # 1.2, visualize mock data
@@ -94,7 +113,7 @@ def wmap():
     breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.)}
     cre_factory = CREAnaFactory(active_parameters=('alpha',))
-    cre_factory.parameter_ragnes = {'alpha': (1., 5.)}
+    cre_factory.parameter_ranges = {'alpha': (1., 5.)}
     fereg_factory = FEregYMW16Factory()
     factory_list = [breg_factory, cre_factory, fereg_factory]
 
@@ -131,7 +150,7 @@ def wmap():
                   show_titles=True,
                   title_kwargs={"fontsize": 15},
                   color='steelblue',
-                  truths=[true_b0],
+                  truths=truths,
                   truth_color='firebrick',
                   plot_contours=True,
                   hist_kwargs={'linewidth': 2},
