@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 # users may need python3-tk, please install it manually: apt-get install python3-tk
 
-RUN apt-get update
+RUN apt-get update --fix-missing
 RUN apt-get install -y build-essential python3 python3-pip python3-dev git gfortran autoconf gsl-bin libgsl-dev wget unzip vim cmake valgrind
 RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corner
 
@@ -90,10 +90,6 @@ RUN git clone https://ricphy@bitbucket.org/ricphy/imagine.git imagine
 WORKDIR /home/lab/imagine
 RUN python3 setup.py install
 WORKDIR /home/lab
-
-#Jupyter OPEN ISSUE
-#downgrading tornado
-RUN pip3 install tornado==5.1.1
 
 # CLEAN PACKAGES
 RUN rm -f *.tar.gz
