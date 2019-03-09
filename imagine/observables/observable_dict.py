@@ -1,12 +1,17 @@
 """
 for convenience we define dictionary of Observable objects as
 ObservableDict and inherit from which,
-we define Measurements, Covariances and Simulations
+we define Measurements, Covariances, Simulations and Masks
 for storing
     -- observational data sets
     -- observational covariances
     -- simulated ensemble sets
+    -- HEALPix mask maps
 separately
+
+by HEALPix convention,
+masked erea associated with pixel value 0,
+unmasked area with pixel value 1
 
 notice covariance matrix should not have Observable structure,
 instead, it can be a single domain NIFTy5 Field or numpy ndarray,
@@ -36,6 +41,10 @@ remarks on observable name:
     so we put 'nan' instead
     -- str(pix/nside) stores either Healpix Nisde, or just number of pixels/points
     we do this for flexibility, in case users have non-HEALPix based in/output
+
+mask method:
+    -- mask only applies to observables/covariances
+    observable after masking will be re-recorded as plain data type
 """
 
 import numpy as np
@@ -44,6 +53,7 @@ import logging as log
 from nifty5 import Field, RGSpace, HPSpace, DomainTuple
 
 from imagine.observables.observable import Observable
+from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.icy_decorator import icy
 
 
@@ -84,12 +94,55 @@ class ObservableDict(object):
         """
         pass
 
+    def apply_mask(self, mask_dict):
+        """
+        apply mask maps
+        :param mask_dict: Masks object
+        """
+        pass
 
+
+@icy
+class Masks(ObservableDict):
+
+    def __init__(self):
+        super(Masks, self).__init__()
+
+    def append(self, name, data, plain=False):
+        assert (len(name) == 4)
+        if isinstance(data, Observable):
+            assert (data.domain.shape[0] == 1)
+            raw_data = data.to_global_data()
+            for i in raw_data[0]:
+                assert (i == float(0) or i == float(1))
+            self._archive[name] = data
+        elif isinstance(data, Field):
+            assert (data.domain.shape[0] == 1)
+            raw_data = data.to_global_data()
+            for i in raw_data[0]:
+                assert (i == float(0) or i == float(1))
+            self._archive[name] = Observable(data.domain, data.to_global_data())
+        elif isinstance(data, np.ndarray):
+            assert (data.shape[0] == 1)
+            for i in data[0]:
+                assert (i == float(0) or i == float(1))
+            if plain:
+                assert (data.shape[1] == int(name[2]))
+                domain = DomainTuple.make((RGSpace(int(1)), RGSpace(data.shape[1])))
+            else:
+                assert (data.shape[1] == 12*int(name[2])*int(name[2]))              
+                domain = DomainTuple.make((RGSpace(int(1)), HPSpace(nside=int(name[2]))))
+            self._archive[name] = Observable(domain, data)
+        else:
+            raise TypeError('unsupported data type')
+        log.debug('mask-dict appends data %s' % str(name))
+
+
+@icy
 class Measurements(ObservableDict):
 
     def __init__(self):
         super(Measurements, self).__init__()
-        log.debug('initialize Measurements')
 
     def append(self, name, data, plain=False):
         assert (len(name) == 4)
@@ -99,7 +152,7 @@ class Measurements(ObservableDict):
         elif isinstance(data, Field):
             assert (data.domain.shape[0] == 1)
             self._archive[name] = Observable(data.domain, data.to_global_data())  # rw
-        if isinstance(data, np.ndarray):
+        elif isinstance(data, np.ndarray):
             assert (data.shape[0] == 1)
             if plain:
                 assert (data.shape[1] == int(name[2]))
@@ -108,9 +161,20 @@ class Measurements(ObservableDict):
                 assert (data.shape[1] == 12*int(name[2])*int(name[2]))
                 domain = DomainTuple.make((RGSpace(int(1)), HPSpace(nside=int(name[2]))))
             self._archive[name] = Observable(domain, data)  # rw
+        else:
+            raise TypeError('unsupported data type')
         log.debug('measurements-dict appends data %s' % str(name))
 
+    def apply_mask(self, mask_dict):
+        assert isinstance(mask_dict, Masks)
+        for name, msk in mask_dict._archive.items():
+            masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+            new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+            self._archive.pop(name, None)  # pop out obsolete
+            self.append(new_name, masked, plain=True)  # append new as plain data
 
+
+@icy
 class Simulations(ObservableDict):
 
     def __init__(self):
@@ -140,9 +204,20 @@ class Simulations(ObservableDict):
                     assert (data.shape[1] == 12*int(name[2])*int(name[2]))
                     domain = DomainTuple.make((RGSpace(data.shape[0]), HPSpace(nside=int(name[2]))))
                 self._archive[name] = Observable(domain, data)
+            else:
+                raise TypeError('unsupported data type')
         log.debug('observable-dict appends data %s' % str(name))
 
+    def apply_mask(self, mask_dict):
+        assert isinstance(mask_dict, Masks)
+        for name, msk in mask_dict._archive.items():
+            masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+            new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+            self._archive.pop(name, None)  # pop out obsolete
+            self.append(new_name, masked, plain=True)  # append new as plain data
 
+
+@icy
 class Covariances(ObservableDict):
 
     def __init__(self):
@@ -168,4 +243,14 @@ class Covariances(ObservableDict):
         elif isinstance(data, np.ndarray):
             domain = DomainTuple.make(RGSpace(shape=data.shape))
             self._archive[name] = Field.from_global_data(domain, data)  # rw
+        else:
+            raise TypeError('unsupported data type')
         log.debug('covariances-dict appends data %s' % str(name))
+
+    def apply_mask(self, mask_dict):
+        assert isinstance(mask_dict, Masks)
+        for name, msk in mask_dict._archive.items():
+            masked = mask_cov(self._archive[name].to_global_data(), msk.to_global_data())
+            new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+            self._archive.pop(name, None)  # pop out obsolete
+            self.append(new_name, masked, plain=True)  # append new as plain data

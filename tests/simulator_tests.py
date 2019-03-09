@@ -6,7 +6,6 @@ from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.simulators.test.bi_simulator import BiSimulator
 from imagine.fields.test_field.test_field import TestField
 from imagine.observables.observable_dict import Simulations, Measurements
-from imagine.tools.random_seed import seed_generator
 
 
 class TestSimulators(unittest.TestCase):
@@ -29,12 +28,6 @@ class TestSimulators(unittest.TestCase):
         measuredict.append(('test', 'nan', '3', 'nan'), arr, True)
         # simulator
         simer = LiSimulator(measuredict)
-        # test seed gen, in base class
-        s1 = seed_generator(0)
-        s2 = seed_generator(0)
-        self.assertNotEqual(s1, s2)
-        s3 = seed_generator(48)
-        self.assertEqual(s3, 48)
         # regular field check
         mock_par = {'a': 2, 'b': 0, 'random_seed': 0}
         obs_arr = simer.obs_generator(mock_par, 1, 20)
@@ -58,12 +51,6 @@ class TestSimulators(unittest.TestCase):
         measuredict.append(('test', 'nan', '3', 'nan'), arr, True)
         # simulator
         simer = BiSimulator(measuredict)
-        # test seed gen, in base class
-        s1 = seed_generator(0)
-        s2 = seed_generator(0)
-        self.assertNotEqual(s1, s2)
-        s3 = seed_generator(48)
-        self.assertEqual(s3, 48)
         # regular field check
         mock_par = {'a': 2, 'b': 0, 'random_seed': 0}
         obs_arr = simer.obs_generator(mock_par, 1, 20)

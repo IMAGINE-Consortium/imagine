@@ -3,7 +3,7 @@ import logging as log
 from copy import deepcopy
 
 from imagine.observables.observable import Observable
-from imagine.observables.observable_dict import Measurements, Simulations, Covariances
+from imagine.observables.observable_dict import Measurements, Simulations, Covariances, Masks
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.tools.icy_decorator import icy
 
@@ -11,14 +11,26 @@ from imagine.tools.icy_decorator import icy
 @icy
 class SimpleLikelihood(Likelihood):
 
-    def __init__(self, measurement_dict, covariance_dict=None):
+    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
         """
 
         :param measurement_dict: Measurements object
         :param covariance_dict: Covariances object
+        :param mask_dict: Masks object
         """
+        self.mask_dict = mask_dict
         self.measurement_dict = measurement_dict
         self.covariance_dict = covariance_dict
+
+    @property
+    def mask_dict(self):
+        return self._mask_dict
+
+    @mask_dict.setter
+    def mask_dict(self, mask_dict):
+        if mask_dict is not None:
+            assert isinstance(mask_dict, Masks)
+        self._mask_dict = mask_dict
 
     @property
     def measurement_dict(self):
@@ -27,7 +39,10 @@ class SimpleLikelihood(Likelihood):
     @measurement_dict.setter
     def measurement_dict(self, measurement_dict):
         assert isinstance(measurement_dict, Measurements)
-        self._measurement_dict = measurement_dict
+        if self._mask_dict is None:
+            self._measurement_dict = measurement_dict
+        else:  # apply masks
+            self._measurement_dict = measurement_dict.apply_mask(self._mask_dict)
 
     @property
     def covariance_dict(self):
@@ -37,7 +52,10 @@ class SimpleLikelihood(Likelihood):
     def covariance_dict(self, covariance_dict):
         if covariance_dict is not None:
             assert isinstance(covariance_dict, Covariances)
-        self._covariance_dict = covariance_dict
+        if self._mask_dict is None:
+            self._covariance_dict = covariance_dict
+        else:  # apply masks
+            self._covariance_dict = covariance_dict.apply_mask(self._mask_dict)
 
     def __call__(self, observable_dict):
         """

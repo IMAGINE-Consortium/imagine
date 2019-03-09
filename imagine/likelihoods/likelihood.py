@@ -7,6 +7,7 @@ __init__
     -- initialisation requires
     Measurements object
     Covariances object
+    Masks object
 __call__
     -- running LOG-likelihood calculation requires
     ObservableDict object

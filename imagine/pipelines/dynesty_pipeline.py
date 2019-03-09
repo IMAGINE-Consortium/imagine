@@ -235,6 +235,7 @@ class DynestyPipeline(object):
         assert(head_idx == len(self._active_parameters))
         # create observables from fresh fields
         observables = self._simulator(field_list)
+        observables.apply_mask(self.likelihood.mask_dict)
         log.debug('create observables')
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)

@@ -4,7 +4,7 @@ import numpy as np
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
 
 from imagine.observables.observable import Observable
-from imagine.observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances
+from imagine.observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances, Masks
 
 
 class TestObservableDicts(unittest.TestCase):
@@ -94,6 +94,49 @@ class TestObservableDicts(unittest.TestCase):
         covdict.append(('test', 'nan', '2', 'nan'), cov_field)  # healpix covariance
         for i in range(len(cov)):
             self.assertListEqual(list((covdict[('test', 'nan', '2', 'nan')].to_global_data())[i]), list(cov[i]))
+
+    def test_maskdict_append_array(self):
+        msk = np.random.randint(0, 2, 48).reshape(1, 48)
+        mskdict = Masks()
+        mskdict.append(('test', 'nan', '2', 'nan'), msk)
+        self.assertListEqual(list((mskdict[('test', 'nan', '2', 'nan')].to_global_data())[0]), list(msk[0]))
+        mskdict.append(('test', 'nan', '48', 'nan'), msk, True)
+        self.assertListEqual(list((mskdict[('test', 'nan', '48', 'nan')].to_global_data())[0]), list(msk[0]))
+
+    def test_meadict_apply_mask(self):
+        msk = np.array([0, 1, 0, 1, 1]).reshape(1, 5)
+        mskdict = Masks()
+        mskdict.append(('test', 'nan', '5', 'nan'), msk, True)
+        arr = np.array([0., 1., 2., 3., 4.]).reshape(1, 5)
+        meadict = Measurements()
+        meadict.append(('test', 'nan', '5', 'nan'), arr, True)
+        meadict.apply_mask(mskdict)
+        self.assertListEqual(list((meadict[('test', 'nan', '3', 'nan')].to_global_data())[0]), [1., 3., 4.])
+        # HEALPix map
+        msk = np.random.randint(0, 2, 48).reshape(1, 48)
+        mskdict.append(('test', 'nan', '2', 'nan'), msk)
+        arr = np.random.rand(1, 48)
+        meadict.append(('test', 'nan', '2', 'nan'), arr)
+        pix_num = int(0)
+        for i in msk[0]:
+            if i == 1:
+                pix_num += int(1)
+        mskdict._archive.pop(('test', 'nan', '5', 'nan'), None)
+        meadict.apply_mask(mskdict)
+        self.assertTrue(('test', 'nan', str(pix_num), 'nan') in meadict.keys())
+
+    def test_covdict_apply_mask(self):
+        msk = np.array([0, 1, 0, 1, 1]).reshape(1, 5)
+        mskdict = Masks()
+        mskdict.append(('test', 'nan', '5', 'nan'), msk, True)
+        arr = np.random.rand(5, 5)
+        covdict = Covariances()
+        covdict.append(('test', 'nan', '5', 'nan'), arr, True)
+        covdict.apply_mask(mskdict)
+        arr = np.delete(arr, [0, 2], 0)
+        arr = np.delete(arr, [0, 2], 1)
+        for i in range(arr.shape[0]):
+            self.assertListEqual(list((covdict[('test', 'nan', '3', 'nan')].to_global_data())[i]), list(arr[i]))
 
 
 if __name__ == '__main__':
