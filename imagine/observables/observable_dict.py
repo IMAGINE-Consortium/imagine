@@ -166,12 +166,15 @@ class Measurements(ObservableDict):
         log.debug('measurements-dict appends data %s' % str(name))
 
     def apply_mask(self, mask_dict):
-        assert isinstance(mask_dict, Masks)
-        for name, msk in mask_dict._archive.items():
-            masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
-            new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-            self._archive.pop(name, None)  # pop out obsolete
-            self.append(new_name, masked, plain=True)  # append new as plain data
+        if mask_dict is None:
+            pass
+        else:
+            assert isinstance(mask_dict, Masks)
+            for name, msk in mask_dict._archive.items():
+                masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+                new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                self._archive.pop(name, None)  # pop out obsolete
+                self.append(new_name, masked, plain=True)  # append new as plain data
 
 
 @icy
@@ -209,12 +212,15 @@ class Simulations(ObservableDict):
         log.debug('observable-dict appends data %s' % str(name))
 
     def apply_mask(self, mask_dict):
-        assert isinstance(mask_dict, Masks)
-        for name, msk in mask_dict._archive.items():
-            masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
-            new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-            self._archive.pop(name, None)  # pop out obsolete
-            self.append(new_name, masked, plain=True)  # append new as plain data
+        if mask_dict is None:
+            pass
+        else:
+            assert isinstance(mask_dict, Masks)
+            for name, msk in mask_dict._archive.items():
+                masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+                new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                self._archive.pop(name, None)  # pop out obsolete
+                self.append(new_name, masked, plain=True)  # append new as plain data
 
 
 @icy
@@ -248,9 +254,12 @@ class Covariances(ObservableDict):
         log.debug('covariances-dict appends data %s' % str(name))
 
     def apply_mask(self, mask_dict):
-        assert isinstance(mask_dict, Masks)
-        for name, msk in mask_dict._archive.items():
-            masked = mask_cov(self._archive[name].to_global_data(), msk.to_global_data())
-            new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-            self._archive.pop(name, None)  # pop out obsolete
-            self.append(new_name, masked, plain=True)  # append new as plain data
+        if mask_dict is None:
+            pass
+        else:
+            assert isinstance(mask_dict, Masks)
+            for name, msk in mask_dict._archive.items():
+                masked = mask_cov(self._archive[name].to_global_data(), msk.to_global_data())
+                new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                self._archive.pop(name, None)  # pop out obsolete
+                self.append(new_name, masked, plain=True)  # append new as plain data
