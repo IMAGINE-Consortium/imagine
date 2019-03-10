@@ -88,10 +88,13 @@ class Hammurabi(Simulator):
         except ValueError:  # incase no entry in template xml file
             pass
         # refill
+        sync_name_cache = list()
         for key in self._output_checklist:
             name, freq, nside, flag = key
             if name == 'sync':
-                self._ham.add_par(['observable'], 'sync', {'cue': str(1), 'freq': freq, 'nside': nside})
+                if (freq, nside) not in sync_name_cache:  # avoid duplication
+                    self._ham.add_par(['observable'], 'sync', {'cue': str(1), 'freq': freq, 'nside': nside})
+                    sync_name_cache.append((freq, nside))
             elif name == 'fd':
                 self._ham.add_par(['observable'], 'faraday', {'cue': str(1), 'nside': nside})
             elif name == 'dm':

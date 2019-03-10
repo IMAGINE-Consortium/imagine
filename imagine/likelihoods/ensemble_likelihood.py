@@ -44,10 +44,8 @@ class EnsembleLikelihood(Likelihood):
     @measurement_dict.setter
     def measurement_dict(self, measurement_dict):
         assert isinstance(measurement_dict, Measurements)
-        if self._mask_dict is None:
-            self._measurement_dict = measurement_dict
-        else:  # apply masks
-            self._measurement_dict = measurement_dict.apply_mask(self._mask_dict)
+        self._measurement_dict = measurement_dict
+        self._measurement_dict.apply_mask(self._mask_dict)
 
     @property
     def covariance_dict(self):
@@ -57,10 +55,8 @@ class EnsembleLikelihood(Likelihood):
     def covariance_dict(self, covariance_dict):
         if covariance_dict is not None:
             assert isinstance(covariance_dict, Covariances)
-        if self._mask_dict is None:
             self._covariance_dict = covariance_dict
-        else:  # apply masks
-            self._covariance_dict = covariance_dict.apply_mask(self._mask_dict)
+            self._covariance_dict.apply_mask(self._mask_dict)
     
     def __call__(self, observable_dict):
         """

@@ -171,10 +171,11 @@ class Measurements(ObservableDict):
         else:
             assert isinstance(mask_dict, Masks)
             for name, msk in mask_dict._archive.items():
-                masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
-                new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-                self._archive.pop(name, None)  # pop out obsolete
-                self.append(new_name, masked, plain=True)  # append new as plain data
+                if name in self._archive.keys():
+                    masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                    self._archive.pop(name, None)  # pop out obsolete
+                    self.append(new_name, masked, plain=True)  # append new as plain data
 
 
 @icy
@@ -217,10 +218,11 @@ class Simulations(ObservableDict):
         else:
             assert isinstance(mask_dict, Masks)
             for name, msk in mask_dict._archive.items():
-                masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
-                new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-                self._archive.pop(name, None)  # pop out obsolete
-                self.append(new_name, masked, plain=True)  # append new as plain data
+                if name in self._archive.keys():
+                    masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                    self._archive.pop(name, None)  # pop out obsolete
+                    self.append(new_name, masked, plain=True)  # append new as plain data
 
 
 @icy
@@ -259,7 +261,8 @@ class Covariances(ObservableDict):
         else:
             assert isinstance(mask_dict, Masks)
             for name, msk in mask_dict._archive.items():
-                masked = mask_cov(self._archive[name].to_global_data(), msk.to_global_data())
-                new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-                self._archive.pop(name, None)  # pop out obsolete
-                self.append(new_name, masked, plain=True)  # append new as plain data
+                if name in self._archive.keys():
+                    masked = mask_cov(self._archive[name].to_global_data(), msk.to_global_data())
+                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                    self._archive.pop(name, None)  # pop out obsolete
+                    self.append(new_name, masked, plain=True)  # append new as plain data

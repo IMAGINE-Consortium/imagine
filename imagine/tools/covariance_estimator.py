@@ -30,6 +30,8 @@ def oas_cov(_sample):
     """
     assert isinstance(_sample, np.ndarray)
     n, p = _sample.shape
+    if n == 1:
+        return np.zeros((p, p))
     m = np.median(_sample, axis=0)
     u = _sample-m
     s = np.dot(u.T, u)/n
@@ -73,6 +75,8 @@ def oas_mcov(_sample):
     assert isinstance(_sample, Observable)
     n, p = _sample.shape
     assert (p > 0 and n > 1)
+    if n == 1:
+        return _sample, np.zeros((p, p))
     mean = _sample.ensemble_mean
     u = _sample.to_global_data() - mean
     # empirical covariance S

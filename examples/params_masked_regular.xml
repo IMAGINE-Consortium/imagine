@@ -1,0 +1,321 @@
+<?xml version="1.0"?>
+<!-- FULL HAMMURABI PARAMETER SET -->
+<!-- DO NOT USE UPPERCASE, EXCEPT ENERGY -->
+<!-- elements marked with (optional) are optional -->
+<!-- elements marked with (default) have default settings -->
+<root>
+    <!-- observable output -->
+    <!-- frequency @ GHz -->
+    <observable>
+        <dm cue="" filename="" nside=""/> <!-- Dispersion Measure (optional) -->
+        <faraday cue="" filename="" nside=""/> <!-- Faraday depth (optional) -->
+        <sync cue="" freq="" filename="" nside=""/> <!-- synchrotron dmission (optional) -->
+    </observable>
+    <!-- physical field in/out -->
+    <!-- resolution defined in './Grid/Box' -->
+    <!-- CRE field resolution defined in './CRE/Numeric' -->
+    <fieldio>
+        
+    </fieldio>
+    <!-- field & observable grid -->
+    <grid>
+        <!-- galactic-centric position of observer -->
+        <observer>
+            <x value=""/> <!-- kpc (optional, default) -->
+            <y value=""/> <!-- kpc (optional, default) -->
+            <z value=""/> <!-- pc (optional, default) -->
+        </observer>
+        
+        <!-- LoS integration helio/observer-centric spherical shell setting -->
+        <shell> <!-- (optional) if nothing under observable -->
+            <layer type="auto">
+                <auto>
+                    <shell_num value="1"/> <!-- total shell number (default) -->
+                    <nside_min value="16"/> <!-- inner most shell resolution (default) -->
+                </auto>
+                <!-- set shell resolution from inside out -->
+                <!-- set shell cutting point from inside out -->
+                <manual> <!-- total shell number calculated automatically -->
+                    <cut value=""/> <!-- cut at half of total shell radius -->
+                    <!-- list niside from inside-out -->
+                    <nside value=""/> <!-- inner most shell Nside -->
+                    <nside value=""/>
+                </manual>
+            </layer>
+            <!-- helio/observer-centric radial limit -->
+            <ec_r_min value=""/> <!-- kpc (default) -->
+            <ec_r_max value=""/> <!-- kpc (default) -->
+            <!-- galactic-centric radial limit -->
+            <gc_r_min value=""/> <!-- kpc (default) -->
+            <gc_r_max value=""/> <!-- kpc (default) -->
+            <!-- galactic-centric height limit -->
+            <gc_z_min value=""/> <!-- kpc (default) -->
+            <gc_z_max value=""/> <!-- kpc (default) -->
+            <!-- radial integration resolution -->
+            <ec_r_res value="0.01"/> <!-- kpc (default) -->
+            <!-- galactic latitude limit, both poles -->
+            <lat_min value="60"/> <!--  (default) -->
+            <lat_max value="90"/> <!--  (default) -->
+            <!-- galactic longitude limit, both poles -->
+            <lon_min value=""/> <!--  (default) -->
+            <lon_max value=""/> <!--  (default) -->
+        </shell>
+        
+        <!-- turbulent GMF grid -->
+        <box_brnd> <!-- (optional) if no brnd I/O AND no internal brnd model -->
+            <!-- grid vertex size -->
+            <nx value="100"/>
+            <ny value="100"/>
+            <nz value="20"/>
+            <!-- box limit, in galactic-centric frame -->
+            <x_min value=""/> <!-- kpc (default) -->
+            <x_max value=""/> <!-- kpc (default) -->
+            <y_min value=""/> <!-- kpc (default) -->
+            <y_max value=""/> <!-- kpc (default) -->
+            <z_min value=""/> <!-- kpc (default) -->
+            <z_max value=""/> <!-- kpc (default) -->
+        </box_brnd>
+    </grid>
+    <!-- magnetic fields -->
+    <magneticfield>
+        <!-- regular fields -->
+        <!-- if cue="0", all child elements are opitonal -->
+        <regular cue="" type="">
+            <!-- WMAP LSA -->
+            <wmap>
+                <b0 value=""/> <!-- microG -->
+                <psi0 value=""/> <!-- deg -->
+                <psi1 value=""/> <!-- deg -->
+                <chi0 value=""/> <!-- deg -->
+            </wmap>
+            <!-- Jaffe -->
+            <jaffe>
+                <quadruple cue=""/> <!-- quadruple pattern in halo -->
+                <bss cue=""/> <!-- bi-symmetric -->
+                
+                <disk_amp value=""/> <!-- disk amplitude, microG -->
+                <disk_z0 value=""/> <!-- disk height scale, kpc -->
+                <halo_amp value=""/> <!-- halo amplitude, microG -->
+                <halo_z0 value=""/> <!-- halo height scale, kpc -->
+                <r_inner value=""/> <!-- inner R scale, kpc -->
+                <r_scale value=""/> <!-- R scale, kpc -->
+                <r_peak value=""/> <!-- R peak, kpc -->
+                
+                <ring cue=""/> <!-- molecular ring -->
+                <bar cue=""/> <!-- elliptical bar -->
+                <!-- either ring or bar -->
+                <ring_amp value=""/> <!-- ring field amplitude, microG -->
+                <ring_r value=""/> <!-- ring radius, kpc -->
+                <bar_amp value=""/> <!-- bar field amplitude, microG -->
+                <bar_a value=""/> <!-- major scale, kpc -->
+                <bar_b value=""/> <!-- minor scale, kpc -->
+                <bar_phi0 value=""/> <!-- bar major direction -->
+                
+                <arm_num value=""/> <!-- spiral arms -->
+                <arm_r0 value=""/> <!-- arm ref radius -->
+                <arm_z0 value=""/> <!-- arm heigth scale, kpc -->
+                <arm_phi1 value=""/> <!-- arm ref angles, deg -->
+                <arm_phi2 value=""/>
+                <arm_phi3 value=""/>
+                <arm_phi4 value=""/>
+                <arm_amp1 value=""/> <!-- arm field amplitudes, microG -->
+                <arm_amp2 value=""/>
+                <arm_amp3 value=""/>
+                <arm_amp4 value=""/>
+                <arm_pitch value=""/> <!-- pitch angle, deg -->
+                
+                <comp_c value=""/> <!-- compress factor -->
+                <comp_d value=""/> <!-- arm cross-sec scale, kpc -->
+                <comp_r value=""/> <!-- radial cutoff scale, kpc -->
+                <comp_p value=""/> <!-- cutoff power -->
+            </jaffe>
+            <!-- uniform -->
+            <unif>
+                <b0 value=""/> <!-- microG -->
+                <l0 value=""/> <!-- deg -->
+                <r value=""/>
+            </unif>
+        </regular>
+        <!-- random/turbulent fields -->
+        <!-- seed should be non-negative int -->
+        <!-- seed=0, generate thread-time dependent seed -->
+        <!-- if cue="0", all child elements are opitonal -->
+        <random cue="" type="" seed="">
+            <!-- global generators -->
+            <global type="">
+                <!-- Ensslin-Steininger method -->
+                <es>
+                    <rms value=""/> <!-- RMS -->
+                    <k0 value=""/> <!-- cutoff, 1/(Lambda in kpc) -->
+                    <a0 value=""/> <!-- 5/3, Kolmogorov -->
+                    <rho value=""/> <!-- [0,1] -->
+                    <!-- energy density rescaling -->
+                    <r0 value=""/> <!-- in kpc -->
+                    <z0 value=""/> <!-- in kpc -->
+                </es>
+                <!-- Jaffe method -->
+                <jaffe>
+                    <!-- to be implemented -->
+                </jaffe>
+            </global>
+            <!-- local generators -->
+            <local type="">
+                <!-- compressive MHD approximation -->
+                <mhd>
+                    <pa0  value=""/> <!-- Alfven power norm at k0 -->
+                    <pf0 value=""/> <!-- fast power norm at k0 -->
+                    <ps0 value=""/> <!-- slow power norm at k0 -->
+                    <aa0 value=""/> <!-- Kolmogorov -->
+                    <af0 value=""/>
+                    <as0 value=""/>
+                    <k0 value=""/> <!-- cutoff, 1/(Lambda in kpc) -->
+                    <beta value=""/> <!-- plasma beta -->
+                    <ma value=""/> <!-- Alfven Mach number -->
+                </mhd>
+            </local>
+        </random>
+    </magneticfield>
+    <!-- free electron field -->
+    <freeelectron>
+        <!-- if cue="0", all child elements are opitonal -->
+        <regular cue="" type="">
+            <!-- YMW16 -->
+            <ymw16>
+                <warp>
+                    <r_warp value=""/> <!-- galactic warp, kpc, (default) -->
+                    <gamma_w value=""/> <!-- warp ratio, (default) -->
+                    <r0 value=""/> <!-- Sun radial position, kpc, (default) -->
+                </warp>
+                <thickdisk>
+                    <ad value=""/> <!-- (default) -->
+                    <bd value=""/> <!-- (default) -->
+                    <n1 value=""/> <!-- (default) -->
+                    <h1 value=""/> <!-- (default) -->
+                </thickdisk>
+                <thindisk>
+                    <a2 value=""/> <!-- (default) -->
+                    <b2 value=""/> <!-- (default) -->
+                    <n2 value=""/> <!-- (default) -->
+                    <k2 value=""/> <!-- (default) -->
+                </thindisk>
+                <!-- using HH14 SpiralArms -->
+                <spiralarm>
+                    <b2s value=""/> <!-- (default) -->
+                    <ele_arm_0 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_1 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_2 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_3 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <ele_arm_4 value=""/> <!-- electron density norm, cm^-3, (default) -->
+                    <wid_arm_0 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_1 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_2 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_3 value=""/> <!-- typical arm width, pc, (default) -->
+                    <wid_arm_4 value=""/> <!-- typical arm width, pc, (default) -->
+                    <rref_arm_0 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_1 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_2 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_3 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <rref_arm_4 value=""/> <!-- arm reference radius, kpc, (default) -->
+                    <phiref_arm_0 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <phiref_arm_1 value=""/> <!-- arm reference azimuthal angle, deg, (default)-->
+                    <phiref_arm_2 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <phiref_arm_3 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <phiref_arm_4 value=""/> <!-- arm reference azimuthal angle, deg, (default) -->
+                    <pitch_arm_0 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_1 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_2 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_3 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <pitch_arm_4 value=""/> <!-- arm pitch angle, deg, (default) -->
+                    <aa value=""/> <!-- (default) -->
+                    <ka value=""/> <!-- (default) -->
+                    <ncn value=""/> <!-- (default) -->
+                    <wcn value=""/> <!-- (default) -->
+                    <thetacn value=""/> <!-- (default) -->
+                    <nsg value=""/> <!-- (default) -->
+                    <wsg value=""/> <!-- (default) -->
+                    <thetasg value=""/> <!-- (default) -->
+                </spiralarm>
+                <galcenter>
+                    <ngc value=""/> <!-- (default) -->
+                    <agc value=""/> <!-- (default) -->
+                    <hgc value=""/> <!-- (default) -->
+                </galcenter>
+                <gumnebula>
+                    <ngn value=""/> <!-- (default) -->
+                    <wgn value=""/> <!-- (default) -->
+                    <agn value=""/> <!-- (default) -->
+                    <kgn value=""/> <!-- (default) -->
+                </gumnebula>
+                <localbubble>
+                    <j_lb value=""/> <!-- (default) -->
+                    <nlb1 value=""/> <!-- (default) -->
+                    <detlb1 value=""/> <!-- (default) -->
+                    <wlb1 value=""/> <!-- (default) -->
+                    <hlb1 value=""/> <!-- (default) -->
+                    <thetalb1 value=""/> <!-- (default) -->
+                    <nlb2 value=""/> <!-- (default) -->
+                    <detlb2 value=""/> <!-- (default) -->
+                    <wlb2 value=""/> <!-- (default) -->
+                    <hlb2 value=""/> <!-- (default) -->
+                    <thetalb2 value=""/> <!-- (default) -->
+                </localbubble>
+                <loopi>
+                    <nli value=""/> <!-- (default) -->
+                    <rli value=""/> <!-- (default) -->
+                    <wli value=""/> <!-- (default) -->
+                    <detthetali value=""/> <!-- (default) -->
+                    <thetali value=""/> <!-- (default) -->
+                </loopi>
+            </ymw16>
+            <!-- uniform -->
+            <unif>
+                <n0 value=""/> <!-- pccm -->
+                <r0 value=""/> <!-- kpc -->
+            </unif>
+        </regular>
+        <!-- random/turbulent free electron -->
+        <!-- if cue="0", all child elements are opitonal -->
+        <random cue="" type="" seed="">
+            <!-- global generator -->
+            <global type="">
+                <!-- default global generator -->
+                <dft>
+                    <rms value=""/>
+                    <k0 value=""/> <!-- cutoff 1/Lambda in kpc -->
+                    <a0 value=""/>
+                    <!-- field strength rescaling -->
+                    <r0 value=""/> <!-- in kpc -->
+                    <z0 value=""/> <!-- in kpc -->
+                </dft>
+            </global>
+            <!-- local generator -->
+            <local>
+                <!-- to be implemented -->
+            </local>
+        </random>
+    </freeelectron>
+    <!-- analytic CRE -->
+    <!-- flux norm comes with unit [GeV m^2 s Sr]^-1 -->
+    <!-- if cue="0", all child elements are opitonal -->
+    <cre cue="" type="">
+        <analytic>
+            <!-- CRE spectral index: -alpha+beta*r+theta*z, Galactic cylindric frame -->
+            <alpha value=""/>
+            <beta value=""/>
+            <theta value=""/>
+            <r0 value=""/> <!-- kpc -->
+            <z0 value=""/> <!-- kpc -->
+            <!-- by default, we choose AMS02 20.6GeV -->
+            <E0 value=""/> <!-- CRE kinetic energy reference, GeV -->
+            <j0 value=""/> <!-- local CRE flux norm factor @ E0 -->
+        </analytic>
+        <!-- uniform -->
+        <unif>
+            <alpha value=""/>
+            <r0 value=""/> <!-- cutoff radius, kpc -->
+            <!-- by default, we choose AMS02 20.6GeV -->
+            <E0 value=""/> <!-- CRE kinetic energy reference, GeV -->
+            <j0 value=""/> <!-- local CRE flux norm factor @ E0 -->
+        </unif>
+    </cre>
+</root>
