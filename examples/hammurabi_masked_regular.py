@@ -1,6 +1,6 @@
 """
 mock data generator
-for WMAP + analytic CRE + YMW16 (+ ES)
+for WMAP + analytic CRE + YMW16
 mask out l<60 + 4 loops
 
 frequency 23 GHz
@@ -68,9 +68,10 @@ def mask_map(_nside, _freq):
     return msk_dict
 
 
-def mock_reg_map(_nside, _freq):
+def mock_reg_errprop(_nside, _freq):
     """
     return masked mock synchrotron Q, U
+    error propagated from theoretical uncertainties
     """
     # hammurabi parameter base file
     xmlpath = './params_masked_regular.xml'
@@ -90,7 +91,7 @@ def mock_reg_map(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    mocksize = 2  # ensemble of mock data
+    mocksize = 20  # ensemble of mock data
     error = 0.1  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # prepare theoretical uncertainty
@@ -134,13 +135,68 @@ def mock_reg_map(_nside, _freq):
         mock_cov.append(key, oas_cov(sim_data[key].to_global_data()), True)
     return mock_data, mock_cov
 
+
+def mock_reg_errfix(_nside, _freq):
+    """
+    return masked mock synchrotron Q, U
+    error fixed
+    """
+    # hammurabi parameter base file
+    xmlpath = './params_masked_regular.xml'
+    # active parameters
+    true_b0 = 6.0
+    true_psi0 = 27.0
+    true_psi1 = 0.9
+    true_chi0 = 25.
+    true_alpha = 3.0
+    true_r0 = 5.0
+    true_z0 = 1.0
+    #
+    _npix = 12*_nside**2
+    #
+    x = np.zeros((1, _npix))  # only for triggering simulator
+    trigger = Measurements()
+    trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
+    trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
+    # initialize simulator
+    error = 1.0e-5  # theoretical raltive uncertainty for each (active) parameter
+    mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
+    # start simulation
+    # BregWMAP field
+    paramlist = {'b0': true_b0, 'psi0': true_psi0, 'psi1': true_psi1, 'chi0': true_chi0}
+    breg_wmap = BregWMAP(paramlist, 1)
+    # CREAna field
+    paramlist = {'alpha': true_alpha, 'beta': 0.0, 'theta': 0.0,
+                 'r0': true_r0, 'z0': true_z0,
+                 'E0': 20.6, 'j0': 0.0217}
+    cre_ana = CREAna(paramlist, 1)
+    # FEregYMW16 field
+    paramlist = dict()
+    fereg_ymw16 = FEregYMW16(paramlist, 1)
+    # collect mock data and covariance
+    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')]
+    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')]
+    # collect mean and cov from simulated results
+    mock_data = Measurements()
+    mock_cov = Covariances()
+    
+    mock_data.append(('sync', str(_freq), str(_nside), 'Q'), mock_raw_q)
+    mock_data.append(('sync', str(_freq), str(_nside), 'U'), mock_raw_u)
+    mock_mask = mask_map(_nside, _freq)
+    mock_data.apply_mask(mock_mask)
+    for key in mock_data.keys():
+        mock_cov.append(key, (error**2)*np.eye(int(key[2])), True)
+    return mock_data, mock_cov
+
+
 def main():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
     nside = 16
     freq = 23
     
-    mock_data, mock_cov = mock_reg_map(nside, freq)
+    mock_data, mock_cov = mock_reg_errprop(nside, freq)
     mock_mask = mask_map(nside, freq)
 
     # using masked mock data/covariance
@@ -150,7 +206,7 @@ def main():
     breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
     cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
-    cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (0., 10.), 'z0': (0., 5.)}
+    cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
     fereg_factory = FEregYMW16Factory()
     factory_list = [breg_factory, cre_factory, fereg_factory]
 
@@ -166,10 +222,10 @@ def main():
     trigger.append(('sync', str(freq), str(nside), 'U'), x)
     simer = Hammurabi(measurements=trigger, xml_path=xmlpath)
 
-    ensemble_size = 2
-    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    ensemble_size = 1
+    pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_seed = 0
-    pipe.sampling_controllers = {'n_live_points': 1000, 'resume': False, 'verbose': True}
+    pipe.sampling_controllers = {}
     results = pipe()
 
     # screen printing
@@ -179,7 +235,7 @@ def main():
         print('%15s : %.3f +- %.3f \n' % (name, col.mean(), col.std()))
 
     samples = results['samples']
-    np.savetxt('regular_piprline.txt', samples)
+    np.savetxt('posterior_masked_regular.txt', samples)
 
 if __name__ == '__main__':
     main()

@@ -17,6 +17,7 @@ def empirical_cov(_sample):
     """
     assert isinstance(_sample, np.ndarray)
     n = _sample.shape[0]
+    assert (n > 0)
     m = np.median(_sample, axis=0)
     u = _sample - m
     return np.dot(u.T, u) / n
@@ -30,6 +31,7 @@ def oas_cov(_sample):
     """
     assert isinstance(_sample, np.ndarray)
     n, p = _sample.shape
+    assert (n > 0 and p > 0)
     if n == 1:
         return np.zeros((p, p))
     m = np.median(_sample, axis=0)
@@ -55,6 +57,7 @@ def bootstrap_cov(_sample, _trapsize=int(3000)):
     """
     assert isinstance(_sample, np.ndarray)
     n, p = _sample.shape
+    assert (n > 0 and p > 0)
     m = np.median(_sample, axis=0)
     u = _sample - m
     s_bst = np.zeros((p, p))
@@ -74,9 +77,9 @@ def oas_mcov(_sample):
     """
     assert isinstance(_sample, Observable)
     n, p = _sample.shape
-    assert (p > 0 and n > 1)
+    assert (n > 0 and p > 0)
     if n == 1:
-        return _sample, np.zeros((p, p))
+        return _sample.to_global_data(), np.zeros((p, p))
     mean = _sample.ensemble_mean
     u = _sample.to_global_data() - mean
     # empirical covariance S
@@ -104,7 +107,7 @@ def bootstrap_mcov(_sample, _trapsize=int(3000)):
     """
     assert isinstance(_sample, Observable)
     n, p = _sample.shape
-    assert (p > 0 and n > 1)
+    assert (n > 0 and p > 0)
     mean = _sample.ensemble_mean
     u = _sample.to_global_data() - mean
     s_bst = np.zeros((p, p))
@@ -125,7 +128,7 @@ def trapoas_mcov(_sample, _trapsize=int(100)):
     """
     assert isinstance(_sample, Observable)
     n, p = _sample.shape
-    assert (p > 0 and n > 1)
+    assert (n > 0 and p > 0)
     mean = _sample.ensemble_mean
     u = _sample.to_global_data() - mean
     s_bst = np.zeros((p, p))

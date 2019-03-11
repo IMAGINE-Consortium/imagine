@@ -57,6 +57,8 @@ class EnsembleLikelihood(Likelihood):
             assert isinstance(covariance_dict, Covariances)
             self._covariance_dict = covariance_dict
             self._covariance_dict.apply_mask(self._mask_dict)
+        else:
+            self._covariance_dict = covariance_dict
     
     def __call__(self, observable_dict):
         """

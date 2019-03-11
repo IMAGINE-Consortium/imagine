@@ -8,6 +8,7 @@ from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import Prior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.carrier_mapper import unity_mapper
+from imagine.tools.timer import Timer
 from imagine.tools.icy_decorator import icy
 
 
@@ -206,6 +207,7 @@ class MultinestPipeline(object):
         :param cube: list of variable values
         :return: log-likelihood value
         """
+        #t = Timer()
         log.debug('sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
@@ -231,13 +233,20 @@ class MultinestPipeline(object):
         assert(head_idx == tail_idx)
         assert(head_idx == len(self._active_parameters))
         # create observables from fresh fields
+        #t.tick('simulator')
         observables = self._simulator(field_list)
+        #t.tock('simulator')
         # apply mask
+        #t.tick('mask')
         observables.apply_mask(self.likelihood.mask_dict)
+        #t.tock('mask')
         log.debug('create observables')
         # add up individual log-likelihood terms
+        #t.tick('likeli')
         current_likelihood = self.likelihood(observables)
+        #t.tock('likeli')
         log.debug('calc instant likelihood')
+        #print ('timing results: \n %s' % str(t.record))
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashould')
