@@ -98,10 +98,10 @@ def mock_reg_errprop(_nside, _freq):
     b0_var = np.random.normal(true_b0, error*true_b0, mocksize)
     psi0_var = np.random.normal(true_psi0, error*true_psi0, mocksize)
     psi1_var = np.random.normal(true_psi1, error*true_psi1, mocksize)
-    chi0_var = np.random.normal(true_psi1, error*true_chi0, mocksize)
+    chi0_var = np.random.normal(true_chi0, error*true_chi0, mocksize)
     alpha_var = np.random.normal(true_alpha, error*true_alpha, mocksize)
-    r0_var = np.random.normal(true_alpha, error*true_r0, mocksize)
-    z0_var = np.random.normal(true_alpha, error*true_z0, mocksize)
+    r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
+    z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
     mock_raw_q = np.zeros((mocksize, _npix))
     mock_raw_u = np.zeros((mocksize, _npix))
     # start simulation
@@ -223,9 +223,9 @@ def main():
     simer = Hammurabi(measurements=trigger, xml_path=xmlpath)
 
     ensemble_size = 1
-    pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_seed = 0
-    pipe.sampling_controllers = {}
+    pipe.sampling_controllers = {'resume': False, 'verbose': True}
     results = pipe()
 
     # screen printing

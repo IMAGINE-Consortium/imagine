@@ -121,7 +121,7 @@ def wmap():
 
     simer = Hammurabi(measurements=mock_data, xml_path=xmlpath)
 
-    ensemble_size = 2
+    ensemble_size = 1
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_seed = 0
     pipe.sampling_controllers = {'n_live_points': 1000, 'resume': False, 'verbose': True}

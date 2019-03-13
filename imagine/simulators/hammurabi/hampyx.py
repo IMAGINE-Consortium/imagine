@@ -79,8 +79,8 @@ class Hampyx(object):
     default executable path is './params.xml'
     """
     def __init__(self,
-                 exe_path='/usr/local/hammurabi/bin/hamx',
-                 xml_path='./params.xml'):
+                 xml_path='./params.xml',
+                 exe_path=None):
         log.debug('initialize Hampyx')
         # current working directory
         self.wk_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
@@ -113,9 +113,16 @@ class Hampyx(object):
     """
     @exe_path.setter
     def exe_path(self, exe_path):
-        assert isinstance(exe_path, str)
-        self._exe_path = os.path.abspath(exe_path)
-        self._executable = self.exe_path
+        if exe_path is None:  # search sys environ
+            env = os.environ.get('PATH').split(os.pathsep)
+            cnddt = [s for s in env if 'hammurabi' in s]
+            for match in cnddt:
+                if os.path.isfile(os.path.join(match, 'hamx')):
+                    self._exe_path = os.path.join(match, 'hamx')
+        else:  # if given
+            assert isinstance(exe_path, str)
+            self._exe_path = os.path.abspath(exe_path)
+        self._executable = self._exe_path
         log.debug('set hammurabiX executable path %s' % str(self._executable))
 
     @xml_path.setter

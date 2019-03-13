@@ -246,7 +246,7 @@ class MultinestPipeline(object):
         current_likelihood = self.likelihood(observables)
         #t.tock('likeli')
         log.debug('calc instant likelihood')
-        #print ('timing results: \n %s' % str(t.record))
+        #print('timing results: \n %s' % str(t.record))
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashould')

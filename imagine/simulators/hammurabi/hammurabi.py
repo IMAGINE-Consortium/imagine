@@ -17,6 +17,7 @@ from imagine.fields.field import GeneralField
 from imagine.observables.observable_dict import Measurements, Simulations
 from imagine.tools.random_seed import seed_generator
 from imagine.tools.icy_decorator import icy
+from imagine.tools.timer import Timer
 from .hampyx import Hampyx
 
 
@@ -24,8 +25,8 @@ from .hampyx import Hampyx
 class Hammurabi(Simulator):
 
     def __init__(self, measurements,
-                 exe_path='/usr/local/hammurabi/bin/hamx',
-                 xml_path='./params.xml'):
+                 xml_path='./params.xml',
+                 exe_path=None):
         """
         upon initialization, a Hampyx object is initialized
         and its XML tree should be modified according to measurements
@@ -37,7 +38,7 @@ class Hammurabi(Simulator):
         self.exe_path = exe_path
         self.xml_path = xml_path
         self.output_checklist = measurements
-        self._ham = Hampyx(self._exe_path, self._xml_path)
+        self._ham = Hampyx(self._xml_path, self._exe_path)
         self.register_observables()
         self.ensemble_size = int(0)
 
@@ -131,14 +132,20 @@ class Hammurabi(Simulator):
         :param field_list: list of GeneralField objects
         :return: Simulations object
         """
+        #t = Timer()
+        #t.tick('simulator')
         # update parameters
         self.register_fields(field_list)
         # execute hammurabi ensemble
         sims = Simulations()
         for i in range(self._ensemble_size):
+            #t.tick('hamX')
             self._ham()
+            #t.tock('hamX')
             # pack up outputs
             for key in self._output_checklist:
                 sims.append(key, np.vstack([self._ham.sim_map[key]]))
         # return
+        #t.tock('simulator')
+        #print(str(t.record))
         return sims

@@ -31,17 +31,13 @@
             <layer type="auto">
                 <auto>
                     <shell_num value="1"/> <!-- total shell number (default) -->
-                    <nside_min value="16"/> <!-- inner most shell resolution (default) -->
                 </auto>
-                <!-- set shell resolution from inside out -->
                 <!-- set shell cutting point from inside out -->
                 <manual> <!-- total shell number calculated automatically -->
                     <cut value=""/> <!-- cut at half of total shell radius -->
-                    <!-- list niside from inside-out -->
-                    <nside value=""/> <!-- inner most shell Nside -->
-                    <nside value=""/>
                 </manual>
             </layer>
+            <nside_sim value="16"/>
             <!-- helio/observer-centric radial limit -->
             <ec_r_min value=""/> <!-- kpc (default) -->
             <ec_r_max value=""/> <!-- kpc (default) -->
@@ -52,7 +48,7 @@
             <gc_z_min value=""/> <!-- kpc (default) -->
             <gc_z_max value=""/> <!-- kpc (default) -->
             <!-- radial integration resolution -->
-            <ec_r_res value="0.01"/> <!-- kpc (default) -->
+            <ec_r_res value="0.1"/> <!-- kpc (default) -->
             <!-- galactic latitude limit, both poles -->
             <lat_min value="60"/> <!--  (default) -->
             <lat_max value="90"/> <!--  (default) -->
