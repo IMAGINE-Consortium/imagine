@@ -1,5 +1,4 @@
 # IMAGINE
-* **I**nterstellar **MA**ny field inference en**GINE**
 
 ### description
 
