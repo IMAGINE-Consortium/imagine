@@ -9,6 +9,7 @@ from imagine.priors.prior import Prior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.timer import Timer
+from imagine.tools.random_seed import seed_generator, ensemble_seed_generator
 from imagine.tools.icy_decorator import icy
 
 
@@ -33,9 +34,12 @@ class MultinestPipeline(object):
             -- not implemented yet
         likelihood_rescaler
             -- rescale log-likelihood value
-        random_seed
-            -- if 0 (default), use time-thread dependent random seed in simulator
-            costomised value should be positive int
+        random_type
+            -- 'free' by default
+            -- 'controlable', each simulator run use seed generated from higher level seed
+            -- 'fixed', take a list of fixed integers as seed for all simulator runs
+        seed_tracer
+            -- useful in 'controlable' random_type
         likelihood_threshold
             -- by default, log-likelihood should be negative
         """
@@ -50,8 +54,12 @@ class MultinestPipeline(object):
         self.sample_callback = False
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
-        # using fixed seed or time-thread dependent seed
-        self.random_seed = 0
+        # default ensemble seeds, corresponding to 'free' random type
+        self._ensemble_seeds = None
+        # tracer used in 'controlable' random type
+        self.seed_tracer = int(0)
+        # random type
+        self.random_type = 'free'
         # checking likelihood threshold
         self.check_threshold = False
         self.likelihood_threshold = 0.
@@ -165,13 +173,23 @@ class MultinestPipeline(object):
         self._likelihood_rescaler = likelihood_rescaler
 
     @property
-    def random_seed(self):
-        return self._random_seed
+    def random_type(self):
+        return self._random_type
 
-    @random_seed.setter
-    def random_seed(self, random_seed):
-        assert isinstance(random_seed, int)
-        self._random_seed = random_seed
+    @random_type.setter
+    def random_type(self, random_type):
+        assert isinstance(random_type, str)
+        self._random_type = random_type
+    
+    @property
+    def seed_tracer(self):
+        return self._seed_tracer
+
+    @seed_tracer.setter
+    def seed_tracer(self, seed_tracer):
+        assert isinstance(seed_tracer, int)
+        self._seed_tracer = seed_tracer
+        np.random.seed(self._seed_tracer)
 
     @property
     def check_threshold(self):
@@ -188,6 +206,23 @@ class MultinestPipeline(object):
     @likelihood_threshold.setter
     def likelihood_threshold(self, likelihood_threshold):
         self._likelihood_threshold = likelihood_threshold
+
+    def _randomness(self):
+        """
+        manipulate random seed(s)
+        isolating this process for convenience of testing
+        """
+        # prepare ensemble seeds
+        if self._random_type == 'free':
+            assert(self._ensemble_seeds is None)
+        elif self._random_type == 'controlable':
+            assert isinstance(self._seed_tracer, int)
+            self._ensemble_seeds = ensemble_seed_generator(self._ensemble_size)
+        elif self._random_type == 'fixed':
+            np.random.seed(self._seed_tracer)
+            self._ensemble_seeds = ensemble_seed_generator(self._ensemble_size)
+        else:
+            raise ValueError('unsupport random type')
 
     def __call__(self):
         """
@@ -218,6 +253,8 @@ class MultinestPipeline(object):
         head_idx = int(0)
         tail_idx = int(0)
         field_list = tuple()
+        # random seeds manipulation
+        self._randomness()
         # the ordering in factory list and variable list is vital
         for factory in self._factory_list:
             variable_dict = dict()
@@ -226,8 +263,8 @@ class MultinestPipeline(object):
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
             field_list += (factory.generate(variables=variable_dict,
-                                            ensemble_size=self.ensemble_size,
-                                            random_seed=self._random_seed),)
+                                            ensemble_size=self._ensemble_size,
+                                            ensemble_seeds=self._ensemble_seeds),)
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
         assert(head_idx == tail_idx)

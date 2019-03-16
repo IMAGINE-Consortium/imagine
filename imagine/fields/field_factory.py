@@ -201,12 +201,13 @@ class GeneralFieldFactory(object):
             parameter_dict[variable_name] = mapped_variable
         return parameter_dict
 
-    def generate(self, variables=dict(), ensemble_size=1, random_seed=None):
+    def generate(self, variables=dict(), ensemble_size=1, ensemble_seeds=None):
         """
 
         :param variables: a dict of variables with name and value
         :param ensemble_size: number of instances in a field ensemble
-        :param random_seed: seed for generating random numbers in realising instances in field ensemble
+        :param ensemble_seeds: seeds for generating random numbers in realising instances in field ensemble
+        if ensemble_seeds is None, field_class initialization will take all seed as 0
         :return: a GeneralField object
         """
         # map variable value to parameter value
@@ -216,9 +217,10 @@ class GeneralFieldFactory(object):
         work_parameters = deepcopy(self.default_parameters)
         # update is safe
         work_parameters.update(mapped_variables)
+        # generate fields
         result_field = self.field_class(parameters=work_parameters,
                                         ensemble_size=ensemble_size,
-                                        random_seed=random_seed)
+                                        ensemble_seeds=ensemble_seeds)
         log.debug('generated field with work-parameters %s' % work_parameters)
         return result_field
 

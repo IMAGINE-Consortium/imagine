@@ -18,7 +18,7 @@ from imagine.tools.icy_decorator import icy
 @icy
 class GeneralField(object):
 
-    def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
+    def __init__(self, parameters=dict(), ensemble_size=1, ensemble_seeds=None):
         """
 
         :param parameters: dict of full parameter set {name: value}
@@ -28,10 +28,7 @@ class GeneralField(object):
         self.name = 'general'
         self.parameters = parameters
         self.ensemble_size = ensemble_size
-        self.random_seed = random_seed
-        # if checklist has 'random_seed' entry
-        if 'random_seed' in self.field_checklist.keys():
-            self._parameters.update({'random_seed': self._random_seed})
+        self.ensemble_seeds = ensemble_seeds
         log.debug('initialize GeneralField')
 
     @property
@@ -57,15 +54,16 @@ class GeneralField(object):
         self._ensemble_size = round(ensemble_size)
 
     @property
-    def random_seed(self):
-        return self._random_seed
+    def ensemble_seeds(self):
+        return self._ensemble_seeds
 
-    @random_seed.setter
-    def random_seed(self, random_seed):
-        if random_seed is None:
-            self._random_seed = int(0)
+    @ensemble_seeds.setter
+    def ensemble_seeds(self, ensemble_seeds):
+        if ensemble_seeds is None:  # in case no seeds given, all 0
+            self._ensemble_seeds = [int(0)]*self._ensemble_size
         else:
-            self._random_seed = round(random_seed)
+            assert (len(ensemble_seeds) == self._ensemble_size)
+            self._ensemble_seeds = ensemble_seeds
 
     @property
     def parameters(self):
@@ -81,3 +79,12 @@ class GeneralField(object):
         except AttributeError:
             self._parameters = parameters
             log.debug('set full parameters %s' % str(parameters))
+
+    def report_parameters(self, realization_id=int(0)):
+        """
+        return parameters with random seed associated to realization id
+        """
+        # if checklist has 'random_seed' entry
+        if 'random_seed' in self.field_checklist.keys():
+            self._parameters.update({'random_seed': self._ensemble_seeds[realization_id]})
+        return self._parameters

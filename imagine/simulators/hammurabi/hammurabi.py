@@ -7,7 +7,7 @@ the major purpose of this interface
 is to do modifications to this XML tree
 
 to accommodate updates of Hampyx in future
-only register_observables/fields need modifications
+only register/update_observables/fields need modifications
 """
 
 import numpy as np
@@ -106,7 +106,7 @@ class Hammurabi(Simulator):
 
     def register_fields(self, field_list):
         """
-        update hammurabi XML tree according to field list
+        update hammurabi XML tree according to field list controllist
         :param field_list:
         :return:
         """
@@ -116,15 +116,24 @@ class Hammurabi(Simulator):
             for key, clue in controllist.items():
                 assert (len(clue) == 2)
                 self._ham.mod_par(clue[0], clue[1])
-            # update physical parameters
-            checklist = field.field_checklist
-            paramlist = field.parameters
-            for key, clue in checklist.items():
-                assert (len(clue) == 2)
-                self._ham.mod_par(clue[0], {clue[1]: str(paramlist[key])})
             # update ensemble size
             self.ensemble_size = field.ensemble_size
 
+    def update_fields(self, field_list, realization_id):
+        """
+        update hammurabi XML tree according to field list checklist
+        :param field_list:
+        :param realization_id: id of realization in ensemble, [0,ensemble_size)
+        :return:
+        """
+        for field in field_list:
+            # update physical parameters
+            checklist = field.field_checklist
+            paramlist = field.report_parameters(realization_id)
+            for key, clue in checklist.items():
+                assert (len(clue) == 2)
+                self._ham.mod_par(clue[0], {clue[1]: str(paramlist[key])})
+        
     def __call__(self, field_list):
         """
         run hammurabi executable
@@ -134,11 +143,12 @@ class Hammurabi(Simulator):
         """
         #t = Timer()
         #t.tick('simulator')
-        # update parameters
         self.register_fields(field_list)
         # execute hammurabi ensemble
         sims = Simulations()
         for i in range(self._ensemble_size):
+            # update parameters
+            self.update_fields(field_list, i)
             #t.tick('hamX')
             self._ham()
             #t.tock('hamX')

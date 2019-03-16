@@ -52,18 +52,15 @@ class LiSimulator(Simulator):
         assert (len(field_list) == 1)
         assert isinstance(field_list[0], TestField)
         ensize = field_list[0].ensemble_size
-        pars = field_list[0].parameters
-        # double check parameter keys
-        assert (pars.keys() == field_list[0].field_checklist.keys())
         # assemble Simulations object
         output = Simulations()
         # core function for producing observables
-        obs_arr = self.obs_generator(pars, ensize, obsdim)
+        obs_arr = self.obs_generator(field_list, ensize, obsdim)
         # not using healpix structure
         output.append(self._output_checklist[0], obs_arr, True)
         return output
 
-    def obs_generator(self, parameters, ensemble_size, obs_size):
+    def obs_generator(self, field_list, ensemble_size, obs_size):
         """
         apply field model and generate observable raw data
         :param parameters: dict of parameters
@@ -71,16 +68,19 @@ class LiSimulator(Simulator):
         :param obs_size: size of observable
         :return: numpy ndarray
         """
-        # extract parameters
-        par_a = parameters['a']
-        par_b = parameters['b']
-        par_s = parameters['random_seed']
-        # get thread-time dependent random number
-        np.random.seed(seed_generator(par_s))
         # coordinates
         raw_arr = np.zeros((ensemble_size, obs_size))
         coo_x = np.linspace(0., 2.*np.pi, obs_size)
         for i in range(ensemble_size):
+            pars = field_list[0].report_parameters(i)
+            # double check parameter keys
+            assert (pars.keys() == field_list[0].field_checklist.keys())
+            # extract parameters
+            par_a = pars['a']
+            par_b = pars['b']
+            par_s = pars['random_seed']
+            # get thread-time dependent random number
+            np.random.seed(seed_generator(par_s))
             raw_arr[i, :] = np.multiply(np.cos(coo_x),
                                         np.random.normal(loc=par_a, scale=par_b, size=obs_size))
         return raw_arr

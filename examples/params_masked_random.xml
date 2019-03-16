@@ -37,7 +37,7 @@
                     <cut value=""/> <!-- cut at half of total shell radius -->
                 </manual>
             </layer>
-            <nside_sim value="4"/>
+            <nside_sim value="16"/>
             <!-- helio/observer-centric radial limit -->
             <ec_r_min value=""/> <!-- kpc (default) -->
             <ec_r_max value=""/> <!-- kpc (default) -->
@@ -48,7 +48,7 @@
             <gc_z_min value=""/> <!-- kpc (default) -->
             <gc_z_max value=""/> <!-- kpc (default) -->
             <!-- radial integration resolution -->
-            <ec_r_res value="0.01"/> <!-- kpc (default) -->
+            <ec_r_res value="0.1"/> <!-- kpc (default) -->
             <!-- galactic latitude limit, both poles -->
             <lat_min value="60"/> <!--  (default) -->
             <lat_max value="90"/> <!--  (default) -->
@@ -56,6 +56,21 @@
             <lon_min value=""/> <!--  (default) -->
             <lon_max value=""/> <!--  (default) -->
         </shell>
+        
+        <!-- turbulent GMF grid -->
+        <box_brnd> <!-- (optional) if no brnd I/O AND no internal brnd model -->
+            <!-- grid vertex size -->
+            <nx value="81"/>
+            <ny value="61"/>
+            <nz value="101"/>
+            <!-- box limit, in galactic-centric frame -->
+            <x_min value="-12"/> <!-- kpc (default) -->
+            <x_max value="-4"/> <!-- kpc (default) -->
+            <y_min value="-3"/> <!-- kpc (default) -->
+            <y_max value="3"/> <!-- kpc (default) -->
+            <z_min value="-5"/> <!-- kpc (default) -->
+            <z_max value="5"/> <!-- kpc (default) -->
+        </box_brnd>
     </grid>
     <!-- magnetic fields -->
     <magneticfield>

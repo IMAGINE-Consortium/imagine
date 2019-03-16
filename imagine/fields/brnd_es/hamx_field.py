@@ -11,8 +11,8 @@ from imagine.tools.icy_decorator import icy
 @icy
 class BrndES(GeneralField):
 
-    def __init__(self, parameters=dict(), ensemble_size=1, random_seed=None):
-        super(BrndES, self).__init__(parameters, ensemble_size, random_seed)
+    def __init__(self, parameters=dict(), ensemble_size=1, ensemble_seeds=None):
+        super(BrndES, self).__init__(parameters, ensemble_size, ensemble_seeds)
         self.name = 'breg_wmap'
 
     @property

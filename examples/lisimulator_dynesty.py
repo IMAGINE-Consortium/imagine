@@ -125,9 +125,10 @@ def testfield():
     """
     # 2.5, pipeline
     """
-    ensemble_size = 100
+    ensemble_size = 10
     pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
-    pipe.random_seed = 0  # favor fixed seed? try a positive integer
+    pipe.random_type = 'controlable'  # 'fixed' wont work for Dynesty
+    pipe.seed_tracer = int(23)
     pipe.sampling_controllers = {'nlive': 400}
     results = pipe()  # run with pymultinest
 

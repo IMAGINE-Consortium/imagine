@@ -19,7 +19,7 @@ from .pipelines.dynesty_pipeline import DynestyPipeline
 # numeric tools
 from .tools.carrier_mapper import unity_mapper
 from .tools.covariance_estimator import oas_cov, oas_mcov
-from .tools.random_seed import seed_generator
+from .tools.random_seed import seed_generator, ensemble_seed_generator
 from .tools.masker import mask_obs, mask_cov
 from .tools.timer import Timer
 from .tools.icy_decorator import icy

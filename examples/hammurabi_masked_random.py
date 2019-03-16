@@ -1,6 +1,6 @@
 """
 mock data generator
-for WMAP + analytic CRE + YMW16
+for WMAP + analytic CRE + YMW16 + ES
 mask out l<60 + 4 loops
 
 frequency 23 GHz
@@ -74,15 +74,18 @@ def mock_reg_errprop(_nside, _freq):
     error propagated from theoretical uncertainties
     """
     # hammurabi parameter base file
-    xmlpath = './params_masked_regular.xml'
+    xmlpath = './params_masked_random.xml'
     # active parameters
-    true_b0 = 6.0
+    true_b0 = 3.0
     true_psi0 = 27.0
-    true_psi1 = 0.9
-    true_chi0 = 25.
+    #true_psi1 = 0.9
+    #true_chi0 = 25.
     true_alpha = 3.0
-    true_r0 = 5.0
-    true_z0 = 1.0
+    #true_r0 = 5.0
+    #true_z0 = 1.0
+    true_rms = 6.0
+    true_rho = 0.8
+    true_a0 = 1.7
     #
     _npix = 12*_nside**2
     #
@@ -97,28 +100,35 @@ def mock_reg_errprop(_nside, _freq):
     # prepare theoretical uncertainty
     b0_var = np.random.normal(true_b0, error*true_b0, mocksize)
     psi0_var = np.random.normal(true_psi0, error*true_psi0, mocksize)
-    psi1_var = np.random.normal(true_psi1, error*true_psi1, mocksize)
-    chi0_var = np.random.normal(true_chi0, error*true_chi0, mocksize)
+    #psi1_var = np.random.normal(true_psi1, error*true_psi1, mocksize)
+    #chi0_var = np.random.normal(true_chi0, error*true_chi0, mocksize)
     alpha_var = np.random.normal(true_alpha, error*true_alpha, mocksize)
-    r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
-    z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
+    #r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
+    #z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
+    rms_var = np.random.normal(true_rms, error*ture_rms, mocksize)
+    rho_var = np.random.normal(true_rho, error*true_rho, mocksize)
+    a0_var = np.random.normal(true_a0, error*true_a0, mocksize)
     mock_raw_q = np.zeros((mocksize, _npix))
     mock_raw_u = np.zeros((mocksize, _npix))
     # start simulation
     for i in range(mocksize):  # get one realization each time
         # BregWMAP field
-        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}
+        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': 0.9, 'chi0': 25.}
         breg_wmap = BregWMAP(paramlist, 1)
         # CREAna field
         paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
-                     'r0': r0_var[i], 'z0': z0_var[i],
+                     'r0': 5.0, 'z0': 1.0,
                      'E0': 20.6, 'j0': 0.0217}
         cre_ana = CREAna(paramlist, 1)
         # FEregYMW16 field
         paramlist = dict()
         fereg_ymw16 = FEregYMW16(paramlist, 1)
+        # BrndES field
+        paramlist = {'rms': rms_var[i], 'k0': 0.1, 'a0': a0_var[i], 'rho': rho_var[i],
+                     'r0': 8.0, 'z0': 1.0}
+        brnd_es = BrndES(paramlist, 1)
         # collect mock data and covariance
-        outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+        outputs = mocker([breg_wmap, cre_ana, fereg_ymw16, brnd_es])
         mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].to_global_data()
         mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].to_global_data()
     # collect mean and cov from simulated results
@@ -142,15 +152,18 @@ def mock_reg_errfix(_nside, _freq):
     error fixed
     """
     # hammurabi parameter base file
-    xmlpath = './params_masked_regular.xml'
+    xmlpath = './params_masked_random.xml'
     # active parameters
-    true_b0 = 6.0
+    true_b0 = 3.0
     true_psi0 = 27.0
-    true_psi1 = 0.9
-    true_chi0 = 25.
+    #true_psi1 = 0.9
+    #true_chi0 = 25.
     true_alpha = 3.0
-    true_r0 = 5.0
-    true_z0 = 1.0
+    #true_r0 = 5.0
+    #true_z0 = 1.0
+    true_rms = 6.0
+    true_rho = 0.8
+    true_a0 = 1.7
     #
     _npix = 12*_nside**2
     #
@@ -159,22 +172,26 @@ def mock_reg_errfix(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    error = 1.0e-8  # theoretical raltive uncertainty for each (active) parameter
+    error = 1.0e-6  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
     # BregWMAP field
-    paramlist = {'b0': true_b0, 'psi0': true_psi0, 'psi1': true_psi1, 'chi0': true_chi0}
+    paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': 0.9, 'chi0': 25.}
     breg_wmap = BregWMAP(paramlist, 1)
     # CREAna field
-    paramlist = {'alpha': true_alpha, 'beta': 0.0, 'theta': 0.0,
-                 'r0': true_r0, 'z0': true_z0,
+    paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
+                 'r0': 5.0, 'z0': 1.0,
                  'E0': 20.6, 'j0': 0.0217}
     cre_ana = CREAna(paramlist, 1)
     # FEregYMW16 field
     paramlist = dict()
     fereg_ymw16 = FEregYMW16(paramlist, 1)
+    # BrndES field
+    paramlist = {'rms': rms_var[i], 'k0': 0.1, 'a0': a0_var[i], 'rho': rho_var[i],
+                 'r0': 8.0, 'z0': 1.0}
+    brnd_es = BrndES(paramlist, 1)
     # collect mock data and covariance
-    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16, brnd_es])
     mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')]
     mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')]
     # collect mean and cov from simulated results
@@ -193,7 +210,7 @@ def mock_reg_errfix(_nside, _freq):
 def main():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
-    nside = 4
+    nside = 16
     freq = 23
     
     mock_data, mock_cov = mock_reg_errprop(nside, freq)
@@ -208,11 +225,13 @@ def main():
     cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
     cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
     fereg_factory = FEregYMW16Factory()
-    factory_list = [breg_factory, cre_factory, fereg_factory]
+    brnd_factory = BrndESFactory(active_parameters=('rms', 'rho', 'a0'))
+    brnd_factory.parameter_ranges = {'rms': (0., 10.), 'rho': (0., 1.), 'a0': (1., 3.)}
+    factory_list = [breg_factory, cre_factory, fereg_factory, brnd_factory]
 
     prior = FlatPrior()
 
-    xmlpath = './params_masked_regular.xml'
+    xmlpath = './params_masked_random.xml'
     # only for triggering simulator
     # since we use masked mock_data/covariance
     # if use masked input, outputs from simulator will not be masked due to mismatch in keys
@@ -222,14 +241,15 @@ def main():
     trigger.append(('sync', str(freq), str(nside), 'U'), x)
     simer = Hammurabi(measurements=trigger, xml_path=xmlpath)
 
-    ensemble_size = 1
+    ensemble_size = 10
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe.random_type = 'free'
     pipe.sampling_controllers = {'resume': False, 'verbose': True}
     results = pipe()
 
     # saving results
     samples = results['samples']
-    np.savetxt('posterior_masked_regular.txt', samples)
+    np.savetxt('posterior_masked_random.txt', samples)
 
 if __name__ == '__main__':
     main()

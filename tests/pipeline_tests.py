@@ -51,9 +51,46 @@ class TestPipelines(unittest.TestCase):
         self.assertEqual(pipe.likelihood_threshold, 0.)
         pipe.likelihood_threshold = -0.2
         self.assertEqual(pipe.likelihood_threshold, -0.2)
-        self.assertEqual(pipe.random_seed, 0)
-        pipe.random_seed = int(23)
-        self.assertEqual(pipe.random_seed, int(23))
+        self.assertEqual(pipe._ensemble_seeds, None)
+        self.assertEqual(pipe.seed_tracer, int(0))
+        self.assertEqual(pipe.random_type, 'free')
+
+        # test free random seed, full randomness
+        pipe._randomness()
+        s1 = pipe._ensemble_seeds
+        self.assertTrue(s1 is None)
+        # test controlable random seed, with top level seed controlable
+        pipe.random_type = 'controlable'
+        pipe.seed_tracer = int(3)  # controlling seed at top level
+        pipe._randomness()  # core func in assigning ensemble seeds, before calling simulator
+        s1 = pipe._ensemble_seeds
+        pipe._randomness()  # 2nd call of sampeler
+        s2 = pipe._ensemble_seeds
+        pipe = MultinestPipeline(simer, flist, lh, pr, 5)  # init a new sampler
+        pipe.random_type = 'controlable'
+        pipe.seed_tracer = int(3)  # repeat the controlling seed
+        pipe._randomness()
+        s1re = pipe._ensemble_seeds
+        pipe._randomness()
+        s2re = pipe._ensemble_seeds
+        self.assertListEqual(list(s1), list(s1re))  # should get the same seeds
+        self.assertListEqual(list(s2), list(s2re))
+        pipe = MultinestPipeline(simer, flist, lh, pr, 5)
+        pipe.random_type = 'controlable'
+        pipe.seed_tracer = int(4)  # different controlling seed
+        pipe._randomness()
+        s1new = pipe._ensemble_seeds
+        for i in range(len(s1)):
+            self.assertNotEqual(s1[i], s1new[i])  # should get different seeds
+        # test fixed random seed
+        pipe.random_type = 'fixed'
+        pipe.seed_tracer = int(5)
+        pipe._randomness()  # 1st time seed assignment
+        s1 = pipe._ensemble_seeds
+        pipe._randomness()  # 2nd time seed assignment
+        s1re = pipe._ensemble_seeds
+        self.assertListEqual(list(s1), list(s1re))  # should get the same seeds
+        
 
     def test_dynesty(self):
         # mock measures
@@ -93,9 +130,45 @@ class TestPipelines(unittest.TestCase):
         self.assertEqual(pipe.likelihood_threshold, 0.)
         pipe.likelihood_threshold = -0.2
         self.assertEqual(pipe.likelihood_threshold, -0.2)
-        self.assertEqual(pipe.random_seed, 0)
-        pipe.random_seed = int(23)
-        self.assertEqual(pipe.random_seed, int(23))
+        self.assertEqual(pipe._ensemble_seeds, None)
+        self.assertEqual(pipe.seed_tracer, int(0))
+        self.assertEqual(pipe.random_type, 'free')
+
+        # test free random seed
+        pipe._randomness()
+        s1 = pipe._ensemble_seeds
+        self.assertTrue(s1 is None)
+        # test controlable random seed
+        pipe.random_type = 'controlable'
+        pipe.seed_tracer = int(3)
+        pipe._randomness()
+        s1 = pipe._ensemble_seeds
+        pipe._randomness()
+        s2 = pipe._ensemble_seeds
+        pipe = DynestyPipeline(simer, flist, lh, pr, 5)
+        pipe.random_type = 'controlable'
+        pipe.seed_tracer = int(3)
+        pipe._randomness()
+        s1re = pipe._ensemble_seeds
+        pipe._randomness()
+        s2re = pipe._ensemble_seeds
+        self.assertListEqual(list(s1), list(s1re))
+        self.assertListEqual(list(s2), list(s2re))
+        pipe = DynestyPipeline(simer, flist, lh, pr, 5)
+        pipe.random_type = 'controlable'
+        pipe.seed_tracer = int(4)
+        pipe._randomness()
+        s1new = pipe._ensemble_seeds
+        for i in range(len(s1)):
+            self.assertNotEqual(s1[i], s1new[i])
+        # test fixed random seed
+        pipe.random_type = 'fixed'
+        pipe.seed_tracer = int(5)
+        pipe._randomness()
+        s1 = pipe._ensemble_seeds
+        pipe._randomness()
+        s1re = pipe._ensemble_seeds
+        self.assertListEqual(list(s1), list(s1re))
 
 
 if __name__ == '__main__':
