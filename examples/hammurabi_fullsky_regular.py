@@ -17,6 +17,7 @@ import logging as log
 
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.priors.flat_prior import FlatPrior
 from imagine.pipelines.dynesty_pipeline import DynestyPipeline
 from imagine.pipelines.multinest_pipeline import MultinestPipeline
@@ -33,15 +34,17 @@ from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
 
 from imagine.tools.covariance_estimator import oas_cov
 
+"""
 # visualize posterior
 import corner
 import matplotlib
 from imagine.tools.carrier_mapper import unity_mapper
 matplotlib.use('Agg')
+"""
 
 
-def wmap():
-    log.basicConfig(filename='imagine.log', level=log.DEBUG)
+def wmap_errprop():
+    #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
     """
     only WMAP regular magnetic field model in test, @ 23GHz
@@ -49,13 +52,17 @@ def wmap():
     full WMAP parameter set {b0, psi0, psi1, chi0}
     """
     # hammurabi parameter base file
-    xmlpath = './params_hammurabi_regular.xml'
+    xmlpath = './params_fullsky_regular.xml'
     
     # we take three active parameters
-    true_b0 = 6.0  # in breg wmap
-    true_psi0 = 27.0  # in breg wmap
-    true_alpha = 3.0  # in cre analytic
-    truths = [true_b0, true_psi0, true_alpha]
+    true_b0 = 6.0
+    true_psi0 = 27.0
+    true_psi1 = 0.9
+    true_chi0 = 25.
+    true_alpha = 3.0
+    true_r0 = 5.0
+    true_z0 = 1.0
+    truths = [true_b0, true_psi0, true_psi1, true_chi0, true_alpha, true_r0, true_z0]
     
     mea_nside = 2  # observable Nside
     mea_pix = 12*mea_nside**2  # observable pixel number
@@ -73,21 +80,24 @@ def wmap():
     # prepare theoretical uncertainty
     b0_var = np.random.normal(true_b0, error*true_b0, mocksize)
     psi0_var = np.random.normal(true_psi0, error*true_psi0, mocksize)
+    psi1_var = np.random.normal(true_psi1, error*true_psi1, mocksize)
+    chi0_var = np.random.normal(true_chi0, error*true_chi0, mocksize)
     alpha_var = np.random.normal(true_alpha, error*true_alpha, mocksize)
+    r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
+    z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
     mock_ensemble = np.zeros((mocksize, mea_pix))
     # start simulation
     for i in range(mocksize):  # get one realization each time
         # BregWMAP field
-        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': 0.9, 'chi0': 25.0}  # inactive parameters at default
+        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}  # inactive parameters at default
         breg_wmap = BregWMAP(paramlist, 1)
         # CREAna field
         paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
-                     'r0': 5.0, 'z0': 1.0,
+                     'r0': r0_var[i], 'z0': z0_var[i],
                      'E0': 20.6, 'j0': 0.0217}  # inactive parameters at default
         cre_ana = CREAna(paramlist, 1)
         # FEregYMW16 field
-        paramlist = dict()
-        fereg_ymw16 = FEregYMW16(paramlist, 1)
+        fereg_ymw16 = FEregYMW16(dict(), 1)
         # collect mock data and covariance
         outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
         mock_ensemble[i, :] = outputs[('sync', '23', str(mea_nside), 'I')].to_global_data()
@@ -99,21 +109,15 @@ def wmap():
     mock_cov.append(('sync', '23', str(mea_nside), 'I'), cov_matrix)
 
     """
-    # 1.2, visualize mock data
-    """
-    #import healpy as hp
-    #sync_i_raw = outputs[('sync','23',str(mea_nside),'I')].to_global_data()
-    #hp.write_map('mock.fits',sync_i_raw)
-
-    """
     # step 2, prepare pipeline and execute analysis
     """
-    likelihood = EnsembleLikelihood(mock_data, mock_cov)
+    #likelihood = EnsembleLikelihood(mock_data, mock_cov)
+    likelihood = SimpleLikelihood(mock_data, mock_cov)
 
-    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0'))
-    breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.)}
-    cre_factory = CREAnaFactory(active_parameters=('alpha',))
-    cre_factory.parameter_ranges = {'alpha': (1., 5.)}
+    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
+    breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
+    cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
+    cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
     fereg_factory = FEregYMW16Factory()
     factory_list = [breg_factory, cre_factory, fereg_factory]
 
@@ -124,11 +128,14 @@ def wmap():
     ensemble_size = 1
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
-    pipe.sampling_controllers = {'n_live_points': 1000, 'resume': True, 'verbose': True}
+    pipe.sampling_controllers = {'n_live_points': 4000, 'resume': False, 'verbose': True}
     results = pipe()
 
     """
     # step 3, visualize (with corner package)
+    """
+    samples = results['samples']
+    np.savetxt('posterior_regular_errprop.txt', samples)
     """
     # screen printing
     print('\n evidence: %(logZ).1f +- %(logZerr).1f \n' % results)
@@ -156,7 +163,90 @@ def wmap():
                   hist_kwargs={'linewidth': 2},
                   label_kwargs={'fontsize': 20})
     matplotlib.pyplot.savefig('posterior.pdf')
+    """
 
+def wmap_errfix():
+    #log.basicConfig(filename='imagine.log', level=log.DEBUG)
+    
+    """
+    only WMAP regular magnetic field model in test, @ 23GHz
+    Faraday rotation provided by YMW16 free electron model
+    full WMAP parameter set {b0, psi0, psi1, chi0}
+    """
+    # hammurabi parameter base file
+    xmlpath = './params_fullsky_regular.xml'
+    
+    # we take three active parameters
+    true_b0 = 6.0
+    true_psi0 = 27.0
+    true_psi1 = 0.9
+    true_chi0 = 25.
+    true_alpha = 3.0
+    true_r0 = 5.0
+    true_z0 = 1.0
+    truths = [true_b0, true_psi0, true_psi1, true_chi0, true_alpha, true_r0, true_z0]
+    
+    mea_nside = 2  # observable Nside
+    mea_pix = 12*mea_nside**2  # observable pixel number
+
+    """
+    # step 1, prepare mock data
+    """
+    x = np.zeros((1, mea_pix))  # only for triggering simulator
+    trigger = Measurements()
+    trigger.append(('sync', '23', str(mea_nside), 'I'), x)  # only I map
+    # initialize simulator
+    error = 0.1  # theoretical raltive uncertainty for each (active) parameter
+    mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
+    # start simulation
+    # BregWMAP field
+    paramlist = {'b0': true_b0, 'psi0': true_psi0, 'psi1': true_psi1, 'chi0': true_chi0}  # inactive parameters at default
+    breg_wmap = BregWMAP(paramlist, 1)
+    # CREAna field
+    paramlist = {'alpha': true_alpha, 'beta': 0.0, 'theta': 0.0,
+                 'r0': true_r0, 'z0': true_z0,
+                 'E0': 20.6, 'j0': 0.0217}  # inactive parameters at default
+    cre_ana = CREAna(paramlist, 1)
+    # FEregYMW16 field
+    fereg_ymw16 = FEregYMW16(dict(), 1)
+    # collect mock data and covariance
+    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+    Imap = outputs[('sync', '23', str(mea_nside), 'I')].to_global_data()
+    # collect mean and cov from simulated results
+    mock_data = Measurements()
+    mock_cov = Covariances()
+    mock_data.append(('sync', '23', str(mea_nside), 'I'), Imap)
+    mock_cov.append(('sync', '23', str(mea_nside), 'I'), (error**2*(np.mean(Imap))**2)*np.eye(mea_pix))
+
+    """
+    # step 2, prepare pipeline and execute analysis
+    """
+    #likelihood = EnsembleLikelihood(mock_data, mock_cov)
+    likelihood = SimpleLikelihood(mock_data, mock_cov)
+
+    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
+    breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
+    cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
+    cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
+    fereg_factory = FEregYMW16Factory()
+    factory_list = [breg_factory, cre_factory, fereg_factory]
+
+    prior = FlatPrior()
+
+    simer = Hammurabi(measurements=mock_data, xml_path=xmlpath)
+
+    ensemble_size = 1
+    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe.random_type = 'free'
+    pipe.sampling_controllers = {'n_live_points': 4000, 'resume': False, 'verbose': True}
+    results = pipe()
+
+    """
+    # step 3, visualize (with corner package)
+    """
+    samples = results['samples']
+    np.savetxt('posterior_regular_errfix.txt', samples)
 
 if __name__ == '__main__':
-    wmap()
+    #wmap_errprop()
+    wmap_errfix()

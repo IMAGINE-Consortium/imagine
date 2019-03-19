@@ -8,6 +8,7 @@ import logging as log
 
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.fields.test_field.test_field_factory import TestFieldFactory
 from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.li_simulator import LiSimulator
@@ -104,6 +105,8 @@ def testfield():
     # 2.1, ensemble likelihood
     """
     likelihood = EnsembleLikelihood(mock_data, mock_cov)  # initialize likelihood with measured info
+    #likelihood = SimpleLikelihood(mock_data, mock_cov)
+    #likelihood.active_parameters = ()
 
     """
     # 2.2, field factory list

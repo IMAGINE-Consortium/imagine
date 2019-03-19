@@ -48,7 +48,7 @@
             <gc_z_min value=""/> <!-- kpc (default) -->
             <gc_z_max value=""/> <!-- kpc (default) -->
             <!-- radial integration resolution -->
-            <ec_r_res value="0.01"/> <!-- kpc (default) -->
+            <ec_r_res value="0.1"/> <!-- kpc (default) -->
             <!-- galactic latitude limit, both poles -->
             <lat_min value="60"/> <!--  (default) -->
             <lat_max value="90"/> <!--  (default) -->

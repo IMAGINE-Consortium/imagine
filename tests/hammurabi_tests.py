@@ -50,7 +50,7 @@ class HammurabiTests(unittest.TestCase):
         fereg_ymw16 = FEregYMW16(paramlist, 23)
 
         # push fields to simulator
-        simer.register_fields([breg_wmap, brnd_es, cre_ana, fereg_ymw16], 0)
+        simer.register_fields([breg_wmap, brnd_es, cre_ana, fereg_ymw16])
 
         # check initialization
         print('\n this is a non-rigorous test \n',

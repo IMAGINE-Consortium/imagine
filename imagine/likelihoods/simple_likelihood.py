@@ -18,51 +18,20 @@ class SimpleLikelihood(Likelihood):
         :param covariance_dict: Covariances object
         :param mask_dict: Masks object
         """
-        self.mask_dict = mask_dict
-        self.measurement_dict = measurement_dict
-        self.covariance_dict = covariance_dict
+        super(SimpleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
 
-    @property
-    def mask_dict(self):
-        return self._mask_dict
-
-    @mask_dict.setter
-    def mask_dict(self, mask_dict):
-        if mask_dict is not None:
-            assert isinstance(mask_dict, Masks)
-        self._mask_dict = mask_dict
-
-    @property
-    def measurement_dict(self):
-        return self._measurement_dict
-
-    @measurement_dict.setter
-    def measurement_dict(self, measurement_dict):
-        assert isinstance(measurement_dict, Measurements)
-        if self._mask_dict is None:
-            self._measurement_dict = measurement_dict
-        else:  # apply masks
-            self._measurement_dict = measurement_dict.apply_mask(self._mask_dict)
-
-    @property
-    def covariance_dict(self):
-        return self._covariance_dict
-
-    @covariance_dict.setter
-    def covariance_dict(self, covariance_dict):
-        if covariance_dict is not None:
-            assert isinstance(covariance_dict, Covariances)
-        if self._mask_dict is None:
-            self._covariance_dict = covariance_dict
-        else:  # apply masks
-            self._covariance_dict = covariance_dict.apply_mask(self._mask_dict)
-
-    def __call__(self, observable_dict):
+    def __call__(self, observable_dict, variables=None):
         """
 
         :param observable_dict: Simulations object
         :return: log-likelihood value
         """
+        # parse variables
+        work_parameters = dict()
+        if variables is not None and variables != dict():
+            assert (tuple(variables.keys()) == self._active_parameters)
+            work_parameters.update(self._map_variables_to_parameters(variables))
+        #
         assert isinstance(observable_dict, Simulations)
         # check dict entries
         assert (observable_dict.keys() == self._measurement_dict.keys())

@@ -23,49 +23,15 @@ class EnsembleLikelihood(Likelihood):
         :param covariance_dict: Covariances object
         :param mask_dict: Masks object
         """
-        self.mask_dict = mask_dict
-        self.measurement_dict = measurement_dict
-        self.covariance_dict = covariance_dict
-
-    @property
-    def mask_dict(self):
-        return self._mask_dict
-
-    @mask_dict.setter
-    def mask_dict(self, mask_dict):
-        if mask_dict is not None:
-            assert isinstance(mask_dict, Masks)
-        self._mask_dict = mask_dict
-
-    @property
-    def measurement_dict(self):
-        return self._measurement_dict
-
-    @measurement_dict.setter
-    def measurement_dict(self, measurement_dict):
-        assert isinstance(measurement_dict, Measurements)
-        self._measurement_dict = measurement_dict
-        self._measurement_dict.apply_mask(self._mask_dict)
-
-    @property
-    def covariance_dict(self):
-        return self._covariance_dict
-
-    @covariance_dict.setter
-    def covariance_dict(self, covariance_dict):
-        if covariance_dict is not None:
-            assert isinstance(covariance_dict, Covariances)
-            self._covariance_dict = covariance_dict
-            self._covariance_dict.apply_mask(self._mask_dict)
-        else:
-            self._covariance_dict = covariance_dict
+        super(EnsembleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
     
-    def __call__(self, observable_dict):
+    def __call__(self, observable_dict, variables=None):
         """
 
         :param observable_dict: Simulations object
         :return: log-likelihood value
         """
+        assert (variables == dict() or variables is None)  # empty for ensemble_likelihood
         assert isinstance(observable_dict, Simulations)
         # check dict entries
         assert (observable_dict.keys() == self._measurement_dict.keys())

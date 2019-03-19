@@ -8,6 +8,7 @@ import logging as log
 
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.fields.test_field.test_field_factory import TestFieldFactory
 from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.li_simulator import LiSimulator
@@ -131,11 +132,10 @@ def testfield():
     """
     ensemble_size = 10
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
-    pipe.random_type = 'controlable'
-    pipe.seed_tracer = int(23)
+    pipe.random_type = 'free'
     pipe.sampling_controllers = {'n_iter_before_update': 1,
                                  'n_live_points': 400,
-                                 'verbose': False,
+                                 'verbose': True,
                                  'resume': False}
     results = pipe()  # run with pymultinest
 

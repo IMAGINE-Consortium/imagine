@@ -4,7 +4,6 @@ for WMAP + analytic CRE + YMW16
 mask out l<60 + 4 loops
 
 frequency 23 GHz
-Nside 32
 synchrotron Stockes Q, U
 North pole
 """
@@ -16,6 +15,7 @@ import logging as log
 from imagine.observables.observable_dict import Masks
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.priors.flat_prior import FlatPrior
 from imagine.pipelines.dynesty_pipeline import DynestyPipeline
 from imagine.pipelines.multinest_pipeline import MultinestPipeline
@@ -68,7 +68,7 @@ def mask_map(_nside, _freq):
     return msk_dict
 
 
-def mock_reg_errprop(_nside, _freq):
+def mock_errprop(_nside, _freq):
     """
     return masked mock synchrotron Q, U
     error propagated from theoretical uncertainties
@@ -91,7 +91,7 @@ def mock_reg_errprop(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    mocksize = 20  # ensemble of mock data
+    mocksize = 100  # ensemble of mock data
     error = 0.1  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # prepare theoretical uncertainty
@@ -131,12 +131,12 @@ def mock_reg_errprop(_nside, _freq):
     mock_mask = mask_map(_nside, _freq)
     sim_data.apply_mask(mock_mask)
     for key in sim_data.keys():
-        mock_data.append(key, np.vstack([(sim_data[key].to_global_data())[np.random.randint(0,mocksize)]]), True)
+        mock_data.append(key, np.vstack([(sim_data[key].to_global_data())[np.random.randint(0, mocksize)]]), True)
         mock_cov.append(key, oas_cov(sim_data[key].to_global_data()), True)
     return mock_data, mock_cov
 
 
-def mock_reg_errfix(_nside, _freq):
+def mock_errfix(_nside, _freq):
     """
     return masked mock synchrotron Q, U
     error fixed
@@ -159,7 +159,7 @@ def mock_reg_errfix(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    error = 1.0e-8  # theoretical raltive uncertainty for each (active) parameter
+    error = 0.1  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
     # BregWMAP field
@@ -186,7 +186,7 @@ def mock_reg_errfix(_nside, _freq):
     mock_mask = mask_map(_nside, _freq)
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
-        mock_cov.append(key, (error**2)*np.eye(int(key[2])), True)
+        mock_cov.append(key, (error**2*(np.mean(mock_raw_q))**2)*np.eye(int(key[2])), True)
     return mock_data, mock_cov
 
 
@@ -196,12 +196,13 @@ def main():
     nside = 4
     freq = 23
     
-    mock_data, mock_cov = mock_reg_errprop(nside, freq)
+    mock_data, mock_cov = mock_errprop(nside, freq)
     mock_mask = mask_map(nside, freq)
 
     # using masked mock data/covariance
     # apply_mock will ignore masked input since mismatch in keys
-    likelihood = EnsembleLikelihood(mock_data, mock_cov, mock_mask)
+    #likelihood = EnsembleLikelihood(mock_data, mock_cov, mock_mask)
+    likelihood = SimpleLikelihood(mock_data, mock_cov, mock_mask)
 
     breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
@@ -224,7 +225,7 @@ def main():
 
     ensemble_size = 1
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
-    pipe.sampling_controllers = {'resume': False, 'verbose': True}
+    pipe.sampling_controllers = {'resume': False, 'verbose': True, 'n_live_points': 4000}
     results = pipe()
 
     # saving results

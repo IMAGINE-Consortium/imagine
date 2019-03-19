@@ -10,3 +10,9 @@ def unity_mapper(_x, _a=0, _b=1):
     :return:
     """
     return float(_x) * (float(_b)-float(_a)) + float(_a)
+
+def exp_mapper(_x, _a=0, _b=1):
+    """
+    Maps _x from [0, 1] into the interval [exp(_a), exp(_b)]
+    """
+    return np.exp(unity_mapper(_x, _a, _b))

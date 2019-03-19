@@ -27,7 +27,7 @@ class TestSimpleLikeli(unittest.TestCase):
         # no covariance
         lh = SimpleLikelihood(meadict)
         # calc by likelihood
-        rslt = lh(simdict)
+        rslt = lh(simdict)  # feed variable value, not parameter value
         # calc by hand
         diff = (np.mean(arr_b, axis=0) - arr_a)
         baseline = -float(0.5)*float(np.vdot(diff, diff))
@@ -56,11 +56,11 @@ class TestSimpleLikeli(unittest.TestCase):
         # with covariance
         lh = SimpleLikelihood(meadict, covdict)
         # calc by likelihood
-        rslt = lh(simdict)
+        rslt = lh(simdict)  # feed variable value, not parameter value
         # calc by hand
         diff = (np.mean(arr_b, axis=0) - arr_a)
-        sign, logdet = np.linalg.slogdet(arr_c*2.*np.pi)
-        baseline = -float(0.5)*float(np.vdot(diff, np.linalg.solve(arr_c, diff))+sign*logdet)
+        (sign, logdet) = np.linalg.slogdet(arr_c*2.*np.pi)
+        baseline = -float(0.5)*float(np.vdot(diff, np.linalg.solve(arr_c, diff.T))+sign*logdet)
         self.assertEqual(rslt, baseline)
 
 

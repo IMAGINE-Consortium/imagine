@@ -13,11 +13,12 @@ from .simulators.test.li_simulator import LiSimulator
 from .simulators.test.bi_simulator import BiSimulator
 from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior
+from .pipelines.pipeline import Pipeline
 from .pipelines.multinest_pipeline import MultinestPipeline
 from .pipelines.dynesty_pipeline import DynestyPipeline
 
 # numeric tools
-from .tools.carrier_mapper import unity_mapper
+from .tools.carrier_mapper import unity_mapper, exp_mapper
 from .tools.covariance_estimator import oas_cov, oas_mcov
 from .tools.random_seed import seed_generator, ensemble_seed_generator
 from .tools.masker import mask_obs, mask_cov
