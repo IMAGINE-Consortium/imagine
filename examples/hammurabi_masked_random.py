@@ -68,7 +68,7 @@ def mask_map(_nside, _freq):
     return msk_dict
 
 
-def mock_reg_errprop(_nside, _freq):
+def mock_errprop(_nside, _freq):
     """
     return masked mock synchrotron Q, U
     error propagated from theoretical uncertainties
@@ -78,11 +78,11 @@ def mock_reg_errprop(_nside, _freq):
     # active parameters
     true_b0 = 3.0
     true_psi0 = 27.0
-    #true_psi1 = 0.9
-    #true_chi0 = 25.
+    true_psi1 = 0.9
+    true_chi0 = 25.
     true_alpha = 3.0
-    #true_r0 = 5.0
-    #true_z0 = 1.0
+    true_r0 = 5.0
+    true_z0 = 1.0
     true_rms = 6.0
     true_rho = 0.8
     true_a0 = 1.7
@@ -100,11 +100,11 @@ def mock_reg_errprop(_nside, _freq):
     # prepare theoretical uncertainty
     b0_var = np.random.normal(true_b0, error*true_b0, mocksize)
     psi0_var = np.random.normal(true_psi0, error*true_psi0, mocksize)
-    #psi1_var = np.random.normal(true_psi1, error*true_psi1, mocksize)
-    #chi0_var = np.random.normal(true_chi0, error*true_chi0, mocksize)
+    psi1_var = np.random.normal(true_psi1, error*true_psi1, mocksize)
+    chi0_var = np.random.normal(true_chi0, error*true_chi0, mocksize)
     alpha_var = np.random.normal(true_alpha, error*true_alpha, mocksize)
-    #r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
-    #z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
+    r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
+    z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
     rms_var = np.random.normal(true_rms, error*ture_rms, mocksize)
     rho_var = np.random.normal(true_rho, error*true_rho, mocksize)
     a0_var = np.random.normal(true_a0, error*true_a0, mocksize)
@@ -113,11 +113,11 @@ def mock_reg_errprop(_nside, _freq):
     # start simulation
     for i in range(mocksize):  # get one realization each time
         # BregWMAP field
-        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': 0.9, 'chi0': 25.}
+        paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}
         breg_wmap = BregWMAP(paramlist, 1)
         # CREAna field
         paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
-                     'r0': 5.0, 'z0': 1.0,
+                     'r0': r0_var[i], 'z0': z0_var[i],
                      'E0': 20.6, 'j0': 0.0217}
         cre_ana = CREAna(paramlist, 1)
         # FEregYMW16 field
@@ -146,7 +146,7 @@ def mock_reg_errprop(_nside, _freq):
     return mock_data, mock_cov
 
 
-def mock_reg_errfix(_nside, _freq):
+def mock_errfix(_nside, _freq):
     """
     return masked mock synchrotron Q, U
     error fixed
@@ -156,11 +156,11 @@ def mock_reg_errfix(_nside, _freq):
     # active parameters
     true_b0 = 3.0
     true_psi0 = 27.0
-    #true_psi1 = 0.9
-    #true_chi0 = 25.
+    true_psi1 = 0.9
+    true_chi0 = 25.
     true_alpha = 3.0
-    #true_r0 = 5.0
-    #true_z0 = 1.0
+    true_r0 = 5.0
+    true_z0 = 1.0
     true_rms = 6.0
     true_rho = 0.8
     true_a0 = 1.7
@@ -172,15 +172,15 @@ def mock_reg_errfix(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    error = 1.0e-6  # theoretical raltive uncertainty for each (active) parameter
+    error = 0.1
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
     # BregWMAP field
-    paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': 0.9, 'chi0': 25.}
+    paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}
     breg_wmap = BregWMAP(paramlist, 1)
     # CREAna field
     paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
-                 'r0': 5.0, 'z0': 1.0,
+                 'r0': r0_var[i], 'z0': z0_var[i],
                  'E0': 20.6, 'j0': 0.0217}
     cre_ana = CREAna(paramlist, 1)
     # FEregYMW16 field
@@ -203,17 +203,17 @@ def mock_reg_errfix(_nside, _freq):
     mock_mask = mask_map(_nside, _freq)
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
-        mock_cov.append(key, (error**2)*np.eye(int(key[2])), True)
+        mock_cov.append(key, (error**2*(np.std(mock_raw_q.to_global_data()))**2)*np.eye(int(key[2])), True)
     return mock_data, mock_cov
 
 
 def main():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
-    nside = 16
+    nside = 4
     freq = 23
     
-    mock_data, mock_cov = mock_reg_errprop(nside, freq)
+    mock_data, mock_cov = mock_errfix(nside, freq)
     mock_mask = mask_map(nside, freq)
 
     # using masked mock data/covariance
@@ -244,7 +244,7 @@ def main():
     ensemble_size = 10
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
-    pipe.sampling_controllers = {'resume': False, 'verbose': True}
+    pipe.sampling_controllers = {'resume': False, 'verbose': True, 'n_live_points': 4000}
     results = pipe()
 
     # saving results

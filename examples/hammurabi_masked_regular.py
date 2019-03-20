@@ -159,7 +159,7 @@ def mock_errfix(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    error = 0.1  # theoretical raltive uncertainty for each (active) parameter
+    error = 0.1
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
     # BregWMAP field
@@ -225,6 +225,7 @@ def main():
 
     ensemble_size = 1
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe.random_type = 'free'
     pipe.sampling_controllers = {'resume': False, 'verbose': True, 'n_live_points': 4000}
     results = pipe()
 

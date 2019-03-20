@@ -59,15 +59,15 @@ class TestPipelines(unittest.TestCase):
         pipe._randomness()
         s1 = pipe._ensemble_seeds
         self.assertTrue(s1 is None)
-        # test controlable random seed, with top level seed controlable
-        pipe.random_type = 'controlable'
+        # test controllable random seed, with top level seed controllable
+        pipe.random_type = 'controllable'
         pipe.seed_tracer = int(3)  # controlling seed at top level
         pipe._randomness()  # core func in assigning ensemble seeds, before calling simulator
         s1 = pipe._ensemble_seeds
         pipe._randomness()  # 2nd call of sampeler
         s2 = pipe._ensemble_seeds
         pipe = MultinestPipeline(simer, flist, lh, pr, 5)  # init a new sampler
-        pipe.random_type = 'controlable'
+        pipe.random_type = 'controllable'
         pipe.seed_tracer = int(3)  # repeat the controlling seed
         pipe._randomness()
         s1re = pipe._ensemble_seeds
@@ -76,7 +76,7 @@ class TestPipelines(unittest.TestCase):
         self.assertListEqual(list(s1), list(s1re))  # should get the same seeds
         self.assertListEqual(list(s2), list(s2re))
         pipe = MultinestPipeline(simer, flist, lh, pr, 5)
-        pipe.random_type = 'controlable'
+        pipe.random_type = 'controllable'
         pipe.seed_tracer = int(4)  # different controlling seed
         pipe._randomness()
         s1new = pipe._ensemble_seeds
@@ -138,15 +138,15 @@ class TestPipelines(unittest.TestCase):
         pipe._randomness()
         s1 = pipe._ensemble_seeds
         self.assertTrue(s1 is None)
-        # test controlable random seed
-        pipe.random_type = 'controlable'
+        # test controllable random seed
+        pipe.random_type = 'controllable'
         pipe.seed_tracer = int(3)
         pipe._randomness()
         s1 = pipe._ensemble_seeds
         pipe._randomness()
         s2 = pipe._ensemble_seeds
         pipe = DynestyPipeline(simer, flist, lh, pr, 5)
-        pipe.random_type = 'controlable'
+        pipe.random_type = 'controllable'
         pipe.seed_tracer = int(3)
         pipe._randomness()
         s1re = pipe._ensemble_seeds
@@ -155,7 +155,7 @@ class TestPipelines(unittest.TestCase):
         self.assertListEqual(list(s1), list(s1re))
         self.assertListEqual(list(s2), list(s2re))
         pipe = DynestyPipeline(simer, flist, lh, pr, 5)
-        pipe.random_type = 'controlable'
+        pipe.random_type = 'controllable'
         pipe.seed_tracer = int(4)
         pipe._randomness()
         s1new = pipe._ensemble_seeds

@@ -36,10 +36,10 @@ class Pipeline(object):
             -- rescale log-likelihood value
         random_type
             -- 'free' by default
-            -- 'controlable', each simulator run use seed generated from higher level seed
+            -- 'controllable', each simulator run use seed generated from higher level seed
             -- 'fixed', take a list of fixed integers as seed for all simulator runs
         seed_tracer
-            -- useful in 'controlable' random_type
+            -- useful in 'controllable' random_type
         likelihood_threshold
             -- by default, log-likelihood should be negative
         """
@@ -56,7 +56,7 @@ class Pipeline(object):
         self.likelihood_rescaler = 1.
         # default ensemble seeds, corresponding to 'free' random type
         self._ensemble_seeds = None
-        # tracer used in 'controlable' random type
+        # tracer used in 'controllable' random type
         self.seed_tracer = int(0)
         # random type
         self.random_type = 'free'
@@ -215,7 +215,7 @@ class Pipeline(object):
         # prepare ensemble seeds
         if self._random_type == 'free':
             assert(self._ensemble_seeds is None)
-        elif self._random_type == 'controlable':
+        elif self._random_type == 'controllable':
             assert isinstance(self._seed_tracer, int)
             self._ensemble_seeds = ensemble_seed_generator(self._ensemble_size)
         elif self._random_type == 'fixed':

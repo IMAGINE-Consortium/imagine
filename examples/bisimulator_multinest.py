@@ -127,7 +127,7 @@ def testfield():
     """
     ensemble_size = 10
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
-    pipe.random_type = 'controlable'
+    pipe.random_type = 'controllable'
     pipe.seed_tracer = int(23)
     pipe.sampling_controllers = {'n_iter_before_update': 1,
                                  'n_live_points': 400,
