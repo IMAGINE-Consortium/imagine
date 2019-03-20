@@ -79,7 +79,7 @@ RUN git clone https://bitbucket.org/hammurabicode/hamx hamx
 WORKDIR /home/lab/hamx
 RUN mkdir /home/lab/hamx/build
 WORKDIR /home/lab/hamx/build
-RUN cmake .. && make && make install
+RUN cmake .. && make install
 # SET PATH
 ENV PATH /usr/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}

@@ -135,7 +135,7 @@ def wmap_errprop():
     # step 3, visualize (with corner package)
     """
     samples = results['samples']
-    np.savetxt('posterior_regular_errprop.txt', samples)
+    np.savetxt('posterior_fullsky_regular_errprop.txt', samples)
     """
     # screen printing
     print('\n evidence: %(logZ).1f +- %(logZerr).1f \n' % results)
@@ -162,7 +162,7 @@ def wmap_errprop():
                   plot_contours=True,
                   hist_kwargs={'linewidth': 2},
                   label_kwargs={'fontsize': 20})
-    matplotlib.pyplot.savefig('posterior.pdf')
+    matplotlib.pyplot.savefig('posterior_fullsky_regular_errprop.pdf')
     """
 
 def wmap_errfix():
@@ -245,7 +245,35 @@ def wmap_errfix():
     # step 3, visualize (with corner package)
     """
     samples = results['samples']
-    np.savetxt('posterior_regular_errfix.txt', samples)
+    np.savetxt('posterior_fullsky_regular_errfix.txt', samples)
+    """
+    # screen printing
+    print('\n evidence: %(logZ).1f +- %(logZerr).1f \n' % results)
+    print('parameter values: \n')
+    for name, col in zip(pipe.active_parameters, results['samples'].transpose()):
+        print('%15s : %.3f +- %.3f \n' % (name, col.mean(), col.std()))
+
+    # posterior plotting
+    samples = results['samples']
+    for i in range(len(pipe.active_parameters)):  # convert variables into parameters
+        low, high = pipe.active_ranges[pipe.active_parameters[i]]
+        for j in range(samples.shape[0]):
+            samples[j, i] = unity_mapper(samples[j, i], low, high)
+    # corner plot
+    corner.corner(samples[:, :len(pipe.active_parameters)],
+                  range=[0.99] * len(pipe.active_parameters),
+                  quantiles=[0.02, 0.5, 0.98],
+                  labels=pipe.active_parameters,
+                  show_titles=True,
+                  title_kwargs={"fontsize": 15},
+                  color='steelblue',
+                  truths=truths,
+                  truth_color='firebrick',
+                  plot_contours=True,
+                  hist_kwargs={'linewidth': 2},
+                  label_kwargs={'fontsize': 20})
+    matplotlib.pyplot.savefig('posterior_fullsky_regular_errfix.pdf')
+    """
 
 if __name__ == '__main__':
     #wmap_errprop()

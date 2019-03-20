@@ -186,7 +186,7 @@ def mock_errfix(_nside, _freq):
     mock_mask = mask_map(_nside, _freq)
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
-        mock_cov.append(key, (error**2*(np.mean(mock_raw_q))**2)*np.eye(int(key[2])), True)
+        mock_cov.append(key, (error**2*(np.std(mock_raw_q.to_global_data()))**2)*np.eye(int(key[2])), True)
     return mock_data, mock_cov
 
 
