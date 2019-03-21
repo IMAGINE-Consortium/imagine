@@ -86,7 +86,7 @@ ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}
 WORKDIR /home/lab
 
 #IMAGINE
-RUN git clone https://ricphy@bitbucket.org/ricphy/imagine.git imagine
+RUN git clone https://ricphy@bitbucket.org/hammurabicode/imagine.git imagine
 WORKDIR /home/lab/imagine
 RUN python3 setup.py install
 WORKDIR /home/lab
