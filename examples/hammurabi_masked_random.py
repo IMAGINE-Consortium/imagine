@@ -176,18 +176,18 @@ def mock_errfix(_nside, _freq):
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
     # BregWMAP field
-    paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}
+    paramlist = {'b0': true_b0, 'psi0': true_psi0, 'psi1': true_psi1, 'chi0': true_chi0}
     breg_wmap = BregWMAP(paramlist, 1)
     # CREAna field
-    paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
-                 'r0': r0_var[i], 'z0': z0_var[i],
+    paramlist = {'alpha': true_alpha, 'beta': 0.0, 'theta': 0.0,
+                 'r0': true_r0, 'z0': true_z0,
                  'E0': 20.6, 'j0': 0.0217}
     cre_ana = CREAna(paramlist, 1)
     # FEregYMW16 field
     paramlist = dict()
     fereg_ymw16 = FEregYMW16(paramlist, 1)
     # BrndES field
-    paramlist = {'rms': rms_var[i], 'k0': 0.1, 'a0': a0_var[i], 'rho': rho_var[i],
+    paramlist = {'rms': true_rms, 'k0': 0.1, 'a0': true_a0, 'rho': true_rho,
                  'r0': 8.0, 'z0': 1.0}
     brnd_es = BrndES(paramlist, 1)
     # collect mock data and covariance
