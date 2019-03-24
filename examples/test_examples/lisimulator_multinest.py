@@ -1,11 +1,15 @@
 """
 single TestField with LiSimulator
 full parameter constraints with mock data
+(with MPI support)
 """
 
 import numpy as np
 import logging as log
 
+import mpi4py
+
+from nifty5 import Field, RGSpace
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 from imagine.likelihoods.simple_likelihood import SimpleLikelihood
@@ -14,6 +18,10 @@ from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.pipelines.multinest_pipeline import MultinestPipeline
 from imagine.tools.covariance_estimator import oas_cov, bootstrap_cov
+
+comm = mpi4py.MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
 
 # visualize posterior
 import corner
@@ -62,28 +70,12 @@ def testfield():
     signal_field = np.multiply(np.cos(x),
                                np.random.normal(loc=true_a, scale=true_b, size=mea_points))
     mea_field = np.vstack([signal_field + np.random.normal(loc=0., scale=mea_std, size=mea_points)])
-
+    
     """
     # 1.2, generate covariances
-    what's the difference between pre-define dan re-estimated?
     """
-    # re-estimate according to measurement error
-    repeat = 100  # times of repeated measurements
-    mea_repeat = np.zeros((repeat, mea_points))
-    for i in range(repeat):
-        mea_repeat[i, :] = signal_field + np.random.normal(loc=0., scale=mea_std, size=mea_points)
-    mea_cov = oas_cov(mea_repeat)
-
-    print('re-estimated by OAS: \n', mea_cov)
-
-    mea_cov = bootstrap_cov(mea_repeat)
-
-    print('re-estimated by bootstrap: \n', mea_cov)
-
     # pre-defined according to measurement error
-    mea_cov = (mea_std**2) * np.eye(mea_points)
-
-    print('pre-defined: \n', mea_cov)
+    mea_cov = Field.from_global_data(RGSpace(shape=(mea_points, mea_points)), (mea_std**2) * np.eye(mea_points))
 
     """
     # 1.3 assemble in imagine convention
@@ -98,8 +90,9 @@ def testfield():
     """
     # 1.4, visualize mock data
     """
-    matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
-    matplotlib.pyplot.savefig('testfield_mock.pdf')
+    #if mpirank == 0:
+        #matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
+        #matplotlib.pyplot.savefig('testfield_mock.pdf')
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -142,25 +135,26 @@ def testfield():
     """
     # step 3, visualize (with corner package)
     """
-    samples = results['samples']
-    for i in range(len(pipe.active_parameters)):  # convert variables into parameters
-        low, high = pipe.active_ranges[pipe.active_parameters[i]]
-        for j in range(samples.shape[0]):
-            samples[j, i] = unity_mapper(samples[j, i], low, high)
-    # corner plot
-    corner.corner(samples[:, :len(pipe.active_parameters)],
-                  range=[0.99]*len(pipe.active_parameters),
-                  quantiles=[0.02, 0.5, 0.98],
-                  labels=pipe.active_parameters,
-                  show_titles=True,
-                  title_kwargs={"fontsize": 15},
-                  color='steelblue',
-                  truths=truths,
-                  truth_color='firebrick',
-                  plot_contours=True,
-                  hist_kwargs={'linewidth': 2},
-                  label_kwargs={'fontsize': 15})
-    matplotlib.pyplot.savefig('testfield_posterior.pdf')
+    if mpirank == 0:
+        samples = results['samples']
+        for i in range(len(pipe.active_parameters)):  # convert variables into parameters
+            low, high = pipe.active_ranges[pipe.active_parameters[i]]
+            for j in range(samples.shape[0]):
+                samples[j, i] = unity_mapper(samples[j, i], low, high)
+        # corner plot
+        corner.corner(samples[:, :len(pipe.active_parameters)],
+                      range=[0.99]*len(pipe.active_parameters),
+                      quantiles=[0.02, 0.5, 0.98],
+                      labels=pipe.active_parameters,
+                      show_titles=True,
+                      title_kwargs={"fontsize": 15},
+                      color='steelblue',
+                      truths=truths,
+                      truth_color='firebrick',
+                      plot_contours=True,
+                      hist_kwargs={'linewidth': 2},
+                      label_kwargs={'fontsize': 15})
+        matplotlib.pyplot.savefig('testfield_posterior.pdf')
 
 
 if __name__ == '__main__':

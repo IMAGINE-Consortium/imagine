@@ -25,13 +25,12 @@ class EnsembleLikelihood(Likelihood):
         """
         super(EnsembleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
     
-    def __call__(self, observable_dict, variables=None):
+    def __call__(self, observable_dict):
         """
 
         :param observable_dict: Simulations object
         :return: log-likelihood value
         """
-        assert (variables == dict() or variables is None)  # empty for ensemble_likelihood
         assert isinstance(observable_dict, Simulations)
         # check dict entries
         assert (observable_dict.keys() == self._measurement_dict.keys())

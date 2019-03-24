@@ -12,7 +12,7 @@ members:
 .field
     -- NIFTy5 Field object for storing observable ensemble
 .domain
-    -- NIFTy5 DomainTuple
+    -- NIFTy5 DomainTuple, defined globally
 .rw_flag
     -- rewriting flag, if true, append method will perform rewriting
 .to_global_data
@@ -24,8 +24,14 @@ members:
 
 import numpy as np
 
+import mpi4py
+
 from nifty5 import Field, RGSpace, DomainTuple
 from imagine.tools.icy_decorator import icy
+
+comm = mpi4py.MPI.COMM_WORLD
+mpisize = comm.Get_size()
+mpirank = comm.Get_rank()
 
 
 @icy
@@ -33,11 +39,11 @@ class Observable(object):
 
     def __init__(self, domain=None, val=float(0)):
         """
-
+        initialize Observable with locally defined ndarray
+        
         :param domain: a tuple of NIFTy5.domain objects, in type NIFTy5.DomainTuple
         we restrict domain contains two NIFTy5.domain objects
         and the first one should be NIFTy5.RGSpace for convenience in calculating ensemble mean
-
         :param val: actual observable data in the correct shape defined by domain.shape
 
         i.e., for an Helpix Nside=128 observable in ensemble of 10 realisations
@@ -56,8 +62,15 @@ class Observable(object):
 
     @domain.setter
     def domain(self, domain):
+        """
+        domain is defined globally
+        domain.shape[0] should be either 1 (for storing measurement/observational data),
+        or multiple mpisize (for storing simulated data)
+        """
         assert (len(domain) == 2)
         assert isinstance(domain[0], RGSpace)
+        # either global 1D, or multiple MPI size
+        assert(domain.shape[0] % mpisize == 0 or domain.shape[0] == 1)
         for d in domain:  # restrict to 1D
             assert (len(d.shape) == int(1))
         self._domain = domain
@@ -68,12 +81,21 @@ class Observable(object):
 
     @field.setter
     def field(self, val):
+        """
+        if domain with domain.sahpe[0] == 1, get val from master node
+        otherwise, gather val from all nodes
+        """
         if isinstance(val, float):  # empty case
-            self._field = Field.full(self.domain, val)
+            self._field = Field.full(self._domain, val)
             self._rw_flag = True
+        elif isinstance(val, np.ndarray):
+            # if domain.shape[0] == 1, no MPI distribution
+            if self._domain.shape[0] == 1:
+                self._field = Field.from_global_data(self.domain, val)
+            else:
+                self._field = Field.from_local_data(self.domain, val)
         else:
-            # use np.vstack to reinforce correct shape
-            self._field = Field.from_global_data(self.domain, np.vstack([val]))
+            raise TypeError('unsupported data type')
 
     @property
     def rw_flag(self):
@@ -85,25 +107,35 @@ class Observable(object):
     
     @property
     def ensemble_mean(self):
-        self._ensemble_mean = np.vstack([self._field.mean(spaces=0).to_global_data()])
+        self._ensemble_mean = (self._field.mean(spaces=0).to_global_data()).reshape(1, self._field.shape[1])
         return self._ensemble_mean
 
     @property
     def shape(self):
         return self._field.shape
 
+    @property
+    def local_data(self):
+        return self._field.local_data
+
     def to_global_data(self):
         """
         indirectly visit ._field
         dont make it a preperty in order to be aligned with
         the same method in NIFTy5.Field
+        
         :return: numpy ndarray of observable content
         """
         return self._field.to_global_data()
 
     def append(self, new_data):
         """
-
+        append new_data from all nodes
+        if the observable is not distributed, self.shape[0] % mpisize != 0,
+        it should be a measurement/observational data, in this case,
+        there is no need to append/rewrite new data,
+        nor it is convenient to do so
+        
         :param new_data: new data in type numpy array, NIFTy5.Field, Observable
         :return:
 
@@ -113,19 +145,20 @@ class Observable(object):
         which means instead of append new data
         we should rewrite
         """
+        assert(self._field.shape[0] % mpisize == 0)  # non-distributed, do not append
         # strip data
         if isinstance(new_data, (Field, Observable)):
-            raw_new = new_data.to_global_data()  # from Field/Observable
+            raw_new = new_data.local_data  # return to each node
         elif isinstance(new_data, np.ndarray):
-            raw_new = new_data  # from ndarray
+            raw_new = new_data
         else:
             raise TypeError('unsupported type')
         # assemble new_cache
         if self.rw_flag:
-            new_cache = raw_new
+            local_cache = raw_new
             self.rw_flag = False  # rw only once by default
         else:
-            new_cache = np.vstack([self._field.to_global_data(), raw_new])
-        # update new_cache to ._field
-        new_domain = DomainTuple.make((RGSpace(new_cache.shape[0]), self._domain[1]))
-        self._field = Field.from_global_data(new_domain, new_cache)
+            local_cache = np.vstack([self._field.local_data, raw_new])
+        # update new_cache to ._field, first need to get global_size
+        new_domain = DomainTuple.make((RGSpace(local_cache.shape[0]*mpisize), self._domain[1]))
+        self._field = Field.from_local_data(new_domain, local_cache)

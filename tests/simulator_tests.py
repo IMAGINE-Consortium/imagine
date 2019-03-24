@@ -1,11 +1,17 @@
 import unittest
 import numpy as np
 
+import mpi4py
+
 from imagine.simulators.simulator import Simulator
 from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.simulators.test.bi_simulator import BiSimulator
 from imagine.fields.test_field.test_field import TestField
 from imagine.observables.observable_dict import Simulations, Measurements
+
+comm = mpi4py.MPI.COMM_WORLD
+mpisize = comm.Get_size()
+mpirank = comm.Get_rank()
 
 
 class TestSimulators(unittest.TestCase):
@@ -79,21 +85,23 @@ class TestSimulators(unittest.TestCase):
         # mock field
         mock_par = {'a': 2., 'b': 0.2}
         # ensemble num and random seed injected here
-        mock_field = TestField(mock_par, 5, [23]*5)
+        np.random.seed(mpirank)  # assign different seed
+        ensemble_seeds = np.random.randint(1, 10, 5)  # numpy random gives the same sequence by default on all nodes
+        mock_field = TestField(mock_par, 5, ensemble_seeds)
         # simulator
         simer = LiSimulator(measuredict)
         # generating observable ensemble
-        simdict = simer([mock_field])
+        simdict = simer([mock_field])  # automatically append from all nodes
         self.assertEqual(type(simdict), Simulations)
         self.assertEqual(len(simdict.keys()), 1)
-        self.assertEqual(simdict[('test', 'nan', '10', 'nan')].shape, (5, 10))
+        self.assertEqual(simdict[('test', 'nan', '10', 'nan')].shape, (5*mpisize, 10))
         # simulator
         simer = BiSimulator(measuredict)
         # generating observable ensemble
-        simdict = simer([mock_field])
+        simdict = simer([mock_field])  # automatically append from all nodes
         self.assertEqual(type(simdict), Simulations)
         self.assertEqual(len(simdict.keys()), 1)
-        self.assertEqual(simdict[('test', 'nan', '10', 'nan')].shape, (5, 10))
+        self.assertEqual(simdict[('test', 'nan', '10', 'nan')].shape, (5*mpisize, 10))
 
 
 if __name__ == '__main__':

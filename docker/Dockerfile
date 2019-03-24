@@ -45,6 +45,10 @@ WORKDIR /home/lab/googletest/build
 RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make && make install && cp ../googletest/src/* /usr/local/src
 WORKDIR /home/lab
 
+#mpi4py
+RUN apt-get install -y libopenmpi-dev openmpi-bin openmpi-doc
+RUN pip3 install mpi4py
+
 #(Py)MultiNest
 RUN apt-get install -y libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
 
@@ -60,10 +64,6 @@ WORKDIR /home/lab
 
 #Dynesty
 RUN pip3 install dynesty
-
-#mpi4py
-RUN apt-get install -y libopenmpi-dev openmpi-bin openmpi-doc
-RUN pip3 install mpi4py 
 
 #hdf5
 RUN apt-get install -y libhdf5-100 libhdf5-dev libhdf5-openmpi-100 libhdf5-openmpi-dev hdf5-tools

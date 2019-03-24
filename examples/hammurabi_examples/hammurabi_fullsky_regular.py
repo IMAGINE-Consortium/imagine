@@ -15,6 +15,9 @@ we set radial resolution as 0.1kpc, which brings, at maximum
 import numpy as np
 import logging as log
 
+import mpi4py
+
+from nifty5 import Field, RGSpace
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 from imagine.likelihoods.simple_likelihood import SimpleLikelihood
@@ -33,6 +36,10 @@ from imagine.fields.fereg_ymw16.hamx_field import FEregYMW16
 from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
 
 from imagine.tools.covariance_estimator import oas_cov
+
+comm = mpi4py.MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
 
 """
 # visualize posterior
@@ -74,7 +81,7 @@ def wmap_errprop():
     trigger = Measurements()
     trigger.append(('sync', '23', str(mea_nside), 'I'), x)  # only I map
     # initialize simulator
-    mocksize = 20  # ensemble of mock data
+    mocksize = 10  # ensemble of mock data (per node)
     error = 0.1  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # prepare theoretical uncertainty
@@ -85,7 +92,7 @@ def wmap_errprop():
     alpha_var = np.random.normal(true_alpha, error*true_alpha, mocksize)
     r0_var = np.random.normal(true_r0, error*true_r0, mocksize)
     z0_var = np.random.normal(true_z0, error*true_z0, mocksize)
-    mock_ensemble = np.zeros((mocksize, mea_pix))
+    mock_ensemble = Simulations()
     # start simulation
     for i in range(mocksize):  # get one realization each time
         # BregWMAP field
@@ -100,13 +107,14 @@ def wmap_errprop():
         fereg_ymw16 = FEregYMW16(dict(), 1)
         # collect mock data and covariance
         outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
-        mock_ensemble[i, :] = outputs[('sync', '23', str(mea_nside), 'I')].to_global_data()
+        mock_ensemble.append(('sync', '23', str(mea_nside), 'I'), outputs[('sync', '23', str(mea_nside), 'I')])
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
-    cov_matrix = oas_cov(mock_ensemble)
-    mock_data.append(('sync', '23', str(mea_nside), 'I'), np.vstack([np.mean(mock_ensemble, axis=0)]))
-    mock_cov.append(('sync', '23', str(mea_nside), 'I'), cov_matrix)
+    mean, cov = oas_mcov(mock_ensemble[('sync', '23', str(mea_nside), 'I')])
+    mock_data.append(('sync', '23', str(mea_nside), 'I'), mean)
+    mock_cov.append(('sync', '23', str(mea_nside), 'I'),
+                    Field.from_global_data(RGSpace(shape=cov.shape), cov))
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -134,8 +142,9 @@ def wmap_errprop():
     """
     # step 3, visualize (with corner package)
     """
-    samples = results['samples']
-    np.savetxt('posterior_fullsky_regular_errprop.txt', samples)
+    if mpirank == 0:
+        samples = results['samples']
+        np.savetxt('posterior_fullsky_regular_errprop.txt', samples)
     """
     # screen printing
     print('\n evidence: %(logZ).1f +- %(logZerr).1f \n' % results)
@@ -211,12 +220,13 @@ def wmap_errfix():
     fereg_ymw16 = FEregYMW16(dict(), 1)
     # collect mock data and covariance
     outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
-    Imap = outputs[('sync', '23', str(mea_nside), 'I')].to_global_data()
+    Imap = outputs[('sync', '23', str(mea_nside), 'I')].local_data
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
     mock_data.append(('sync', '23', str(mea_nside), 'I'), Imap)
-    mock_cov.append(('sync', '23', str(mea_nside), 'I'), (error**2*(np.mean(Imap))**2)*np.eye(mea_pix))
+    mock_cov.append(('sync', '23', str(mea_nside), 'I'),
+                    Field.from_global_data(RGSpace(shape=(mea_pix, mea_pix)), (error**2*(np.mean(Imap))**2)*np.eye(mea_pix)))
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -244,8 +254,9 @@ def wmap_errfix():
     """
     # step 3, visualize (with corner package)
     """
-    samples = results['samples']
-    np.savetxt('posterior_fullsky_regular_errfix.txt', samples)
+    if mpirank == 0:
+        samples = results['samples']
+        np.savetxt('posterior_fullsky_regular_errfix.txt', samples)
     """
     # screen printing
     print('\n evidence: %(logZ).1f +- %(logZerr).1f \n' % results)

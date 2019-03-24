@@ -6,6 +6,8 @@ full parameter constraints with mock data
 import numpy as np
 import logging as log
 
+import mpi4py
+
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 from imagine.likelihoods.simple_likelihood import SimpleLikelihood
@@ -15,6 +17,10 @@ from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.pipelines.dynesty_pipeline import DynestyPipeline
 from imagine.tools.covariance_estimator import oas_cov
 
+comm = mpi4py.MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
+
 # visualize posterior
 import corner
 import matplotlib
@@ -23,6 +29,8 @@ matplotlib.use('Agg')
 
 
 def testfield():
+    if mpisize > 1:
+        raise RuntimeError('MPI unsupported in Dynesty')
     """
 
     :return:

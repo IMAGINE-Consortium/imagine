@@ -45,16 +45,32 @@ remarks on observable name:
 mask method:
     -- mask only applies to observables/covariances
     observable after masking will be re-recorded as plain data type
+
+distribution with MPI
+    -- Measurements is non-distributed (precsely speaking, distributed in NIFTy style)
+    -- Masks, Simulations and Covariances are distributed
+    -- Masks has Observable object with shape (mpisize, data_size)
+    -- Covariances has Field object with shape "around" (data_size//mpisize, data_size)
+    "around" means to distribute matrix correctly
+    -- Simulations has Observable object with shape (N*mpisize, data_size)
+    -- Measurements has Observable object with shape (1, data_size),
+    the shape of local_data on slave nodes are (0, data_size)
 """
 
 import numpy as np
 import logging as log
+
+import mpi4py
 
 from nifty5 import Field, RGSpace, HPSpace, DomainTuple
 
 from imagine.observables.observable import Observable
 from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.icy_decorator import icy
+
+comm = mpi4py.MPI.COMM_WORLD
+mpisize = comm.Get_size()
+mpirank = comm.Get_rank()
 
 
 @icy
@@ -84,8 +100,7 @@ class ObservableDict(object):
         if data is independent from frequency, set 'nan'
         pol should be either 'I','Q','U','PI','PA' or 'nan'
 
-        :param data: ndarray/Field/Observable
-        we require 1d ndarray not in 'vector' shape (n,) but (1,n)
+        :param data: distributed ndarray/Field/Observable
 
         :param plain: if True, means unstructured data
         if False(default), means healpix structured sky map
@@ -109,30 +124,37 @@ class Masks(ObservableDict):
         super(Masks, self).__init__()
 
     def append(self, name, data, plain=False):
+        """
+        
+        :param name:
+        :param data: distributed
+        :param plain:
+        :return:
+        """
         assert (len(name) == 4)
         if isinstance(data, Observable):
-            assert (data.domain.shape[0] == 1)
-            raw_data = data.to_global_data()
+            assert (data.shape[0] == mpisize)
+            raw_data = data.local_data
             for i in raw_data[0]:
                 assert (i == float(0) or i == float(1))
-            self._archive[name] = data
+            self._archive.update({name: data})
         elif isinstance(data, Field):
-            assert (data.domain.shape[0] == 1)
-            raw_data = data.to_global_data()
+            assert (data.shape[0] == mpisize)
+            raw_data = data.local_data
             for i in raw_data[0]:
                 assert (i == float(0) or i == float(1))
-            self._archive[name] = Observable(data.domain, data.to_global_data())
+            self._archive.update({name: Observable(data.domain, data.local_data)})
         elif isinstance(data, np.ndarray):
             assert (data.shape[0] == 1)
             for i in data[0]:
                 assert (i == float(0) or i == float(1))
             if plain:
                 assert (data.shape[1] == int(name[2]))
-                domain = DomainTuple.make((RGSpace(int(1)), RGSpace(data.shape[1])))
+                domain = DomainTuple.make((RGSpace(mpisize), RGSpace(data.shape[1])))
             else:
                 assert (data.shape[1] == 12*int(name[2])*int(name[2]))              
-                domain = DomainTuple.make((RGSpace(int(1)), HPSpace(nside=int(name[2]))))
-            self._archive[name] = Observable(domain, data)
+                domain = DomainTuple.make((RGSpace(mpisize), HPSpace(nside=int(name[2]))))
+            self._archive.update({name: Observable(domain, data)})
         else:
             raise TypeError('unsupported data type')
         log.debug('mask-dict appends data %s' % str(name))
@@ -145,13 +167,21 @@ class Measurements(ObservableDict):
         super(Measurements, self).__init__()
 
     def append(self, name, data, plain=False):
+        """
+        
+        :param name:
+        :param data: distributed
+        :param plain:
+        :return:
+        """
         assert (len(name) == 4)
         if isinstance(data, Observable):
-            assert (data.domain.shape[0] == 1)
-            self._archive[name] = data  # rw
+            assert (data.shape[0] == 1)
+            self._archive.update({name: data})  # rw
         elif isinstance(data, Field):
-            assert (data.domain.shape[0] == 1)
-            self._archive[name] = Observable(data.domain, data.to_global_data())  # rw
+            assert (data.shape[0] == 1)
+            self._archive.update({name: Observable(data.domain, data.local_data)})  # rw
+        # reading from numpy array takes information only on master node
         elif isinstance(data, np.ndarray):
             assert (data.shape[0] == 1)
             if plain:
@@ -160,7 +190,7 @@ class Measurements(ObservableDict):
             else:
                 assert (data.shape[1] == 12*int(name[2])*int(name[2]))
                 domain = DomainTuple.make((RGSpace(int(1)), HPSpace(nside=int(name[2]))))
-            self._archive[name] = Observable(domain, data)  # rw
+            self._archive.update({name: Observable(domain, data)})  # rw
         else:
             raise TypeError('unsupported data type')
         log.debug('measurements-dict appends data %s' % str(name))
@@ -172,7 +202,7 @@ class Measurements(ObservableDict):
             assert isinstance(mask_dict, Masks)
             for name, msk in mask_dict._archive.items():
                 if name in self._archive.keys():
-                    masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+                    masked = mask_obs(self._archive[name].to_global_data(), msk.local_data)
                     new_name = (name[0], name[1], str(masked.shape[1]), name[3])
                     self._archive.pop(name, None)  # pop out obsolete
                     self.append(new_name, masked, plain=True)  # append new as plain data
@@ -186,9 +216,9 @@ class Simulations(ObservableDict):
 
     def append(self, name, data, plain=False):
         """
-        mind its difference from Measurements
+        
         :param name:
-        :param data:
+        :param data: distributed
         :param plain:
         :return:
         """
@@ -197,17 +227,17 @@ class Simulations(ObservableDict):
             self._archive[name].append(data)
         else:  # new
             if isinstance(data, Observable):
-                self._archive[name] = data
+                self._archive.update({name: data})
             elif isinstance(data, Field):
-                self._archive[name] = Observable(data.domain, data.to_global_data())
-            elif isinstance(data, np.ndarray):
+                self._archive.update({name: Observable(data.domain, data.local_data)})
+            elif isinstance(data, np.ndarray):  # distributed data
                 if plain:
                     assert (data.shape[1] == int(name[2]))
-                    domain = DomainTuple.make((RGSpace(data.shape[0]), RGSpace(data.shape[1])))
+                    domain = DomainTuple.make((RGSpace(data.shape[0]*mpisize), RGSpace(data.shape[1])))
                 else:
                     assert (data.shape[1] == 12*int(name[2])*int(name[2]))
-                    domain = DomainTuple.make((RGSpace(data.shape[0]), HPSpace(nside=int(name[2]))))
-                self._archive[name] = Observable(domain, data)
+                    domain = DomainTuple.make((RGSpace(data.shape[0]*mpisize), HPSpace(nside=int(name[2]))))
+                self._archive.update({name: Observable(domain, data)})
             else:
                 raise TypeError('unsupported data type')
         log.debug('observable-dict appends data %s' % str(name))
@@ -219,7 +249,7 @@ class Simulations(ObservableDict):
             assert isinstance(mask_dict, Masks)
             for name, msk in mask_dict._archive.items():
                 if name in self._archive.keys():
-                    masked = mask_obs(self._archive[name].to_global_data(), msk.to_global_data())
+                    masked = mask_obs(self._archive[name].local_data, msk.local_data)
                     new_name = (name[0], name[1], str(masked.shape[1]), name[3])
                     self._archive.pop(name, None)  # pop out obsolete
                     self.append(new_name, masked, plain=True)  # append new as plain data
@@ -234,23 +264,25 @@ class Covariances(ObservableDict):
     def append(self, name, data, plain=False):
         """
         matrix coming in, numpy.matrix is not recommended
+        matrix must be distributed
         :param name:
-        :param data:
+        :param data: distributed
         :param plain:
         :return:
         """
         assert (len(name) == 4)
-        assert (data.shape[0] == data.shape[1])
         if plain:
-            assert (data.shape[0] == int(name[2]))
+            assert (data.shape[1] == int(name[2]))
         else:
-            assert (data.shape[0] == 12*int(name[2])*int(name[2]))
+            assert (data.shape[1] == 12*int(name[2])*int(name[2]))
         if isinstance(data, Field):
+            assert (data.shape[0] == data.shape[1])
             assert (len(data.domain) == 1)  # single domain
-            self._archive[name] = data  # rw
-        elif isinstance(data, np.ndarray):
-            domain = DomainTuple.make(RGSpace(shape=data.shape))
-            self._archive[name] = Field.from_global_data(domain, data)  # rw
+            self._archive.update({name: data})  # rw
+        elif isinstance(data, np.ndarray):  # distributed
+            assert (data.shape[0] < data.shape[1]//mpisize +int(2))
+            domain = DomainTuple.make(RGSpace(shape=(data.shape[1], data.shape[1])))
+            self._archive.update({name: Field.from_local_data(domain, data)})  # rw
         else:
             raise TypeError('unsupported data type')
         log.debug('covariances-dict appends data %s' % str(name))
@@ -262,7 +294,19 @@ class Covariances(ObservableDict):
             assert isinstance(mask_dict, Masks)
             for name, msk in mask_dict._archive.items():
                 if name in self._archive.keys():
-                    masked = mask_cov(self._archive[name].to_global_data(), msk.to_global_data())
-                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
+                    masked = mask_cov(self._archive[name].local_data, msk.local_data)
+                    remain = msk.local_data.sum()
+                    # assemble masked pieces
+                    if mpirank == 0:
+                        for i in range(1, mpisize):
+                            req = comm.irecv(source=i)
+                            newslice = req.wait()
+                            masked = np.vstack([masked, newslice])
+                    else:
+                        comm.isend(masked, dest=0)
+                        masked = np.zeros((remain, remain))
+                    comm.Bcast(masked, root=0)
+                    new_name = (name[0], name[1], str(remain), name[3])
                     self._archive.pop(name, None)  # pop out obsolete
-                    self.append(new_name, masked, plain=True)  # append new as plain data
+                    domain = DomainTuple.make(RGSpace(shape=(remain, remain)))
+                    self._archive.update({new_name: Field.from_global_data(domain, masked)})

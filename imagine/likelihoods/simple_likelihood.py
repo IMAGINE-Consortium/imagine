@@ -20,18 +20,12 @@ class SimpleLikelihood(Likelihood):
         """
         super(SimpleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
 
-    def __call__(self, observable_dict, variables=None):
+    def __call__(self, observable_dict):
         """
 
         :param observable_dict: Simulations object
         :return: log-likelihood value
         """
-        # parse variables
-        work_parameters = dict()
-        if variables is not None and variables != dict():
-            assert (tuple(variables.keys()) == self._active_parameters)
-            work_parameters.update(self._map_variables_to_parameters(variables))
-        #
         assert isinstance(observable_dict, Simulations)
         # check dict entries
         assert (observable_dict.keys() == self._measurement_dict.keys())
