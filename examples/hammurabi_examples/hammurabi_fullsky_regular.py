@@ -35,7 +35,7 @@ from imagine.fields.cre_analytic.hamx_factory import CREAnaFactory
 from imagine.fields.fereg_ymw16.hamx_field import FEregYMW16
 from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
 
-from imagine.tools.covariance_estimator import oas_cov
+from imagine.tools.covariance_estimator import oas_mcov
 
 comm = mpi4py.MPI.COMM_WORLD
 mpirank = comm.Get_rank()
@@ -69,7 +69,6 @@ def wmap_errprop():
     true_alpha = 3.0
     true_r0 = 5.0
     true_z0 = 1.0
-    truths = [true_b0, true_psi0, true_psi1, true_chi0, true_alpha, true_r0, true_z0]
     
     mea_nside = 2  # observable Nside
     mea_pix = 12*mea_nside**2  # observable pixel number
@@ -113,8 +112,7 @@ def wmap_errprop():
     mock_cov = Covariances()
     mean, cov = oas_mcov(mock_ensemble[('sync', '23', str(mea_nside), 'I')])
     mock_data.append(('sync', '23', str(mea_nside), 'I'), mean)
-    mock_cov.append(('sync', '23', str(mea_nside), 'I'),
-                    Field.from_global_data(RGSpace(shape=cov.shape), cov))
+    mock_cov.append(('sync', '23', str(mea_nside), 'I'), cov)
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -166,7 +164,6 @@ def wmap_errprop():
                   show_titles=True,
                   title_kwargs={"fontsize": 15},
                   color='steelblue',
-                  truths=truths,
                   truth_color='firebrick',
                   plot_contours=True,
                   hist_kwargs={'linewidth': 2},
@@ -278,7 +275,6 @@ def wmap_errfix():
                   show_titles=True,
                   title_kwargs={"fontsize": 15},
                   color='steelblue',
-                  truths=truths,
                   truth_color='firebrick',
                   plot_contours=True,
                   hist_kwargs={'linewidth': 2},

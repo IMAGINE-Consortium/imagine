@@ -3,7 +3,8 @@ FROM ubuntu:latest
 # users may need python3-tk, please install it manually: apt-get install python3-tk
 
 RUN apt-get update --fix-missing
-RUN apt-get install -y build-essential python3 python3-pip python3-dev git gfortran autoconf gsl-bin libgsl-dev wget unzip vim cmake valgrind
+RUN apt-get install -y build-essential time gfortran libblas-dev liblapack-dev gsl-bin libgsl-dev autoconf cmake
+RUN apt-get install -y git wget unzip vim valgrind python3 python3-pip python3-dev
 RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corner
 
 RUN mkdir /home/lab
@@ -95,3 +96,7 @@ WORKDIR /home/lab
 RUN rm -f *.tar.gz
 # SET PATH
 ENV LD_LIBRARY_PATH /usr/local/lib:${LD_LIBRARY_PATH}
+
+# ADJUSTMENTS
+RUN echo "alias mpirun='mpirun --mca btl ^vader --allow-run-as-root'" >> ~/.bashrc
+RUN echo "alisa python='python3' >> ~/.bashrc

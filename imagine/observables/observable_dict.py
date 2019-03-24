@@ -279,10 +279,15 @@ class Covariances(ObservableDict):
             assert (data.shape[0] == data.shape[1])
             assert (len(data.domain) == 1)  # single domain
             self._archive.update({name: data})  # rw
-        elif isinstance(data, np.ndarray):  # distributed
-            assert (data.shape[0] < data.shape[1]//mpisize +int(2))
-            domain = DomainTuple.make(RGSpace(shape=(data.shape[1], data.shape[1])))
-            self._archive.update({name: Field.from_local_data(domain, data)})  # rw
+        elif isinstance(data, np.ndarray):
+            if data.shape[0] < data.shape[1]//mpisize +int(2):  # distributed
+                domain = DomainTuple.make(RGSpace(shape=(data.shape[1], data.shape[1])))
+                self._archive.update({name: Field.from_local_data(domain, data)})  # rw
+            elif data.shape[0] == data.shape[1]:  # non-distributed
+                domain = DomainTuple.make(RGSpace(shape=data.shape))
+                self._archive.update({name: Field.from_global_data(domain, data)})  # rw
+            else:
+                raise ValueError('unsupported data shape')
         else:
             raise TypeError('unsupported data type')
         log.debug('covariances-dict appends data %s' % str(name))

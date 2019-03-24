@@ -74,7 +74,7 @@ def testfield():
     what's the difference between pre-define dan re-estimated?
     """
     # pre-defined according to measurement error
-    mea_cov = Field.from_global_data(RGSpace(shape=(mea_points, mea_points)), (mea_std**2) * np.eye(mea_points))
+    mea_cov = (mea_std**2) * np.eye(mea_points)
 
     """
     # 1.3 assemble in imagine convention

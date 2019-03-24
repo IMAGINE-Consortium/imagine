@@ -92,11 +92,12 @@ class TestObservableDicts(unittest.TestCase):
         self.assertEqual(covdict[('test', 'nan', '5', 'nan')].shape, (5, 5))
         for i in range(len(cov)):
             self.assertListEqual(list((covdict[('test', 'nan', '5', 'nan')].local_data)[i]), list(cov[i]))
-        cov = (Field.from_global_data(RGSpace(shape=(48, 48)), np.random.rand(48, 48))).local_data
+        cov = np.random.rand(48, 48)
+        comm.Bcast(cov, root=0)
         covdict.append(('test', 'nan', '2', 'nan'), cov)  # healpix covariance
         self.assertEqual(covdict[('test', 'nan', '2', 'nan')].shape, (48, 48))
         for i in range(len(cov)):
-            self.assertListEqual(list((covdict[('test', 'nan', '2', 'nan')].local_data)[i]), list(cov[i]))
+            self.assertListEqual(list((covdict[('test', 'nan', '2', 'nan')].to_global_data())[i]), list(cov[i]))
     
     def test_covdict_append_field(self):
         cov_field = Field.from_global_data(RGSpace(shape=(3, 3)), np.random.rand(3, 3))

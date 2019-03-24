@@ -31,6 +31,7 @@ class MultinestPipeline(Pipeline):
         if not os.path.isdir(path):
             try: os.mkdir(path)
             except OSError: pass
+        assert (os.path.isdir(path))
         # run pymultinest
         results = pymultinest.solve(LogLikelihood=self._mpi_likelihood,
                                     Prior=self.prior,

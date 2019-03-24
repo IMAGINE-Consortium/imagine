@@ -12,6 +12,8 @@ import numpy as np
 import healpy as hp
 import logging as log
 
+import mpi4py
+
 from imagine.observables.observable_dict import Masks
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
@@ -31,6 +33,10 @@ from imagine.fields.fereg_ymw16.hamx_field import FEregYMW16
 from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
 
 from imagine.tools.covariance_estimator import oas_cov
+
+comm = mpi4py.MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
 
 
 # mask loops and latitude
@@ -91,7 +97,7 @@ def mock_errprop(_nside, _freq):
     trigger.append(('sync', str(_freq), str(_nside), 'Q'), x)  # Q map
     trigger.append(('sync', str(_freq), str(_nside), 'U'), x)  # U map
     # initialize simulator
-    mocksize = 100  # ensemble of mock data
+    mocksize = 20  # ensemble of mock data (per node)
     error = 0.1  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # prepare theoretical uncertainty
@@ -105,6 +111,7 @@ def mock_errprop(_nside, _freq):
     mock_raw_q = np.zeros((mocksize, _npix))
     mock_raw_u = np.zeros((mocksize, _npix))
     # start simulation
+    np.random.seed(mpirank*10)
     for i in range(mocksize):  # get one realization each time
         # BregWMAP field
         paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}
@@ -119,8 +126,8 @@ def mock_errprop(_nside, _freq):
         fereg_ymw16 = FEregYMW16(paramlist, 1)
         # collect mock data and covariance
         outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
-        mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].to_global_data()
-        mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].to_global_data()
+        mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
+        mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
     # collect mean and cov from simulated results
     sim_data = Simulations()
     mock_data = Measurements()
@@ -175,8 +182,8 @@ def mock_errfix(_nside, _freq):
     fereg_ymw16 = FEregYMW16(paramlist, 1)
     # collect mock data and covariance
     outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
-    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')]
-    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')]
+    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
+    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
@@ -186,19 +193,19 @@ def mock_errfix(_nside, _freq):
     mock_mask = mask_map(_nside, _freq)
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
-        mock_cov.append(key, (error**2*(np.std(mock_raw_q.to_global_data()))**2)*np.eye(int(key[2])), True)
+        mock_cov.append(key, (error**2*(np.std(mock_raw_q))**2)*np.eye(int(key[2])), True)
     return mock_data, mock_cov
 
 
 def main():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
-    nside = 4
+    nside = 2
     freq = 23
     
-    mock_data, mock_cov = mock_errprop(nside, freq)
+    mock_data, mock_cov = mock_errfix(nside, freq)
     mock_mask = mask_map(nside, freq)
-
+    
     # using masked mock data/covariance
     # apply_mock will ignore masked input since mismatch in keys
     #likelihood = EnsembleLikelihood(mock_data, mock_cov, mock_mask)
@@ -230,8 +237,10 @@ def main():
     results = pipe()
 
     # saving results
-    samples = results['samples']
-    np.savetxt('posterior_masked_regular.txt', samples)
+    if mpirank == 0:
+        samples = results['samples']
+        np.savetxt('posterior_masked_regular.txt', samples)
+
 
 if __name__ == '__main__':
     main()

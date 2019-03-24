@@ -13,6 +13,8 @@ import numpy as np
 import healpy as hp
 import logging as log
 
+import mpi4py
+
 from imagine.observables.observable_dict import Masks
 from imagine.observables.observable_dict import Simulations, Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
@@ -32,6 +34,9 @@ from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
 
 from imagine.tools.covariance_estimator import oas_cov
 
+comm = mpi4py.MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
 
 # mask loops and latitude
 def mask_map(_nside, _freq):
@@ -129,8 +134,8 @@ def mock_errprop(_nside, _freq):
         brnd_es = BrndES(paramlist, 1)
         # collect mock data and covariance
         outputs = mocker([breg_wmap, cre_ana, fereg_ymw16, brnd_es])
-        mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].to_global_data()
-        mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].to_global_data()
+        mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
+        mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
     # collect mean and cov from simulated results
     sim_data = Simulations()
     mock_data = Measurements()
@@ -192,8 +197,8 @@ def mock_errfix(_nside, _freq):
     brnd_es = BrndES(paramlist, 1)
     # collect mock data and covariance
     outputs = mocker([breg_wmap, cre_ana, fereg_ymw16, brnd_es])
-    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')]
-    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')]
+    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
+    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
@@ -203,14 +208,14 @@ def mock_errfix(_nside, _freq):
     mock_mask = mask_map(_nside, _freq)
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
-        mock_cov.append(key, (error**2*(np.std(mock_raw_q.to_global_data()))**2)*np.eye(int(key[2])), True)
+        mock_cov.append(key, (error**2*(np.std(mock_raw_q))**2)*np.eye(int(key[2])), True)
     return mock_data, mock_cov
 
 
 def main():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
-    nside = 4
+    nside = 2
     freq = 23
     
     mock_data, mock_cov = mock_errfix(nside, freq)
@@ -248,8 +253,10 @@ def main():
     results = pipe()
 
     # saving results
-    samples = results['samples']
-    np.savetxt('posterior_masked_random.txt', samples)
+    if mpirank == 0:
+        samples = results['samples']
+        np.savetxt('posterior_masked_random.txt', samples)
+
 
 if __name__ == '__main__':
     main()

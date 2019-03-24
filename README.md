@@ -8,14 +8,14 @@
 
 - [Python3](http://www.python.org/)
 - [NumPy](http://www.numpy.org/)
-- [pyMultiNest](https://github.com/JohannesBuchner/PyMultiNest)
+- [PyMultiNest](https://github.com/JohannesBuchner/PyMultiNest)
 - [Dynesty](https://github.com/joshspeagle/dynesty)
 - [NIFTy5](https://gitlab.mpcdf.mpg.de/ift/NIFTy)
 
 ### version info
 - this is a private serial version of [IMAGINE](https://gitlab.mpcdf.mpg.de/ift/IMAGINE), 
 all rights perserved for IMAGINE consortium.
-- no MPI support, to be implemented in future
+- MPI support (except Dynesty)
 
 ### instructions
 
