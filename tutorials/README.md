@@ -15,3 +15,7 @@ https://nbviewer.jupyter.org/github/trjaffe/imagine_tutorials/blob/master/tutori
 4.  Fourth:  data masking
 
 https://nbviewer.jupyter.org/github/trjaffe/imagine_tutorials/blob/master/tutorial_four.ipynb
+
+5.  Fifth:  an almost realistic run
+
+https://nbviewer.jupyter.org/github/trjaffe/imagine_tutorials/blob/master/tutorial_five.ipynb
