@@ -30,14 +30,14 @@
         <shell> <!-- (optional) if nothing under observable -->
             <layer type="auto">
                 <auto>
-                    <shell_num value="1"/> <!-- total shell number (default) -->
+                    <shell_num value=""/> <!-- 1 by default -->
+                    <nside_sim value=""/> <!-- 32 by default -->
                 </auto>
                 <!-- set shell cutting point from inside out -->
                 <manual> <!-- total shell number calculated automatically -->
                     <cut value=""/> <!-- cut at half of total shell radius -->
                 </manual>
             </layer>
-            <nside_sim value=""/>
             <!-- helio/observer-centric radial limit -->
             <ec_r_min value=""/> <!-- kpc (default) -->
             <ec_r_max value=""/> <!-- kpc (default) -->
