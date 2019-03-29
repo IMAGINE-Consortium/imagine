@@ -99,4 +99,4 @@ ENV LD_LIBRARY_PATH /usr/local/lib:${LD_LIBRARY_PATH}
 
 # ADJUSTMENTS
 RUN echo "alias mpirun='mpirun --mca btl ^vader --allow-run-as-root'" >> ~/.bashrc
-RUN echo "alisa python='python3' >> ~/.bashrc
+RUN echo "alias python='python3'" >> ~/.bashrc
