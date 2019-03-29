@@ -2,9 +2,9 @@ FROM ubuntu:latest
 
 # users may need python3-tk, please install it manually: apt-get install python3-tk
 
-RUN apt-get update --fix-missing && apt-get upgrade
-RUN apt-get install -y build-essential time gfortran libblas-dev liblapack-dev gsl-bin libgsl-dev autoconf cmake
-RUN apt-get install -y git wget unzip vim valgrind python3 python3-pip python3-dev
+RUN apt-get update
+RUN apt-get install -y --fix-missing build-essential time gfortran libblas-dev liblapack-dev gsl-bin libgsl-dev autoconf cmake
+RUN apt-get install -y --fix-missing git wget unzip vim valgrind python3 python3-pip python3-dev
 RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corner
 
 RUN mkdir /home/lab
@@ -47,11 +47,11 @@ RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make && make install && c
 WORKDIR /home/lab
 
 #mpi4py
-RUN apt-get install -y libopenmpi-dev openmpi-bin openmpi-doc
+RUN apt-get install -y --fix-missing libopenmpi-dev openmpi-bin openmpi-doc
 RUN pip3 install mpi4py
 
 #(Py)MultiNest
-RUN apt-get install -y libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
+RUN apt-get install -y --fix-missing libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
 
 RUN git clone https://github.com/JohannesBuchner/MultiNest.git
 WORKDIR /home/lab/MultiNest/build
@@ -67,7 +67,7 @@ WORKDIR /home/lab
 RUN pip3 install dynesty
 
 #hdf5
-RUN apt-get install -y libhdf5-100 libhdf5-dev libhdf5-openmpi-100 libhdf5-openmpi-dev hdf5-tools
+RUN apt-get install -y --fix-missing libhdf5-100 libhdf5-dev libhdf5-openmpi-100 libhdf5-openmpi-dev hdf5-tools
 
 #h5py
 RUN pip3 install h5py
