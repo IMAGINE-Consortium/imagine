@@ -11,20 +11,23 @@ RUN mkdir /home/lab
 WORKDIR /home/lab
 
 # CFITSIO
-RUN wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz && tar xzf cfitsio_latest.tar.gz
+RUN mkdir /home/lab/cfitsio
+RUN wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz && tar xzf cfitsio_latest.tar.gz -C cfitsio --strip-components 1
 WORKDIR /home/lab/cfitsio
 RUN ./configure --prefix=/usr/local/ && make && make install 
 WORKDIR /home/lab
 
 # FFTW
-RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar xzf fftw-3.3.8.tar.gz
-WORKDIR fftw-3.3.8
+RUN mkdir /home/lab/fftw
+RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar xzf fftw-3.3.8.tar.gz -C fftw --strip-components 1
+WORKDIR /home/lab/fftw
 RUN ./configure --enable-threads --enable-openmp --enable-shared --prefix=/usr/local/ && make && make install
 WORKDIR /home/lab
 
 # HEALPIX
-RUN wget http://downloads.sourceforge.net/project/healpix/Healpix_3.50/Healpix_3.50_2018Dec10.tar.gz && tar xzf Healpix_3.50_2018Dec10.tar.gz
-WORKDIR /home/lab/Healpix_3.50
+RUN mkdir /home/lab/healpix
+RUN wget http://downloads.sourceforge.net/project/healpix/Healpix_3.50/Healpix_3.50_2018Dec10.tar.gz && tar xzf Healpix_3.50_2018Dec10.tar.gz -C healpix --strip-components 1
+WORKDIR /home/lab/healpix
 # write config file on fly
 RUN echo '4\n\
 	/sur/local/bin\n\
@@ -36,7 +39,7 @@ RUN echo '4\n\
 RUN ./configure -L < hlpx_config && make 
 WORKDIR /home/lab
 ENV HEALPIX_TARGET optimized_gcc 
-ENV HEALPIX /home/lab/Healpix_3.50
+ENV HEALPIX /home/lab/healpix
 
 # GOOGLE TEST
 RUN git clone https://github.com/google/googletest.git googletest
