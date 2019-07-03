@@ -24,6 +24,8 @@ class BrndES(GeneralField):
         checklist = {'rms': (['magneticfield', 'random', 'global', 'es', 'rms'], 'value'),
                      'k0': (['magneticfield', 'random', 'global', 'es', 'k0'], 'value'),
                      'a0': (['magneticfield', 'random', 'global', 'es', 'a0'], 'value'),
+                     'k1': (['magneticfield', 'random', 'global', 'es', 'k1'], 'value'),
+                     'a1': (['magneticfield', 'random', 'global', 'es', 'a1'], 'value'),
                      'rho': (['magneticfield', 'random', 'global', 'es', 'rho'], 'value'),
                      'r0': (['magneticfield', 'random', 'global', 'es', 'r0'], 'value'),
                      'z0': (['magneticfield', 'random', 'global', 'es', 'z0'], 'value'),

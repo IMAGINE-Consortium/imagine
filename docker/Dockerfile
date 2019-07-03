@@ -77,6 +77,7 @@ RUN pip3 install h5py
 
 #NIFTy
 RUN pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty.git@NIFTy_5
+RUN pip3 install --user git+https://gitlab.mpcdf.mpg.de/mtr/pypocketfft
 
 # HAMMURABI X
 RUN git clone https://bitbucket.org/hammurabicode/hamx hamx

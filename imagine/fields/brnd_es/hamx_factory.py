@@ -17,10 +17,12 @@ class BrndESFactory(GeneralFieldFactory):
         self.field_type = 'vector'
         self.name = 'brnd_es'
         self.field_class = BrndES
-        self.default_parameters = {'rms': 2., 'k0': 0.1, 'a0': 1.7, 'rho': 0.5, 'r0': 8., 'z0': 1.}
+        self.default_parameters = {'rms': 2., 'k0': 10.0, 'a0': 1.7, 'k1': 0.1, 'a1': 0.0, 'rho': 0.5, 'r0': 8., 'z0': 1.}
         self.parameter_ranges = {'rms': [0, 4.],
                                  'k0': [0.1, 1.],
                                  'a0': [1., 3.],
+                                 'k1': [0.01, 1.],
+                                 'a1': [0., 3.],
                                  'rho': [0., 1.],
                                  'r0': [2., 10.],
                                  'z0': [0.1, 3.]}

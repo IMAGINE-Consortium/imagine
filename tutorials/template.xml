@@ -127,9 +127,9 @@
             </jaffe>
             <!-- uniform -->
             <unif>
-                <b0 value=""/> <!-- microG -->
-                <l0 value=""/> <!-- deg -->
-                <r value=""/>
+                <bp value=""/> <!-- parallel, microG -->
+                <bv value=""/> <!-- vertical, microG -->
+                <l0 value=""/> <!-- longitude, deg -->
             </unif>
         </regular>
         <!-- random/turbulent fields -->
@@ -143,8 +143,10 @@
                 <es>
                     <rms value=""/> <!-- RMS -->
                     <k0 value=""/> <!-- cutoff, 1/(Lambda in kpc) -->
+                    <k1 value="0.1"/> <!-- inverse cascading cutoff, 1/(Lambda in kpc) -->
                     <a0 value=""/> <!-- 5/3, Kolmogorov -->
-                    <rho value=""/> <!-- [0,1] -->
+                    <a1 value="0.0"/> <!-- inverse cascade -->
+                    <rho value=""/> <!-- [0,infinity] -->
                     <!-- energy density rescaling -->
                     <r0 value=""/> <!-- in kpc -->
                     <z0 value=""/> <!-- in kpc -->
@@ -165,6 +167,8 @@
                     <af0 value=""/>
                     <as0 value=""/>
                     <k0 value=""/> <!-- cutoff, 1/(Lambda in kpc) -->
+                    <k1 value="0.1"/> <!-- inverse cascading cutoff, 1/(Lambda in kpc) -->
+                    <a1 value="0.0"/> <!-- inverse cascade -->
                     <beta value=""/> <!-- plasma beta -->
                     <ma value=""/> <!-- Alfven Mach number -->
                 </mhd>
