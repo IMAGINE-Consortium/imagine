@@ -5,8 +5,8 @@ import mpi4py
 
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
 
-from imagine.observables.observable import Observable
-from imagine.observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances, Masks
+from imagine import Observable
+from imagine import ObservableDict, Measurements, Simulations, Covariances, Masks
 
 comm = mpi4py.MPI.COMM_WORLD
 mpisize = comm.Get_size()

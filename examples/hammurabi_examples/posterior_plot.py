@@ -16,12 +16,25 @@ samples = np.loadtxt('posterior_regular_errfix.txt')
 """
 2. name of active parameters, to appear as plotting labels
 """
-active_parameters = [r"$B_0$",r"$\psi_0$",r"$\psi_1$",r"$\chi_0$",r"$\alpha$",r"$h_r$",r"$h_z$"]
+active_parameters = [r"$B_0$",
+                     r"$\psi_0$",
+                     r"$\psi_1$",
+                     r"$\chi_0$",
+                     r"$\alpha$",
+                     r"$h_r$",
+                     r"$h_z$"]
 
 """
 3. true value of parameters
 """
-truths = [6., 27., 0.9, 25., 3., 5., 1., 0.]
+truths = [6.,
+          27.,
+          0.9,
+          25.,
+          3.,
+          5.,
+          1.,
+          0.]
 
 """
 4. prior limit of parameters

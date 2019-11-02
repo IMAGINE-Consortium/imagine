@@ -4,7 +4,7 @@ import numpy as np
 import mpi4py
 
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
-from imagine.observables.observable import Observable
+from imagine import Observable
 
 comm = mpi4py.MPI.COMM_WORLD
 mpisize = comm.Get_size()

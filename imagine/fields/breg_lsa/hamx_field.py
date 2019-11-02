@@ -1,5 +1,5 @@
 """
-hammurabiX WMAP-3yr GMF
+hammurabiX WMAP-3yr LSA GMF
 """
 
 import logging as log
@@ -9,11 +9,11 @@ from imagine.tools.icy_decorator import icy
 
 
 @icy
-class BregWMAP(GeneralField):
+class BregLSA(GeneralField):
 
     def __init__(self, parameters=dict(), ensemble_size=1, ensemble_seeds=None):
-        super(BregWMAP, self).__init__(parameters, ensemble_size, ensemble_seeds)
-        self.name = 'breg_wmap'
+        super(BregLSA, self).__init__(parameters, ensemble_size, ensemble_seeds)
+        self.name = 'breg_lsa'
 
     @property
     def field_checklist(self):
@@ -21,10 +21,10 @@ class BregWMAP(GeneralField):
         record XML location of physical parameters
         :return: dict of XML locations
         """
-        checklist = {'b0': (['magneticfield', 'regular', 'wmap', 'b0'], 'value'),
-                     'psi0': (['magneticfield', 'regular', 'wmap', 'psi0'], 'value'),
-                     'psi1': (['magneticfield', 'regular', 'wmap', 'psi1'], 'value'),
-                     'chi0': (['magneticfield', 'regular', 'wmap', 'chi0'], 'value')}
+        checklist = {'b0': (['magneticfield', 'regular', 'lsa', 'b0'], 'value'),
+                     'psi0': (['magneticfield', 'regular', 'lsa', 'psi0'], 'value'),
+                     'psi1': (['magneticfield', 'regular', 'lsa', 'psi1'], 'value'),
+                     'chi0': (['magneticfield', 'regular', 'lsa', 'chi0'], 'value')}
         return checklist
 
     @property
@@ -34,5 +34,5 @@ class BregWMAP(GeneralField):
         :return: dict of XML locations
         """
         controllist = {'cue': (['magneticfield', 'regular'], {'cue': '1'}),
-                       'type': (['magneticfield', 'regular'], {'type': 'wmap'})}
+                       'type': (['magneticfield', 'regular'], {'type': 'lsa'})}
         return controllist

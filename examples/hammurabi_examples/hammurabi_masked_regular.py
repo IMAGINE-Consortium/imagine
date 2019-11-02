@@ -1,6 +1,6 @@
 """
 mock data generator
-for WMAP + analytic CRE + YMW16
+for LSA + analytic CRE + YMW16
 mask out l<60 + 4 loops
 
 frequency 23 GHz
@@ -14,25 +14,25 @@ import logging as log
 
 import mpi4py
 
-from imagine.observables.observable_dict import Masks
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
-from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
-from imagine.likelihoods.simple_likelihood import SimpleLikelihood
-from imagine.priors.flat_prior import FlatPrior
-from imagine.pipelines.dynesty_pipeline import DynestyPipeline
-from imagine.pipelines.multinest_pipeline import MultinestPipeline
+from imagine import Masks
+from imagine import Simulations, Measurements, Covariances
+from imagine import EnsembleLikelihood
+from imagine import SimpleLikelihood
+from imagine import FlatPrior
+from imagine import DynestyPipeline
+from imagine import MultinestPipeline
 
-from imagine.simulators.hammurabi.hammurabi import Hammurabi
-from imagine.fields.breg_wmap.hamx_field import BregWMAP
-from imagine.fields.breg_wmap.hamx_factory import BregWMAPFactory
-from imagine.fields.brnd_es.hamx_field import BrndES
-from imagine.fields.brnd_es.hamx_factory import BrndESFactory
-from imagine.fields.cre_analytic.hamx_field import CREAna
-from imagine.fields.cre_analytic.hamx_factory import CREAnaFactory
-from imagine.fields.fereg_ymw16.hamx_field import FEregYMW16
-from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
+from imagine import Hammurabi
+from imagine import BregLSA
+from imagine import BregLSAFactory
+from imagine import BrndES
+from imagine import BrndESFactory
+from imagine import CREAna
+from imagine import CREAnaFactory
+from imagine import FEregYMW16
+from imagine import FEregYMW16Factory
 
-from imagine.tools.covariance_estimator import oas_cov
+from imagine import oas_cov
 
 comm = mpi4py.MPI.COMM_WORLD
 mpirank = comm.Get_rank()
@@ -113,9 +113,9 @@ def mock_errprop(_nside, _freq):
     # start simulation
     np.random.seed(mpirank*10)
     for i in range(mocksize):  # get one realization each time
-        # BregWMAP field
+        # BregLSA field
         paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}
-        breg_wmap = BregWMAP(paramlist, 1)
+        breg_lsa = BregLSA(paramlist, 1)
         # CREAna field
         paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
                      'r0': r0_var[i], 'z0': z0_var[i],
@@ -125,7 +125,7 @@ def mock_errprop(_nside, _freq):
         paramlist = dict()
         fereg_ymw16 = FEregYMW16(paramlist, 1)
         # collect mock data and covariance
-        outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+        outputs = mocker([breg_lsa, cre_ana, fereg_ymw16])
         mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
         mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
     # collect mean and cov from simulated results
@@ -169,9 +169,9 @@ def mock_errfix(_nside, _freq):
     error = 0.1
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
-    # BregWMAP field
+    # BregLSA field
     paramlist = {'b0': true_b0, 'psi0': true_psi0, 'psi1': true_psi1, 'chi0': true_chi0}
-    breg_wmap = BregWMAP(paramlist, 1)
+    breg_lsa = BregLSA(paramlist, 1)
     # CREAna field
     paramlist = {'alpha': true_alpha, 'beta': 0.0, 'theta': 0.0,
                  'r0': true_r0, 'z0': true_z0,
@@ -181,7 +181,7 @@ def mock_errfix(_nside, _freq):
     paramlist = dict()
     fereg_ymw16 = FEregYMW16(paramlist, 1)
     # collect mock data and covariance
-    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+    outputs = mocker([breg_lsa, cre_ana, fereg_ymw16])
     mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
     mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
     # collect mean and cov from simulated results
@@ -211,7 +211,7 @@ def main():
     #likelihood = EnsembleLikelihood(mock_data, mock_cov, mock_mask)
     likelihood = SimpleLikelihood(mock_data, mock_cov, mock_mask)
 
-    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
+    breg_factory = BregLSAFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
     cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
     cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}

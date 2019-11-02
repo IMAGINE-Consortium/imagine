@@ -26,6 +26,6 @@ The very 1st version IMAGINE source code can be found [**here**](https://gitlab.
 ### contact
 *bug reports and code contributions are warmly welcomed, feel free to contact*
 
+- [Jiaxin Wang](http://www.sissa.it/app/members.php?ID=222)
 - [Tess Jaffe](https://science.gsfc.nasa.gov/sed/bio/tess.jaffe)
 - [Torsten Ensslin](https://wwwmpa.mpa-garching.mpg.de/~ensslin/)
-- [Jiaxin Wang](http://www.sissa.it/app/members.php?ID=222)

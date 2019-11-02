@@ -30,7 +30,7 @@ RUN wget http://downloads.sourceforge.net/project/healpix/Healpix_3.50/Healpix_3
 WORKDIR /home/lab/healpix
 # write config file on fly
 RUN echo '4\n\
-	/sur/local/bin\n\
+	/usr/local/bin\n\
 	/usr/local/include\n\
 	4\n\
 	y\n\

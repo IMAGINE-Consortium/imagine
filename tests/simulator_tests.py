@@ -3,11 +3,11 @@ import numpy as np
 
 import mpi4py
 
-from imagine.simulators.simulator import Simulator
-from imagine.simulators.test.li_simulator import LiSimulator
-from imagine.simulators.test.bi_simulator import BiSimulator
-from imagine.fields.test_field.test_field import TestField
-from imagine.observables.observable_dict import Simulations, Measurements
+from imagine import Simulator
+from imagine import LiSimulator
+from imagine import BiSimulator
+from imagine import TestField
+from imagine import Simulations, Measurements
 
 comm = mpi4py.MPI.COMM_WORLD
 mpisize = comm.Get_size()

@@ -18,24 +18,24 @@ import logging as log
 import mpi4py
 
 from nifty5 import Field, RGSpace
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
-from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
-from imagine.likelihoods.simple_likelihood import SimpleLikelihood
-from imagine.priors.flat_prior import FlatPrior
-from imagine.pipelines.dynesty_pipeline import DynestyPipeline
-from imagine.pipelines.multinest_pipeline import MultinestPipeline
+from imagine import Simulations, Measurements, Covariances
+from imagine import EnsembleLikelihood
+from imagine import SimpleLikelihood
+from imagine import FlatPrior
+from imagine import DynestyPipeline
+from imagine import MultinestPipeline
 
-from imagine.simulators.hammurabi.hammurabi import Hammurabi
-from imagine.fields.breg_wmap.hamx_field import BregWMAP
-from imagine.fields.breg_wmap.hamx_factory import BregWMAPFactory
-from imagine.fields.brnd_es.hamx_field import BrndES
-from imagine.fields.brnd_es.hamx_factory import BrndESFactory
-from imagine.fields.cre_analytic.hamx_field import CREAna
-from imagine.fields.cre_analytic.hamx_factory import CREAnaFactory
-from imagine.fields.fereg_ymw16.hamx_field import FEregYMW16
-from imagine.fields.fereg_ymw16.hamx_factory import FEregYMW16Factory
+from imagine import Hammurabi
+from imagine import BregLSA
+from imagine import BregLSAFactory
+from imagine import BrndES
+from imagine import BrndESFactory
+from imagine import CREAna
+from imagine import CREAnaFactory
+from imagine import TEregYMW16
+from imagine import TEregYMW16Factory
 
-from imagine.tools.covariance_estimator import oas_mcov
+from imagine import oas_mcov
 
 comm = mpi4py.MPI.COMM_WORLD
 mpirank = comm.Get_rank()
@@ -49,14 +49,13 @@ from imagine.tools.carrier_mapper import unity_mapper
 matplotlib.use('Agg')
 """
 
-
-def wmap_errprop():
+def lsa_errprop():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
     """
-    only WMAP regular magnetic field model in test, @ 23GHz
-    Faraday rotation provided by YMW16 free electron model
-    full WMAP parameter set {b0, psi0, psi1, chi0}
+    only LSA regular magnetic field model in test, @ 23GHz
+    Faraday rotation provided by YMW16 thermal electron model
+    full LSA parameter set {b0, psi0, psi1, chi0}
     """
     # hammurabi parameter base file
     xmlpath = './params_fullsky_regular.xml'
@@ -94,18 +93,18 @@ def wmap_errprop():
     mock_ensemble = Simulations()
     # start simulation
     for i in range(mocksize):  # get one realization each time
-        # BregWMAP field
+        # BregLSA field
         paramlist = {'b0': b0_var[i], 'psi0': psi0_var[i], 'psi1': psi1_var[i], 'chi0': chi0_var[i]}  # inactive parameters at default
-        breg_wmap = BregWMAP(paramlist, 1)
+        breg_lsa = BregLSA(paramlist, 1)
         # CREAna field
         paramlist = {'alpha': alpha_var[i], 'beta': 0.0, 'theta': 0.0,
                      'r0': r0_var[i], 'z0': z0_var[i],
                      'E0': 20.6, 'j0': 0.0217}  # inactive parameters at default
         cre_ana = CREAna(paramlist, 1)
-        # FEregYMW16 field
-        fereg_ymw16 = FEregYMW16(dict(), 1)
+        # TEregYMW16 field
+        tereg_ymw16 = TEregYMW16(dict(), 1)
         # collect mock data and covariance
-        outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+        outputs = mocker([breg_lsa, cre_ana, tereg_ymw16])
         mock_ensemble.append(('sync', '23', str(mea_nside), 'I'), outputs[('sync', '23', str(mea_nside), 'I')])
     # collect mean and cov from simulated results
     mock_data = Measurements()
@@ -120,12 +119,12 @@ def wmap_errprop():
     #likelihood = EnsembleLikelihood(mock_data, mock_cov)
     likelihood = SimpleLikelihood(mock_data, mock_cov)
 
-    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
+    breg_factory = BregLSAFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
     cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
     cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
-    fereg_factory = FEregYMW16Factory()
-    factory_list = [breg_factory, cre_factory, fereg_factory]
+    tereg_factory = TEregYMW16Factory()
+    factory_list = [breg_factory, cre_factory, tereg_factory]
 
     prior = FlatPrior()
 
@@ -171,13 +170,13 @@ def wmap_errprop():
     matplotlib.pyplot.savefig('posterior_fullsky_regular_errprop.pdf')
     """
 
-def wmap_errfix():
+def lsa_errfix():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
     
     """
-    only WMAP regular magnetic field model in test, @ 23GHz
-    Faraday rotation provided by YMW16 free electron model
-    full WMAP parameter set {b0, psi0, psi1, chi0}
+    only LSA regular magnetic field model in test, @ 23GHz
+    Faraday rotation provided by YMW16 thermal electron model
+    full LSA parameter set {b0, psi0, psi1, chi0}
     """
     # hammurabi parameter base file
     xmlpath = './params_fullsky_regular.xml'
@@ -205,18 +204,18 @@ def wmap_errfix():
     error = 0.1  # theoretical raltive uncertainty for each (active) parameter
     mocker = Hammurabi(measurements=trigger, xml_path=xmlpath)
     # start simulation
-    # BregWMAP field
+    # BregLSA field
     paramlist = {'b0': true_b0, 'psi0': true_psi0, 'psi1': true_psi1, 'chi0': true_chi0}  # inactive parameters at default
-    breg_wmap = BregWMAP(paramlist, 1)
+    breg_lsa = BregLSA(paramlist, 1)
     # CREAna field
     paramlist = {'alpha': true_alpha, 'beta': 0.0, 'theta': 0.0,
                  'r0': true_r0, 'z0': true_z0,
                  'E0': 20.6, 'j0': 0.0217}  # inactive parameters at default
     cre_ana = CREAna(paramlist, 1)
-    # FEregYMW16 field
-    fereg_ymw16 = FEregYMW16(dict(), 1)
+    # TEregYMW16 field
+    tereg_ymw16 = TEregYMW16(dict(), 1)
     # collect mock data and covariance
-    outputs = mocker([breg_wmap, cre_ana, fereg_ymw16])
+    outputs = mocker([breg_lsa, cre_ana, tereg_ymw16])
     Imap = outputs[('sync', '23', str(mea_nside), 'I')].local_data
     # collect mean and cov from simulated results
     mock_data = Measurements()
@@ -231,12 +230,12 @@ def wmap_errfix():
     #likelihood = EnsembleLikelihood(mock_data, mock_cov)
     likelihood = SimpleLikelihood(mock_data, mock_cov)
 
-    breg_factory = BregWMAPFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
+    breg_factory = BregLSAFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
     cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
     cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
-    fereg_factory = FEregYMW16Factory()
-    factory_list = [breg_factory, cre_factory, fereg_factory]
+    tereg_factory = TEregYMW16Factory()
+    factory_list = [breg_factory, cre_factory, tereg_factory]
 
     prior = FlatPrior()
 
@@ -283,5 +282,5 @@ def wmap_errfix():
     """
 
 if __name__ == '__main__':
-    #wmap_errprop()
-    wmap_errfix()
+    #lsa_errprop()
+    lsa_errfix()

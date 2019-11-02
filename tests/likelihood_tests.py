@@ -2,11 +2,11 @@ import unittest
 import numpy as np
 import mpi4py
 from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
-from imagine.observables.observable import Observable
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
-from imagine.likelihoods.likelihood import Likelihood
-from imagine.likelihoods.simple_likelihood import SimpleLikelihood
-from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine import Observable
+from imagine import Simulations, Measurements, Covariances
+from imagine import Likelihood
+from imagine import SimpleLikelihood
+from imagine import EnsembleLikelihood
 
 comm = mpi4py.MPI.COMM_WORLD
 mpisize = comm.Get_size()

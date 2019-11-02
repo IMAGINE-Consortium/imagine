@@ -4,10 +4,10 @@ import numpy as np
 import mpi4py
 
 from nifty5 import Field, DomainTuple, RGSpace
-from imagine.observables.observable import Observable
-from imagine.tools.masker import mask_obs, mask_cov
-from imagine.tools.random_seed import seed_generator
-from imagine.tools.covariance_estimator import oas_mcov
+from imagine import Observable
+from imagine import mask_obs, mask_cov
+from imagine import seed_generator
+from imagine import oas_mcov
 
 comm = mpi4py.MPI.COMM_WORLD
 mpisize = comm.Get_size()
