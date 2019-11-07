@@ -39,7 +39,7 @@ WORKDIR /home/lab
 # h5py
 RUN git clone https://github.com/h5py/h5py.git h5py
 WORKDIR /home/lab/h5py
-RUN export CC=mpicc && python setup.py configure --mpi --hdf5=/usr/local/hdf5 && python setup.py build && python setup.py install
+RUN export CC=mpicc && python3 setup.py configure --mpi --hdf5=/usr/local/hdf5 && python3 setup.py build && python3 setup.py install
 WORKDIR /home/lab
 
 #IMAGINE
