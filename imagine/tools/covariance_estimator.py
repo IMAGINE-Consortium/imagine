@@ -1,33 +1,61 @@
 """
-there are several ways to make robust estimation on covaraince matrix
-based on finite number of samples
+There are several ways to make robust estimation on covaraince matrix
+based on finite number of samples.
+For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
 
 import numpy as np
+from mpi4py import MPI
+from imagine.tools.mpi_helper import mpi_mean
+#from imagine.observables.observable import Observable
 
-from imagine.observables.observable import Observable
+comm = MPI.COMM_WORLD
+mpisize = comm.Get_size()
+mpirank = comm.Get_rank()
 
-
-def empirical_cov(_sample):
+'''
+def empirical_cov(data):
     """
     empirical covariance estimator
-    the worst option
-    :param _sample: ensemble of observables, in shape (ensemble_size,data_size)
-    :return: covariance matrix in shape (data_size,data_size)
+    for distributed data with multiple global rows
+    (probably) the worst option
+    
+    parameters
+    ----------
+    
+    sample
+        distributed numpy.ndarray
+        ensemble of observables, in global shape (ensemble size, data size)
+        
+    return
+    ------
+    numpy.ndarray
+    distributed (not copied) covariance matrix in global shape (data size, data size)
+    each node takes part of the rows
     """
-    assert isinstance(_sample, np.ndarray)
-    n = _sample.shape[0]
-    assert (n > 0)
-    m = np.median(_sample, axis=0)
-    u = _sample - m
+    assert isinstance(data, np.ndarray)
+    assert (len(data.shape) == 2)
+    # get ensemble size
+    u = data - mpi_mean(data)  # copied mean
     return np.dot(u.T, u) / n
+'''
 
-
+'''
 def oas_cov(_sample):
     """
     OAS covariance estimator, prepared for examples
-    :param _sample: ensemble of observables, in shape (ensemble_size,data_size)
-    :return: covariance matrix in shape (data_size,data_size)
+    
+    paramters
+    ---------
+    
+    _sample
+        numpy.ndarray
+        ensemble of observables, in shape (ensemble_size,data_size)
+        
+    return
+    ------
+    
+    covariance matrix in shape (data_size,data_size)
     """
     assert isinstance(_sample, np.ndarray)
     n, p = _sample.shape
@@ -47,33 +75,20 @@ def oas_cov(_sample):
         rho = np.min([1, numerator/denominator])
     return (1.-rho)*s+np.eye(p)*rho*trs/p
 
-
-def bootstrap_cov(_sample, _trapsize=int(3000)):
-    """
-    bootstrap covariance estimator, prepared for examples
-    :param _sample: ensemble of observables, in shape (ensemble_size,data_size)
-    :param _trapsize: bootstrap volume
-    :return: covariance matrix in shape (data_size,data_size)
-    """
-    assert isinstance(_sample, np.ndarray)
-    n, p = _sample.shape
-    assert (n > 0 and p > 0)
-    m = np.median(_sample, axis=0)
-    u = _sample - m
-    s_bst = np.zeros((p, p))
-    for i in range(_trapsize):
-        idx = np.random.randint(0, n, size=n)
-        tmp = u[idx]
-        s_bst = s_bst + np.dot(tmp.T, tmp)/n
-    s_bst /= float(_trapsize)
-    return s_bst
-
-
 def oas_mcov(_sample):
     """
     OAS covariance estimator, prepared for Likelihood
-    :param _sample: Observable object
-    :return: ensemble mean, covariance matrix in shape (data_size,data_size)
+    
+    parameters
+    ----------
+    
+    _sample
+        Observable object
+        
+    return
+    ------
+    
+    ensemble mean, covariance matrix in shape (data_size,data_size)
     """
     assert isinstance(_sample, Observable)
     n, p = _sample.shape
@@ -96,45 +111,4 @@ def oas_mcov(_sample):
     else:
         rho = np.min([1., float(numerator/denominator)])
     return mean, (1.-rho)*s + np.eye(p)*rho*trs/p
-
-
-def bootstrap_mcov(_sample, _trapsize=int(3000)):
-    """
-    estimate covariance with bootstrap
-    :param _sample: ensemble of observables, in shape (ensemble_size,data_size)
-    :param _trapsize: bootstrap volume
-    :return: ensemble mean, covariance matrix in shape (data_size,data_size)
-    """
-    assert isinstance(_sample, Observable)
-    n, p = _sample.shape
-    assert (n > 0 and p > 0)
-    mean = _sample.ensemble_mean
-    u = _sample.to_global_data() - mean
-    s_bst = np.zeros((p, p))
-    for i in range(_trapsize):
-        idx = np.random.randint(0, n, size=n)
-        tmp = u[idx]
-        s_bst = s_bst + np.dot(tmp.T, tmp)/n
-    s_bst /= float(_trapsize)
-    return mean, s_bst
-
-
-def trapoas_mcov(_sample, _trapsize=int(100)):
-    """
-    estimate covariance with bootstraped oas
-    :param _sample: ensemble of observables, in shape (ensemble_size,data_size)
-    :param _trapsize: bootstrap volume
-    :return: ensemble mean, covariance matrix in shape (data_size,data_size)
-    """
-    assert isinstance(_sample, Observable)
-    n, p = _sample.shape
-    assert (n > 0 and p > 0)
-    mean = _sample.ensemble_mean
-    u = _sample.to_global_data() - mean
-    s_bst = np.zeros((p, p))
-    for i in range(_trapsize):
-        idx = np.random.randint(0, n, size=n)
-        tmp = u[idx]
-        s_bst = s_bst + oas_cov(tmp)
-    s_bst /= float(_trapsize)
-    return mean, s_bst
+'''

@@ -10,57 +10,18 @@ RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corne
 RUN mkdir /home/lab
 WORKDIR /home/lab
 
-# CFITSIO
-RUN mkdir /home/lab/cfitsio
-RUN wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz && tar xzf cfitsio_latest.tar.gz -C cfitsio --strip-components 1
-WORKDIR /home/lab/cfitsio
-RUN ./configure --prefix=/usr/local/ && make && make install 
-WORKDIR /home/lab
-
-# FFTW
-RUN mkdir /home/lab/fftw
-RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar xzf fftw-3.3.8.tar.gz -C fftw --strip-components 1
-WORKDIR /home/lab/fftw
-RUN ./configure --enable-threads --enable-openmp --enable-shared --prefix=/usr/local/ && make && make install
-WORKDIR /home/lab
-
-# HEALPIX
-RUN mkdir /home/lab/healpix
-RUN wget http://downloads.sourceforge.net/project/healpix/Healpix_3.50/Healpix_3.50_2018Dec10.tar.gz && tar xzf Healpix_3.50_2018Dec10.tar.gz -C healpix --strip-components 1
-WORKDIR /home/lab/healpix
-# write config file on fly
-RUN echo '4\n\
-	/usr/local/bin\n\
-	/usr/local/include\n\
-	4\n\
-	y\n\
-	0\n'\
-	> hlpx_config
-RUN ./configure -L < hlpx_config && make 
-WORKDIR /home/lab
-ENV HEALPIX_TARGET optimized_gcc 
-ENV HEALPIX /home/lab/healpix
-
-# GOOGLE TEST
-RUN git clone https://github.com/google/googletest.git googletest
-WORKDIR /home/lab/googletest
-RUN mkdir /home/lab/googletest/build
-WORKDIR /home/lab/googletest/build
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make && make install && cp ../googletest/src/* /usr/local/src
-WORKDIR /home/lab
-
 #mpi4py
 RUN apt-get install -y --fix-missing libopenmpi-dev openmpi-bin openmpi-doc
 RUN pip3 install mpi4py
 
-#(Py)MultiNest
+#MultiNest
 RUN apt-get install -y --fix-missing libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
-
 RUN git clone https://github.com/JohannesBuchner/MultiNest.git
 WORKDIR /home/lab/MultiNest/build
 RUN cmake .. && make && make install
 WORKDIR /home/lab
 
+# PyMultiNest
 RUN git clone https://github.com/JohannesBuchner/PyMultiNest.git
 WORKDIR /home/lab/PyMultiNest
 RUN python3 setup.py install
@@ -69,29 +30,20 @@ WORKDIR /home/lab
 #Dynesty
 RUN pip3 install dynesty
 
-#hdf5
-RUN apt-get install -y --fix-missing libhdf5-100 libhdf5-dev libhdf5-openmpi-100 libhdf5-openmpi-dev hdf5-tools
+# HDF5
+RUN wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz && tar xzf hdf5-1.10.5.tar.gz -C hdf5 --strip-components 1
+WORKDIR /home/lab/hdf5
+RUN ./configure --enable-parallel --enable-shared --prefix=/usr/local && make && make install
+WORKDIR /home/lab
 
-#h5py
-RUN pip3 install h5py
-
-#NIFTy
-RUN pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty.git@NIFTy_5
-RUN pip3 install --user git+https://gitlab.mpcdf.mpg.de/mtr/pypocketfft
-
-# HAMMURABI X
-RUN git clone https://bitbucket.org/hammurabicode/hamx hamx
-WORKDIR /home/lab/hamx
-RUN mkdir /home/lab/hamx/build
-WORKDIR /home/lab/hamx/build
-RUN cmake .. && make install
-# SET PATH
-ENV PATH /usr/local/hammurabi/bin:${PATH}
-ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}
+# h5py
+RUN git clone https://github.com/h5py/h5py.git h5py
+WORKDIR /home/lab/h5py
+RUN export CC=mpicc && python setup.py configure --mpi --hdf5=/usr/local/hdf5 && python setup.py build && python setup.py install
 WORKDIR /home/lab
 
 #IMAGINE
-RUN git clone https://ricphy@bitbucket.org/hammurabicode/imagine.git imagine
+RUN git clone -b mpi https://ricphy@bitbucket.org/hammurabicode/imagine.git imagine
 WORKDIR /home/lab/imagine
 RUN python3 setup.py install
 WORKDIR /home/lab

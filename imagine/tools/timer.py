@@ -1,14 +1,13 @@
 """
-recording time
+timer is designed for time recording
 """
 
 import time
-
 from imagine.tools.icy_decorator import icy
 
 
 @icy
-class Timer(object):
+class timer(object):
 
     def __init__(self):
         self._record = dict()

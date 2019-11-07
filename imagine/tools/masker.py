@@ -1,75 +1,103 @@
 """
-methods related to masking out HEALPix maps
-and associated covariance matrix
+This module defines methods related to masking out distributed data
+and/or the associated covariance matrix.
+For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
-implemented with numpy ndarray raw data
+implemented with numpy.ndarray raw data
 """
 
 import numpy as np
 from copy import deepcopy
-
 from mpi4py import MPI
+from imagine.tools.mpi_helper import mpi_arrange
 
-mpisize = MPI.COMM_WORLD.Get_size()
-mpirank = MPI.COMM_WORLD.Get_rank()
+comm = MPI.COMM_WORLD
+mpisize = comm.Get_size()
+mpirank = comm.Get_rank()
 
 
-def mask_obs(_obs, _mask):
+def mask_data(data, mask):
     """
-    mask observable sample
-    :param _obs: ensemble of observables, in shape (ensemble_size, data_size)
-    :param _mask: mask map in shape (1, data_size)
-    :return: masked sample
+    apply mask to the distributed data
+    the mask should be copied on each node
+    
+    parameters
+    ----------
+    
+    data
+        distributed numpy.ndarray
+        ensemble of observables, in global shape (ensemble size, data size)
+        each node contains part of the global rows
+        
+    mask
+        copied numpy.ndarray
+        mask map in shape (1, data size) on each node
+        
+    return
+    ------
+    
+    distributed numpy.ndarray, masked observable
+    in shape (ensemble size, masked data size)
     """
-    if _obs.shape[0] != 0:  # if not empty
-        raw_obs = deepcopy(_obs)
-        raw_mask = deepcopy(_mask)
-        assert (raw_mask.shape[0] == 1)
-        assert (raw_obs.shape[1] == raw_obs.shape[1])
-        idx = int(0)
-        for ptr in raw_mask[0]:
-            if ptr == 0:
-                raw_obs = np.delete(raw_obs, idx, 1)
-            else:
-                idx += int(1)
-        assert (raw_obs.shape[1] == idx)
-        return raw_obs
-    else:
-        return np.zeros((0, _mask.sum()))
+    assert isinstance(data, np.ndarray)
+    assert isinstance(mask, np.ndarray)
+    assert (data.shape[0] >= 1)
+    assert (mask.shape[0] == 1)
+    assert (data.shape[1] == mask.shape[1])
+    new_data = deepcopy(data)
+    raw_mask = (deepcopy(mask)).astype(np.bool)
+    #
+    idx = int(0)
+    for ptr in raw_mask[0]:
+        if not ptr:
+            new_data = np.delete(new_data, idx, 1)
+        else:
+            idx += int(1)
+    assert (new_data.shape[1] == idx)
+    return new_data
 
-def mask_cov(_cov, _mask):
+def mask_cov(cov, mask):
     """
-    mask observable sample
-    :param _cov: cov matrix of observables, in shape (data_size, data_size)
-    :param _mask: mask map in shape (1, data_size)
-    :return: masked sample
+    apply mask to the observable covariance
+    
+    parameters
+    ----------
+    
+    cov
+        distributed numpy.ndarray
+        covariance matrix of observalbes in global shape (data size, data size)
+        each node contains part of the global rows
+        
+    mask
+        copied numpy.ndarray
+        mask map in shape (1, data size)
+        
+    return
+    ------
+    
+    distributed numpy.ndarray, masked covariance matrix
+    in shape (masked data size, masked data size)
     """
-    raw_cov = deepcopy(_cov)
-    raw_mask = deepcopy(_mask)
-    assert (raw_mask.shape[0] == 1)
-    assert (raw_cov.shape[1] == raw_mask.shape[1])
+    assert isinstance(cov, np.ndarray)
+    assert isinstance(mask, np.ndarray)
+    assert (mask.shape[0] == 1)
+    assert (cov.shape[1] == mask.shape[1])
+    new_cov = deepcopy(cov)
+    raw_mask = (deepcopy(mask)).astype(np.bool)
     # masking cols
     col_idx = int(0)
     for ptr in raw_mask[0]:
-        if ptr == 0:
-            raw_cov = np.delete(raw_cov, col_idx, 1)
+        if not ptr:
+            new_cov = np.delete(new_cov, col_idx, 1)
         else:
             col_idx += int(1)
-    assert (raw_cov.shape[1] == col_idx)
+    assert (new_cov.shape[1] == col_idx)
     # masking rows
     row_idx = int(0)
-    row_min, row_max = mpi_row_lim(raw_mask.shape[1], mpisize, mpirank)
+    row_min, row_max = mpi_arrange(raw_mask.shape[1])
     for ptr in raw_mask[0, row_min : row_max]:
         if ptr == 0:
-            raw_cov = np.delete(raw_cov, row_idx, 0)
+            new_cov = np.delete(new_cov, row_idx, 0)
         else:
             row_idx += int(1)
-    return raw_cov
-
-def mpi_row_lim(_tot, _size, _rank):
-    """
-    global row index limit for covariance matrix on given node
-    """
-    res = min(_rank, _tot%_size)
-    ave = _tot//_size
-    return res + _rank*ave, res + (_rank+1)*ave + int(_rank < _tot%_size)
+    return new_cov
