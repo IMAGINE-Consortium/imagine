@@ -31,7 +31,7 @@ WORKDIR /home/lab
 RUN pip3 install dynesty
 
 # HDF5
-RUN wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz && tar xzf hdf5-1.10.5.tar.gz -C hdf5 --strip-components 1
+RUN wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz && mkdir hdf5 && tar xzf hdf5-1.10.5.tar.gz -C hdf5 --strip-components 1
 WORKDIR /home/lab/hdf5
 RUN ./configure --enable-parallel --enable-shared --prefix=/usr/local && make && make install
 WORKDIR /home/lab
