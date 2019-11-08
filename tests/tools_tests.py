@@ -26,11 +26,11 @@ class TestTools(unittest.TestCase):
         s3 = seed_generator(48)
         self.assertEqual(s3, 48)
         
-    def test_io_matrix(self):
+    def test_io(self):
         if not mpirank:
-            arr = np.random.rand(3, 3)
+            arr = np.random.rand(3, 128)
         else:
-            arr = np.random.rand(2, 3)
+            arr = np.random.rand(2, 128)
         test_io = io_handler()
         test_io.write(arr, 'test_io_matrix.hdf5', 'test_group/test_dataset')
         # read back
@@ -42,67 +42,56 @@ class TestTools(unittest.TestCase):
         if not mpirank:
             os.remove(test_io.file_path)
     
-    def test_io_array(self):
+    def test_mean(self):
         if not mpirank:
-            arr = np.random.rand(1, 3)
+            arr = np.random.rand(2,128)
         else:
-            arr = np.random.rand(1, 3)
-        test_io = io_handler()
-        test_io.write(arr, 'test_io_matrix.hdf5', 'test_group/test_dataset')
-        # read back
-        arr_check = test_io.read(test_io.file_path, 'test_group/test_dataset')
-        # consistency check
-        self.assertListEqual(list(arr[0]), list(arr_check[0]))
-        # cleanup
-        if not mpirank:
-            os.remove(test_io.file_path)
-            
-    def test_mean_array(self):
-        arr = (np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7])).reshape((1, 7))
-        test_mean = mpi_mean(arr)
-        self.assertListEqual(list(test_mean[0]), list(arr[0]))
-        
-    def test_mean_matrix(self):
-        if not mpirank:
-            arr = np.array([[0.1,0.2,0.3,0.4,0.5,0.6,0.7],[0.1,0.2,0.3,0.4,0.5,0.6,0.7]])
-        else:
-            arr = (np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7])).reshape((1,7))
-        test_arr = (np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7])).reshape((1,7))
+            arr = np.random.rand(1,128)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_arr = (np.mean(full_arr, axis=0)).reshape(1,-1)
         test_mean = mpi_mean(arr)
         # check if almost equal since we forced the array datatype into numpy.float64
         for i in range(len(test_mean[0])):
             self.assertAlmostEqual(test_mean[0][i], test_arr[0][i])
-        
+    
     def test_mask(self):
-        msk_arr = np.array([0., 1., 0., 1., 1., 0.]).reshape(1, 6)
-        dat_arr = np.random.rand(1, 6)
-        cov_arr = np.random.rand(mpi_arrange(6)[1]-mpi_arrange(6)[0], 6)
+        msk_arr = np.random.choice([0,1], size=(1,128))
+        msk_arr = comm.bcast(msk_arr, root=0)
+        if not mpirank:
+            dat_arr = np.random.rand(2,128)
+        else:
+            dat_arr = np.random.rand(1,128)
+        cov_arr = np.random.rand(mpi_arrange(128)[1]-mpi_arrange(128)[0], 128)
         # mask by methods
         dat_msk = mask_data(dat_arr, msk_arr)
         cov_msk = mask_cov(cov_arr, msk_arr)
         # mask manually
-        fid_dat = np.hstack([dat_arr[0, 1], dat_arr[0, 3], dat_arr[0, 4]])
-        # gather global cov
-        fid_cov = np.zeros((6, 6))
-        comm.Gather(cov_arr, fid_cov, root=0)
-        # mask cov by hand
-        fid_cov = np.delete(fid_cov, [0, 2, 5], 0)
-        fid_cov = np.delete(fid_cov, [0, 2, 5], 1)
-        comm.Bcast(fid_cov, root=0)
-        # compare mask on matrix
-        for i in cov_msk:
-            self.assertTrue(i in fid_cov)
-        # compare mask on array
-        self.assertListEqual(list(dat_msk[0]), list(fid_dat))
-        
+        test_dat = dat_arr*msk_arr
+        test_dat = test_dat[test_dat != 0]
+        dat_msk = dat_msk[dat_msk != 0]
+        self.assertListEqual(list(test_dat), list(dat_msk))
+        #
+        cov_mat = np.vstack(comm.allgather(cov_arr))
+        cov_mat = cov_mat*msk_arr
+        cov_mat = np.transpose(cov_mat)
+        cov_mat = cov_mat*msk_arr
+        cov_mat = np.transpose(cov_mat)
+        cov_mat = cov_mat[cov_mat != 0]
+        test_cov = np.vstack(comm.allgather(cov_msk))
+        test_cov = test_cov[test_cov != 0]
+        self.assertListEqual(list(test_cov), list(test_cov))
+    
     def test_trans(self):
         if not mpirank:
-            arr = np.random.rand(2, 5)
+            arr = np.random.rand(2,128)
         else:
-            arr = np.random.rand(1, 5)
-        print (mpirank, arr)
+            arr = np.random.rand(1,128)
         test_arr = mpi_trans(arr)
-        print (mpirank, test_arr)
+        full_arr = np.transpose(np.vstack(comm.allgather(arr)))
+        local_begin, local_end = mpi_arrange(full_arr.shape[0])
+        part_arr = full_arr[local_begin:local_end]
+        for i in range(part_arr.shape[0]):
+            self.assertListEqual(list(part_arr[i]), list(test_arr[i]))
     
     '''
     def test_oas(self):

@@ -113,30 +113,35 @@ def mpi_trans(data):
     """
     assert (len(data.shape)==2)
     assert isinstance(data, np.ndarray)
-    # get the global shape
+    # get the global shape before transpose
     local_rows = np.empty(mpisize, dtype=np.uint)
     local_cols = np.empty(mpisize, dtype=np.uint)
     comm.Allgather([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
     comm.Allgather([np.array(data.shape[1], dtype=np.uint), MPI.LONG], [local_cols, MPI.LONG])
-    # the algorithm goes as cutting local data into sub-pieces
-    # and passing them to corresponding nodes
-    local_col_begin, local_col_end = mpi_arrange(local_cols[0])
-    local_col_begins = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(local_col_begin, dtype=np.uint), MPI.LONG], [local_col_begins, MPI.LONG])
-    # prepare empty slot
-    new_data = np.empty((local_col_end-local_col_begin, np.sum(local_rows)), dtype=np.float64)
-    #
-    for target in range(mpisize):  # send to other ranks
-        if (target != mpirank):
-            local_sent_buf = np.transpose(data[:, local_col_begins[target]:local_col_begins[target+1]])
+    # the algorithm cuts local data into sub-pieces and passing them to the corresponding nodes
+    # which means we need to calculate the arrangement of pre-trans "columns" into post-trans "rows" 
+    cut_col_begin, cut_col_end = mpi_arrange(local_cols[0])
+    cut_col_begins = np.empty(mpisize, dtype=np.uint)
+    cut_col_ends = np.empty(mpisize, dtype=np.uint)
+    comm.Allgather([np.array(cut_col_begin, dtype=np.uint), MPI.LONG], [cut_col_begins, MPI.LONG])
+    comm.Allgather([np.array(cut_col_end, dtype=np.uint), MPI.LONG], [cut_col_ends, MPI.LONG])
+    # prepare empty post-trans local data shape
+    new_data = np.empty((cut_col_end-cut_col_begin, np.sum(local_rows)), dtype=np.float64)
+    # send and receive sub-pieces
+    for target in range(mpisize):
+        if (target != mpirank):  # send to other ranks
+            # the np.array(..., dtype=np.float64) is to ensure memory contiguous and data type correct
+            # the np.transpose won't work, but changing the memory order will (cross-node copy)
+            local_sent_buf = np.array(data[:, cut_col_begins[target]:cut_col_ends[target]], dtype=np.float64, order='F')
             comm.Send([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
+        else:  # recv from self
+            # note that transpose works here (in-node copy)
+            new_data[:,np.sum(local_rows[:mpirank]):np.sum(local_rows[:mpirank+1])] = np.transpose((data[:,cut_col_begin:cut_col_end]).astype(np.float64))
     for source in range(mpisize):
         if (source != mpirank):  # recv from other ranks
-            source_row_begin = local_rows[:source]
-            source_row_end = local_rows[:source+1]
-            comm.Recv([new_data[source_row_begin:source_row_end,:], MPI.DOUBLE], source=source, tag=mpirank)
-        else:  # recv from self
-            new_data[local_col_begin:local_col_end,:] = np.transpose(data[:,local_col_begin:local_col_end])
+            local_recv_buf = np.empty((cut_col_ends[mpirank]-cut_col_begins[mpirank], local_rows[source]), dtype=np.float64)
+            comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
+            new_data[:,np.sum(local_rows[:source]):np.sum(local_rows[:source+1])] = local_recv_buf
     return new_data
     
 '''
