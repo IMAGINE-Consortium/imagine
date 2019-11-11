@@ -112,7 +112,7 @@ class io_handler(object):
             raise ValueError ('upsupported data shape')
         # set offset position for each node
         offset_begin = np.sum(local_rows[0:mpirank])
-        offset_end = np.sum(local_rows[0:mpirank+1])
+        offset_end = offset_begin + local_rows[mpirank]
         global_shape = (np.sum(local_rows), local_cols[0])
         # create group and dataset
         if not key in fh.keys():

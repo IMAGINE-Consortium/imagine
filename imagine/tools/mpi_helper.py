@@ -6,6 +6,7 @@ For the testing suits, please turn to "imagine/tests/tools_tests.py".
 import numpy as np
 from mpi4py import MPI
 
+
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
@@ -136,40 +137,67 @@ def mpi_trans(data):
             comm.Send([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
         else:  # recv from self
             # note that transpose works here (in-node copy)
-            new_data[:,np.sum(local_rows[:mpirank]):np.sum(local_rows[:mpirank+1])] = np.transpose((data[:,cut_col_begin:cut_col_end]).astype(np.float64))
+            new_col_begin = np.sum(local_rows[:mpirank])
+            new_col_end = new_col_begin + local_rows[mpirank]
+            new_data[:, new_col_begin:new_col_end] = np.transpose((data[:, cut_col_begin:cut_col_end]).astype(np.float64))
     for source in range(mpisize):
         if (source != mpirank):  # recv from other ranks
             local_recv_buf = np.empty((cut_col_ends[mpirank]-cut_col_begins[mpirank], local_rows[source]), dtype=np.float64)
             comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
-            new_data[:,np.sum(local_rows[:source]):np.sum(local_rows[:source+1])] = local_recv_buf
+            new_data[:, np.sum(local_rows[:source]):np.sum(local_rows[:source+1])] = local_recv_buf
     return new_data
     
-'''
-def mpi_mult(data1, data2):
+def mpi_mult(A, B):
     """
     calculate matrix multiplication of two distributed data,
     the result is data1*data2 in multi-node distribution
     note that the numerical values will be converted into double
     
+    we send the distributed B rows into other nodes (aka cannon method)
+    
     parameters
     ----------
     
-    data1
+    A
         numpy.ndarray
         distributed left side data
         
-    data2
+    B
         numpy.ndarray
         distributed right side data
         
     return
     ------
     numpy.ndarray
-    distributed
+    distributed multiplication result
     """
-    assert (len(data1.shape) == 2)
-    assert (len(data2.shape) == 2)
-    # get the global shape
-    dat2_rows = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(data2.shape[0], dtype=np.uint), MPI.LONG], [dat2_rows, MPI.LONG])
-'''
+    assert (len(A.shape) == 2)
+    assert (len(B.shape) == 2)
+    assert isinstance(A, np.ndarray)
+    assert isinstance(B, np.ndarray)
+    # know the total rows
+    C_global_row = np.array(0, dtype=np.uint)
+    comm.Allreduce([np.array(A.shape[0]), MPI.LONG], [C_global_row, MPI.LONG], op=MPI.SUM)
+    # prepare the distributed result
+    C = np.zeros((A.shape[0], C_global_row), dtype=np.float64)
+    # collect A and B matrix row info
+    A_rows = np.empty(mpisize, dtype=np.uint)
+    B_rows = np.empty(mpisize, dtype=np.uint)
+    comm.Allgather([np.array(A.shape[0], dtype=np.uint), MPI.LONG], [A_rows, MPI.LONG])
+    comm.Allgather([np.array(B.shape[0], dtype=np.uint), MPI.LONG], [B_rows, MPI.LONG])
+    assert (np.sum(B_rows) == A.shape[1])  # ensure A*B is legal
+    # local mult with B cannons
+    for itr in range(mpisize):
+        # fire cannons
+        target = (mpirank + itr) % mpisize
+        source = (mpirank - itr) % mpisize
+        local_sent_buf = np.array(B, dtype=np.float64)
+        comm.Send([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
+        local_recv_buf = np.empty((B_rows[source], B.shape[1]), dtype=np.float64)
+        comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
+        # accumulate local mult
+        A_col_begin = np.sum(B_rows[:source])
+        A_col_end = A_col_begin + B_rows[source]
+        A_block = np.array(A[:, A_col_begin:A_col_end], dtype=np.float64)
+        C = C + np.dot(A_block, local_recv_buf)
+    return C

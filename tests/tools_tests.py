@@ -4,7 +4,7 @@ import numpy as np
 from mpi4py import MPI
 
 from imagine.tools.random_seed import seed_generator
-from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans
+from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_mult
 from imagine.tools.io_handler import io_handler
 from imagine.tools.masker import mask_data, mask_cov
 #from imagine.tools.covariance_estimator import empirical_cov
@@ -93,6 +93,23 @@ class TestTools(unittest.TestCase):
         for i in range(part_arr.shape[0]):
             self.assertListEqual(list(part_arr[i]), list(test_arr[i]))
     
+    def test_mult(self):
+        if not mpirank:
+            arr_a = np.random.rand(2,32)
+        else:
+            arr_a = np.random.rand(1,32)
+        arr_b = mpi_trans(arr_a)
+        test_c = mpi_mult(arr_a, arr_b)
+        # make comparison
+        full_a = np.vstack(comm.allgather(arr_a))
+        full_b = np.vstack(comm.allgather(arr_b))
+        full_c = np.dot(full_a, full_b)
+        local_begin, local_end = mpi_arrange(full_c.shape[0])
+        part_c = (full_c[local_begin:local_end]).reshape(1,-1)
+        test_c = test_c.reshape(1,-1)
+        for i in range(len(part_c)):
+            self.assertAlmostEqual(part_c[0][i], test_c[0][i])
+            
     '''
     def test_oas(self):
         # mock observable
