@@ -1,19 +1,19 @@
 """
-There are several ways to make robust estimation on covaraince matrix
+This module targets on estimation algorithms for covaraince matrix
 based on finite number of samples.
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
 
 import numpy as np
 from mpi4py import MPI
-from imagine.tools.mpi_helper import mpi_mean
-#from imagine.observables.observable import Observable
+import logging as log
+from imagine.tools.mpi_helper import mpi_mean, mpi_trans, mpi_mult, mpi_eye, mpi_trace
+
 
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-'''
 def empirical_cov(data):
     """
     empirical covariance estimator
@@ -33,82 +33,86 @@ def empirical_cov(data):
     distributed (not copied) covariance matrix in global shape (data size, data size)
     each node takes part of the rows
     """
+    log.debug('@ covariance_estimator::empirical_cov')
     assert isinstance(data, np.ndarray)
     assert (len(data.shape) == 2)
     # get ensemble size
+    ensemble_size = np.array(0, dtype=np.uint)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [ensemble_size, MPI.LONG], op=MPI.SUM)
     u = data - mpi_mean(data)  # copied mean
-    return np.dot(u.T, u) / n
-'''
+    return mpi_mult(mpi_trans(u), u) / ensemble_size
 
-'''
-def oas_cov(_sample):
+def oas_cov(data):
     """
     OAS covariance estimator, prepared for examples
     
     paramters
     ---------
     
-    _sample
+    data
         numpy.ndarray
-        ensemble of observables, in shape (ensemble_size,data_size)
+        distributed data in global shape (ensemble_size, data_size)
         
     return
     ------
-    
-    covariance matrix in shape (data_size,data_size)
+    covariance matrix in global shape (data_size, data_size)
     """
-    assert isinstance(_sample, np.ndarray)
-    n, p = _sample.shape
-    assert (n > 0 and p > 0)
-    if n == 1:
-        return np.zeros((p, p))
-    m = np.median(_sample, axis=0)
-    u = _sample-m
-    s = np.dot(u.T, u)/n
-    trs = np.trace(s)
-    trs2 = np.trace(np.dot(s, s))
-    numerator = (1-2./p)*trs2+trs*trs
-    denominator = (n+1.-2./p)*(trs2-(trs*trs)/p)
+    log.debug('@ covariance_estimator::oas_cov')
+    assert isinstance(data, np.ndarray)
+    assert (len(data.shape) == 2)
+    # data size
+    data_size = data.shape[1]
+    # ensemble size
+    ensemble_size = np.array(0, dtype=np.uint)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [ensemble_size, MPI.LONG], op=MPI.SUM)
+    # calculate OAS covariance extimator from empirical covariance estimator
+    u = data - mpi_mean(data)
+    s = mpi_mult(mpi_trans(u), u) / ensemble_size
+    trs = mpi_trace(s)
+    trs2 = mpi_trace(mpi_mult(s, s))
+    numerator = (1.0-2.0/data_size)*trs2+trs*trs
+    denominator = (ensemble_size+1.0-2.0/data_size)*(trs2-(trs*trs)/data_size)
     if denominator == 0:
         rho = 1
     else:
         rho = np.min([1, numerator/denominator])
-    return (1.-rho)*s+np.eye(p)*rho*trs/p
+    return (1.-rho)*s+mpi_eye(data_size)*rho*trs/data_size
 
-def oas_mcov(_sample):
+def oas_mcov(data):
     """
     OAS covariance estimator, prepared for Likelihood
     
     parameters
     ----------
     
-    _sample
-        Observable object
+    data
+        numpy.ndarray
+        distributed data in global shape (ensemble_size, data_size)
         
     return
     ------
-    
-    ensemble mean, covariance matrix in shape (data_size,data_size)
+    it returns two results
+    copied ensemble mean (on all nodes)
+    distributed covariance matrix in shape (data_size, data_size)
     """
-    assert isinstance(_sample, Observable)
-    n, p = _sample.shape
-    assert (n > 0 and p > 0)
-    if n == 1:
-        return _sample.to_global_data(), np.zeros((p, p))
-    mean = _sample.ensemble_mean
-    u = _sample.to_global_data() - mean
-    # empirical covariance S
-    s = np.dot(u.T, u)/n
-    assert (s.shape[0] == u.shape[1])
-    # Tr(S), equivalent to np.vdot(u,u)/n
-    trs = np.trace(s)
-    # Tr(S^2), equivalent to (np.einsum(u,[0,1],u,[2,1])**2).sum()/(n**2)
-    trs2 = np.trace(np.dot(s, s))
-    numerator = (1.-2./p)*trs2 + trs*trs
-    denominator = (n+1.-2./p) * (trs2-(trs*trs)/p)
+    log.debug('@ covariance_estimator::oas_mcov')
+    assert isinstance(data, np.ndarray)
+    assert (len(data.shape) == 2)
+    # data size
+    data_size = data.shape[1]
+    # ensemble size
+    ensemble_size = np.array(0, dtype=np.uint)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [ensemble_size, MPI.LONG], op=MPI.SUM)
+    # calculate OAS covariance extimator from empirical covariance estimator
+    mean = mpi_mean(data)
+    u = data - mean
+    s = mpi_mult(mpi_trans(u), u) / ensemble_size
+    trs = mpi_trace(s)
+    trs2 = mpi_trace(mpi_mult(s, s))
+    numerator = (1.0-2.0/data_size)*trs2+trs*trs
+    denominator = (ensemble_size+1.0-2.0/data_size)*(trs2-(trs*trs)/data_size)
     if denominator == 0:
         rho = 1
     else:
-        rho = np.min([1., float(numerator/denominator)])
-    return mean, (1.-rho)*s + np.eye(p)*rho*trs/p
-'''
+        rho = np.min([1, numerator/denominator])
+    return mean, (1.-rho)*s+mpi_eye(data_size)*rho*trs/data_size

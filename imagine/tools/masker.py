@@ -9,6 +9,7 @@ implemented with numpy.ndarray raw data
 import numpy as np
 from copy import deepcopy
 from mpi4py import MPI
+import logging as log
 from imagine.tools.mpi_helper import mpi_arrange
 
 comm = MPI.COMM_WORLD
@@ -39,6 +40,7 @@ def mask_data(data, mask):
     distributed numpy.ndarray, masked observable
     in shape (ensemble size, masked data size)
     """
+    log.debug('@ masker::mask_data')
     assert isinstance(data, np.ndarray)
     assert isinstance(mask, np.ndarray)
     assert (data.shape[0] >= 1)
@@ -78,6 +80,7 @@ def mask_cov(cov, mask):
     distributed numpy.ndarray, masked covariance matrix
     in shape (masked data size, masked data size)
     """
+    log.debug('@ masker::mask_cov')
     assert isinstance(cov, np.ndarray)
     assert isinstance(mask, np.ndarray)
     assert (mask.shape[0] == 1)

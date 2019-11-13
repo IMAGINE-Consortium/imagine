@@ -5,6 +5,7 @@ For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
 import numpy as np
 from mpi4py import MPI
+import logging as log
 
 
 comm = MPI.COMM_WORLD
@@ -29,11 +30,13 @@ def mpi_arrange(size):
     two integers in numpy.uint
     the begin and end index [begin,end] for slicing the target
     """
+    log.debug('@ mpi_helper::mpi_arrange')
+    assert (size > 0)
     res = min(mpirank, size%mpisize)
     ave = size//mpisize
     if (ave == 0):
         raise ValueError('over distribution')
-    return np.uint(res + mpirank*ave), np.uint(res + (mpirank+1)*ave + int(mpirank < size%mpisize))
+    return np.uint(res + mpirank*ave), np.uint(res + (mpirank+1)*ave + np.uint(mpirank < size%mpisize))
 
 def mpi_prosecutor(data):
     """
@@ -48,6 +51,7 @@ def mpi_prosecutor(data):
         numpy.ndarray
         the distributed data to be examined
     """
+    log.debug('@ mpi_helper::mpi_prosecutor')
     assert isinstance(data, np.ndarray)
     # get the global shape
     local_rows = np.empty(mpisize, dtype=np.uint)
@@ -80,6 +84,7 @@ def mpi_mean(data):
     numpy.ndarray
     copied data mean, which means the mean is copied to all nodes
     """
+    log.debug('@ mpi_helper::mpi_mean')
     assert (len(data.shape)==2)
     assert isinstance(data, np.ndarray)
     # get the global shape
@@ -112,6 +117,7 @@ def mpi_trans(data):
     numpy.ndarray
     transposed data in distribution
     """
+    log.debug('@ mpi_helper::mpi_trans')
     assert (len(data.shape)==2)
     assert isinstance(data, np.ndarray)
     # get the global shape before transpose
@@ -134,7 +140,7 @@ def mpi_trans(data):
             # the np.array(..., dtype=np.float64) is to ensure memory contiguous and data type correct
             # the np.transpose won't work, but changing the memory order will (cross-node copy)
             local_sent_buf = np.array(data[:, cut_col_begins[target]:cut_col_ends[target]], dtype=np.float64, order='F')
-            comm.Send([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
+            comm.Isend([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
         else:  # recv from self
             # note that transpose works here (in-node copy)
             new_col_begin = np.sum(local_rows[:mpirank])
@@ -147,22 +153,22 @@ def mpi_trans(data):
             new_data[:, np.sum(local_rows[:source]):np.sum(local_rows[:source+1])] = local_recv_buf
     return new_data
     
-def mpi_mult(A, B):
+def mpi_mult(left, right):
     """
     calculate matrix multiplication of two distributed data,
     the result is data1*data2 in multi-node distribution
     note that the numerical values will be converted into double
     
-    we send the distributed B rows into other nodes (aka cannon method)
+    we send the distributed right rows into other nodes (aka cannon method)
     
     parameters
     ----------
     
-    A
+    left
         numpy.ndarray
         distributed left side data
         
-    B
+    right
         numpy.ndarray
         distributed right side data
         
@@ -171,33 +177,92 @@ def mpi_mult(A, B):
     numpy.ndarray
     distributed multiplication result
     """
-    assert (len(A.shape) == 2)
-    assert (len(B.shape) == 2)
-    assert isinstance(A, np.ndarray)
-    assert isinstance(B, np.ndarray)
+    log.debug('@ mpi_helper::mpi_mult')
+    assert (len(left.shape) == 2)
+    assert (len(right.shape) == 2)
+    assert isinstance(left, np.ndarray)
+    assert isinstance(right, np.ndarray)
     # know the total rows
-    C_global_row = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(A.shape[0]), MPI.LONG], [C_global_row, MPI.LONG], op=MPI.SUM)
+    result_global_row = np.array(0, dtype=np.uint)
+    comm.Allreduce([np.array(left.shape[0], dtype=np.uint), MPI.LONG], [result_global_row, MPI.LONG], op=MPI.SUM)
     # prepare the distributed result
-    C = np.zeros((A.shape[0], C_global_row), dtype=np.float64)
-    # collect A and B matrix row info
-    A_rows = np.empty(mpisize, dtype=np.uint)
-    B_rows = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(A.shape[0], dtype=np.uint), MPI.LONG], [A_rows, MPI.LONG])
-    comm.Allgather([np.array(B.shape[0], dtype=np.uint), MPI.LONG], [B_rows, MPI.LONG])
-    assert (np.sum(B_rows) == A.shape[1])  # ensure A*B is legal
-    # local mult with B cannons
-    for itr in range(mpisize):
-        # fire cannons
+    result = np.zeros((left.shape[0], result_global_row), dtype=np.float64)
+    # collect left and right matrix row info
+    left_rows = np.empty(mpisize, dtype=np.uint)
+    right_rows = np.empty(mpisize, dtype=np.uint)
+    comm.Allgather([np.array(left.shape[0], dtype=np.uint), MPI.LONG], [left_rows, MPI.LONG])
+    comm.Allgather([np.array(right.shape[0], dtype=np.uint), MPI.LONG], [right_rows, MPI.LONG])
+    assert (np.sum(right_rows) == left.shape[1])  # ensure left*right is legal
+    # local self mult
+    left_col_begin = np.sum(right_rows[:mpirank])
+    left_col_end = left_col_begin + right_rows[mpirank]
+    left_block = np.array(left[:, left_col_begin:left_col_end], dtype=np.float64)
+    result += np.dot(left_block, right)
+    # local mult with right cannons
+    # allocate fixed bufs
+    for itr in range(1, mpisize):
         target = (mpirank + itr) % mpisize
         source = (mpirank - itr) % mpisize
-        local_sent_buf = np.array(B, dtype=np.float64)
-        comm.Send([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
-        local_recv_buf = np.empty((B_rows[source], B.shape[1]), dtype=np.float64)
+        # fire cannons
+        comm.Isend([right.astype(np.float64), MPI.DOUBLE], dest=target, tag=target)
+        # receive cannons
+        local_recv_buf = np.zeros((right_rows[source], right.shape[1]), dtype=np.float64)
         comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
         # accumulate local mult
-        A_col_begin = np.sum(B_rows[:source])
-        A_col_end = A_col_begin + B_rows[source]
-        A_block = np.array(A[:, A_col_begin:A_col_end], dtype=np.float64)
-        C = C + np.dot(A_block, local_recv_buf)
-    return C
+        left_col_begin = np.sum(right_rows[:source])
+        left_col_end = left_col_begin + right_rows[source]
+        left_block = np.array(left[:, left_col_begin:left_col_end], dtype=np.float64)
+        result += np.dot(left_block, local_recv_buf)
+    return result
+
+def mpi_trace(data):
+    """
+    get the trace of the given data
+    
+    parameters
+    ----------
+    
+    data:
+        numpy.ndarray
+        distributed data
+        
+    return
+    ------
+    copied trace of given data
+    """
+    log.debug('@ mpi_helper::mpi_trace')
+    assert (len(data.shape) == 2)
+    assert isinstance(data, np.ndarray)
+    local_acc = np.array(0, dtype=np.float64)
+    local_row_begin, local_row_end = mpi_arrange(data.shape[1])
+    for i in range(local_row_end - local_row_begin):
+        eye_pos = local_row_begin + np.uint(i)
+        local_acc += np.float64(data[i, eye_pos])
+    result = np.array(0, dtype=np.float64)
+    comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.SUM)
+    return result
+    
+def mpi_eye(size):
+    """
+    produce an eye matrix according to given size
+    
+    parameters
+    ----------
+    
+    size:
+        integer
+        distributed matrix size
+        the matrix is expected to be in global shape (size, size)
+        
+    return
+    ------
+    numpy.ndarray, double data type
+    distributed eye matrix
+    """
+    log.debug('@ mpi_helper::mpi_eye')
+    local_row_begin, local_row_end = mpi_arrange(size)
+    local_matrix = np.zeros((local_row_end - local_row_begin, size), dtype=np.float64)
+    for i in range(local_row_end - local_row_begin):
+        eye_pos = local_row_begin + np.uint(i)
+        local_matrix[i, eye_pos] =  1.0
+    return local_matrix

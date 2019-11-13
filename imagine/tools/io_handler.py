@@ -93,6 +93,7 @@ class io_handler(object):
         key
             string, in form 'group name/dataset name'
         """
+        log.debug('@ io_handler::write')
         assert isinstance(data, np.ndarray)
         assert (len(data.shape) == 2)
         assert isinstance(file, str)
@@ -150,6 +151,7 @@ class io_handler(object):
         a distributed numpy.ndarray
         the output must be in either (1,n) or (m,n) shape on each node
         """
+        log.debug('@ io_handler::read')
         assert isinstance(file, str)
         assert isinstance(key, str)
         # combine wk_path with filename

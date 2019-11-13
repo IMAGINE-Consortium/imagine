@@ -16,10 +16,10 @@ from mpi4py import MPI
 from imagine.tools.mpi_helper import mpi_arrange, mpi_mean
 from imagine.tools.icy_decorator import icy
 
+
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
-
 
 @icy
 class Observable(object):

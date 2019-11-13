@@ -4,33 +4,31 @@ import numpy as np
 from mpi4py import MPI
 
 from imagine.tools.random_seed import seed_generator
-from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_mult
+from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_mult, mpi_eye, mpi_trace
 from imagine.tools.io_handler import io_handler
 from imagine.tools.masker import mask_data, mask_cov
-#from imagine.tools.covariance_estimator import empirical_cov
-#from imagine import Observable
+from imagine.tools.covariance_estimator import empirical_cov, oas_cov, oas_mcov
 
 
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-
 class TestTools(unittest.TestCase):
-
+    
     def test_seed(self):
         # test seed gen, in base class
         s1 = seed_generator(0)
         s2 = seed_generator(0)
-        self.assertNotEqual(s1, s2)
-        s3 = seed_generator(48)
-        self.assertEqual(s3, 48)
+        self.assertNotEqual(s1,s2)
+        s3 = seed_generator(23)
+        self.assertEqual(s3,23)
         
     def test_io(self):
         if not mpirank:
-            arr = np.random.rand(3, 128)
+            arr = np.random.rand(3,128)
         else:
-            arr = np.random.rand(2, 128)
+            arr = np.random.rand(2,128)
         test_io = io_handler()
         test_io.write(arr, 'test_io_matrix.hdf5', 'test_group/test_dataset')
         # read back
@@ -95,9 +93,9 @@ class TestTools(unittest.TestCase):
     
     def test_mult(self):
         if not mpirank:
-            arr_a = np.random.rand(2,32)
+            arr_a = np.random.rand(2,128)
         else:
-            arr_a = np.random.rand(1,32)
+            arr_a = np.random.rand(1,128)
         arr_b = mpi_trans(arr_a)
         test_c = mpi_mult(arr_a, arr_b)
         # make comparison
@@ -109,25 +107,59 @@ class TestTools(unittest.TestCase):
         test_c = test_c.reshape(1,-1)
         for i in range(len(part_c)):
             self.assertAlmostEqual(part_c[0][i], test_c[0][i])
+                
+    def test_mpi_eye(self):
+        size = 128
+        part_eye = mpi_eye(size)
+        test_eye = np.eye(size, dtype=np.float64)
+        full_eye = np.vstack(comm.allgather(part_eye))
+        for i in range(full_eye.shape[0]):
+            self.assertListEqual(list(test_eye[i]), list(full_eye[i]))
             
-    '''
-    def test_oas(self):
-        # mock observable
-        arr_a = np.random.rand(1, 4)
-        comm.Bcast(arr_a, root=0)
-        arr_ens = np.zeros((3, 4))
-        null_cov = np.zeros((4, 4))
-        # ensemble with identical realisations
-        for i in range(len(arr_ens)):
-            arr_ens[i] = arr_a
-        dtuple = DomainTuple.make((RGSpace(3*mpisize), RGSpace(4)))
-        obs = Observable(dtuple, arr_ens)
-        test_mean, test_cov = oas_mcov(obs)
-        for i in range(len(arr_a)):
-            self.assertAlmostEqual(test_mean[0][i], arr_a[0][i])
-            for j in range(len(arr_a)):
-                self.assertAlmostEqual(test_cov[i][j], null_cov[i][j])
-    '''
+    def test_mpi_trace(self):
+        arr = np.random.rand(2,2*mpisize)
+        test_trace = mpi_trace(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        true_trace = np.trace(full_arr)
+        self.assertAlmostEqual(test_trace, true_trace)
     
+    def test_empirical_cov(self):
+        # mock observable ensemble with identical realizations
+        arr = np.random.rand(1,32)
+        comm.Bcast(arr, root=0)
+        null_cov = np.zeros((32,32))
+        # ensemble with identical realisations
+        local_cov = empirical_cov(arr)
+        full_cov = np.vstack(comm.allgather(local_cov))
+        for i in range(full_cov.shape[0]):
+            for j in range(full_cov.shape[1]):
+                self.assertAlmostEqual(null_cov[i][j], full_cov[i][j])
+                
+    def test_oas_cov(self):
+        # mock observable ensemble with identical realizations
+        arr = np.random.rand(1,12)
+        comm.Bcast(arr, root=0)
+        null_cov = np.zeros((12,12))
+        # ensemble with identical realisations
+        local_cov = oas_cov(arr)        
+        full_cov = np.vstack(comm.allgather(local_cov))
+        for i in range(full_cov.shape[0]):
+            for j in range(full_cov.shape[1]):
+                self.assertAlmostEqual(null_cov[i][j], full_cov[i][j])
+                
+    def test_oas_mcov(self):
+        # mock observable ensemble with identical realizations
+        arr = np.random.rand(1,12)
+        comm.Bcast(arr, root=0)
+        null_cov = np.zeros((12,12))
+        # ensemble with identical realisations
+        mean, local_cov = oas_mcov(arr)        
+        full_cov = np.vstack(comm.allgather(local_cov))
+        for k in range(mean.shape[1]):
+            self.assertAlmostEqual(mean[0][k], arr[0][k])
+        for i in range(full_cov.shape[0]):
+            for j in range(full_cov.shape[1]):
+                self.assertAlmostEqual(null_cov[i][j], full_cov[i][j])
+
 if __name__ == '__main__':
     unittest.main()
