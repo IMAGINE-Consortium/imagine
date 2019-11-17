@@ -1,11 +1,9 @@
 import unittest
-import os
 import numpy as np
 from mpi4py import MPI
 
 from imagine.tools.random_seed import seed_generator
-from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_mult, mpi_eye, mpi_trace
-from imagine.tools.io_handler import io_handler
+from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_mult, mpi_eye, mpi_trace, mpi_shape
 from imagine.tools.masker import mask_data, mask_cov
 from imagine.tools.covariance_estimator import empirical_cov, oas_cov, oas_mcov
 
@@ -23,22 +21,15 @@ class TestTools(unittest.TestCase):
         self.assertNotEqual(s1,s2)
         s3 = seed_generator(23)
         self.assertEqual(s3,23)
-        
-    def test_io(self):
+
+    def test_shape(self):
         if not mpirank:
-            arr = np.random.rand(3,128)
-        else:
             arr = np.random.rand(2,128)
-        test_io = io_handler()
-        test_io.write(arr, 'test_io_matrix.hdf5', 'test_group/test_dataset')
-        # read back
-        arr_check = test_io.read(test_io.file_path, 'test_group/test_dataset')
-        # consistency check
-        for i in range(arr.shape[0]):
-            self.assertListEqual(list(arr[i]), list(arr_check[i]))
-        # cleanup
-        if not mpirank:
-            os.remove(test_io.file_path)
+        else:
+            arr = np.random.rand(1,128)
+        test_shape = mpi_shape(arr)
+        self.assertEqual(test_shape[0], mpisize+1)
+        self.assertEqual(test_shape[1], 128)
     
     def test_mean(self):
         if not mpirank:
@@ -137,9 +128,9 @@ class TestTools(unittest.TestCase):
                 
     def test_oas_cov(self):
         # mock observable ensemble with identical realizations
-        arr = np.random.rand(1,12)
+        arr = np.random.rand(1,32)
         comm.Bcast(arr, root=0)
-        null_cov = np.zeros((12,12))
+        null_cov = np.zeros((32,32))
         # ensemble with identical realisations
         local_cov = oas_cov(arr)        
         full_cov = np.vstack(comm.allgather(local_cov))
@@ -149,9 +140,9 @@ class TestTools(unittest.TestCase):
                 
     def test_oas_mcov(self):
         # mock observable ensemble with identical realizations
-        arr = np.random.rand(1,12)
+        arr = np.random.rand(1,32)
         comm.Bcast(arr, root=0)
-        null_cov = np.zeros((12,12))
+        null_cov = np.zeros((32,32))
         # ensemble with identical realisations
         mean, local_cov = oas_mcov(arr)        
         full_cov = np.vstack(comm.allgather(local_cov))

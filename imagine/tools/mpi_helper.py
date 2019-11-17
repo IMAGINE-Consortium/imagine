@@ -38,6 +38,27 @@ def mpi_arrange(size):
         raise ValueError('over distribution')
     return np.uint(res + mpirank*ave), np.uint(res + (mpirank+1)*ave + np.uint(mpirank < size%mpisize))
 
+def mpi_shape(data):
+    """
+    return the global number of rows and columns of given distributed data
+    
+    parameters
+    ----------
+    
+    data
+        numpy.ndarray
+        the distributed data
+        
+    return
+    ------
+    numpy.uint
+    glboal row and column number
+    """
+    global_row = np.array(0, dtype=np.uint)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [global_row, MPI.LONG], op=MPI.SUM)
+    global_column = np.array(data.shape[1], dtype=np.uint)
+    return global_row, global_column
+
 def mpi_prosecutor(data):
     """
     check if the data is distributed in the correct way
@@ -61,7 +82,7 @@ def mpi_prosecutor(data):
     check_begin, check_end = mpi_arrange(np.sum(local_rows))
     if (data.shape[0] != check_end - check_begin):
         raise ValueError('incorrect data allocation')
-    if not np.any(local_cols-local_cols[0]):
+    if np.any((local_cols-local_cols[0]).astype(bool)):
         raise ValueError('incorrect data allocation')
         
 def mpi_mean(data):

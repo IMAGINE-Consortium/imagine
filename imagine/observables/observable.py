@@ -1,19 +1,21 @@
 """
-Observable class is designed for storing/manitulating distributed information
+Observable class is designed for storing/manipulating distributed information.
+For the testing suits, please turn to "imagine/tests/observable_tests.py".
 
-it is invoked in simulator wrapper and likelihoods
-for distributing/manipulating simulated outputs
-
-members:
+member functions:
+    
 .rw_flag
-    -- rewriting flag, if true, append method will perform rewriting
+    rewriting flag, if true, append method will perform rewriting
+    
 .append
-    -- append new observable data in various form
+    append new observable data in various form
 """
 
 import numpy as np
 from mpi4py import MPI
-from imagine.tools.mpi_helper import mpi_arrange, mpi_mean
+from copy import deepcopy
+import logging as log
+from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor
 from imagine.tools.icy_decorator import icy
 
 
@@ -24,160 +26,101 @@ mpirank = comm.Get_rank()
 @icy
 class Observable(object):
 
-    def __init__(self, shape=None):
+    def __init__(self, data=None, dtype=None):
         """
         initialize Observable with distributed numpy.ndarray
         
         parameters
         ----------
         
-        shape
-            a 2 element list/tuple which tells the
-            total size of the distributed information
-            e.g., for an Helpix Nside=128 observable in ensemble of N realisations
-            then the corresponding shape is (N,12*128*128)
-            e.g., for a Healpix Nside=128 observable in ensemble of single realization
-            then the corresponding shape is (1,n) with n decided by the number of MPI ndoes
-            
-        val
-            intial value for all element
+        data
+            distributed/copied data
+        
+        dtype
+            denotes the data type, either as 'measured', 'simulated' or 'covariance'
         """
-        self.shape = shape
+        self.dtype = dtype
+        self.data = data
         self.rw_flag = False
-        self.ensemble_mean = self._shape
-
-    @property
-    def shape(self):
-        return self._shape
-
-    @shape.setter
-    def shape(self, shape):
-        """
-        shape is defined globally
-        shape[0] should be either 
-        1 (for storing measurement/observational data),
-        or 
-        multiple mpisize (for storing simulated data)
-        
-        the is a special requirement for multiple realizations,
-        in order not to mess up with single realization data,
-        we do not allow the number of realizations the same as
-        MPI size, in which case the distribution would give (1,n) data
-        shape for each MPI node, which is the same style as distributing
-        a single realization data
-        """
-        assert (len(shape) == 2)
-        assert isinstance(shape, (list,tuple))
-        # either global 1D, or multiple MPI size
-        assert(shape[0] % mpisize > 0 or shape[0] == int(1))
-        self._shape = shape
-        
+    
     @property
     def data(self):
         return self._data
     
     @property
-    def ensemble_mean(self):
-        if self._shape[0] == 1:
-            raise ValueError('ensemble mean works with ensembles')
-        else:
-            return mpi_mean(self._data)
+    def shape(self):
+        return mpi_shape(self._data)
     
-    @ensemble_mean.setter
-    def ensemble_mean(self, shape):
-        """
-        given the global data sample shape
-        initialize the correct ensemble_mean array size with zeros
-        """
-        if (shape[0] == 1):
-            self._ensemble_mean = np.zeros((1, mpi_arrange(shape[1], mpisize, mpirank)), dtype=np.double)
-        else:
-            self._ensemble_mean = np.zeros((mpi_arrange(shape[0], mpisize, mpirank), shape[1]), dtype=np.double)
-
     @property
-    def field(self):
-        return self._field
-
-    @field.setter
-    def field(self, val):
+    def size(self):
         """
-        if domain with domain.sahpe[0] == 1, get val from master node
-        otherwise, gather val from all nodes
+        data size (number of columns)
         """
-        if isinstance(val, float):  # empty case
-            self._field = Field.full(self._domain, val)
-            self._rw_flag = True
-        elif isinstance(val, np.ndarray):
-            # if domain.shape[0] == 1, no MPI distribution
-            if self._domain.shape[0] == 1:
-                self._field = Field.from_global_data(self.domain, val)
-            else:
-                self._field = Field.from_local_data(self.domain, val)
+        return self._data.shape[1]
+    
+    @property
+    def ensemble_mean(self):
+        log.debug('@ observable::ensemble_mean')
+        if (self._dtype == 'measured'):
+            assert (self._data.shape[0] == 1)
+            return self._data
+        elif (self._dtype == 'simulated'):
+            return mpi_mean(self._data)
         else:
             raise TypeError('unsupported data type')
-
+    
     @property
     def rw_flag(self):
         return self._rw_flag
-
-    @rw_flag.setter
-    def rw_flag(self, rw_flag):
-        self._rw_flag = rw_flag
     
     @property
-    def ensemble_mean(self):
-        self._ensemble_mean = (self._field.mean(spaces=0).to_global_data()).reshape(1, self._field.shape[1])
-        return self._ensemble_mean
-
-    @property
-    def shape(self):
-        return self._field.shape
-
-    @property
-    def local_data(self):
-        return self._field.local_data
-
-    def to_global_data(self):
-        """
-        indirectly visit ._field
-        dont make it a preperty in order to be aligned with
-        the same method in NIFTy5.Field
-        
-        :return: numpy ndarray of observable content
-        """
-        return self._field.to_global_data()
-
-    def append(self, new_data):
-        """
-        append new_data from all nodes
-        if the observable is not distributed, self.shape[0] % mpisize != 0,
-        it should be a measurement/observational data, in this case,
-        there is no need to append/rewrite new data,
-        nor it is convenient to do so
-        
-        :param new_data: new data in type numpy array, NIFTy5.Field, Observable
-        :return:
-
-        since Field is read only, to append new data
-        we need to strip ndarray out, extend, then update Field
-        append also handle ._flag is True case
-        which means instead of append new data
-        we should rewrite
-        """
-        assert(self._field.shape[0] % mpisize == 0)  # non-distributed, do not append
-        # strip data
-        if isinstance(new_data, (Field, Observable)):
-            raw_new = new_data.local_data  # return to each node
-        elif isinstance(new_data, np.ndarray):
-            raw_new = new_data
+    def dtype(self):
+        return self._dtype
+    
+    @data.setter
+    def data(self, data):
+        log.debug('@ observable::data')
+        if data is None:
+            self._data = None
         else:
-            raise TypeError('unsupported type')
-        # assemble new_cache
-        if self.rw_flag:
-            local_cache = raw_new
-            self.rw_flag = False  # rw only once by default
+            assert (len(data.shape) == 2)
+            assert isinstance(data, np.ndarray)
+            if (self._dtype == 'measured'):
+                assert (data.shape[0] == 1)
+            self._data = np.copy(data)
+            if (self._dtype == 'covariance'):
+                g_rows, g_cols = self.shape
+                assert (g_rows == g_cols)
+    
+    @dtype.setter
+    def dtype(self, dtype):
+        if dtype is None:
+            raise ValueError('dtype cannot be none')
         else:
-            local_cache = np.vstack([self._field.local_data, raw_new])
-        # update new_cache to ._field, first need to get global_size
-        new_domain = DomainTuple.make((RGSpace(local_cache.shape[0]*mpisize), self._domain[1]))
-        self._field = Field.from_local_data(new_domain, local_cache)
+            assert (dtype in ('measured', 'simulated', 'covariance'))
+            self._dtype = deepcopy(dtype)
+    
+    @rw_flag.setter
+    def rw_flag(self, rw_flag):
+        assert (rw_flag in (True, False))
+        self._rw_flag = deepcopy(rw_flag)
+    
+    def append(self, new):
+        """
+        appending new data happends only to SIMULATED dtype
+        the new data to be appended should also be distributed
+        which makes the appending operation naturally in parallel
+        """
+        log.debug('@ observable::append')
+        assert isinstance(new, (np.ndarray, Observable))
+        if isinstance(new, np.ndarray):
+            mpi_prosecutor(new)
+            if (self._rw_flag):  # rewriting
+                self._data = np.copy(new)
+            else:
+                self._data = np.vstack([self._data, new])
+        elif isinstance(new, Observable):
+            if (self._rw_flag):
+                self._data = np.copy(new.data)
+            else:
+                self._data = np.vstack([self._data, new.data])

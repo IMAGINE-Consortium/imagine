@@ -17,9 +17,9 @@ mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
 
-def mask_data(data, mask):
+def mask_obs(obs, mask):
     """
-    apply mask to the distributed data
+    apply mask to the distributed observable
     the mask should be copied on each node
     
     parameters
@@ -41,22 +41,22 @@ def mask_data(data, mask):
     in shape (ensemble size, masked data size)
     """
     log.debug('@ masker::mask_data')
-    assert isinstance(data, np.ndarray)
+    assert isinstance(obs, np.ndarray)
     assert isinstance(mask, np.ndarray)
-    assert (data.shape[0] >= 1)
+    assert (obs.shape[0] >= 1)
     assert (mask.shape[0] == 1)
-    assert (data.shape[1] == mask.shape[1])
-    new_data = deepcopy(data)
+    assert (obs.shape[1] == mask.shape[1])
+    new_obs = deepcopy(obs)
     raw_mask = (deepcopy(mask)).astype(np.bool)
     #
     idx = int(0)
     for ptr in raw_mask[0]:
         if not ptr:
-            new_data = np.delete(new_data, idx, 1)
+            new_obs = np.delete(new_obs, idx, 1)
         else:
             idx += int(1)
-    assert (new_data.shape[1] == idx)
-    return new_data
+    assert (new_obs.shape[1] == idx)
+    return new_obs
 
 def mask_cov(cov, mask):
     """
