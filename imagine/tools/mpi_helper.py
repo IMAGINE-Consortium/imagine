@@ -5,6 +5,7 @@ For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
 import numpy as np
 from mpi4py import MPI
+from copy import deepcopy
 import logging as log
 
 
@@ -164,14 +165,14 @@ def mpi_trans(data):
             comm.Isend([local_sent_buf, MPI.DOUBLE], dest=target, tag=target)
         else:  # recv from self
             # note that transpose works here (in-node copy)
-            new_col_begin = np.sum(local_rows[:mpirank])
+            new_col_begin = np.sum(local_rows[0:mpirank])
             new_col_end = new_col_begin + local_rows[mpirank]
             new_data[:, new_col_begin:new_col_end] = np.transpose((data[:, cut_col_begin:cut_col_end]).astype(np.float64))
     for source in range(mpisize):
         if (source != mpirank):  # recv from other ranks
             local_recv_buf = np.empty((cut_col_ends[mpirank]-cut_col_begins[mpirank], local_rows[source]), dtype=np.float64)
             comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
-            new_data[:, np.sum(local_rows[:source]):np.sum(local_rows[:source+1])] = local_recv_buf
+            new_data[:, np.sum(local_rows[0:source]):np.sum(local_rows[0:source+1])] = local_recv_buf
     return new_data
     
 def mpi_mult(left, right):
@@ -230,7 +231,7 @@ def mpi_mult(left, right):
         local_recv_buf = np.zeros((right_rows[source], right.shape[1]), dtype=np.float64)
         comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
         # accumulate local mult
-        left_col_begin = np.sum(right_rows[:source])
+        left_col_begin = np.sum(right_rows[0:source])
         left_col_end = left_col_begin + right_rows[source]
         left_block = np.array(left[:, left_col_begin:left_col_end], dtype=np.float64)
         result += np.dot(left_block, local_recv_buf)
@@ -287,3 +288,71 @@ def mpi_eye(size):
         eye_pos = local_row_begin + np.uint(i)
         local_matrix[i, eye_pos] =  1.0
     return local_matrix
+
+def mpi_lu_solve(operator, source):
+    """
+    simple LU Gauss method WITHOUT pivot permutation
+    
+    parameters
+    ----------
+    
+    operator:
+        distributed numpy.ndarray
+        matrix representation of the left-hand-side operator
+        
+    source:
+        copied numpy.ndarray
+        vector representation of the right-hand-side source
+    """
+    log.debug('@ mpi_helper::mpi_lu_solve')
+    assert isinstance(operator, np.ndarray)
+    assert isinstance(source, np.ndarray)
+    global_rows = operator.shape[1]
+    assert (source.shape == (1, global_rows))
+    u = deepcopy(operator.astype(np.float64))
+    x = deepcopy(source.astype(np.float64))
+    # split x
+    xsplit_begin, xsplit_end = mpi_arrange(global_rows)
+    xsplit = np.array(x[0,xsplit_begin:xsplit_end])
+    # collect local rows for each node
+    local_rows = np.empty(mpisize, dtype=np.uint)
+    comm.Allgather([np.array(operator.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
+    # start gauss method
+    # the hidden global row count in other nodes
+    global_row_begin = np.sum(local_rows[0:mpirank])
+    # goes column by column
+    for c in range(global_rows-1):
+        # find the pivot rank and local row
+        pivot_rank = np.array(0, dtype=np.uint)
+        pivot_r = np.uint(c)  # local row index hosting the pivot
+        for i in range(len(local_rows)):
+            if (pivot_r >= local_rows[i]):
+                pivot_r -= local_rows[i]
+            else:
+                pivot_rank = np.uint(i)
+                break
+        # propagate pivot rank and pivot row
+        pivot_row = np.array(u[pivot_r, :])
+        comm.Bcast([np.array(pivot_rank), MPI.LONG], root=pivot_rank)
+        comm.Bcast([pivot_row, MPI.DOUBLE], root=pivot_rank)
+        # gauss elimination
+        for local_r in range(local_rows[mpirank]):
+            if (local_r + global_row_begin > c):
+                ratio = u[local_r, c]/pivot_row[c]
+                u[local_r,:] -= ratio*pivot_row
+                xsplit[local_r] -= ratio*x[0, c]  # manipulate split x instead x
+            # gather xsplit
+            comm.Allgather([xsplit, MPI.DOUBLE], [x, MPI.DOUBLE])
+    # solve Ux=b
+    for i in range(mpisize):
+        op_rank = mpisize - 1 - i  # operational rank
+        if (mpirank == op_rank):
+             for j in range(local_rows[mpirank]):
+                 local_r = np.uint(local_rows[mpirank] - 1 - j)
+                 local_c = np.uint(global_row_begin + local_r)
+                 local_c_plus = np.uint(local_c + 1)
+                 x[0,local_c] = (x[0,local_c] - np.dot(u[local_r,local_c_plus:],x[0,local_c_plus:]))/u[local_r,local_c]
+        # update x
+        comm.Bcast([x, MPI.DOUBLE], root=op_rank)
+    return x
+                

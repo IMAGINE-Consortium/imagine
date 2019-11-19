@@ -3,8 +3,10 @@ import numpy as np
 from mpi4py import MPI
 
 from imagine.tools.random_seed import seed_generator
-from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_mult, mpi_eye, mpi_trace, mpi_shape
-from imagine.tools.masker import mask_data, mask_cov
+from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans
+from imagine.tools.mpi_helper import mpi_mult, mpi_eye, mpi_trace
+from imagine.tools.mpi_helper import  mpi_shape, mpi_lu_solve
+from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.covariance_estimator import empirical_cov, oas_cov, oas_mcov
 
 
@@ -52,7 +54,7 @@ class TestTools(unittest.TestCase):
             dat_arr = np.random.rand(1,128)
         cov_arr = np.random.rand(mpi_arrange(128)[1]-mpi_arrange(128)[0], 128)
         # mask by methods
-        dat_msk = mask_data(dat_arr, msk_arr)
+        dat_msk = mask_obs(dat_arr, msk_arr)
         cov_msk = mask_cov(cov_arr, msk_arr)
         # mask manually
         test_dat = dat_arr*msk_arr
@@ -150,7 +152,17 @@ class TestTools(unittest.TestCase):
             self.assertAlmostEqual(mean[0][k], arr[0][k])
         for i in range(full_cov.shape[0]):
             for j in range(full_cov.shape[1]):
-                self.assertAlmostEqual(null_cov[i][j], full_cov[i][j])
+                self.assertAlmostEqual(null_cov[i,j], full_cov[i,j])
+                
+    def test_lu_solve(self):
+        arr = np.random.rand(2, 2*mpisize)
+        brr = np.random.rand(1, 2*mpisize)
+        comm.Bcast(brr, root=0)
+        xrr = mpi_lu_solve(arr, brr)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_xrr = (np.linalg.solve(full_arr, brr.T)).T
+        for i in range(xrr.shape[1]):
+            self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
 
 if __name__ == '__main__':
     unittest.main()
