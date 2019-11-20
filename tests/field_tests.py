@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
-from imagine import GeneralFieldFactory
-from imagine import GeneralField
-from imagine import TestFieldFactory
-from imagine import TestField
+from imagine.fields.field_factory import GeneralFieldFactory
+from imagine.fields.field import GeneralField
+from imagine.fields.test_field.test_field_factory import TestFieldFactory
+from imagine.fields.test_field.test_field import TestField
 
 
 class TestFields(unittest.TestCase):

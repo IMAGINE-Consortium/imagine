@@ -3,7 +3,6 @@ hammurabiX ES random GMF
 """
 
 import logging as log
-
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 
@@ -19,7 +18,10 @@ class BrndES(GeneralField):
     def field_checklist(self):
         """
         record XML location of physical parameters
-        :return: dict of XML locations
+        
+        return
+        ------
+        dict of XML locations
         """
         checklist = {'rms': (['magneticfield', 'random', 'global', 'es', 'rms'], 'value'),
                      'k0': (['magneticfield', 'random', 'global', 'es', 'k0'], 'value'),
@@ -36,7 +38,10 @@ class BrndES(GeneralField):
     def field_controllist(self):
         """
         record XML location of logical parameters
-        :return: dict of XML locations
+        
+        return
+        ------
+        dict of XML locations
         """
         controllist = {'cue': (['magneticfield', 'random'], {'cue': '1'}),
                        'type': (['magneticfield', 'random'], {'type': 'global'}),

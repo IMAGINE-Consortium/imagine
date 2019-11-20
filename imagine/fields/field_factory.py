@@ -10,38 +10,44 @@ factory object take a given set of variable values
 and translate it into physical parameter value and
 return a field object with current parameter set
 
-members:
+attributes:
+    
 .name
-    -- factory name, useful as factory id
+    factory name, useful as factory id
+    
 .type
-    -- specify what field the factory produce, 'scalar', 'spinor', 'vector', 'tensor' ...
+    specify what field the factory produce, 'scalar', 'spinor', 'vector', 'tensor' ...
+    
 .boxsize
-    -- physical size of simulation box, by default the box is 3D cartesian
+    physical size of simulation box, by default the box is 3D cartesian
+    
 .resolution
-    -- how many bins on each direction of simulation box
+    how many bins on each direction of simulation box
 
 .default_parameters
-    -- dictionary storing parameter name as entry, default parameter value as content
+    dictionary storing parameter name as entry, default parameter value as content
+    
 .default_variables
-    -- return a dict of (logic) variables wrt default_parameters
+    return a dict of (logic) variables wrt default_parameters
+    
 .active_parameters
-    -- tuple of parameter names which can vary, not necessary to cover all default parameters
+    tuple of parameter names which can vary, not necessary to cover all default parameters
 
 .parameter_ranges
-    -- dictionary storing varying range of all default parameters
+    dictionary storing varying range of all default parameters
+    
 ._map_variables_to_parameters
-    -- given variable dict, translate to parameter dict with parameter value mapped from variable value
+    given variable dict, translate to parameter dict with parameter value mapped from variable value
 
 .generate
-    -- takes active variable dict, ensemble size and random seed value defined in Pipeline
+    takes active variable dict, ensemble size and random seed value defined in Pipeline
     it translates active variable value to parameter value and update a copy of default parameter dict
-    and send it to field class, which will hand in to simulator.
+    and send it to field class, which will hand in to simulator
 """
 
 import numpy as np
 from copy import deepcopy
 import logging as log
-
 from imagine.fields.field import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
@@ -52,10 +58,15 @@ class GeneralFieldFactory(object):
 
     def __init__(self, boxsize=None, resolution=None):
         """
-
-        :param boxsize: list/tuple of float, physical size of simulation box (3D Cartesian frame)
-        :param resolution: list/tuple of int, discretization size in corresponding dimension
+        GeneralFieldFactory class initialization function
+        
+        boxsize
+            list/tuple of float, physical size of simulation box (3D Cartesian frame)
+            
+        resolution
+            list/tuple of int, discretization size in corresponding dimension
         """
+        log.debug('@ field_factory::__init__')
         self.field_type = 'scalar'
         self.name = 'general'
         self.field_class = GeneralField
@@ -154,8 +165,11 @@ class GeneralFieldFactory(object):
     @parameter_ranges.setter
     def parameter_ranges(self, new_ranges):
         """
-        :param new_ranges: {'parameter-name': (min, max)}
-        :return:
+        parameters
+        ----------
+        
+        new_ranges
+            python dict in form {'parameter-name': (min, max)}
         """
         assert isinstance(new_ranges, dict)
         for k, v in new_ranges.items():
@@ -175,8 +189,12 @@ class GeneralFieldFactory(object):
         """
         translate default parameter into default (logic) variable
         notice that all variables range is always fixed as [0,1]
-        :return: default variable dict
+        
+        return
+        ------
+        default variable dict
         """
+        log.debug('@ field_factory::default_variables')
         tmp = dict()
         for par, def_val in self.default_parameters.items():
             low, high = self.parameter_ranges[par]
@@ -185,10 +203,19 @@ class GeneralFieldFactory(object):
 
     def _map_variables_to_parameters(self, variables):
         """
-
-        :param variables: {'parameter-name', logic-value}
-        :return: {'parameter-name', physical-value}
+        convert Bayesian sampling variables into model parameters
+        
+        parameters
+        ----------
+        
+        variables
+            python dict in form {'parameter-name', logic-value}
+        
+        return
+        ------
+        python dict in form {'parameter-name', physical-value}
         """
+        log.debug('@ field_factory::_map_variables_to_parameters')
         assert isinstance(variables, dict)
         parameter_dict = dict()
         for variable_name in variables:
@@ -203,13 +230,28 @@ class GeneralFieldFactory(object):
 
     def generate(self, variables=dict(), ensemble_size=1, ensemble_seeds=None):
         """
-
-        :param variables: a dict of variables with name and value
-        :param ensemble_size: number of instances in a field ensemble
-        :param ensemble_seeds: seeds for generating random numbers in realising instances in field ensemble
-        if ensemble_seeds is None, field_class initialization will take all seed as 0
-        :return: a GeneralField object
+        generate GeneralFIeld object hosting the given set of variables
+        
+        parameters
+        ----------
+        
+        variables
+            a dict of variables with name and value
+        
+        ensemble_size
+            number of instances in a field ensemble
+        
+        ensemble_seeds
+            seeds for generating random numbers 
+            in realising instances in field ensemble
+            if ensemble_seeds is None, 
+            field_class initialization will take all seed as 0
+            
+        return
+        ------
+        a GeneralField object
         """
+        log.debug('@ field_factory::generate')
         # map variable value to parameter value
         # in mapping, variable name will be checked in default_parameters
         mapped_variables = self._map_variables_to_parameters(variables)

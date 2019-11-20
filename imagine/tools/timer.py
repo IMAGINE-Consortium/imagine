@@ -1,5 +1,5 @@
 """
-timer is designed for time recording
+Timer class is designed for time recording
 """
 
 import time
@@ -7,7 +7,7 @@ from imagine.tools.icy_decorator import icy
 
 
 @icy
-class timer(object):
+class Timer(object):
 
     def __init__(self):
         self._record = dict()

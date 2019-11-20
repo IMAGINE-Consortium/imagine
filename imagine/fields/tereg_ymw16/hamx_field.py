@@ -4,7 +4,6 @@ hammurabi has default YMW16 parameter setting
 """
 
 import logging as log
-
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 
@@ -20,7 +19,10 @@ class TEregYMW16(GeneralField):
     def field_checklist(self):
         """
         record XML location of physical parameters
-        :return: dict of XML locations
+        
+        return
+        ------
+        dict of XML locations
         """
         checklist = dict()
         return checklist
@@ -29,7 +31,10 @@ class TEregYMW16(GeneralField):
     def field_controllist(self):
         """
         record XML location of logical parameters
-        :return: dict of XML locations
+        
+        return
+        ------
+        dict of XML locations
         """
         controllist = {'cue': (['thermalelectron', 'regular'], {'cue': '1'}),
                        'type': (['thermalelectron', 'regular'], {'type': 'ymw16'})}

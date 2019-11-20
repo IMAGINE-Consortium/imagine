@@ -1,31 +1,30 @@
 import numpy as np
 import logging as log
 import os
-
 import pymultinest
-import mpi4py
-
+from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
 
-comm = mpi4py.MPI.COMM_WORLD
+
+comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
-
 
 @icy
 class MultinestPipeline(Pipeline):
 
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-        """
-        """
         super(MultinestPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
 
     def __call__(self):
         """
-
-        :return: pyMultinest sampling results
+        
+        return
+        ------
+        pyMultinest sampling results
         """
+        log.debug('@ multinest_pipeline::__call__')
         # create dir for storing pymultinest output
         path = os.path.join(os.getcwd(),'chains')
         if not os.path.isdir(path):
@@ -49,9 +48,18 @@ class MultinestPipeline(Pipeline):
         so we need to register parameter position on each node
         and calculate log-likelihood value of each node with joint force of all nodes
         in this way, ensemble size is multiplied by the number of working nodes
-        :param cube: list of variable values
-        :return: log-likelihood value
+        
+        parameters
+        ----------
+        
+        cube
+            list of variable values
+        
+        return
+        ------
+        log-likelihood value
         """
+        log.debug('@ multinest_pipeline::_mpi_likelihood')
         # gather cubes from all nodes
         cube_local_size = cube.size
         cube_pool = np.empty(cube_local_size*mpisize, dtype='d')
@@ -73,9 +81,10 @@ class MultinestPipeline(Pipeline):
         cube has been 'broadcasted' in the 2nd step in _mpi_likelihood
         now self._simulator will work on each node and provide multiple ensemble size
         """
+        log.debug('@ multinest_pipeline::_core_likelihood')
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug('cube %s requested. returned most negative possible number' % str(instant_cube))
+            log.debug('cube %s requested. returned most negative possible number' % str(cube))
             return np.nan_to_num(-np.inf)
         # return active variables from pymultinest cube to factories
         # and then generate new field objects

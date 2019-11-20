@@ -3,7 +3,6 @@ hammurabiX WMAP-3yr LSA GMF factory
 """
 
 import logging as log
-
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.fields.breg_lsa.hamx_field import BregLSA
 from imagine.tools.icy_decorator import icy

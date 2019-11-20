@@ -1,7 +1,7 @@
 """
 built only for testing purpose
 
-field model:
+field model
     mimicking emission intensity
     field = square( gaussian_rand(mean=a,std=b)_x * sin(x) )
 
@@ -24,8 +24,12 @@ class BiSimulator(Simulator):
     def __init__(self, measurements):
         """
 
-        :param measurements: Measurements object
-        for testing, only key ('test',...,...,...) is valid
+        parameters
+        ----------
+        
+        measurements
+            Measurements object
+            for testing, only key ('test',...,...,...) is valid
         """
         self.output_checklist = measurements
 
@@ -41,8 +45,16 @@ class BiSimulator(Simulator):
     def __call__(self, field_list):
         """
         generate observables with parameter info from input field list
-        :param field_list: list/tuple of field object
-        :return: Simulations object
+        
+        parameters
+        ----------
+        
+        field_list
+            list/tuple of field object
+            
+        return
+        ------
+        Simulations object
         """
         assert (len(self._output_checklist) == 1)
         assert (self._output_checklist[0][0] == 'test')
@@ -63,10 +75,22 @@ class BiSimulator(Simulator):
     def obs_generator(self, field_list, ensemble_size, obs_size):
         """
         apply field model and generate observable raw data
-        :param parameters: dict of parameters
-        :param ensemble_size: number of realizations in ensemble
-        :param obs_size: size of observable
-        :return: numpy ndarray
+        
+        parameters
+        ----------
+        
+        field_list
+            list of field objects
+            
+        ensemble_size
+            number of realizations in ensemble
+        
+        obs_size
+            size of observable
+            
+        return
+        ------
+        numpy ndarray
         """
         # coordinates
         raw_arr = np.zeros((ensemble_size, obs_size))

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 developed by Joe Taylor
 based on the initial work of Theo Steininger
@@ -62,8 +61,6 @@ detailed caption of each function can be found with their implementation
 """
 
 import os
-import sys
-import time
 import subprocess
 import healpy as hp
 import xml.etree.ElementTree as et
@@ -429,7 +426,7 @@ class Hampyx(object):
                 raise ValueError('wrong path %s' % path_str)
             if opt is None:
                 parent.remove(target)
-            elif opt is 'all':
+            elif (opt == 'all'):
                 for i in root.findall(path_str):
                     parent.remove(i)
             else:

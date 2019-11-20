@@ -4,13 +4,12 @@ this is not a rigorous testing unit
 import unittest
 import os
 import numpy as np
-
-from imagine import Measurements
-from imagine import Hammurabi
-from imagine import BregLSA
-from imagine import BrndES
-from imagine import CREAna
-from imagine import FEregYMW16
+from imagine.observables.observable_dict import Measurements
+from imagine.simulators.hammurabi.hammurabi import Hammurabi
+from imagine.fields.breg_lsa.hamx_field import BregLSA
+from imagine.fields.brnd_es.hamx_field import BrndES
+from imagine.fields.cre_analytic.hamx_field import CREAna
+from imagine.fields.tereg_ymw16.hamx_field import FEregYMW16
 
 
 class HammurabiTests(unittest.TestCase):

@@ -155,16 +155,18 @@ class TestTools(unittest.TestCase):
                 self.assertAlmostEqual(null_cov[i,j], full_cov[i,j])
                 
     def test_lu_solve(self):
+        np.random.seed(mpirank)
         arr = np.random.rand(2, 2*mpisize)
+        full_arr = np.vstack(comm.allgather(arr))
         brr = np.random.rand(1, 2*mpisize)
         comm.Bcast(brr, root=0)
         xrr = mpi_lu_solve(arr, brr)
-        full_arr = np.vstack(comm.allgather(arr))
         test_xrr = (np.linalg.solve(full_arr, brr.T)).T
         for i in range(xrr.shape[1]):
             self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
             
     def test_slogdet(self):
+        np.random.seed(mpirank)
         arr = np.random.rand(2, 2*mpisize)
         sign, logdet = mpi_slogdet(arr)
         full_arr = np.vstack(comm.allgather(arr))

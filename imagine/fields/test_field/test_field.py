@@ -8,7 +8,6 @@ and checklist is designed of form
 """
 
 import logging as log
-
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 

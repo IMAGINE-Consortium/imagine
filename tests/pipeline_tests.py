@@ -1,14 +1,13 @@
 import unittest
 import numpy as np
-
-from imagine import Simulations, Measurements, Covariances
-from imagine import EnsembleLikelihood
-from imagine import TestFieldFactory
-from imagine import FlatPrior
-from imagine import LiSimulator
-from imagine import BiSimulator
-from imagine import MultinestPipeline
-from imagine import DynestyPipeline
+from imagine.observables.observable_dict import Measurements
+from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+from imagine.fields.test_field.test_field_factory import TestFieldFactory
+from imagine.priors.flat_prior import FlatPrior
+from imagine.simulators.test.li_simulator import LiSimulator
+from imagine.simulators.test.bi_simulator import BiSimulator
+from imagine.pipelines.multinest_pipeline import MultinestPipeline
+from imagine.pipelines.dynesty_pipeline import DynestyPipeline
 
 
 class TestPipelines(unittest.TestCase):
