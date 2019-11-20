@@ -1,17 +1,15 @@
 import unittest
 import numpy as np
-import mpi4py
-from nifty5 import Field, UnstructuredDomain, RGSpace, HPSpace, DomainTuple
-from imagine import Observable
-from imagine import Simulations, Measurements, Covariances
-from imagine import Likelihood
-from imagine import SimpleLikelihood
-from imagine import EnsembleLikelihood
+from mpi4py import MPI
+from imagine.observables.observable import Observable
+from imagine.observables.observable_dict import Simulations, Measurements, Covariances
+from imagine.likelihoods.simple_likelihood import SimpleLikelihood
+from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 
-comm = mpi4py.MPI.COMM_WORLD
+
+comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
-
 
 class TestSimpleLikeli(unittest.TestCase):
 
@@ -19,23 +17,21 @@ class TestSimpleLikeli(unittest.TestCase):
         simdict = Simulations()
         meadict = Measurements()
         # mock measurements
-        dtuple = DomainTuple.make((RGSpace(1), HPSpace(nside=2)))
         arr_a = np.random.rand(1, 48)
         comm.Bcast(arr_a, root=0)
-        mea = Observable(dtuple, arr_a)
+        mea = Observable(arr_a, 'measured')
         meadict.append(('test', 'nan', '2', 'nan'), mea)
         # mock sims
-        dtuple = DomainTuple.make((RGSpace(3*mpisize), HPSpace(nside=2)))
         arr_b = np.random.rand(3, 48)
-        sim = Observable(dtuple, arr_b)
+        sim = Observable(arr_b, 'simulated')
         simdict.append(('test', 'nan', '2', 'nan'), sim)
         # no covariance
         lh = SimpleLikelihood(meadict)
         # calc by likelihood
         rslt = lh(simdict)  # feed variable value, not parameter value
         # calc by hand
-        arr_b = sim.to_global_data()  # global arr_b
-        diff = (np.mean(arr_b, axis=0) - arr_a)
+        full_b = np.vstack(comm.allgather(arr_b))  # global arr_b
+        diff = (np.mean(full_b, axis=0) - arr_a)
         baseline = -float(0.5)*float(np.vdot(diff, diff))
         # comapre
         self.assertAlmostEqual(rslt, baseline)
@@ -45,31 +41,28 @@ class TestSimpleLikeli(unittest.TestCase):
         meadict = Measurements()
         covdict = Covariances()
         # mock measurements
-        dtuple = DomainTuple.make((RGSpace(1), RGSpace(12)))
-        arr_a = np.random.rand(1, 12)
+        arr_a = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_a, root=0)
-        mea = Observable(dtuple, arr_a)
-        meadict.append(('test', 'nan', '12', 'nan'), mea, True)
+        mea = Observable(arr_a, 'measured')
+        meadict.append(('test', 'nan', str(4*mpisize), 'nan'), mea, True)
         # mock sims
-        dtuple = DomainTuple.make((RGSpace(5*mpisize), RGSpace(12)))
-        arr_b = np.random.rand(5, 12)
-        sim = Observable(dtuple, arr_b)
-        simdict.append(('test', 'nan', '12', 'nan'), sim, True)
+        arr_b = np.random.rand(5, 4*mpisize)
+        sim = Observable(arr_b, 'simulated')
+        simdict.append(('test', 'nan', str(4*mpisize), 'nan'), sim, True)
         # mock covariance
-        arr_c = np.random.rand(12, 12)
-        comm.Bcast(arr_c, root=0)
-        dtuple = DomainTuple.make((RGSpace(shape=arr_c.shape)))
-        cov = Field.from_global_data(dtuple, arr_c)
-        covdict.append(('test', 'nan', '12', 'nan'), cov, True)
+        arr_c = np.random.rand(4, 4*mpisize)
+        cov = Observable(arr_c, 'covariance')
+        covdict.append(('test', 'nan', str(4*mpisize), 'nan'), cov, True)
         # with covariance
         lh = SimpleLikelihood(meadict, covdict)
         # calc by likelihood
         rslt = lh(simdict)  # feed variable value, not parameter value
         # calc by hand
-        arr_b = sim.to_global_data()  # get global arr_b
-        diff = (np.mean(arr_b, axis=0) - arr_a)
-        (sign, logdet) = np.linalg.slogdet(arr_c*2.*np.pi)
-        baseline = -float(0.5)*float(np.vdot(diff, np.linalg.solve(arr_c, diff.T))+sign*logdet)
+        full_b = np.vstack(comm.allgather(arr_b))  # global arr_b
+        diff = (np.mean(full_b, axis=0) - arr_a)
+        full_cov = np.vstack(comm.allgather(arr_c))  # global covariance
+        (sign, logdet) = np.linalg.slogdet(full_cov*2.*np.pi)
+        baseline = -float(0.5)*float(np.vdot(diff, np.linalg.solve(full_cov, diff.T))+sign*logdet)
         self.assertAlmostEqual(rslt, baseline)
     
 
@@ -80,26 +73,22 @@ class TestEnsembleLikeli(unittest.TestCase):
         meadict = Measurements()
         covdict = Covariances()
         # mock measurements
-        dtuple = DomainTuple.make((RGSpace(1), HPSpace(nside=2)))
-        arr_a = np.random.rand(1, 48)
+        arr_a = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_a, root=0)
-        mea = Observable(dtuple, arr_a)
-        meadict.append(('test', 'nan', '2', 'nan'), mea)
+        mea = Observable(arr_a, 'measured')
+        meadict.append(('test', 'nan', str(4*mpisize), 'nan'), mea, True)
         # mock covariance
-        dtuple = DomainTuple.make((RGSpace(shape=(48, 48))))
-        arr_c = np.random.rand(48, 48)
-        comm.Bcast(arr_c, root=0)
-        cov = Field.from_global_data(dtuple, arr_c)
-        covdict.append(('test', 'nan', '2', 'nan'), cov)
+        arr_c = np.random.rand(4, 4*mpisize)
+        cov = Observable(arr_c, 'covariance')
+        covdict.append(('test', 'nan', str(4*mpisize), 'nan'), cov, True)
         # mock observable with repeated single realisation
-        dtuple = DomainTuple.make((RGSpace(5*mpisize), HPSpace(nside=2)))
-        arr_b = np.random.rand(1, 48)
+        arr_b = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_b, root=0)
-        arr_ens = np.zeros((5, 48))
+        arr_ens = np.zeros((2, 4*mpisize))
         for i in range(len(arr_ens)):
             arr_ens[i] = arr_b
-        sim = Observable(dtuple, arr_ens)
-        simdict.append(('test', 'nan', '2', 'nan'), sim)
+        sim = Observable(arr_ens, 'simulated')
+        simdict.append(('test', 'nan', str(4*mpisize), 'nan'), sim, True)
         # simplelikelihood
         lh_simple = SimpleLikelihood(meadict, covdict)
         rslt_simple = lh_simple(simdict)
@@ -107,25 +96,26 @@ class TestEnsembleLikeli(unittest.TestCase):
         lh_ensemble = EnsembleLikelihood(meadict, covdict)
         rslt_ensemble = lh_ensemble(simdict)
         self.assertEqual(rslt_ensemble, rslt_simple)
-        
+    
     def test_without_cov(self):
         simdict = Simulations()
         meadict = Measurements()
         # mock measurements
-        dtuple = DomainTuple.make((RGSpace(1), HPSpace(nside=2)))
-        arr_a = np.random.rand(1, 48)
+        arr_a = np.random.rand(1, 12*mpisize**2)
         comm.Bcast(arr_a, root=0)
-        mea = Observable(dtuple, arr_a)
-        meadict.append(('test', 'nan', '2', 'nan'), mea)
+        mea = Observable(arr_a, 'measured')
+        meadict.append(('test', 'nan', str(mpisize), 'nan'), mea)
         # mock observable with repeated single realisation
-        dtuple = DomainTuple.make((RGSpace(5*mpisize), HPSpace(nside=2)))
-        arr_b = np.random.rand(1, 48)
+        arr_b = np.random.rand(1, 12*mpisize**2)
         comm.Bcast(arr_b, root=0)
-        arr_ens = np.zeros((5, 48))
+        if not mpirank:
+            arr_ens = np.zeros((3, 12*mpisize**2))
+        else:
+            arr_ens = np.zeros((2, 12*mpisize**2))
         for i in range(len(arr_ens)):
             arr_ens[i] = arr_b
-        sim = Observable(dtuple, arr_ens)
-        simdict.append(('test', 'nan', '2', 'nan'), sim)
+        sim = Observable(arr_ens, 'simulated')
+        simdict.append(('test', 'nan', str(mpisize), 'nan'), sim)
         # simplelikelihood
         lh_simple = SimpleLikelihood(meadict)
         rslt_simple = lh_simple(simdict)
@@ -133,7 +123,7 @@ class TestEnsembleLikeli(unittest.TestCase):
         lh_ensemble = EnsembleLikelihood(meadict)
         rslt_ensemble = lh_ensemble(simdict)
         self.assertEqual(rslt_ensemble, rslt_simple)
-
+        
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,7 +5,7 @@ from mpi4py import MPI
 from imagine.tools.random_seed import seed_generator
 from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans
 from imagine.tools.mpi_helper import mpi_mult, mpi_eye, mpi_trace
-from imagine.tools.mpi_helper import  mpi_shape, mpi_lu_solve
+from imagine.tools.mpi_helper import  mpi_shape, mpi_lu_solve, mpi_slogdet
 from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.covariance_estimator import empirical_cov, oas_cov, oas_mcov
 
@@ -163,6 +163,14 @@ class TestTools(unittest.TestCase):
         test_xrr = (np.linalg.solve(full_arr, brr.T)).T
         for i in range(xrr.shape[1]):
             self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
+            
+    def test_slogdet(self):
+        arr = np.random.rand(2, 2*mpisize)
+        sign, logdet = mpi_slogdet(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_sign, test_logdet = np.linalg.slogdet(full_arr)
+        self.assertEqual(sign, test_sign)
+        self.assertAlmostEqual(logdet, test_logdet)
 
 if __name__ == '__main__':
     unittest.main()
