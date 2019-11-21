@@ -1,21 +1,21 @@
 # IMAGINE
 
-IMAGINE, the Interstellar Magnetic Field Inference Engine, 
-is open-source (GNU General Public License v3) software designed for analysing Galactic fields with observables.
-It is a modular open source framework for doing inference on generic parametric models of the Galaxy.
-We combine highly optimized tools and technology such as the MultiNest sampler and the information field theory framework NIFTy in order to leverage existing expertise.
+IMAGINE, the **I**nterstellar **MAG**netic Field **IN**ference **E**ngine, 
+is an open-source (GNU General Public License v3) software designed for analysing the Galactic components with observables.
+It is a modular framework for doing inference on generic (non)parametric models of the Galaxy.
+The analysing pipeline works with MPI support and MultiNest sampler.
 
-The Galactic magnetic field (GMF) has a huge impact on the evolution of the Milky Way. 
-Yet currently there exists no standard model for it, as its structure is not fully understood.
-In the past many parametric GMF models of varying complexity have been developed that all have been fitted to an individual set of observational data complicating comparability.
+The Galactic magnetic field (GMF) has a huge impact on the evolution of the Milky Way,
+yet currently there exists no standard model for it as its structure is not fully understood.
+In the past many parametric GMF models of varying complexity have been developed that 
+all have been fitted to an individual set of observational data complicating comparability.
 
-Our goal is to systematize parameter inference of Galactic field models.
-We want to enable a statistical comparison of different models in the future, allow for simple refitting with respect to newly available data sets and thereby increase the research area’s transparency.
-We aim to make state-of-the-art Bayesian methods easily available and in particular to treat the statistics related to the random components of the GMF correctly.
+Our goal is to systematize parametric inference of Galactic field models.
+We want to enable a statistical comparison of different models in the future, 
+allow for simple refitting with respect to newly available data sets and thereby increase the research area’s transparency.
+We aim to make the state-of-art Bayesian methods easily available and in particular to treat the statistics related to the random components of the GMF correctly.
 
 Please check our [**WIKI PAGE**](https://bitbucket.org/hammurabicode/imagine/wiki/Home) for more detailed technical infomration.
-
-The very 1st version IMAGINE source code can be found [**here**](https://gitlab.mpcdf.mpg.de/ift/IMAGINE/tree/master)
 
 ### IMAGINE team publications:
 

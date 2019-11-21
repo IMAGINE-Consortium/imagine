@@ -45,7 +45,7 @@ RUN export CC=mpicc && python3 setup.py configure --mpi --hdf5=/usr/local/hdf5 &
 WORKDIR /home/lab
 
 #IMAGINE
-RUN git clone -b mpi https://ricphy@bitbucket.org/hammurabicode/imagine.git imagine
+RUN git clone -b mpi git@bitbucket.org:hammurabicode/imagine.git imagine
 WORKDIR /home/lab/imagine
 RUN python3 setup.py install
 WORKDIR /home/lab
@@ -94,7 +94,7 @@ RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make && make install && c
 WORKDIR /home/lab
 
 # HAMMURABI X
-RUN git clone https://bitbucket.org/hammurabicode/hamx hamx
+RUN git clone git@bitbucket.org:hammurabicode/hamx.git hamx
 WORKDIR /home/lab/hamx
 RUN mkdir /home/lab/hamx/build
 WORKDIR /home/lab/hamx/build
