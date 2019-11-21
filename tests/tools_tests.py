@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 from mpi4py import MPI
-
 from imagine.tools.random_seed import seed_generator
 from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans
 from imagine.tools.mpi_helper import mpi_mult, mpi_eye, mpi_trace
