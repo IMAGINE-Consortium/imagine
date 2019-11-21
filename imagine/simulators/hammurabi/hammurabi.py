@@ -11,11 +11,9 @@ only register/update_observables/fields need modifications
 """
 
 import numpy as np
-
+import logging as log
 from imagine.simulators.simulator import Simulator
-from imagine.fields.field import GeneralField
 from imagine.observables.observable_dict import Measurements, Simulations
-from imagine.tools.random_seed import seed_generator
 from imagine.tools.icy_decorator import icy
 from imagine.tools.timer import Timer
 from .hampyx import Hampyx
@@ -25,16 +23,26 @@ from .hampyx import Hampyx
 class Hammurabi(Simulator):
 
     def __init__(self, measurements,
-                 xml_path='./params.xml',
+                 xml_path=None,
                  exe_path=None):
         """
         upon initialization, a Hampyx object is initialized
         and its XML tree should be modified according to measurements
         without changing its base file
-        :param measurements: Measurements object
-        :param exe_path: hammurabi executable path
-        :param xml_path: hammurabi xml parameter file path
+        
+        parameters
+        ----------
+        
+        measurements
+            Measurements object
+        
+        exe_path
+            hammurabi executable path
+        
+        xml_path
+            hammurabi xml parameter file path
         """
+        log.debug('@ hammurabi::__init__')
         self.exe_path = exe_path
         self.xml_path = xml_path
         self.output_checklist = measurements
@@ -79,8 +87,8 @@ class Hammurabi(Simulator):
     def register_observables(self):
         """
         modify hammurabi XML tree according to known output_checklist
-        :return:
         """
+        log.debug('@ hammurabi::register_observables')
         # clean up
         try:
             self._ham.del_par(['observable', 'sync'], 'all')
@@ -107,9 +115,8 @@ class Hammurabi(Simulator):
     def register_fields(self, field_list):
         """
         update hammurabi XML tree according to field list controllist
-        :param field_list:
-        :return:
         """
+        log.debug('@ hammurabi::register_fields')
         for field in field_list:
             # update logical parameters
             controllist = field.field_controllist
@@ -122,10 +129,14 @@ class Hammurabi(Simulator):
     def update_fields(self, field_list, realization_id):
         """
         update hammurabi XML tree according to field list checklist
-        :param field_list:
-        :param realization_id: id of realization in ensemble, [0,ensemble_size)
-        :return:
+        
+        parameters
+        ----------
+        
+        realization_id
+            id of realization in ensemble, [0,ensemble_size)
         """
+        log.debug('@ hammurabi::update_fields')
         for field in field_list:
             # update physical parameters
             checklist = field.field_checklist
@@ -138,9 +149,18 @@ class Hammurabi(Simulator):
         """
         run hammurabi executable
         pack up outputs in IMAGINE convention
-        :param field_list: list of GeneralField objects
-        :return: Simulations object
+        
+        parameters
+        ----------
+        
+        field_list
+            list of GeneralField objects
+        
+        return
+        ------
+        Simulations object
         """
+        log.debug('@ hammurabi::__call__')
         #t = Timer()
         #t.tick('simulator')
         self.register_fields(field_list)
