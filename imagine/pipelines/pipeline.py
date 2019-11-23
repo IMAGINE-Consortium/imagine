@@ -1,8 +1,6 @@
 import numpy as np
 import logging as log
-
 import pymultinest
-
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import Prior

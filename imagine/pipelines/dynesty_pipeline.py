@@ -1,13 +1,11 @@
 import numpy as np
 import logging as log
-
 import dynesty
-import mpi4py
-
+from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
 
-comm = mpi4py.MPI.COMM_WORLD
+comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 

@@ -11,7 +11,6 @@ only register/update_observables/fields need modifications
 """
 
 import numpy as np
-
 from imagine.simulators.simulator import Simulator
 from imagine.fields.field import GeneralField
 from imagine.observables.observable_dict import Measurements, Simulations
@@ -25,7 +24,7 @@ from .hampyx import Hampyx
 class Hammurabi(Simulator):
 
     def __init__(self, measurements,
-                 xml_path='./params.xml',
+                 xml_path=None,
                  exe_path=None):
         """
         upon initialization, a Hampyx object is initialized
@@ -52,6 +51,8 @@ class Hammurabi(Simulator):
 
     @property
     def xml_path(self):
+        if xml_path is None:
+            raise ValueError('requires XML file path')
         return self._xml_path
 
     @xml_path.setter

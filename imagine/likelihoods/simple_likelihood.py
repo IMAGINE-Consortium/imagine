@@ -1,7 +1,6 @@
 import numpy as np
 import logging as log
 from copy import deepcopy
-
 from imagine.observables.observable import Observable
 from imagine.observables.observable_dict import Measurements, Simulations, Covariances, Masks
 from imagine.likelihoods.likelihood import Likelihood
