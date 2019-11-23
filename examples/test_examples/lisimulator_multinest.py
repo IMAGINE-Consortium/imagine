@@ -6,20 +6,17 @@ full parameter constraints with mock data
 
 import numpy as np
 import logging as log
-
-import mpi4py
-
-from nifty5 import Field, RGSpace
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
+from mpi4py import MPI
+from imagine.observables.observable_dict import Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
-from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.fields.test_field.test_field_factory import TestFieldFactory
 from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.pipelines.multinest_pipeline import MultinestPipeline
-from imagine.tools.covariance_estimator import oas_cov, bootstrap_cov
+from imagine.tools.mpi_helper import mpi_eye
 
-comm = mpi4py.MPI.COMM_WORLD
+
+comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
@@ -29,14 +26,9 @@ import matplotlib
 from imagine.tools.carrier_mapper import unity_mapper
 matplotlib.use('Agg')
 
-
 def testfield():
-    """
-
-    :return:
-
-    log.basicConfig(filename='imagine.log', level=log.INFO)
-    """
+    
+    log.basicConfig(filename='imagine_li_multinest.log', level=log.DEBUG)
 
     """
     # step 0, set 'a' and 'b', 'mea_std'
@@ -75,7 +67,7 @@ def testfield():
     # 1.2, generate covariances
     """
     # pre-defined according to measurement error
-    mea_cov = (mea_std**2) * np.eye(mea_points)
+    mea_cov = (mea_std**2) * mpi_eye(mea_points)
 
     """
     # 1.3 assemble in imagine convention
@@ -90,9 +82,9 @@ def testfield():
     """
     # 1.4, visualize mock data
     """
-    #if mpirank == 0:
-        #matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
-        #matplotlib.pyplot.savefig('testfield_mock.pdf')
+    if not mpirank:
+        matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].data[0])
+        matplotlib.pyplot.savefig('testfield_mock_li.pdf')
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -123,7 +115,7 @@ def testfield():
     """
     # 2.5, pipeline
     """
-    ensemble_size = 10
+    ensemble_size = 100
     pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
     pipe.sampling_controllers = {'n_iter_before_update': 1,
@@ -153,8 +145,8 @@ def testfield():
                       truth_color='firebrick',
                       plot_contours=True,
                       hist_kwargs={'linewidth': 2},
-                      label_kwargs={'fontsize': 15})
-        matplotlib.pyplot.savefig('testfield_posterior.pdf')
+                      label_kwargs={'fontsize': 20})
+        matplotlib.pyplot.savefig('testfield_posterior_li_multinest.pdf')
 
 
 if __name__ == '__main__':

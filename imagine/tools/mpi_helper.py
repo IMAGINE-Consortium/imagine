@@ -416,3 +416,41 @@ def mpi_slogdet(data):
     assert (result != 0)
     sign = 2.0*np.float64(result>0) - 1.0
     return sign, np.log(sign*result, dtype=np.float64)
+
+def mpi_diag_slogdet(data):
+    """
+    log determinant according to
+    only diagonal variances
+        
+    parameters
+    ----------
+        
+    data:
+        distributed numpy.ndarray
+        
+    return
+    ------
+    sign and value of the log-determinant (copied to all nodes)
+    """
+    log.debug('@ mpi_helper::mpi_diag_logdet')
+    assert isinstance(data, np.ndarray)
+    global_rows = data.shape[1]
+    u = deepcopy(data.astype(np.float64))
+    # collect local rows for each node
+    local_rows = np.empty(mpisize, dtype=np.uint)
+    comm.Allgather([np.array(u.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
+    # start gauss method
+    # the hidden global row count in other nodes
+    global_row_begin = np.sum(local_rows[0:mpirank])
+    # no LU decomposition
+    # calculate diagonal mult in the upper matrix
+    local_acc = np.array(1.0, dtype=np.float64)
+    result = np.array(0.0, dtype=np.float64)
+    for local_r in range(local_rows[mpirank]):
+        local_c = np.uint(local_r + global_row_begin)
+        local_acc *= u[local_r, local_c]
+    # reduce local diagonal element mult
+    comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.PROD)
+    assert (result != 0)
+    sign = 2.0*np.float64(result>0) - 1.0
+    return sign, np.log(sign*result, dtype=np.float64)

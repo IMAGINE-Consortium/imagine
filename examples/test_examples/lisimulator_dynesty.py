@@ -5,19 +5,17 @@ full parameter constraints with mock data
 
 import numpy as np
 import logging as log
-
-import mpi4py
-
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
+from mpi4py import MPI
+from imagine.observables.observable_dict import Measurements, Covariances
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
-from imagine.likelihoods.simple_likelihood import SimpleLikelihood
 from imagine.fields.test_field.test_field_factory import TestFieldFactory
 from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.li_simulator import LiSimulator
 from imagine.pipelines.dynesty_pipeline import DynestyPipeline
 from imagine.tools.covariance_estimator import oas_cov
 
-comm = mpi4py.MPI.COMM_WORLD
+
+comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
@@ -29,6 +27,9 @@ matplotlib.use('Agg')
 
 
 def testfield():
+    
+    log.basicConfig(filename='imagine_li_dynesty.log', level=log.DEBUG)
+    
     if mpisize > 1:
         raise RuntimeError('MPI unsupported in Dynesty')
     """
@@ -102,8 +103,8 @@ def testfield():
     """
     # 1.4, visualize mock data
     """
-    matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].to_global_data()[0])
-    matplotlib.pyplot.savefig('testfield_mock.pdf')
+    matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].data[0])
+    matplotlib.pyplot.savefig('testfield_mock_li.pdf')
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -113,8 +114,6 @@ def testfield():
     # 2.1, ensemble likelihood
     """
     likelihood = EnsembleLikelihood(mock_data, mock_cov)  # initialize likelihood with measured info
-    #likelihood = SimpleLikelihood(mock_data, mock_cov)
-    #likelihood.active_parameters = ()
 
     """
     # 2.2, field factory list
@@ -136,9 +135,9 @@ def testfield():
     """
     # 2.5, pipeline
     """
-    ensemble_size = 10
+    ensemble_size = 100
     pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
-    pipe.random_type = 'controllable'  # 'fixed' wont work for Dynesty
+    pipe.random_type = 'controllable'  # 'fixed' random_type doesnt work for Dynesty pipeline, yet
     pipe.seed_tracer = int(23)
     pipe.sampling_controllers = {'nlive': 400}
     results = pipe()  # run with pymultinest
@@ -164,7 +163,7 @@ def testfield():
                   plot_contours=True,
                   hist_kwargs={'linewidth': 2},
                   label_kwargs={'fontsize': 20})
-    matplotlib.pyplot.savefig('testfield_posterior.pdf')
+    matplotlib.pyplot.savefig('testfield_posterior_li_dyensty.pdf')
 
 
 if __name__ == '__main__':
