@@ -1,14 +1,12 @@
 import numpy as np
 import logging as log
 import os
-
 import pymultinest
-import mpi4py
-
+from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
 
-comm = mpi4py.MPI.COMM_WORLD
+comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
@@ -54,17 +52,16 @@ class MultinestPipeline(Pipeline):
         """
         # gather cubes from all nodes
         cube_local_size = cube.size
-        cube_pool = np.empty(cube_local_size*mpisize, dtype='d')
-        comm.Gather(cube, cube_pool, root=0)
-        comm.Bcast(cube_pool, root=0)
+        cube_pool = np.empty(cube_local_size*mpisize, dtype=np.float64)
+        comm.Allgather([cube, MPI.DOUBLE], [cube_pool, MPI.DOUBLE])
         # calculate log-likelihood for each node
-        loglike_pool = np.empty(mpisize, dtype='d')
+        loglike_pool = np.empty(mpisize, dtype=np.float64)
         for i in range(mpisize):  # loop through nodes
             cube_local = cube_pool[i*cube_local_size : (i+1)*cube_local_size]
             loglike_pool[i] = self._core_likelihood(cube_local)
         # scatter log-likelihood to each node
-        loglike_local = np.empty(1, dtype='d')
-        comm.Scatter(loglike_pool, loglike_local, root=0)
+        loglike_local = np.empty(1, dtype=np.float64)
+        comm.Scatter([loglike_pool, MPI.DOUBLE], [loglike_local, MPI.DOUBLE], root=0)
         return loglike_local
 
     def _core_likelihood(self, cube):
