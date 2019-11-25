@@ -11,30 +11,22 @@ North pole
 import numpy as np
 import healpy as hp
 import logging as log
-
-import mpi4py
-
+from mpi4py import MPI
 from imagine import Masks
 from imagine import Simulations, Measurements, Covariances
 from imagine import EnsembleLikelihood
-from imagine import SimpleLikelihood
 from imagine import FlatPrior
 from imagine import DynestyPipeline
-from imagine import MultinestPipeline
-
 from imagine import Hammurabi
 from imagine import BregLSA
 from imagine import BregLSAFactory
-from imagine import BrndES
-from imagine import BrndESFactory
 from imagine import CREAna
 from imagine import CREAnaFactory
 from imagine import FEregYMW16
 from imagine import FEregYMW16Factory
-
 from imagine import oas_cov
 
-comm = mpi4py.MPI.COMM_WORLD
+comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 

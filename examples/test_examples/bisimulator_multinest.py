@@ -13,6 +13,7 @@ from imagine.priors.flat_prior import FlatPrior
 from imagine.simulators.test.bi_simulator import BiSimulator
 from imagine.pipelines.multinest_pipeline import MultinestPipeline
 from imagine.tools.mpi_helper import mpi_eye
+from imagine.tools.timer import Timer
 
 
 comm = MPI.COMM_WORLD
@@ -26,7 +27,7 @@ from imagine.tools.carrier_mapper import unity_mapper
 matplotlib.use('Agg')
 
 
-def testfield():
+def testfield(measure_size, simulation_size):
     
     log.basicConfig(filename='imagine_bi_multinest.log', level=log.DEBUG)
 
@@ -44,9 +45,8 @@ def testfield():
     """
     true_a = 3.
     true_b = 6.
-    mea_std = 0.01  # std of gaussian measurement error
+    mea_std = 0.1  # std of gaussian measurement error
     mea_seed = 233
-    mea_points = 10  # data points in measurements
     truths = [true_a, true_b]  # will be used in visualizing posterior
 
     """
@@ -57,18 +57,18 @@ def testfield():
     # 1.1, generate measurements
     mea_field = signal_field + noise_field
     """
-    x = np.linspace(0, 2.*np.pi, mea_points)
+    x = np.linspace(0, 2.*np.pi, measure_size)
     np.random.seed(mea_seed)  # seed for signal field
     signal_field = np.square(np.multiply(np.sin(x),
-                                         np.random.normal(loc=true_a, scale=true_b, size=mea_points)))
-    mea_field = np.vstack([signal_field + np.random.normal(loc=0., scale=mea_std, size=mea_points)])
+                                         np.random.normal(loc=true_a, scale=true_b, size=measure_size)))
+    mea_field = np.vstack([signal_field + np.random.normal(loc=0., scale=mea_std, size=measure_size)])
 
     """
     # 1.2, generate covariances
     what's the difference between pre-define dan re-estimated?
     """
     # pre-defined according to measurement error
-    mea_cov = (mea_std**2) * mpi_eye(mea_points)
+    mea_cov = (mea_std**2) * mpi_eye(measure_size)
 
     """
     # 1.3 assemble in imagine convention
@@ -77,14 +77,14 @@ def testfield():
     mock_data = Measurements()  # create empty Measrurements object
     mock_cov = Covariances()  # create empty Covariance object
     # pick up a measurement
-    mock_data.append(('test', 'nan', str(mea_points), 'nan'), mea_field, True)
-    mock_cov.append(('test', 'nan', str(mea_points), 'nan'), mea_cov, True)
+    mock_data.append(('test', 'nan', str(measure_size), 'nan'), mea_field, True)
+    mock_cov.append(('test', 'nan', str(measure_size), 'nan'), mea_cov, True)
 
     """
     # 1.4, visualize mock data
     """
     if not mpirank:
-        matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(mea_points), 'nan')].data[0])
+        matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(measure_size), 'nan')].data[0])
         matplotlib.pyplot.savefig('testfield_mock_bi.pdf')
 
     """
@@ -116,15 +116,20 @@ def testfield():
     """
     # 2.5, pipeline
     """
-    ensemble_size = 100
-    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, simulation_size)
     pipe.random_type = 'controllable'
     pipe.seed_tracer = int(23)
-    pipe.sampling_controllers = {'n_iter_before_update': 1,
-                                 'n_live_points': 400,
+    pipe.sampling_controllers = {'n_iter_before_update': 10,
+                                 'n_live_points': 4000,
                                  'verbose': True,
                                  'resume': False}
+    
+    tmr = Timer()
+    tmr.tick('test')
     results = pipe()  # run with pymultinest
+    tmr.tock('test')
+    if not mpirank:
+        print('\n elapse time '+str(tmr.record['test'])+'\n')
 
     """
     # step 3, visualize (with corner package)
@@ -141,7 +146,7 @@ def testfield():
                       quantiles=[0.02, 0.5, 0.98],
                       labels=pipe.active_parameters,
                       show_titles=True,
-                      title_kwargs={"fontsize": 15},
+                      title_kwargs={"fontsize": 20},
                       color='steelblue',
                       truths=truths,
                       truth_color='firebrick',
@@ -152,4 +157,4 @@ def testfield():
 
 
 if __name__ == '__main__':
-    testfield()
+    testfield(20, 100)

@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 
-from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_trace
+from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans, mpi_trace, mpi_slogdet
 from imagine.tools.covariance_estimator import oas_mcov
 from imagine.tools.timer import Timer
 
@@ -19,7 +19,7 @@ def mpi_mean_timing(ensemble_size, data_size):
     if not mpirank:
         print('@ tools_profiles::mpi_mean_timing with '+str(mpisize)+' nodes')
         print('global array shape ('+str(ensemble_size)+','+str(data_size)+')')
-        print(str(tmr.record))
+        print('elapse time '+str(tmr.record['mpi_mean'])+'\n')
     
     
 def mpi_trans_timing(ensemble_size, data_size):
@@ -32,7 +32,7 @@ def mpi_trans_timing(ensemble_size, data_size):
     if not mpirank:
         print('@ tools_profiles::mpi_trans_timing with '+str(mpisize)+' nodes')
         print('global matrix size ('+str(ensemble_size)+','+str(data_size)+')')
-        print(str(tmr.record))
+        print('elapse time '+str(tmr.record['mpi_trans'])+'\n')
     
 
 def mpi_trace_timing(data_size):
@@ -45,7 +45,7 @@ def mpi_trace_timing(data_size):
     if not mpirank:
         print('@ tools_profiles::mpi_trace_timing with '+str(mpisize)+' nodes')
         print('global matrix size ('+str(data_size)+','+str(data_size)+')')
-        print(str(tmr.record))
+        print('elapse time '+str(tmr.record['mpi_trace'])+'\n')
    
      
 def oas_estimator_timing(data_size):
@@ -58,11 +58,26 @@ def oas_estimator_timing(data_size):
     if not mpirank:
         print('@ tools_profiles::oas_estimator_timing with '+str(mpisize)+' nodes')
         print('global matrix size ('+str(data_size)+','+str(data_size)+')')
-        print(str(tmr.record))
+        print('elapse time '+str(tmr.record['oas_estimator'])+'\n')
+
+
+def mpi_slogdet_timing(data_size):
+    local_row_size = mpi_arrange(data_size)[1] - mpi_arrange(data_size)[0]
+    random_data = np.random.rand(local_row_size, data_size)
+    tmr = Timer()
+    tmr.tick('mpi_slogdet')
+    sign, logdet = mpi_slogdet(random_data)
+    tmr.tock('mpi_slogdet')
+    if not mpirank:
+        print('@ tools_profiles::mpi_slogdet_timing with '+str(mpisize)+' nodes')
+        print('global matrix size ('+str(data_size)+','+str(data_size)+')')
+        print('elapse time '+str(tmr.record['mpi_slogdet'])+'\n')
 
 
 if __name__ == '__main__':
-    N = 2**13
+    N = 2**10
     mpi_mean_timing(N, N)
     mpi_trans_timing(N, N)
     mpi_trace_timing(N)
+    oas_estimator_timing(N)
+    mpi_slogdet_timing(N)

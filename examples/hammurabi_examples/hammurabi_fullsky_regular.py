@@ -14,30 +14,24 @@ we set radial resolution as 0.1kpc, which brings, at maximum
 
 import numpy as np
 import logging as log
-
-import mpi4py
-
-from nifty5 import Field, RGSpace
+from mpi4py import MPI
 from imagine import Simulations, Measurements, Covariances
 from imagine import EnsembleLikelihood
-from imagine import SimpleLikelihood
 from imagine import FlatPrior
 from imagine import DynestyPipeline
-from imagine import MultinestPipeline
-
 from imagine import Hammurabi
 from imagine import BregLSA
 from imagine import BregLSAFactory
-from imagine import BrndES
-from imagine import BrndESFactory
+#from imagine import BrndES
+#from imagine import BrndESFactory
 from imagine import CREAna
 from imagine import CREAnaFactory
 from imagine import TEregYMW16
 from imagine import TEregYMW16Factory
+from imagine.tools.covariance_estimator import oas_mcov
+from imagine.tools.mpi_helper import mpi_mean, mpi_eye
 
-from imagine import oas_mcov
-
-comm = mpi4py.MPI.COMM_WORLD
+comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
@@ -109,15 +103,14 @@ def lsa_errprop():
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
-    mean, cov = oas_mcov(mock_ensemble[('sync', '23', str(mea_nside), 'I')])
+    mean, cov = oas_mcov(mock_ensemble[('sync', '23', str(mea_nside), 'I')].data)
     mock_data.append(('sync', '23', str(mea_nside), 'I'), mean)
     mock_cov.append(('sync', '23', str(mea_nside), 'I'), cov)
 
     """
     # step 2, prepare pipeline and execute analysis
     """
-    #likelihood = EnsembleLikelihood(mock_data, mock_cov)
-    likelihood = SimpleLikelihood(mock_data, mock_cov)
+    likelihood = EnsembleLikelihood(mock_data, mock_cov)
 
     breg_factory = BregLSAFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
@@ -131,9 +124,9 @@ def lsa_errprop():
     simer = Hammurabi(measurements=mock_data, xml_path=xmlpath)
 
     ensemble_size = 1
-    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
-    pipe.sampling_controllers = {'n_live_points': 4000, 'resume': False, 'verbose': True}
+    pipe.sampling_controllers = {'nlive': 4000}
     results = pipe()
 
     """
@@ -148,26 +141,6 @@ def lsa_errprop():
     print('parameter values: \n')
     for name, col in zip(pipe.active_parameters, results['samples'].transpose()):
         print('%15s : %.3f +- %.3f \n' % (name, col.mean(), col.std()))
-
-    # posterior plotting
-    samples = results['samples']
-    for i in range(len(pipe.active_parameters)):  # convert variables into parameters
-        low, high = pipe.active_ranges[pipe.active_parameters[i]]
-        for j in range(samples.shape[0]):
-            samples[j, i] = unity_mapper(samples[j, i], low, high)
-    # corner plot
-    corner.corner(samples[:, :len(pipe.active_parameters)],
-                  range=[0.99] * len(pipe.active_parameters),
-                  quantiles=[0.02, 0.5, 0.98],
-                  labels=pipe.active_parameters,
-                  show_titles=True,
-                  title_kwargs={"fontsize": 15},
-                  color='steelblue',
-                  truth_color='firebrick',
-                  plot_contours=True,
-                  hist_kwargs={'linewidth': 2},
-                  label_kwargs={'fontsize': 20})
-    matplotlib.pyplot.savefig('posterior_fullsky_regular_errprop.pdf')
     """
 
 def lsa_errfix():
@@ -189,7 +162,6 @@ def lsa_errfix():
     true_alpha = 3.0
     true_r0 = 5.0
     true_z0 = 1.0
-    truths = [true_b0, true_psi0, true_psi1, true_chi0, true_alpha, true_r0, true_z0]
     
     mea_nside = 2  # observable Nside
     mea_pix = 12*mea_nside**2  # observable pixel number
@@ -221,14 +193,12 @@ def lsa_errfix():
     mock_data = Measurements()
     mock_cov = Covariances()
     mock_data.append(('sync', '23', str(mea_nside), 'I'), Imap)
-    mock_cov.append(('sync', '23', str(mea_nside), 'I'),
-                    Field.from_global_data(RGSpace(shape=(mea_pix, mea_pix)), (error**2*(np.mean(Imap))**2)*np.eye(mea_pix)))
+    mock_cov.append(('sync', '23', str(mea_nside), 'I'), (error**2*(mpi_mean(Imap))**2)*mpi_eye(mea_pix))
 
     """
     # step 2, prepare pipeline and execute analysis
     """
-    #likelihood = EnsembleLikelihood(mock_data, mock_cov)
-    likelihood = SimpleLikelihood(mock_data, mock_cov)
+    likelihood = EnsembleLikelihood(mock_data, mock_cov)
 
     breg_factory = BregLSAFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
     breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
@@ -242,9 +212,9 @@ def lsa_errfix():
     simer = Hammurabi(measurements=mock_data, xml_path=xmlpath)
 
     ensemble_size = 1
-    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
-    pipe.sampling_controllers = {'n_live_points': 4000, 'resume': False, 'verbose': True}
+    pipe.sampling_controllers = {'nlive': 4000}
     results = pipe()
 
     """
@@ -259,28 +229,8 @@ def lsa_errfix():
     print('parameter values: \n')
     for name, col in zip(pipe.active_parameters, results['samples'].transpose()):
         print('%15s : %.3f +- %.3f \n' % (name, col.mean(), col.std()))
-
-    # posterior plotting
-    samples = results['samples']
-    for i in range(len(pipe.active_parameters)):  # convert variables into parameters
-        low, high = pipe.active_ranges[pipe.active_parameters[i]]
-        for j in range(samples.shape[0]):
-            samples[j, i] = unity_mapper(samples[j, i], low, high)
-    # corner plot
-    corner.corner(samples[:, :len(pipe.active_parameters)],
-                  range=[0.99] * len(pipe.active_parameters),
-                  quantiles=[0.02, 0.5, 0.98],
-                  labels=pipe.active_parameters,
-                  show_titles=True,
-                  title_kwargs={"fontsize": 15},
-                  color='steelblue',
-                  truth_color='firebrick',
-                  plot_contours=True,
-                  hist_kwargs={'linewidth': 2},
-                  label_kwargs={'fontsize': 20})
-    matplotlib.pyplot.savefig('posterior_fullsky_regular_errfix.pdf')
     """
 
 if __name__ == '__main__':
-    #lsa_errprop()
-    lsa_errfix()
+    lsa_errprop()
+    #lsa_errfix()
