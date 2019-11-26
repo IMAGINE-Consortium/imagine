@@ -12,21 +12,31 @@ mpirank = comm.Get_rank()
 
 @icy
 class DynestyPipeline(Pipeline):
+    """
+    Initialises Bayesian analysis pipeline with Dynesty
 
+    See base class for initialization details.
+
+    Note
+    ----
+    Instances of this class are callable. See `call` method.
+
+    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
         super(DynestyPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
 
     def __call__(self, kwargs=dict()):
-        """
+        return self.call(kwargs)
 
-        parameters
+    def call(self, kwargs=dict()):
+        """
+        Parameters
         ----------
-        
-        kwargs
+        kwargs : dict
             extra input argument controlling sampling process
             i.e., 'dlogz' for stopping criteria
-        
-        return
+
+        Returns
         ------
         Dynesty sampling results
         """
@@ -38,7 +48,7 @@ class DynestyPipeline(Pipeline):
                                         **self._sampling_controllers)
         sampler.run_nested(**kwargs)
         return sampler.results
-        
+
     def _mpi_likelihood(self, cube):
         """
         mpi log-likelihood calculator
@@ -47,16 +57,15 @@ class DynestyPipeline(Pipeline):
         but not keep in communication
         so we calculate log-likelihood value of each node with joint force of all nodes
         in this way, ensemble size is multiplied by the number of working nodes
-        
-        parameters
+
+        Parameters
         ----------
-        
         cube
             list of variable values
-        
-        return
-        ------
-        log-likelihood value
+
+        Returns
+        -------
+        Log-likelihood value
         """
         log.debug('@ multinest_pipeline::_mpi_likelihood')
         # gather cubes from all nodes
@@ -66,7 +75,7 @@ class DynestyPipeline(Pipeline):
         # check if all nodes are at the same parameter-space position
         assert ((cube_pool == np.tile(cube_pool[:cube_local_size], mpisize)).all())
         return self._core_likelihood(cube)
-    
+
     def _core_likelihood(self, cube):
         """
         core log-likelihood calculator

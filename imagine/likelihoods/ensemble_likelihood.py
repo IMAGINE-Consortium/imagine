@@ -19,32 +19,32 @@ class EnsembleLikelihood(Likelihood):
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
         """
         EnsembleLikelihood class initialization function
-        
+
         parameters
         ----------
-        
+
         measurement_dict
             Measurements object
-            
+
         covariance_dict
             Covariances object
-        
+
         mask_dict
             Masks object
         """
         log.debug('@ ensemble_likelihood::__init__')
         super(EnsembleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
-    
+
     def __call__(self, observable_dict):
         """
         EnsembleLikelihood class call function
-        
+
         parameters
         ----------
-        
+
         observable_dict
             Simulations object
-            
+
         return
         ------
         log-likelihood value (copied to all nodes)

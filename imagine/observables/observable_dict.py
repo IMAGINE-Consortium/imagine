@@ -1,61 +1,57 @@
 """
-for convenience we define dictionary of Observable objects as
-ObservableDict and inherit from which,
-we define Measurements, Covariances, Simulations and Masks
-for storing:
+For convenience we define dictionary of Observable objects as
+ObservableDict from which one can define define the classes Measurements,
+Covariances, Simulations and Masks, which can be used to store:
+
     * measured data sets
     * measured/simulated covariances
     * simulated ensemble sets
     * mask "maps" (but actually mask lists)
-separately
 
-observable name/unit convention:
-    
-    * ('fd','nan',str(size/Nside),'nan')
-        Faraday depth (in unit ?
 
-    * ('dm','nan',str(pix),'nan')
-        dispersion measure (in unit ?
+Conventions for observables entries
+    * **Faraday depth:** `('fd','nan',str(size/Nside),'nan')`
+    * **Dispersion measure**: `('dm','nan',str(pix),'nan')`
+    * **Synchrotron emission**: `('sync',str(freq),str(pix),X)`
+        where X stands for:
+            * 'I' - total intensity (in unit K-cmb)
+            * 'Q' - Stokes Q (in unit K-cmb, IAU convention)
+            * 'U' - Stokes U (in unit K-cmb, IAU convention)
+            * 'PI' - polarisation intensity (in unit K-cmb)
+            * 'PA' - polarisation angle (in unit rad, IAU convention)
 
-    * ('sync',str(freq),str(pix),X)
-        synchrotron emission
-        
-        X can be:
-            * 'I', total intensity (in unit K-cmb)
-            * 'Q', Stokes Q (in unit K-cmb, IAU convention)
-            * 'U', Stokes U (in unit K-cmb, IAU convention)
-            * 'PI', polarisation intensity (in unit K-cmb)
-            * 'PA', polarisation angle (in unit rad, IAU convention)
+    Remarks:
+        * `str(freq)`, polarisation-related-flag are redundant for Faraday depth
+            and dispersion measure so we put 'nan' instead
+        * `str(pix/nside)` stores either Healpix Nisde, or just number of
+            pixels/points we do this for flexibility, in case users have non-HEALPix
+            based in/output
 
-remarks on the observable tags:
-    
-    str(freq), polarisation-related-flag are redundant for Faraday depth and dispersion measure
-    so we put 'nan' instead
-    
+Remarks on the observable tags
+    str(freq), polarisation-related-flag are redundant for Faraday depth and dispersion measure so we put 'nan' instead
+
     str(pix/nside) stores either Healpix Nisde, or just number of pixels/points
     we do this for flexibility, in case users have non-HEALPix-map-like in/output
 
-masking convention:
-    
+Masking convention
     masked erea associated with pixel value 0,
     unmasked area with pixel value 1
-    
-masking method:
-    
+
+Masking method
     mask only applies to observables/covariances
     observable after masking will be re-recorded as plain data type
 
-distribution with MPI:
-    
-    * all data are either distributed or copied, where "copied" means each node
-    stores the identical copy which is convenient for hosting measured data and
-    mask map
-    
-    * Covariances has Field object with global shape "around" 
-    (data_size//mpisize, data_size) "around" means to distribute matrix correctly
-    as described in "imagine/tools/mpi_helper.py"
-"""
 
+.. note:: Distribution with MPI
+
+    * all data are either distributed or copied, where "copied" means each node
+      stores the identical copy which is convenient for hosting measured data
+      and mask map
+
+    * Covariances has Field object with global shape "around"
+      (data_size//mpisize, data_size) "around" means to distribute matrix
+      correctly as described in "imagine/tools/mpi_helper.py"
+"""
 import numpy as np
 import logging as log
 from mpi4py import MPI
@@ -71,7 +67,14 @@ mpirank = comm.Get_rank()
 
 @icy
 class ObservableDict(object):
-    
+    """
+    Base class from which `imagine.observables.observable_dict.Measurements`,
+    `imagine.observables.observable_dict.Covariances`, `imagine.observables.observable_dict.Simulations`
+    and `imagine.observables.observable_dict.Masks` are derived.
+
+    See `imagine.observables.observable_dict` module documentation for
+    further details.
+    """
     def __init__(self):
         self._archive = dict()
 
@@ -81,41 +84,34 @@ class ObservableDict(object):
 
     def keys(self):
         return self._archive.keys()
-    
+
     def __getitem__(self, key):
         return self._archive[key]
 
     def append(self, name, data, plain=False):
         """
-        add/update name and data
-        
-        parameters
-        ----------
-        
-        name
-            str tuple
-            name should follow convention
-            (data-name,str(data-freq),str(data-Nside/size),str(ext))
-            if data is independent from frequency, set 'nan'
-            ext can be 'I','Q','U','PI','PA', 'nan' or other customized tags
+        Adds/updates name and data
 
+        Parameters
+        ----------
+        name : str tuple
+            Should follow the convention:
+            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            If data is independent from frequency, set 'nan'.
+            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         data
             distributed/copied ndarray/Observable
-
-        plain
-            if True, means unstructured data
-            if False(default), means HEALPix-like sky map
+        plain : bool
+            If True, means unstructured data.
+            If False (default case), means HEALPix-like sky map.
         """
         pass
 
     def apply_mask(self, mask_dict):
         """
-        apply mask maps
-        
-        parameters
+        Parameters
         ----------
-        
-        mask_dict
+        mask_dict : imagine.observables.observable_dict.Masks
             Masks object
         """
         pass
@@ -123,25 +119,31 @@ class ObservableDict(object):
 
 @icy
 class Masks(ObservableDict):
+    """
+    Stores HEALPix mask maps
 
+    See `imagine.observables.observable_dict` module documentation for
+    further details.
+    """
     def __init__(self):
         super(Masks, self).__init__()
 
     def append(self, name, new, plain=False):
         """
-        
-        parameters
+        Adds/updates name and data
+
+        Parameters
         ----------
-        
-        name
-            tag tuple
-            
+        name : str tuple
+            Should follow the convention:
+            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            If data is independent from frequency, set 'nan'.
+            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         data
-            numpy.ndarray or Observable
-            distributed mask data
-            
-        plain
-            denoting either plain or HEALPix-like data
+            distributed/copied ndarray/Observable
+        plain : bool
+            If True, means unstructured data.
+            If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Masks::append')
         assert (len(name) == 4)
@@ -165,25 +167,31 @@ class Masks(ObservableDict):
 
 @icy
 class Measurements(ObservableDict):
+    """
+    Stores observational data sets
 
+    See `imagine.observables.observable_dict` module documentation for
+    further details.
+    """
     def __init__(self):
         super(Measurements, self).__init__()
 
     def append(self, name, new, plain=False):
         """
-        
-        parameters
+        Adds/updates name and data
+
+        Parameters
         ----------
-        
-        name
-            tag tuple
-            
-        new
-            numpy.ndarray or Observable
-            distributed mask data
-            
-        plain
-            denoting either plain or HEALPix-like data
+        name : str tuple
+            Should follow the convention:
+            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            If data is independent from frequency, set 'nan'.
+            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
+        data
+            distributed/copied ndarray/Observable
+        plain : bool
+            If True, means unstructured data.
+            If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Measurements::append')
         assert (len(name) == 4)
@@ -219,25 +227,31 @@ class Measurements(ObservableDict):
 
 @icy
 class Simulations(ObservableDict):
+    """
+    Stores simulated ensemble sets
 
+    See `imagine.observables.observable_dict` module documentation for
+    further details.
+    """
     def __init__(self):
         super(Simulations, self).__init__()
 
     def append(self, name, new, plain=False):
         """
-        
-        parameters
+        Adds/updates name and data
+
+        Parameters
         ----------
-        
-        name
-            tag tuple
-            
-        new
-            numpy.ndarray or Observable
-            distributed mask data
-            
-        plain
-            denoting either plain or HEALPix-like data
+        name : str tuple
+            Should follow the convention:
+            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            If data is independent from frequency, set 'nan'.
+            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
+        data
+            distributed/copied ndarray/Observable
+        plain : bool
+            If True, means unstructured data.
+            If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Simulations::append')
         assert (len(name) == 4)
@@ -276,25 +290,31 @@ class Simulations(ObservableDict):
 
 @icy
 class Covariances(ObservableDict):
+    """
+    Stores observational covariances
 
+    See `imagine.observables.observable_dict` module documentation for
+    further details.
+    """
     def __init__(self):
         super(Covariances, self).__init__()
 
     def append(self, name, new, plain=False):
         """
-        
-        parameters
+        Adds/updates name and data
+
+        Parameters
         ----------
-        
-        name
-            tag tuple
-            
-        new
-            numpy.ndarray
-            distributed covariance matrix
-            
-        plain
-            denoting either plain or HEALPix-like data
+        name : str tuple
+            Should follow the convention:
+            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            If data is independent from frequency, set 'nan'.
+            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
+        data
+            distributed/copied ndarray/Observable
+        plain : bool
+            If True, means unstructured data.
+            If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Covariances::append')
         assert (len(name) == 4)
