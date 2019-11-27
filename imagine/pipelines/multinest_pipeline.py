@@ -13,14 +13,28 @@ mpirank = comm.Get_rank()
 
 @icy
 class MultinestPipeline(Pipeline):
+    """
+    Initialises Bayesian analysis pipeline with pyMultinest
 
+    See base class for initialization details.
+
+    Note
+    ----
+    Instances of this class are callable. See `call` method.
+    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
         super(MultinestPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
 
-    def __call__(self):
+    def __call__(self, kwargs=dict()):
+        return self.call(kwargs)
+
+    def call(self, kwargs=dict()):
         """
-        
-        return
+        Parameters
+        ----------
+        kwargs : dict
+
+        Returns
         ------
         pyMultinest sampling results
         """
@@ -48,16 +62,15 @@ class MultinestPipeline(Pipeline):
         so we need to register parameter position on each node
         and calculate log-likelihood value of each node with joint force of all nodes
         in this way, ensemble size is multiplied by the number of working nodes
-        
-        parameters
+
+        Parameters
         ----------
-        
         cube
             list of variable values
-        
-        return
-        ------
-        log-likelihood value
+
+        Returns
+        -------
+        Log-likelihood value
         """
         log.debug('@ multinest_pipeline::_mpi_likelihood')
         # gather cubes from all nodes

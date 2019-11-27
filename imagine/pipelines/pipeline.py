@@ -8,56 +8,45 @@ from imagine.tools.timer import Timer
 from imagine.tools.random_seed import ensemble_seed_generator
 from imagine.tools.icy_decorator import icy
 
-
 @icy
 class Pipeline(object):
+    """
+    Base class used for for initialing Bayesian analysis pipeline
 
+    Parameters
+    ----------
+    simulator : imagine.simulators.simulator.Simulator
+        Simulator object
+    factory_list : list
+        List or tuple of field factory objects
+    likelihood : imagine.likelihoods.likelihood.Likelihood
+        Likelihood object
+    prior : imagine.priors.prior.Prior
+        Prior object
+    ensemble_size : int
+        Number of observable realizations to be generated in simulator
+
+    Attributes
+    ----------
+    dynesty_parameter_dict : dict
+        extra parameters for controlling Dynesty
+        i.e., 'nlive', 'bound', 'sample'
+    sample_callback
+        not implemented yet
+    likelihood_rescaler
+        Rescale log-likelihood value
+    random_type : str
+        'free' by default;
+        'controllable', each simulator run use seed generated from higher
+        level seed;
+        'fixed', take a list of fixed integers as seed for all simulator runs
+    seed_tracer : int
+        Used in 'controllable' random_type
+    likelihood_threshold : float
+          By default, log-likelihood should be negative
+    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-        """
-        initialize Bayesian analysis pipeline with pyMultinest
-        
-        parameters
-        ----------
-        
-        simulator
-            Simulator object
-        
-        factory_list
-            list/tuple of factory objects
-        
-        likelihood
-            Likelihood object
-            
-        prior
-            Prior object
-        
-        ensemble_size
-            number of observable realizations to be generated in simulator
 
-        hidden parameters
-        -----------------
-        
-        dynesty_parameter_dict
-            extra parameters for controlling Dynesty
-            i.e., 'nlive', 'bound', 'sample'
-        
-        sample_callback
-            not implemented yet
-        
-        likelihood_rescaler
-            rescale log-likelihood value
-        
-        random_type
-            'free' by default
-            'controllable', each simulator run use seed generated from higher level seed
-            'fixed', take a list of fixed integers as seed for all simulator runs
-        
-        seed_tracer
-            useful in 'controllable' random_type
-        
-        likelihood_threshold
-            by default, log-likelihood should be negative
-        """
         self.active_parameters = tuple()
         self.active_ranges = dict()
         self.factory_list = factory_list
@@ -78,6 +67,8 @@ class Pipeline(object):
         # checking likelihood threshold
         self.check_threshold = False
         self.likelihood_threshold = 0.
+        # Place holder
+        self.dynesty_parameter_dict = None
 
     @property
     def active_parameters(self):
@@ -104,10 +95,16 @@ class Pipeline(object):
     @factory_list.setter
     def factory_list(self, factory_list):
         """
-        extract active_parameters and their ranges from each factory
+        Extracts active_parameters and their ranges from each factory
+
         notice that once done
         the parameter/variable ordering is fixed wrt factory ordering
         which is useful in recovering variable logic value for each factory
+
+        Parameters
+        ----------
+        factory_list : list
+            List of field factory objects
         """
         assert isinstance(factory_list, (list, tuple))
         for factory in factory_list:
@@ -135,7 +132,7 @@ class Pipeline(object):
     def likelihood(self, likelihood):
         assert isinstance(likelihood, Likelihood)
         self._likelihood = likelihood
-    
+
     @property
     def prior(self):
         return self._prior
@@ -193,7 +190,7 @@ class Pipeline(object):
     def random_type(self, random_type):
         assert isinstance(random_type, str)
         self._random_type = random_type
-    
+
     @property
     def seed_tracer(self):
         return self._seed_tracer
@@ -240,17 +237,16 @@ class Pipeline(object):
 
     def _core_likelihood(self, cube):
         """
-        log-likelihood calculator
-        
-        parameters
+        Log-likelihood calculator
+
+        Parameters
         ----------
-        
         cube
             list of variable values
-            
-        return
-        ------
-        log-likelihood value
+
+        Returns
+        -------
+        log-likelihood
         """
         log.debug('@ pipeline::_core_likelihood')
         #t = Timer()

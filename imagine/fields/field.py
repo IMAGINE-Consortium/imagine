@@ -1,31 +1,26 @@
-"""
-this generalfield class register the full default parameter value
-which is passed down from field factory
-and prepare to hand in to simulators the default checklist is a dict.
-"""
-
 import logging as log
 from imagine.tools.icy_decorator import icy
 
-
 @icy
 class GeneralField(object):
+    """
+    Field base class
 
+    This generalfield class registers the full default parameter value
+    which is passed down from field factory and then
+    prepares to hand it to simulators.
+
+
+    Parameters
+    ----------
+    parameters : dict
+        Dictionary of full parameter set {name: value}
+    ensemble_size : int
+        Number of realisations in field ensemble
+    ensemble_seeds
+        Random seed(s) for generating random field realisations
+    """
     def __init__(self, parameters=dict(), ensemble_size=1, ensemble_seeds=None):
-        """
-
-        parameters
-        ----------
-        
-        parameters
-            dict of full parameter set {name: value}
-        
-        ensemble_size
-            number of realisations in field ensemble
-        
-        random_seed
-            random seed for generating random field realisations
-        """
         log.debug('@ field::__init__')
         self.name = 'general'
         self.parameters = parameters
@@ -40,7 +35,7 @@ class GeneralField(object):
     def name(self, name):
         assert isinstance(name, str)
         self._name = name
-    
+
     @property
     def field_checklist(self):
         return dict()
