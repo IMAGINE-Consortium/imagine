@@ -408,14 +408,16 @@ def mpi_slogdet(data):
     # calculate diagonal mult in the upper matrix
     sign = np.array(1.0, dtype=np.float64)
     logdet = np.array(0.0, dtype=np.float64)
+    local_sign = np.array(1.0, dtype=np.float64)
+    local_logdet = np.array(0.0, dtype=np.float64)
     for local_r in range(local_rows[mpirank]):
         local_c = np.uint(local_r + global_row_begin)
         target = u[local_r, local_c]
         target_sign = 2.0*np.float64(target>0) - 1.0
-        sign *= target_sign
-        logdet += np.log(target*target_sign)
+        local_sign *= target_sign
+        local_logdet += np.log(target*target_sign)
     # reduce local diagonal element mult
-    comm.Allreduce([logdet, MPI.DOUBLE], [logdet, MPI.DOUBLE], op=MPI.SUM)
-    comm.Allreduce([sign, MPI.DOUBLE], [sign, MPI.DOUBLE], op=MPI.PROD)
+    comm.Allreduce([local_logdet, MPI.DOUBLE], [logdet, MPI.DOUBLE], op=MPI.SUM)
+    comm.Allreduce([local_sign, MPI.DOUBLE], [sign, MPI.DOUBLE], op=MPI.PROD)
     assert (logdet != 0 and sign != 0)
     return sign, logdet
