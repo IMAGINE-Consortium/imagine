@@ -1,13 +1,13 @@
 """
 mock data generator
-for LSA + analytic CRE + YMW16
-mask out l<60 + 4 loops
+with LSA + analytic CRE + YMW16
+wiht iso-angular-sep mask
 
 frequency 23 GHz
 synchrotron Stockes Q, U
-North pole
 """
 
+import os
 import numpy as np
 import healpy as hp
 import logging as log
@@ -22,48 +22,56 @@ from imagine import BregLSA
 from imagine import BregLSAFactory
 from imagine import CREAna
 from imagine import CREAnaFactory
-from imagine import FEregYMW16
-from imagine import FEregYMW16Factory
-from imagine import oas_cov
+from imagine import TEregYMW16
+from imagine import TEregYMW16Factory
+from imagine.tools.covariance_estimator import oas_cov
+from imagine.tools.timer import Timer
+
 
 comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
 
-# mask loops and latitude
-def mask_map(_nside, _freq):
+def mask_map_prod(_nside,_clon,_clat,_sep):
     """
-    return mask map dictionary for synchrotron Q, U
-    at given nside and frequency
+    return a mask map array, in healpy RING ordering
+    with iso-angular-separation-cut with respect to given cnetral galactic
+    longitude and latitude
+    
+    parameters
+    ----------
+    
+    nside
+        healpix Nside
+        
+    _clon
+        central longitude, in degree
+        
+    _clat
+        central latitude, in degree
+        
+    _sep
+        angular separation, in degree
+        
+    return
+    ------
+    numpy.ndarray with bool data type (copied to all nodes)
     """
-    msk_map = np.zeros(hp.nside2npix(_nside))
-    for _ipix in range(hp.nside2npix(_nside)):
-        l,b = hp.pix2ang(_nside,_ipix,lonlat=True)
-        R = np.pi/180.
-        msk_map[_ipix] = 1
-        L = [329,100,124,315]
-        B = [17.5,-32.5,15.5,48.5]
-        D = [116,91,65,39.5]
-        #LOOP I
-        if( np.arccos(np.sin(b*R)*np.sin(B[0]*R)+np.cos(b*R)*np.cos(B[0]*R)*np.cos(l*R-L[0]*R))<0.5*D[0]*R ):
-            msk_map[_ipix] = 0
-        #LOOP II
-        elif( np.arccos(np.sin(b*R)*np.sin(B[1]*R)+np.cos(b*R)*np.cos(B[1]*R)*np.cos(l*R-L[1]*R))<0.5*D[1]*R ):
-            msk_map[_ipix] = 0
-        #LOOP III
-        elif( np.arccos(np.sin(b*R)*np.sin(B[2]*R)+np.cos(b*R)*np.cos(B[2]*R)*np.cos(l*R-L[2]*R))<0.5*D[2]*R ):
-            msk_map[_ipix] = 0
-        #LOOP IV
-        elif( np.arccos(np.sin(b*R)*np.sin(B[3]*R)+np.cos(b*R)*np.cos(B[3]*R)*np.cos(l*R-L[3]*R))<0.5*D[3]*R ):
-            msk_map[_ipix] = 0
-        #STRIPE
-        elif(abs(b)<60.):
-            msk_map[_ipix] = 0
-    msk_dict = Masks()
-    msk_dict.append(('sync', str(_freq), str(_nside), 'Q'), np.vstack([msk_map]))
-    msk_dict.append(('sync', str(_freq), str(_nside), 'U'), np.vstack([msk_map]))
-    return msk_dict
+    _c = np.pi/180
+    def hav(_theta):
+        return 0.5-0.5*np.cos(_theta)
+    tmp = np.ones(hp.nside2npix(_nside),dtype=bool)
+    for _ipix in range(len(tmp)):
+        lon,lat = hp.pix2ang(_nside,_ipix,lonlat=True)
+        # iso-angle separation
+        if((hav(np.fabs(_clat-lat)*_c)+np.cos(_clat*_c)*np.cos(lat*_c)*hav(np.fabs(_clon-lon)*_c))>hav(_sep*_c)):
+            tmp[_ipix] = False
+    if not mpirank:
+        if os.path.isfile('hammurabi_mask.fits'):
+            os.remove('hammurabi_mask.fits')
+        hp.write_map('hammurabi_mask.fits',tmp)
+    return tmp
 
 
 def mock_errprop(_nside, _freq):
@@ -72,7 +80,7 @@ def mock_errprop(_nside, _freq):
     error propagated from theoretical uncertainties
     """
     # hammurabi parameter base file
-    xmlpath = './params_masked_regular.xml'
+    xmlpath = './params.xml'
     # active parameters
     true_b0 = 6.0
     true_psi0 = 27.0
@@ -113,25 +121,31 @@ def mock_errprop(_nside, _freq):
                      'r0': r0_var[i], 'z0': z0_var[i],
                      'E0': 20.6, 'j0': 0.0217}
         cre_ana = CREAna(paramlist, 1)
-        # FEregYMW16 field
+        # TEregYMW16 field
         paramlist = dict()
-        fereg_ymw16 = FEregYMW16(paramlist, 1)
+        fereg_ymw16 = TEregYMW16(paramlist, 1)
         # collect mock data and covariance
         outputs = mocker([breg_lsa, cre_ana, fereg_ymw16])
-        mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
-        mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
+        mock_raw_q[i, :] = outputs[('sync', str(_freq), str(_nside), 'Q')].data
+        mock_raw_u[i, :] = outputs[('sync', str(_freq), str(_nside), 'U')].data
     # collect mean and cov from simulated results
     sim_data = Simulations()
     mock_data = Measurements()
     mock_cov = Covariances()
+    mock_mask = Masks()
     
     sim_data.append(('sync', str(_freq), str(_nside), 'Q'), mock_raw_q)
     sim_data.append(('sync', str(_freq), str(_nside), 'U'), mock_raw_u)
-    mock_mask = mask_map(_nside, _freq)
+    
+    mask_map = mask_map_prod(_nside, 0, 90, 50)  # not parameterizing this
+    mock_mask.append(('sync', str(_freq), str(_nside), 'Q'), np.vstack([mask_map]))
+    mock_mask.append(('sync', str(_freq), str(_nside), 'U'), np.vstack([mask_map]))
     sim_data.apply_mask(mock_mask)
     for key in sim_data.keys():
-        mock_data.append(key, np.vstack([(sim_data[key].to_global_data())[np.random.randint(0, mocksize)]]), True)
-        mock_cov.append(key, oas_cov(sim_data[key].to_global_data()), True)
+        global_mock = np.vstack([(sim_data[key].data)[0]])
+        comm.Bcast(global_mock, root=0)
+        mock_data.append(key, global_mock, True)
+        mock_cov.append(key, oas_cov(sim_data[key].data), True)
     return mock_data, mock_cov
 
 
@@ -141,7 +155,7 @@ def mock_errfix(_nside, _freq):
     error fixed
     """
     # hammurabi parameter base file
-    xmlpath = './params_masked_regular.xml'
+    xmlpath = './params.xml'
     # active parameters
     true_b0 = 6.0
     true_psi0 = 27.0
@@ -169,9 +183,9 @@ def mock_errfix(_nside, _freq):
                  'r0': true_r0, 'z0': true_z0,
                  'E0': 20.6, 'j0': 0.0217}
     cre_ana = CREAna(paramlist, 1)
-    # FEregYMW16 field
+    # TEregYMW16 field
     paramlist = dict()
-    fereg_ymw16 = FEregYMW16(paramlist, 1)
+    fereg_ymw16 = TEregYMW16(paramlist, 1)
     # collect mock data and covariance
     outputs = mocker([breg_lsa, cre_ana, fereg_ymw16])
     mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
@@ -179,10 +193,13 @@ def mock_errfix(_nside, _freq):
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()
+    mock_mask = Masks()
     
     mock_data.append(('sync', str(_freq), str(_nside), 'Q'), mock_raw_q)
     mock_data.append(('sync', str(_freq), str(_nside), 'U'), mock_raw_u)
-    mock_mask = mask_map(_nside, _freq)
+    mask_map = mask_map_prod(_nside, 0, 90, 20)
+    mock_mask.append(('sync', str(_freq), str(_nside), 'Q'), np.vstack([mask_map]))
+    mock_mask.append(('sync', str(_freq), str(_nside), 'U'), np.vstack([mask_map]))
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
         mock_cov.append(key, (error**2*(np.std(mock_raw_q))**2)*np.eye(int(key[2])), True)
@@ -195,24 +212,28 @@ def main():
     nside = 2
     freq = 23
     
-    mock_data, mock_cov = mock_errfix(nside, freq)
-    mock_mask = mask_map(nside, freq)
+    mock_data, mock_cov = mock_errprop(nside, freq)
+    mask_map = mask_map_prod(nside, 0, 90, 50)  # not parameterizing this
+    mock_mask = Masks()
+    mock_mask.append(('sync', str(freq), str(nside), 'Q'), np.vstack([mask_map]))
+    mock_mask.append(('sync', str(freq), str(nside), 'U'), np.vstack([mask_map]))
     
     # using masked mock data/covariance
     # apply_mock will ignore masked input since mismatch in keys
-    #likelihood = EnsembleLikelihood(mock_data, mock_cov, mock_mask)
-    likelihood = SimpleLikelihood(mock_data, mock_cov, mock_mask)
+    likelihood = EnsembleLikelihood(mock_data, mock_cov, mock_mask)
 
-    breg_factory = BregLSAFactory(active_parameters=('b0', 'psi0', 'psi1', 'chi0'))
-    breg_factory.parameter_ranges = {'b0': (0., 10.), 'psi0': (0., 50.), 'psi1': (0., 2.), 'chi0': (0., 50.)}
-    cre_factory = CREAnaFactory(active_parameters=('alpha', 'r0', 'z0'))
-    cre_factory.parameter_ranges = {'alpha': (1., 5.), 'r0': (1., 10.), 'z0': (0.1, 5.)}
-    fereg_factory = FEregYMW16Factory()
+    breg_factory = BregLSAFactory(active_parameters=('b0',))  # set active parameters
+    breg_factory.parameter_ranges = {'b0': (0., 10.)}
+    
+    cre_factory = CREAnaFactory(active_parameters=('alpha',))  # set active parameters
+    cre_factory.parameter_ranges = {'alpha': (1., 5.)}
+    
+    fereg_factory = TEregYMW16Factory()
     factory_list = [breg_factory, cre_factory, fereg_factory]
 
     prior = FlatPrior()
 
-    xmlpath = './params_masked_regular.xml'
+    xmlpath = './params.xml'
     # only for triggering simulator
     # since we use masked mock_data/covariance
     # if use masked input, outputs from simulator will not be masked due to mismatch in keys
@@ -222,11 +243,17 @@ def main():
     trigger.append(('sync', str(freq), str(nside), 'U'), x)
     simer = Hammurabi(measurements=trigger, xml_path=xmlpath)
 
-    ensemble_size = 1
-    pipe = MultinestPipeline(simer, factory_list, likelihood, prior, ensemble_size)
+    ensemble_size = 10
+    pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
-    pipe.sampling_controllers = {'resume': False, 'verbose': True, 'n_live_points': 4000}
+    pipe.sampling_controllers = {'nlive': 400}
+    
+    tmr = Timer()
+    tmr.tick('test')
     results = pipe()
+    tmr.tock('test')
+    if not mpirank:
+        print('\n elapse time '+str(tmr.record['test'])+'\n')
 
     # saving results
     if mpirank == 0:

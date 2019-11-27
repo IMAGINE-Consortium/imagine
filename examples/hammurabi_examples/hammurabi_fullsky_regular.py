@@ -30,18 +30,12 @@ from imagine import TEregYMW16
 from imagine import TEregYMW16Factory
 from imagine.tools.covariance_estimator import oas_mcov
 from imagine.tools.mpi_helper import mpi_mean, mpi_eye
+from imagine.tools.timer import Timer
+
 
 comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
-
-"""
-# visualize posterior
-import corner
-import matplotlib
-from imagine.tools.carrier_mapper import unity_mapper
-matplotlib.use('Agg')
-"""
 
 def lsa_errprop():
     #log.basicConfig(filename='imagine.log', level=log.DEBUG)
@@ -52,7 +46,7 @@ def lsa_errprop():
     full LSA parameter set {b0, psi0, psi1, chi0}
     """
     # hammurabi parameter base file
-    xmlpath = './params_fullsky_regular.xml'
+    xmlpath = './params.xml'
     
     # we take three active parameters
     true_b0 = 6.0
@@ -123,11 +117,17 @@ def lsa_errprop():
 
     simer = Hammurabi(measurements=mock_data, xml_path=xmlpath)
 
-    ensemble_size = 1
+    ensemble_size = 10
     pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
     pipe.sampling_controllers = {'nlive': 4000}
+    
+    tmr = Timer()
+    tmr.tick('test')
     results = pipe()
+    tmr.tock('test')
+    if not mpirank:
+        print('\n elapse time '+str(tmr.record['test'])+'\n')
 
     """
     # step 3, visualize (with corner package)
@@ -152,7 +152,7 @@ def lsa_errfix():
     full LSA parameter set {b0, psi0, psi1, chi0}
     """
     # hammurabi parameter base file
-    xmlpath = './params_fullsky_regular.xml'
+    xmlpath = './params.xml'
     
     # we take three active parameters
     true_b0 = 6.0
@@ -211,7 +211,7 @@ def lsa_errfix():
 
     simer = Hammurabi(measurements=mock_data, xml_path=xmlpath)
 
-    ensemble_size = 1
+    ensemble_size = 10
     pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
     pipe.sampling_controllers = {'nlive': 4000}
