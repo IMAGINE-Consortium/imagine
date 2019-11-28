@@ -66,7 +66,7 @@
       <gc_z_min value="-10.0"/> <!-- kpc -->
       <gc_z_max value="10.0"/> <!-- kpc -->
       <!-- observer-centric radial integratal resolution -->
-      <oc_r_res value="0.1"/> <!-- kpc -->
+      <oc_r_res value="0.5"/> <!-- kpc -->
     </shell>
   </grid>
   <!-- magnetic fields -->

@@ -22,21 +22,18 @@ def mask_obs(obs, mask):
     apply mask to the distributed observable
     the mask should be copied on each node
     
-    parameters
+    Parameters
     ----------
     
-    data
-        distributed numpy.ndarray
+    data :distributed numpy.ndarray
         ensemble of observables, in global shape (ensemble size, data size)
         each node contains part of the global rows
         
-    mask
-        copied numpy.ndarray
+    mask : copied numpy.ndarray
         mask map in shape (1, data size) on each node
         
-    return
-    ------
-    
+    Returns
+    -------
     distributed numpy.ndarray, masked observable
     in shape (ensemble size, masked data size)
     """
@@ -62,21 +59,18 @@ def mask_cov(cov, mask):
     """
     apply mask to the observable covariance
     
-    parameters
+    Parameters
     ----------
     
-    cov
-        distributed numpy.ndarray
+    cov : distributed numpy.ndarray
         covariance matrix of observalbes in global shape (data size, data size)
         each node contains part of the global rows
         
-    mask
-        copied numpy.ndarray
+    mask : copied numpy.ndarray
         mask map in shape (1, data size)
         
-    return
-    ------
-    
+    Returns
+    -------
     distributed numpy.ndarray, masked covariance matrix
     in shape (masked data size, masked data size)
     """

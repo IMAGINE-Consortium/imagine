@@ -35,7 +35,7 @@ class MultinestPipeline(Pipeline):
         kwargs : dict
 
         Returns
-        ------
+        -------
         pyMultinest sampling results
         """
         log.debug('@ multinest_pipeline::__call__')
@@ -57,9 +57,9 @@ class MultinestPipeline(Pipeline):
         """
         mpi log-likelihood calculator
         PyMultinest supports execution with MPI
-        where sampler on each node follows different journey in parameter space
+        where sampler on each node follows DIFFERENT journeys in parameter space
         but keep in communication
-        so we need to register parameter position on each node
+        so we need to firstly register parameter position on each node
         and calculate log-likelihood value of each node with joint force of all nodes
         in this way, ensemble size is multiplied by the number of working nodes
 
@@ -70,7 +70,7 @@ class MultinestPipeline(Pipeline):
 
         Returns
         -------
-        Log-likelihood value
+        log-likelihood value
         """
         log.debug('@ multinest_pipeline::_mpi_likelihood')
         # gather cubes from all nodes

@@ -39,7 +39,7 @@ def mask_map_prod(_nside,_clon,_clat,_sep):
     with iso-angular-separation-cut with respect to given cnetral galactic
     longitude and latitude
     
-    parameters
+    Parameters
     ----------
     
     nside
@@ -54,8 +54,8 @@ def mask_map_prod(_nside,_clon,_clat,_sep):
     _sep
         angular separation, in degree
         
-    return
-    ------
+    Returns
+    -------
     numpy.ndarray with bool data type (copied to all nodes)
     """
     _c = np.pi/180
@@ -197,12 +197,13 @@ def mock_errfix(_nside, _freq):
     
     mock_data.append(('sync', str(_freq), str(_nside), 'Q'), mock_raw_q)
     mock_data.append(('sync', str(_freq), str(_nside), 'U'), mock_raw_u)
-    mask_map = mask_map_prod(_nside, 0, 90, 20)
+    
+    mask_map = mask_map_prod(_nside, 0, 90, 50)  # not parameterizing this
     mock_mask.append(('sync', str(_freq), str(_nside), 'Q'), np.vstack([mask_map]))
     mock_mask.append(('sync', str(_freq), str(_nside), 'U'), np.vstack([mask_map]))
     mock_data.apply_mask(mock_mask)
     for key in mock_data.keys():
-        mock_cov.append(key, (error**2*(np.std(mock_raw_q))**2)*np.eye(int(key[2])), True)
+        mock_cov.append(key, (error**2*(np.std(mock_raw_q))**2)*mpi_eye(int(key[2])), True)
     return mock_data, mock_cov
 
 
@@ -212,7 +213,7 @@ def main():
     nside = 2
     freq = 23
     
-    mock_data, mock_cov = mock_errprop(nside, freq)
+    mock_data, mock_cov = mock_errfix(nside, freq)
     mask_map = mask_map_prod(nside, 0, 90, 50)  # not parameterizing this
     mock_mask = Masks()
     mock_mask.append(('sync', str(freq), str(nside), 'Q'), np.vstack([mask_map]))
@@ -243,7 +244,7 @@ def main():
     trigger.append(('sync', str(freq), str(nside), 'U'), x)
     simer = Hammurabi(measurements=trigger, xml_path=xmlpath)
 
-    ensemble_size = 10
+    ensemble_size = 5
     pipe = DynestyPipeline(simer, factory_list, likelihood, prior, ensemble_size)
     pipe.random_type = 'free'
     pipe.sampling_controllers = {'nlive': 400}

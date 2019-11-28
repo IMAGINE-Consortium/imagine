@@ -14,15 +14,15 @@ def seed_generator(trigger):
     set trigger as 0 will generate time-thread dependent method
     otherwise return the trigger as seed
     
-    parameters
+    Parameters
     ----------
     
-    trigger
+    trigger : int
         non-negative value
         pre-fixed seed value
         
-    return
-    ------
+    Returns
+    -------
     a random seed value
     """
     log.debug('@ random_seed::seed_generator')
@@ -37,10 +37,10 @@ def ensemble_seed_generator(size):
     """
     generate fixed random seed values for each realization in ensemble
     
-    parameters
+    Parameters
     ----------
     
-    size
+    size : int
         number of realizations in ensemble
         
     return

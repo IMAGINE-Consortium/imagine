@@ -6,14 +6,6 @@ writing to HDF5 gets each node working in parallel,
 so the final data shape in the HDF5 is basically piling up all rows together.
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
-attributes
-
-._wk_dir
-    working directory for I/O
-    
-._file_path
-    the absolute path of the HDF5 binary file
-
 member functions
 
 .write
@@ -41,11 +33,19 @@ class io_handler(object):
         """
         initialize with working directory
         
-        parameters
+        Parameters
         ----------
         
-        wkdir
-            string, the absolute path
+        wkdir : string
+            the absolute path
+            
+        Attributes
+        ----------
+        _wk_dir : str
+            working directory for I/O
+            
+        _file_path: str
+            the absolute path of the HDF5 binary file
         """
         if wk_dir is None:
             self.wk_dir = os.getcwd()
@@ -82,17 +82,17 @@ class io_handler(object):
         the data shape must be either in (m,n) on each node
         each node will write independently and parallel to the HDF5 file
         
-        parameters
+        Parameters
         ----------
         
-        data
-            numpy.ndarray, any datatype, distributed data
+        data : numpy.ndarray
+            any datatype, distributed data
         
-        file
-            string, filename
+        file : str
+            filename
           
-        key
-            string, in form 'group name/dataset name'
+        key : str
+            in form 'group name/dataset name'
         """
         log.debug('@ io_handler::write')
         assert isinstance(data, np.ndarray)
@@ -134,22 +134,21 @@ class io_handler(object):
         to be distributed on the available computing nodes
         otherwise the mpi_arrange function will raise an error
         
-        parameters
+        Parameters
         ----------
         
-        data
-            numpy.ndarray, distributed data
+        data : numpy.ndarray
+            distributed data
         
-        file
-            string, filename
+        file : str
+            filename
           
-        key
-            string, in form 'group name/dataset name'
+        key : str
+            in form 'group name/dataset name'
           
-        return
-        ------
-        
-        a distributed numpy.ndarray
+        Returns
+        -------
+        distributed numpy.ndarray
         the output must be in either (1,n) or (m,n) shape on each node
         """
         log.debug('@ io_handler::read')

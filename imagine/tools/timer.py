@@ -21,10 +21,28 @@ class Timer(object):
         raise NotImplementedError
 
     def tick(self, event):
+        """
+        start timing
+        
+        Parameters
+        ----------
+        
+        event : str
+            event name
+        """
         assert isinstance(event, str)
         self._record[event] = time.perf_counter()
 
     def tock(self, event):
+        """
+        stop timing
+        
+        Parameters
+        ----------
+        
+        event : str
+            event name
+        """
         assert isinstance(event, str)
         assert (event in self._record.keys())
         self._record[event] = time.perf_counter() - self._record[event]

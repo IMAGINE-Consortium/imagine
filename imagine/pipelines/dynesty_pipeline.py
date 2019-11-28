@@ -37,7 +37,7 @@ class DynestyPipeline(Pipeline):
             i.e., 'dlogz' for stopping criteria
 
         Returns
-        ------
+        -------
         Dynesty sampling results
         """
         log.debug('@ dynesty_pipeline::__call__')
@@ -52,8 +52,8 @@ class DynestyPipeline(Pipeline):
     def _mpi_likelihood(self, cube):
         """
         mpi log-likelihood calculator
-        PyMultinest supports execution with MPI
-        where sampler on each node follows the same journey in parameter space
+        Dynesty does not support execution with MPI
+        where sampler on each node follows THE SAME journey in parameter space
         but not keep in communication
         so we calculate log-likelihood value of each node with joint force of all nodes
         in this way, ensemble size is multiplied by the number of working nodes
@@ -65,7 +65,7 @@ class DynestyPipeline(Pipeline):
 
         Returns
         -------
-        Log-likelihood value
+        log-likelihood value
         """
         log.debug('@ multinest_pipeline::_mpi_likelihood')
         # gather cubes from all nodes
@@ -79,8 +79,17 @@ class DynestyPipeline(Pipeline):
     def _core_likelihood(self, cube):
         """
         core log-likelihood calculator
-        cube has been 'broadcasted' in the 2nd step in _mpi_likelihood
+        cube remains the same on each node
         now self._simulator will work on each node and provide multiple ensemble size
+        
+        Parameters
+        ----------
+        cube
+            list of variable values
+            
+        Returns
+        -------
+        log-likelihood value
         """
         log.debug('@ multinest_pipeline::_core_likelihood')
         # security boundary check

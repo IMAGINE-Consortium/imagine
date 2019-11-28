@@ -18,16 +18,15 @@ def mpi_arrange(size):
     with known global size, number of mpi nodes, and current rank
     return the begin and end index for distributing the global size
     
-    parameters
+    Parameters
     ----------
     
-    size
-        integer
+    size : integer (positive)
         the total size of target to be distributed
         it can be a row size or a column size
     
-    return
-    ------
+    Returns
+    -------
     two integers in numpy.uint
     the begin and end index [begin,end] for slicing the target
     """
@@ -43,15 +42,14 @@ def mpi_shape(data):
     """
     return the global number of rows and columns of given distributed data
     
-    parameters
+    Parameters
     ----------
     
-    data
-        numpy.ndarray
+    data : numpy.ndarray
         the distributed data
         
-    return
-    ------
+    Returns
+    -------
     numpy.uint
     glboal row and column number
     """
@@ -66,11 +64,10 @@ def mpi_prosecutor(data):
     covariance matrix is distributed exactly the same manner as multi-realization data
     if not, an error will be raised
     
-    parameters
+    Parameters
     ----------
     
-    data
-        numpy.ndarray
+    data : numpy.ndarray
         the distributed data to be examined
     """
     log.debug('@ mpi_helper::mpi_prosecutor')
@@ -94,15 +91,14 @@ def mpi_mean(data):
     the average is done along row direction the result
     note that the numerical values will be converted into double
     
-    parameters
+    Parameters
     ----------
     
-    data
-        numpy.ndarray
+    data : numpy.ndarray
         distributed data
         
-    return
-    ------
+    Returns
+    -------
     numpy.ndarray
     copied data mean, which means the mean is copied to all nodes
     """
@@ -127,15 +123,14 @@ def mpi_trans(data):
     transpose distributed data
     note that the numerical values will be converted into double
     
-    parameters
+    Parameters
     ----------
     
-    data
-        numpy.ndarray
+    data : numpy.ndarray
         distributed data
         
-    return
-    ------
+    Returns
+    -------
     numpy.ndarray
     transposed data in distribution
     """
@@ -183,19 +178,17 @@ def mpi_mult(left, right):
     
     we send the distributed right rows into other nodes (aka cannon method)
     
-    parameters
+    Parameters
     ----------
     
-    left
-        numpy.ndarray
+    left : numpy.ndarray
         distributed left side data
         
-    right
-        numpy.ndarray
+    right : numpy.ndarray
         distributed right side data
         
-    return
-    ------
+    Returns
+    -------
     numpy.ndarray
     distributed multiplication result
     """
@@ -241,15 +234,15 @@ def mpi_trace(data):
     """
     get the trace of the given data
     
-    parameters
+    Parameters
     ----------
     
-    data:
-        numpy.ndarray
+    data : numpy.ndarray
         distributed data
         
-    return
-    ------
+    Returns
+    -------
+    numpy.float64
     copied trace of given data
     """
     log.debug('@ mpi_helper::mpi_trace')
@@ -268,16 +261,15 @@ def mpi_eye(size):
     """
     produce an eye matrix according to given size
     
-    parameters
+    Parameters
     ----------
     
-    size:
-        integer
+    size : integer
         distributed matrix size
         the matrix is expected to be in global shape (size, size)
         
-    return
-    ------
+    Returns
+    -------
     numpy.ndarray, double data type
     distributed eye matrix
     """
@@ -293,19 +285,17 @@ def mpi_lu_solve(operator, source):
     """
     simple LU Gauss method WITHOUT pivot permutation
     
-    parameters
+    Parameters
     ----------
     
-    operator:
-        distributed numpy.ndarray
+    operator : distributed numpy.ndarray
         matrix representation of the left-hand-side operator
         
-    source:
-        copied numpy.ndarray
+    source : copied numpy.ndarray
         vector representation of the right-hand-side source
         
-    return
-    ------
+    Returns
+    -------
     copied solution to the linear algebra problem
     """
     log.debug('@ mpi_helper::mpi_lu_solve')
@@ -365,14 +355,13 @@ def mpi_slogdet(data):
     log determinant according to
     simple LU Gauss method WITHOUT pivot permutation
         
-    parameters
+    Parameters
     ----------
         
-    data:
-        distributed numpy.ndarray
+    data : distributed numpy.ndarray
         
-    return
-    ------
+    Returns
+    -------
     sign and value of the log-determinant (copied to all nodes)
     """
     log.debug('@ mpi_helper::mpi_logdet')

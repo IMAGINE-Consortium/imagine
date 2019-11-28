@@ -24,25 +24,27 @@ class Pipeline(object):
     prior : imagine.priors.prior.Prior
         Prior object
     ensemble_size : int
-        Number of observable realizations to be generated in simulator
+        Number of observable realizations PER COMPUTING NODE to be generated in simulator
 
     Attributes
     ----------
     dynesty_parameter_dict : dict
         extra parameters for controlling Dynesty
         i.e., 'nlive', 'bound', 'sample'
-    sample_callback
+    sample_callback : bool
         not implemented yet
-    likelihood_rescaler
+    likelihood_rescaler : double
         Rescale log-likelihood value
     random_type : str
-        'free' by default;
-        'controllable', each simulator run use seed generated from higher
-        level seed;
-        'fixed', take a list of fixed integers as seed for all simulator runs
+        'free',
+            by default thread-time dependent seed;
+        'controllable',
+            each simulator run use seed generated from higher level seed;
+        'fixed',
+            take a list of fixed integers as seed for all simulator runs
     seed_tracer : int
         Used in 'controllable' random_type
-    likelihood_threshold : float
+    likelihood_threshold : double
           By default, log-likelihood should be negative
     """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
@@ -215,7 +217,7 @@ class Pipeline(object):
 
     @likelihood_threshold.setter
     def likelihood_threshold(self, likelihood_threshold):
-        self._likelihood_threshold = likelihood_threshold
+        self._likelihood_threshold = np.float64(likelihood_threshold)
 
     def _randomness(self):
         """
@@ -293,4 +295,4 @@ class Pipeline(object):
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashould')
-        return current_likelihood * self.likelihood_rescaler
+        return current_likelihood * self._likelihood_rescaler

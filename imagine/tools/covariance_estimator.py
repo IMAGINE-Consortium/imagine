@@ -20,15 +20,14 @@ def empirical_cov(data):
     for distributed data with multiple global rows
     (probably) the worst option
     
-    parameters
+    Parameters
     ----------
     
-    sample
-        distributed numpy.ndarray
+    sample : distributed numpy.ndarray
         ensemble of observables, in global shape (ensemble size, data size)
         
-    return
-    ------
+    Returns
+    -------
     numpy.ndarray
     distributed (not copied) covariance matrix in global shape (data size, data size)
     each node takes part of the rows
@@ -46,15 +45,15 @@ def oas_cov(data):
     """
     OAS covariance estimator, prepared for examples
     
-    paramters
+    Paramters
     ---------
     
-    data
-        numpy.ndarray
+    data : numpy.ndarray
         distributed data in global shape (ensemble_size, data_size)
         
-    return
-    ------
+    Returns
+    -------
+    distributed numpy.ndarray
     covariance matrix in global shape (data_size, data_size)
     """
     log.debug('@ covariance_estimator::oas_cov')
@@ -82,15 +81,14 @@ def oas_mcov(data):
     """
     OAS covariance estimator, prepared for Likelihood
     
-    parameters
+    Parameters
     ----------
     
-    data
-        numpy.ndarray
+    data : numpy.ndarray
         distributed data in global shape (ensemble_size, data_size)
         
-    return
-    ------
+    Returns
+    -------
     it returns two results
     copied ensemble mean (on all nodes)
     distributed covariance matrix in shape (data_size, data_size)

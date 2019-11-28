@@ -10,7 +10,8 @@ def unity_mapper(x, a=0, b=1):
     """
     maps x from [0, 1] into the interval [a, b]
     
-    parameters
+    
+    Parameters
     ----------
     
     x
@@ -22,8 +23,8 @@ def unity_mapper(x, a=0, b=1):
     b
         the upper parameter value limit
     
-    return
-    ------
+    Returns
+    -------
     
     the mapped parameter value
     """
@@ -35,7 +36,7 @@ def exp_mapper(x, a=0, b=1):
     """
     maps x from [0, 1] into the interval [exp(a), exp(b)]
     
-    parameters
+    Parameters
     ----------
     
     x
@@ -47,8 +48,8 @@ def exp_mapper(x, a=0, b=1):
     b
         the upper parameter value limit
     
-    return
-    ------
+    Returns
+    -------
     
     the mapped parameter value
     """
