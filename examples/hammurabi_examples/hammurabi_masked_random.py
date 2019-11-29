@@ -135,7 +135,7 @@ def mock_errprop(_nside, _freq):
         paramlist = dict()
         fereg_ymw16 = TEregYMW16(paramlist, 1)
         # BrndES field
-        paramlist = {'rms': rms_var[i], 'k0': 0.1, 'a0': a0_var[i], 'rho': rho_var[i],
+        paramlist = {'rms': rms_var[i], 'k0': 10.0, 'k1': 0.1, 'a1': 0.0, 'a0': a0_var[i], 'rho': rho_var[i],
                      'r0': 8.0, 'z0': 1.0}
         brnd_es = BrndES(paramlist, 1)
         # collect mock data and covariance
@@ -204,7 +204,7 @@ def mock_errfix(_nside, _freq):
     paramlist = dict()
     fereg_ymw16 = TEregYMW16(paramlist, 1)
     # BrndES field
-    paramlist = {'rms': true_rms, 'k0': 0.1, 'a0': true_a0, 'rho': true_rho,
+    paramlist = {'rms': true_rms, 'k0': 0.1, 'k1': 0.1, 'a1': 0.0, 'a0': true_a0, 'rho': true_rho,
                  'r0': 8.0, 'z0': 1.0}
     brnd_es = BrndES(paramlist, 1)
     # collect mock data and covariance
