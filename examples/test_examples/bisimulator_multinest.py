@@ -2,7 +2,7 @@
 single TestField with BiSimulator
 full parameter constraints with mock data
 
-WARNNING: MultiNest may fail with small data-set
+WARNING: MultiNest may fail with small data-set
 """
 
 import numpy as np

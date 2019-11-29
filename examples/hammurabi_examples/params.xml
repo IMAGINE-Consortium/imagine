@@ -31,7 +31,17 @@
     <box_brnd> <!-- optional if no brnd I/O AND no internal brnd model -->
       
     </box_brnd>
-    <!-- regular thermal electron field grid -->
+        <!-- grid vertex size -->
+        <nx value="200"/> <!-- -->
+        <ny value="200"/> <!-- -->
+        <nz value="40"/> <!-- -->
+        <!-- box limit, in galactic-centric frame -->
+        <x_min value="-20.0"/> <!-- kpc -->
+        <x_max value="20.0"/> <!-- kpc -->
+        <y_min value="-20.0"/> <!-- kpc -->
+        <y_max value="20.0"/> <!-- kpc -->
+        <z_min value="-4.0"/> <!-- kpc -->
+        <z_max value="4.0"/> <!-- kpc -->
     <box_tereg> <!-- optional if no tereg I/O -->
       
     </box_tereg>

@@ -25,6 +25,7 @@ from imagine import CREAnaFactory
 from imagine import TEregYMW16
 from imagine import TEregYMW16Factory
 from imagine.tools.covariance_estimator import oas_cov
+from imagine.tools.mpi_helper import mpi_eye
 from imagine.tools.timer import Timer
 
 
@@ -188,8 +189,8 @@ def mock_errfix(_nside, _freq):
     fereg_ymw16 = TEregYMW16(paramlist, 1)
     # collect mock data and covariance
     outputs = mocker([breg_lsa, cre_ana, fereg_ymw16])
-    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')].local_data
-    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')].local_data
+    mock_raw_q = outputs[('sync', str(_freq), str(_nside), 'Q')].data
+    mock_raw_u = outputs[('sync', str(_freq), str(_nside), 'U')].data
     # collect mean and cov from simulated results
     mock_data = Measurements()
     mock_cov = Covariances()

@@ -2,7 +2,6 @@ import unittest
 import os
 import numpy as np
 from mpi4py import MPI
-
 from imagine.tools.io_handler import io_handler
 
 
@@ -27,3 +26,7 @@ class TestIO(unittest.TestCase):
         # cleanup
         if not mpirank:
             os.remove(test_io.file_path)
+
+
+if __name__ == '__main__':
+    unittest.main()
