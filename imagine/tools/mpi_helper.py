@@ -310,10 +310,10 @@ def mpi_lu_solve(operator, source):
     xsplit = np.array(x[0,xsplit_begin:xsplit_end])
     # collect local rows for each node
     local_rows = np.empty(mpisize, dtype=np.uint)
+    xsplit_begins = np.empty(mpisize, dtype=np.uint)
     comm.Allgather([np.array(u.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
+    comm.Allgather([np.array(xsplit_begin, dtype=np.uint), MPI.LONG], [xsplit_begins, MPI.LONG])
     # start gauss method
-    # the hidden global row count in other nodes
-    global_row_begin = np.sum(local_rows[0:mpirank])
     # goes column by column
     for c in range(global_rows-1):
         # find the pivot rank and local row
@@ -326,24 +326,28 @@ def mpi_lu_solve(operator, source):
                 pivot_rank = np.uint(i)
                 break
         # propagate pivot rank and pivot row
-        pivot_row = np.array(u[pivot_r, :])
+        if mpirank == pivot_rank:
+            pivot_row = np.array(u[pivot_r, :])
+        else:
+            pivot_row = np.empty(global_rows, dtype=np.float64)
         comm.Bcast([np.array(pivot_rank), MPI.LONG], root=pivot_rank)
         comm.Bcast([pivot_row, MPI.DOUBLE], root=pivot_rank)
         # gauss elimination
-        for local_r in range(local_rows[mpirank]):
-            if (local_r + global_row_begin > c):
+        max_row = max(local_rows)
+        for local_r in range(max_row):
+            if (local_r + xsplit_begin > c and local_r < local_rows[mpirank]):
                 ratio = u[local_r, c]/pivot_row[c]
                 u[local_r,:] -= ratio*pivot_row
                 xsplit[local_r] -= ratio*x[0, c]  # manipulate split x instead x
             # gather xsplit
-            comm.Allgather([xsplit, MPI.DOUBLE], [x, MPI.DOUBLE])
+            comm.Allgatherv([xsplit, MPI.DOUBLE], [x, local_rows, xsplit_begins, MPI.DOUBLE])
     # solve Ux=b
     for i in range(mpisize):
         op_rank = mpisize - 1 - i  # operational rank
         if (mpirank == op_rank):
              for j in range(local_rows[mpirank]):
                  local_r = np.uint(local_rows[mpirank] - 1 - j)
-                 local_c = np.uint(global_row_begin + local_r)
+                 local_c = np.uint(xsplit_begin + local_r)
                  local_c_plus = np.uint(local_c + 1)
                  x[0,local_c] = (x[0,local_c] - np.dot(u[local_r,local_c_plus:],x[0,local_c_plus:]))/u[local_r,local_c]
         # update x
@@ -364,7 +368,7 @@ def mpi_slogdet(data):
     -------
     sign and value of the log-determinant (copied to all nodes)
     """
-    log.debug('@ mpi_helper::mpi_logdet')
+    log.debug('@ mpi_helper::mpi_slogdet')
     assert isinstance(data, np.ndarray)
     global_rows = data.shape[1]
     u = deepcopy(data.astype(np.float64))
@@ -386,12 +390,16 @@ def mpi_slogdet(data):
                 pivot_rank = np.uint(i)
                 break
         # propagate pivot rank and pivot row
-        pivot_row = np.array(u[pivot_r, :])
+        if mpirank == pivot_rank:
+            pivot_row = np.array(u[pivot_r, :])
+        else:
+            pivot_row = np.empty(global_rows, dtype=np.float64)
         comm.Bcast([np.array(pivot_rank), MPI.LONG], root=pivot_rank)
         comm.Bcast([pivot_row, MPI.DOUBLE], root=pivot_rank)
         # gauss elimination
-        for local_r in range(local_rows[mpirank]):
-            if (local_r + global_row_begin > c):
+        max_row = max(local_rows)
+        for local_r in range(max_row):
+            if (local_r + global_row_begin > c and local_r < local_rows[mpirank]):
                 ratio = u[local_r, c]/pivot_row[c]
                 u[local_r,:] -= ratio*pivot_row
     # calculate diagonal mult in the upper matrix

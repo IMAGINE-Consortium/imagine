@@ -152,7 +152,7 @@ class TestTools(unittest.TestCase):
         for i in range(full_cov.shape[0]):
             for j in range(full_cov.shape[1]):
                 self.assertAlmostEqual(null_cov[i,j], full_cov[i,j])
-                
+    
     def test_lu_solve(self):
         np.random.seed(mpirank)
         arr = np.random.rand(2, 2*mpisize)
@@ -163,10 +163,32 @@ class TestTools(unittest.TestCase):
         test_xrr = (np.linalg.solve(full_arr, brr.T)).T
         for i in range(xrr.shape[1]):
             self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
-            
+    
+    def test_lu_solve_odd(self):
+        cols = 32
+        rows = mpi_arrange(cols)[1] - mpi_arrange(cols)[0]
+        arr = np.random.rand(rows, cols)
+        full_arr = np.vstack(comm.allgather(arr))
+        brr = np.random.rand(1, cols)
+        comm.Bcast(brr, root=0)
+        xrr = mpi_lu_solve(arr, brr)
+        test_xrr = (np.linalg.solve(full_arr, brr.T)).T
+        for i in range(xrr.shape[1]):
+            self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
+
     def test_slogdet(self):
         np.random.seed(mpirank)
         arr = np.random.rand(2, 2*mpisize)
+        sign, logdet = mpi_slogdet(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_sign, test_logdet = np.linalg.slogdet(full_arr)
+        self.assertEqual(sign, test_sign)
+        self.assertAlmostEqual(logdet, test_logdet)
+
+    def test_slogdet_odd(self):
+        cols = 32
+        rows = mpi_arrange(cols)[1] - mpi_arrange(cols)[0]
+        arr = np.random.rand(rows, cols)
         sign, logdet = mpi_slogdet(arr)
         full_arr = np.vstack(comm.allgather(arr))
         test_sign, test_logdet = np.linalg.slogdet(full_arr)
