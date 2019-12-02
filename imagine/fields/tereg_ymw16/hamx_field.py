@@ -18,11 +18,7 @@ class TEregYMW16(GeneralField):
     @property
     def field_checklist(self):
         """
-        record XML location of physical parameters
-        
-        return
-        ------
-        dict of XML locations
+        Dictionary of XML location of physical parameters
         """
         checklist = dict()
         return checklist
@@ -30,11 +26,7 @@ class TEregYMW16(GeneralField):
     @property
     def field_controllist(self):
         """
-        record XML location of logical parameters
-        
-        return
-        ------
-        dict of XML locations
+        Dictionary of XML location of logical parameters
         """
         controllist = {'cue': (['thermalelectron', 'regular'], {'cue': '1'}),
                        'type': (['thermalelectron', 'regular'], {'type': 'ymw16'})}

@@ -19,18 +19,17 @@ def empirical_cov(data):
     empirical covariance estimator
     for distributed data with multiple global rows
     (probably) the worst option
-    
+
     Parameters
     ----------
-    
-    sample : distributed numpy.ndarray
+    data : numpy.ndarray
         ensemble of observables, in global shape (ensemble size, data size)
-        
+
     Returns
     -------
     numpy.ndarray
-    distributed (not copied) covariance matrix in global shape (data size, data size)
-    each node takes part of the rows
+        distributed (not copied) covariance matrix in global shape
+        (data size, data size) each node takes part of the rows
     """
     log.debug('@ covariance_estimator::empirical_cov')
     assert isinstance(data, np.ndarray)
@@ -44,17 +43,16 @@ def empirical_cov(data):
 def oas_cov(data):
     """
     OAS covariance estimator, prepared for examples
-    
-    Paramters
-    ---------
-    
+
+    Parameters
+    ----------
     data : numpy.ndarray
         distributed data in global shape (ensemble_size, data_size)
-        
+
     Returns
     -------
-    distributed numpy.ndarray
-    covariance matrix in global shape (data_size, data_size)
+    numpy.ndarray
+        covariance matrix in global shape (data_size, data_size)
     """
     log.debug('@ covariance_estimator::oas_cov')
     assert isinstance(data, np.ndarray)
@@ -80,18 +78,18 @@ def oas_cov(data):
 def oas_mcov(data):
     """
     OAS covariance estimator, prepared for Likelihood
-    
+
     Parameters
     ----------
-    
     data : numpy.ndarray
         distributed data in global shape (ensemble_size, data_size)
-        
+
     Returns
     -------
-    it returns two results
-    copied ensemble mean (on all nodes)
-    distributed covariance matrix in shape (data_size, data_size)
+    mean : float
+        copied ensemble mean (on all nodes)
+    numpy.ndarray
+        distributed covariance matrix in shape (data_size, data_size)
     """
     log.debug('@ covariance_estimator::oas_mcov')
     assert isinstance(data, np.ndarray)

@@ -11,7 +11,10 @@ from imagine.tools.icy_decorator import icy
 
 @icy
 class TEregYMW16Factory(GeneralFieldFactory):
-
+    """
+    hammurabiX regular TE factory, YMW16 model
+    with default YMW16 parameter setting
+    """
     def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
         super(TEregYMW16Factory, self).__init__(boxsize, resolution)
         self.field_type = 'scalar'

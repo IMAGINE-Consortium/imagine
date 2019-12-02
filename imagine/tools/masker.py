@@ -19,23 +19,21 @@ mpirank = comm.Get_rank()
 
 def mask_obs(obs, mask):
     """
-    apply mask to the distributed observable
-    the mask should be copied on each node
-    
+    Applies a mask to an observable
+
     Parameters
     ----------
-    
-    data :distributed numpy.ndarray
+    data : distributed numpy.ndarray
         ensemble of observables, in global shape (ensemble size, data size)
         each node contains part of the global rows
-        
-    mask : copied numpy.ndarray
-        mask map in shape (1, data size) on each node
-        
+
+    mask : numpy.ndarray
+        copied mask map in shape (1, data size) on each node
+
     Returns
     -------
-    distributed numpy.ndarray, masked observable
-    in shape (ensemble size, masked data size)
+    numpy.ndarray
+        Masked observable of shape (ensemble size, masked data size)
     """
     log.debug('@ masker::mask_data')
     assert isinstance(obs, np.ndarray)
@@ -57,22 +55,20 @@ def mask_obs(obs, mask):
 
 def mask_cov(cov, mask):
     """
-    apply mask to the observable covariance
-    
+    Applies mask to the observable covariance
+
     Parameters
     ----------
-    
     cov : distributed numpy.ndarray
         covariance matrix of observalbes in global shape (data size, data size)
         each node contains part of the global rows
-        
-    mask : copied numpy.ndarray
-        mask map in shape (1, data size)
-        
+    mask : numpy.ndarray
+        copied mask map in shape (1, data size)
+
     Returns
     -------
-    distributed numpy.ndarray, masked covariance matrix
-    in shape (masked data size, masked data size)
+    numpy.ndarray
+        Masked covariance matrix of shape (masked data size, masked data size)
     """
     log.debug('@ masker::mask_cov')
     assert isinstance(cov, np.ndarray)

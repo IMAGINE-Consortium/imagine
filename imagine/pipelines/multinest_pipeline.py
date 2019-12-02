@@ -20,19 +20,18 @@ class MultinestPipeline(Pipeline):
 
     Note
     ----
-    Instances of this class are callable. See `call` method.
+    Instances of this class are callable
+
     """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
         super(MultinestPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
 
     def __call__(self, kwargs=dict()):
-        return self.call(kwargs)
-
-    def call(self, kwargs=dict()):
         """
         Parameters
         ----------
         kwargs : dict
+            Dummy argument. Unused.
 
         Returns
         -------

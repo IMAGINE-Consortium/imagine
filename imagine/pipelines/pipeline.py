@@ -13,19 +13,6 @@ class Pipeline(object):
     """
     Base class used for for initialing Bayesian analysis pipeline
 
-    Parameters
-    ----------
-    simulator : imagine.simulators.simulator.Simulator
-        Simulator object
-    factory_list : list
-        List or tuple of field factory objects
-    likelihood : imagine.likelihoods.likelihood.Likelihood
-        Likelihood object
-    prior : imagine.priors.prior.Prior
-        Prior object
-    ensemble_size : int
-        Number of observable realizations PER COMPUTING NODE to be generated in simulator
-
     Attributes
     ----------
     dynesty_parameter_dict : dict
@@ -46,9 +33,21 @@ class Pipeline(object):
         Used in 'controllable' random_type
     likelihood_threshold : double
           By default, log-likelihood should be negative
+
+    Parameters
+    ----------
+    simulator : imagine.simulators.simulator.Simulator
+        Simulator object
+    factory_list : list
+        List or tuple of field factory objects
+    likelihood : imagine.likelihoods.likelihood.Likelihood
+        Likelihood object
+    prior : imagine.priors.prior.Prior
+        Prior object
+    ensemble_size : int
+        Number of observable realizations PER COMPUTING NODE to be generated in simulator
     """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-
         self.active_parameters = tuple()
         self.active_ranges = dict()
         self.factory_list = factory_list

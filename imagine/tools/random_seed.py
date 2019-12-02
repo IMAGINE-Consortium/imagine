@@ -1,29 +1,28 @@
 """
-this module provides time-thread dependent seed value.
-For the testing suits, please turn to "imagine/tests/tools_tests.py".
-"""
+This module provides a time-thread dependent seed value.
 
+For the testing suites, please turn to "imagine/tests/tools_tests.py".
+"""
 import numpy as np
 import time
 import threading
 import logging as log
 
-
 def seed_generator(trigger):
     """
-    set trigger as 0 will generate time-thread dependent method
-    otherwise return the trigger as seed
-    
+    Sets trigger as 0 will generate time-thread dependent method
+    otherwise returns the trigger as seed
+
     Parameters
     ----------
-    
     trigger : int
         non-negative value
         pre-fixed seed value
-        
+
     Returns
     -------
-    a random seed value
+    int
+        A random seed value
     """
     log.debug('@ random_seed::seed_generator')
     if trigger > 0:
@@ -35,18 +34,17 @@ def seed_generator(trigger):
 
 def ensemble_seed_generator(size):
     """
-    generate fixed random seed values for each realization in ensemble
-    
+    Generates fixed random seed values for each realization in ensemble
+
     Parameters
     ----------
-    
     size : int
-        number of realizations in ensemble
-        
-    return
-    ------
+        Number of realizations in ensemble
+
+    Returns
+    -------
     numpy.ndarray
-    a list of random seeds
+        An array of random seeds
     """
     log.debug('@ random_seed::ensemble_seed_generator')
     # the uint32 is defined by the random generator's capasity

@@ -6,27 +6,23 @@ import numpy as np
 import logging as log
 
 
-def unity_mapper(x, a=0, b=1):
+def unity_mapper(x, a=0., b=1.):
     """
-    maps x from [0, 1] into the interval [a, b]
-    
-    
+    Maps x from [0, 1] into the interval [a, b]
+
     Parameters
     ----------
-    
-    x
+    x : float
         the variable to be mapped
-        
-    a
+    a : float
         the lower parameter value limit
-        
-    b
+    b : float
         the upper parameter value limit
-    
+
     Returns
     -------
-    
-    the mapped parameter value
+    numpy.float64
+        The mapped parameter value
     """
     log.debug('@ carrier_mapper::unity_mapper')
     return np.float64(x) * (np.float64(b)-np.float64(a)) + np.float64(a)
@@ -34,24 +30,21 @@ def unity_mapper(x, a=0, b=1):
 
 def exp_mapper(x, a=0, b=1):
     """
-    maps x from [0, 1] into the interval [exp(a), exp(b)]
-    
+    Maps x from [0, 1] into the interval [exp(a), exp(b)]
+
     Parameters
     ----------
-    
-    x
+    x : float
         the variable to be mapped
-        
-    a
+    a : float
         the lower parameter value limit
-        
-    b
+    b : float
         the upper parameter value limit
-    
+
     Returns
     -------
-    
-    the mapped parameter value
+    numpy.float64
+        The mapped parameter value
     """
     log.debug('@ carrier_mapper::exp_mapper')
     return np.exp(unity_mapper(x, a, b))

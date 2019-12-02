@@ -46,6 +46,19 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# ------------------------------------------------------------------
+# Autodoc configuration
+autodoc_default_options = {'members': None,
+                           'special-members': '__call__'}
+
+autodoc_member_order = 'groupwise'
+autodoc_inherit_docstrings = False
+
+# Napoleon configuration
+napoleon_include_private_with_doc = True
+napoleon_include_init_with_doc = True
+napoleon_include_special_with_doc = True
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -62,3 +75,5 @@ html_theme = 'classic'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+

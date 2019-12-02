@@ -15,23 +15,19 @@ from imagine.tools.icy_decorator import icy
 
 @icy
 class EnsembleLikelihood(Likelihood):
+    """
+    EnsembleLikelihood class initialization function
 
+    Parameters
+    ----------
+    measurement_dict : imagine.observables.observable_dict.Measurements
+        Measurements
+    covariance_dict : imagine.observables.observable_dict.Covariances
+        Covariances
+    mask_dict : imagine.observables.observable_dict.Masks
+        Masks
+    """
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
-        """
-        EnsembleLikelihood class initialization function
-
-        parameters
-        ----------
-
-        measurement_dict
-            Measurements object
-
-        covariance_dict
-            Covariances object
-
-        mask_dict
-            Masks object
-        """
         log.debug('@ ensemble_likelihood::__init__')
         super(EnsembleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
 
@@ -39,15 +35,15 @@ class EnsembleLikelihood(Likelihood):
         """
         EnsembleLikelihood class call function
 
-        parameters
+        Parameters
         ----------
-
-        observable_dict
+        observable_dict : imagine.observables.observable_dict.Simulations
             Simulations object
 
-        return
+        Returns
         ------
-        log-likelihood value (copied to all nodes)
+        likelicache : float
+            log-likelihood value (copied to all nodes)
         """
         log.debug('@ ensemble_likelihood::__call__')
         assert isinstance(observable_dict, Simulations)

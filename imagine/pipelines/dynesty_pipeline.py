@@ -19,16 +19,12 @@ class DynestyPipeline(Pipeline):
 
     Note
     ----
-    Instances of this class are callable. See `call` method.
-
+    Instances of this class are callable
     """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
         super(DynestyPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
 
     def __call__(self, kwargs=dict()):
-        return self.call(kwargs)
-
-    def call(self, kwargs=dict()):
         """
         Parameters
         ----------
@@ -81,12 +77,12 @@ class DynestyPipeline(Pipeline):
         core log-likelihood calculator
         cube remains the same on each node
         now self._simulator will work on each node and provide multiple ensemble size
-        
+
         Parameters
         ----------
         cube
             list of variable values
-            
+
         Returns
         -------
         log-likelihood value

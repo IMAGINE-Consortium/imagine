@@ -5,16 +5,7 @@ but not necessarily the same row size.
 writing to HDF5 gets each node working in parallel,
 so the final data shape in the HDF5 is basically piling up all rows together.
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
-
-member functions
-
-.write
-    write a hdf5 file
-
-.read
-    read a hdf5 file
 """
-
 import numpy as np
 from mpi4py import MPI
 import h5py
@@ -28,45 +19,41 @@ mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
 class io_handler(object):
-    
+    """
+    Handles the IO
+
+    Parameters
+    ----------
+    wkdir : string
+        the absolute path of the working directory
+    """
     def __init__(self, wk_dir=None):
-        """
-        initialize with working directory
-        
-        Parameters
-        ----------
-        
-        wkdir : string
-            the absolute path
-            
-        Attributes
-        ----------
-        _wk_dir : str
-            working directory for I/O
-            
-        _file_path: str
-            the absolute path of the HDF5 binary file
-        """
         if wk_dir is None:
             self.wk_dir = os.getcwd()
         else:
             self.wk_dir = wk_dir
         log.debug('set working directory at %s' % self._wk_dir)
         self.file_path = None
-            
+
     @property
     def wk_dir(self):
+        """
+        String containing the absolute path of the working directory
+        """
         return self._wk_dir
-    
+
     @property
     def file_path(self):
+        """
+        Absolute path of the HDF5 binary file
+        """
         return self._file_path
-    
+
     @wk_dir.setter
     def wk_dir(self, wk_dir):
         assert isinstance(wk_dir, str)
         self._wk_dir = wk_dir
-        
+
     @file_path.setter
     def file_path(self, file_path):
         if file_path is None:
@@ -74,23 +61,20 @@ class io_handler(object):
         else:
             assert isinstance(file_path, str)
             self._file_path = file_path
-        
+
     def write(self, data, file, key):
         """
-        write a distributed data-set into a binary file
-        if the given filename does not exist then create one
+        Writes a distributed data-set into a binary file.
+        If the given filename does not exist then creates one
         the data shape must be either in (m,n) on each node
         each node will write independently and parallel to the HDF5 file
-        
+
         Parameters
         ----------
-        
         data : numpy.ndarray
             any datatype, distributed data
-        
         file : str
             filename
-          
         key : str
             in form 'group name/dataset name'
         """
@@ -125,27 +109,23 @@ class io_handler(object):
         # fill data in parallel
         dset[offset_begin:offset_end,:] = data
         fh.close()
-        
+
     def read(self, file, key):
         """
-        read from a binary file
-        and return a distributed data-set
+        Reads from a binary file and returns a distributed data-set
         note that the binary file data should contain enough rows
         to be distributed on the available computing nodes
         otherwise the mpi_arrange function will raise an error
-        
+
         Parameters
         ----------
-        
         data : numpy.ndarray
             distributed data
-        
         file : str
             filename
-          
         key : str
             in form 'group name/dataset name'
-          
+
         Returns
         -------
         distributed numpy.ndarray

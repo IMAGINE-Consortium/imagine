@@ -9,39 +9,35 @@ from imagine.tools.icy_decorator import icy
 
 @icy
 class SimpleLikelihood(Likelihood):
+    """
+    A simple Likelihood class
 
+    Parameters
+    ----------
+    measurement_dict : imagine.observables.observable_dict.Measurements
+        Measurements
+    covariance_dict : imagine.observables.observable_dict.Covariances
+        Covariances
+    mask_dict : imagine.observables.observable_dict.Masks
+        Masks
+    """
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
-        """
-        SimpleLikelihood class initialization function
-        
-        parameters
-        ----------
-        
-        measurement_dict
-            Measurements object
-        
-        param covariance_dict
-            Covariances object
-        
-        mask_dict
-            Masks object
-        """
         log.debug('@ simple_likelihood::__init__')
         super(SimpleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
 
     def __call__(self, observable_dict):
         """
         SimpleLikelihood object call function
-        
-        parameters
+
+        Parameters
         ----------
-        
-        observable_dict
+        observable_dict : imagine.observables.observable_dict.Simulations
             Simulations object
-            
-        return
+
+        Returns
         ------
-        log-likelihood value (copied to all nodes)
+        likelicache : float
+            log-likelihood value (copied to all nodes)
         """
         log.debug('@ simple_likelihood::__call__')
         assert isinstance(observable_dict, Simulations)

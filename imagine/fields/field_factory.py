@@ -27,15 +27,6 @@ class GeneralFieldFactory(object):
 
     """
     def __init__(self, boxsize=None, resolution=None):
-        """
-        GeneralFieldFactory class initialization function
-
-        boxsize
-            list/tuple of float, physical size of simulation box (3D Cartesian frame)
-
-        resolution
-            list/tuple of int, discretization size in corresponding dimension
-        """
         log.debug('@ field_factory::__init__')
         self.field_type = 'scalar'
         self.name = 'general'
