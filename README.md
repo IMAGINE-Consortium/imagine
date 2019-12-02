@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/imagine-code/badge/?version=latest)](https://imagine-code.readthedocs.io/en/latest/?badge=latest)
+      
 # IMAGINE
 
 IMAGINE, the **I**nterstellar **MAG**netic Field **IN**ference **E**ngine, 
