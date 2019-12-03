@@ -16,7 +16,7 @@ import mock
 sys.path.insert(0, os.path.abspath('../../'))
 
 
-MOCK_MODULES = ['mpi4py']
+MOCK_MODULES = ['mpi4py', 'pymultinest','dynesty']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
