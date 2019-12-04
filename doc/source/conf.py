@@ -57,6 +57,10 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# The master toctree document.
+master_doc = 'index'
+
+
 # ------------------------------------------------------------------
 # Autodoc configuration
 autodoc_default_options = {'members': None,
