@@ -112,9 +112,8 @@ class Hampyx(object):
     @exe_path.setter
     def exe_path(self, exe_path):
         if exe_path is None:  # search sys environ
-            env = os.environ.get('PATH').split(os.pathsep)
-            cnddt = [s for s in env if 'hammurabi' in s]
-            for match in cnddt:
+            envpath = os.environ.get('PATH').split(os.pathsep)
+            for match in envpath:
                 if os.path.isfile(os.path.join(match, 'hamx')):
                     self._exe_path = os.path.join(match, 'hamx')
         else:  # if given
