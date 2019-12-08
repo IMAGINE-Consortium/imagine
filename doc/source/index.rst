@@ -6,6 +6,16 @@
 IMAGINE documentation
 ===================================
 
+.. image:: logo.png
+    :align: center
+    :alt: The IMAGINE pipeline
+
+
+.. toctree::
+..    :maxdepth: 2
+..    :caption: Contents:
+
+
 .. toctree::
     :maxdepth: 4
     :caption: API Reference
@@ -18,4 +28,5 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
+* :ref:`modindex`
 * :ref:`search`
