@@ -60,6 +60,8 @@ exclude_patterns = []
 # The master toctree document.
 master_doc = 'index'
 
+#html_logo = 'logo.png'
+
 
 # ------------------------------------------------------------------
 # Autodoc configuration
@@ -80,9 +82,9 @@ napoleon_include_special_with_doc = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-#import sphinx_rtd_theme
-html_theme = 'classic'
-#html_theme = 'sphinx_rtd_theme'
+import sphinx_rtd_theme
+#html_theme = 'classic'
+html_theme = 'sphinx_rtd_theme'
 #html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 
