@@ -20,7 +20,7 @@ class Observable(object):
     data : numpy.ndarray
         distributed/copied data
     dtype : str
-        denotes the data type, either as 'measured', 'simulated' or 'covariance'
+        Data type, must be either: 'measured', 'simulated' or 'covariance'
     """
     def __init__(self, data=None, dtype=None):
         self.dtype = dtype
@@ -29,16 +29,30 @@ class Observable(object):
 
     @property
     def data(self):
+        """
+        Data stored in the local processor (`numpy.ndarray`, read-only).
+        """
         return self._data
 
     @property
     def shape(self):
+        """
+        Shape of the global array, i.e. considering all processors
+        (`numpy.ndarray`, read-only).
+        """
         return mpi_shape(self._data)
+
+    @property
+    def global_data(self):
+        """
+        Data gathered from all processors (`numpy.ndarray`, read-only).
+        """
+        return mpi_global(self._data)
 
     @property
     def size(self):
         """
-        data size (number of columns)
+        Local data size (`int`, read-only)
         """
         return self._data.shape[1]
 
@@ -56,14 +70,14 @@ class Observable(object):
     @property
     def rw_flag(self):
         """
-        rewriting flag, if true, append method will perform rewriting
+        Rewriting flag, if true, append method will perform rewriting
         """
         return self._rw_flag
 
     @property
     def dtype(self):
         """
-        The data type, can be either: 'measured', 'simulated' or 'covariance'
+        Data type, can be either: 'measured', 'simulated' or 'covariance'
         """
         return self._dtype
 
@@ -95,22 +109,22 @@ class Observable(object):
         assert (rw_flag in (True, False))
         self._rw_flag = deepcopy(rw_flag)
 
-    def append(self, new):
+    def append(self, new_data):
         """
         appending new data happends only to SIMULATED dtype
         the new data to be appended should also be distributed
         which makes the appending operation naturally in parallel
         """
         log.debug('@ observable::append')
-        assert isinstance(new, (np.ndarray, Observable))
-        if isinstance(new, np.ndarray):
-            mpi_prosecutor(new)
+        assert isinstance(new_data, (np.ndarray, Observable))
+        if isinstance(new_data, np.ndarray):
+            mpi_prosecutor(new_data)
             if (self._rw_flag):  # rewriting
-                self._data = np.copy(new)
+                self._data = np.copy(new_data)
             else:
-                self._data = np.vstack([self._data, new])
-        elif isinstance(new, Observable):
+                self._data = np.vstack([self._data, new_data])
+        elif isinstance(new_data, Observable):
             if (self._rw_flag):
-                self._data = np.copy(new.data)
+                self._data = np.copy(new_data.data)
             else:
-                self._data = np.vstack([self._data, new.data])
+                self._data = np.vstack([self._data, new_data.data])

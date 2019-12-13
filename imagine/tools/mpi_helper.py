@@ -36,7 +36,8 @@ def mpi_arrange(size):
     ave = size//mpisize
     if (ave == 0):
         raise ValueError('over distribution')
-    return np.uint(res + mpirank*ave), np.uint(res + (mpirank+1)*ave + np.uint(mpirank < size%mpisize))
+    return np.uint(res + mpirank*ave), np.uint(res + (mpirank+1)*ave + 
+                                               np.uint(mpirank < size%mpisize))
 
 def mpi_shape(data):
     """
@@ -232,18 +233,17 @@ def mpi_mult(left, right):
 
 def mpi_trace(data):
     """
-    get the trace of the given data
+    Computes the trace of the given distributed data
     
     Parameters
     ----------
-    
     data : numpy.ndarray
-        distributed data
+        Array of data distributed over different processes
         
     Returns
     -------
-    numpy.float64
-    copied trace of given data
+    result : numpy.float64
+        Copied trace of given data
     """
     log.debug('@ mpi_helper::mpi_trace')
     assert (len(data.shape) == 2)
@@ -253,20 +253,20 @@ def mpi_trace(data):
     for i in range(local_row_end - local_row_begin):
         eye_pos = local_row_begin + np.uint(i)
         local_acc += np.float64(data[i, eye_pos])
+        print(eye_pos)
     result = np.array(0, dtype=np.float64)
     comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.SUM)
     return result
     
 def mpi_eye(size):
     """
-    produce an eye matrix according to given size
+    Produces an eye matrix according of shape (size,size)
+    distributed over the various running MPI processes
     
     Parameters
     ----------
-    
     size : integer
-        distributed matrix size
-        the matrix is expected to be in global shape (size, size)
+        distributed matrix size 
         
     Returns
     -------
@@ -287,7 +287,6 @@ def mpi_lu_solve(operator, source):
     
     Parameters
     ----------
-    
     operator : distributed numpy.ndarray
         matrix representation of the left-hand-side operator
         
@@ -345,28 +344,34 @@ def mpi_lu_solve(operator, source):
     for i in range(mpisize):
         op_rank = mpisize - 1 - i  # operational rank
         if (mpirank == op_rank):
-             for j in range(local_rows[mpirank]):
-                 local_r = np.uint(local_rows[mpirank] - 1 - j)
-                 local_c = np.uint(xsplit_begin + local_r)
-                 local_c_plus = np.uint(local_c + 1)
-                 x[0,local_c] = (x[0,local_c] - np.dot(u[local_r,local_c_plus:],x[0,local_c_plus:]))/u[local_r,local_c]
+            for j in range(local_rows[mpirank]):
+                local_r = np.uint(local_rows[mpirank] - 1 - j)
+                local_c = np.uint(xsplit_begin + local_r)
+                local_c_plus = np.uint(local_c + 1)
+                x[0,local_c] = (x[0,local_c] -
+                                np.dot(u[local_r, local_c_plus:],
+                                       x[0,local_c_plus:]) 
+                               )/u[local_r,local_c]
         # update x
         comm.Bcast([x, MPI.DOUBLE], root=op_rank)
     return x
                 
 def mpi_slogdet(data):
     """
-    log determinant according to
+    Computes log determinant according to
     simple LU Gauss method WITHOUT pivot permutation
         
     Parameters
     ----------
-        
-    data : distributed numpy.ndarray
+    data : numpy.ndarray
+        Array of data distributed over different processes
         
     Returns
     -------
-    sign and value of the log-determinant (copied to all nodes)
+    sign : numpy.ndarray
+        Single element numpy array containing the sign of the determinant (copied to all nodes)
+    logdet : numpy.ndarray
+        Single element numpy array containing the log of the determinant (copied to all nodes)
     """
     log.debug('@ mpi_helper::mpi_slogdet')
     assert isinstance(data, np.ndarray)
@@ -418,3 +423,26 @@ def mpi_slogdet(data):
     comm.Allreduce([local_sign, MPI.DOUBLE], [sign, MPI.DOUBLE], op=MPI.PROD)
     assert (logdet != 0 and sign != 0)
     return sign, logdet
+
+def mpi_global(data, root=0):
+    """
+    Gathers data spread accross different processes
+        
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of data distributed over different processes
+    root : int, optional
+        MPI rank of the process where the data should be gathered. 
+        Default: 0
+        
+    Returns
+    -------
+    global_array : numpy.ndarray
+        root process returns the gathered data. 
+        Other processes return `None`
+    """
+    global_array = comm.gather(data, root=root)
+    if global_array is not None:
+        global_array = np.vstack(global_array)
+    return global_array

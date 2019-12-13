@@ -236,7 +236,7 @@ class Simulations(ObservableDict):
     def __init__(self):
         super(Simulations, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name, new_data, plain=False):
         """
         Adds/updates name and data
 
@@ -247,7 +247,7 @@ class Simulations(ObservableDict):
             ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        data
+        new_data
             distributed/copied ndarray/Observable
         plain : bool
             If True, means unstructured data.
@@ -257,20 +257,20 @@ class Simulations(ObservableDict):
         assert (len(name) == 4)
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
-            self._archive[name].append(new)
-        else:  # new
-            if isinstance(new, Observable):
+            self._archive[name].append(new_data)
+        else:  # new_data
+            if isinstance(new_data, Observable):
                 if plain:
-                    assert (new.size == np.uint(name[2]))
+                    assert (new_data.size == np.uint(name[2]))
                 else:
-                    assert (new.size == 12*np.uint(name[2])**2)
-                self._archive.update({name: new})
-            elif isinstance(new, np.ndarray):  # distributed data
+                    assert (new_data.size == 12*np.uint(name[2])**2)
+                self._archive.update({name: new_data})
+            elif isinstance(new_data, np.ndarray):  # distributed data
                 if plain:
-                    assert (new.shape[1] == np.uint(name[2]))
+                    assert (new_data.shape[1] == np.uint(name[2]))
                 else:
-                    assert (new.shape[1] == 12*np.uint(name[2])**2)
-                self._archive.update({name: Observable(new, 'simulated')})
+                    assert (new_data.shape[1] == 12*np.uint(name[2])**2)
+                self._archive.update({name: Observable(new_data, 'simulated')})
             else:
                 raise TypeError('unsupported data type')
 
