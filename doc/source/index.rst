@@ -6,9 +6,10 @@
 IMAGINE documentation
 ===================================
 
-.. image:: logo.png
+.. image:: elephant.png
     :align: center
     :alt: The IMAGINE pipeline
+    :width: 400px
 
 
 .. toctree::
