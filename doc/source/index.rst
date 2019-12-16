@@ -12,12 +12,15 @@ IMAGINE documentation
 
 
 .. toctree::
-..    :maxdepth: 2
-..    :caption: Contents:
+   :maxdepth: 3
+   :caption: Contents:
+
+   installation
+
 
 
 .. toctree::
-    :maxdepth: 4
+    :maxdepth: 5
     :caption: API Reference
 
     imagine

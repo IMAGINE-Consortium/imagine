@@ -1,0 +1,75 @@
+*****************************
+Installation and dependencies
+*****************************
+
+Here you can find basic instructions for the installation of IMAGINE.
+A copy of IMAGINE source can be downloaded from its main
+`GitHub repository <https://github.com/IMAGINE-Consortium/imagine/>`_.
+Alternatively, one can opt for using a `Docker`_ image (see below).
+
+`Let us know <https://github.com/IMAGINE-Consortium/imagine/issues/new>`_ if you face major difficulties.
+
+
+Setting up the environment
+==========================
+
+Before installing IMAGINE, one needs to prepare one has to prepare the
+environment installing the `Hammurabi`_ code and the following packages:
+
+ * `Python3 <https://python.org>`_
+ * `NumPy <https://numpy.org/>`_
+ * `mpi4py <https://mpi4py.readthedocs.io/>`_
+ * `PyMultiNest <https://johannesbuchner.github.io/PyMultiNest/>`_
+ * `Dynesty <https://dynesty.readthedocs.io/en/latest/>`_
+ * `healpy <https://healpy.readthedocs.io/>`_
+
+The procedure can be simplified setting up an `Anaconda`_ environment.
+
+
+Hammurabi
+---------
+
+A key dependency of IMAGINE is the
+`Hammurabi code <https://bitbucket.org/hammurabicode/hamx/>`_,
+a `HEALPix <https://healpix.jpl.nasa.gov/>`_-based
+numeric simulator for Galactic polarized emission
+(`arXiv:1907.00207 <https://arxiv.org/abs/1907.00207>`_).
+Instructions for its installation can be found on its project
+`wiki <https://bitbucket.org/hammurabicode/hamx/wiki/>`_.
+
+
+
+Anaconda
+--------
+
+Users of Anaconda/Miniconda users can automatically setup a dedicated
+environment with all the dependencies (except for hammurabi) using
+the YAML file provided:
+
+.. code-block:: console
+
+    conda env create --file=imagine_conda_env.yaml
+    conda activate imagine
+
+
+Installing
+==========
+
+After downloading IMAGINE and extracting/cloning it to IMAGINE_PATH, simply
+do
+
+.. code-block:: console
+
+    cd IMAGINE_PATH
+    pip install .
+
+If you do not have admistrator/root privileges/permissions, you may include
+
+
+Docker
+======
+
+A docker image is a convenient, light-weight and fast way of deploying IMAGINE.
+One can either build the image directly with the Dockerfile provided
+in the `source repository <https://github.com/IMAGINE-Consortium/imagine/tree/master/docker>`_ or pull our
+`pre-built docker image <https://cloud.docker.com/u/ricphy/repository/docker/ricphy/imagine>`_.
