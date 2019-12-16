@@ -63,7 +63,18 @@ do
     cd IMAGINE_PATH
     pip install .
 
-If you do not have admistrator/root privileges/permissions, you may include
+If you do not have admistrator/root privileges/permissions, you may instead want to use
+
+.. code-block:: console
+
+    pip install --user .
+
+Also, if you are working on further developing or modifying IMAGINE for your own needs, you may wish to use the `-e` flag, to keep links to the source directory instead of copying the files,
+
+.. code-block:: console
+
+    pip install --e .
+
 
 
 Docker
