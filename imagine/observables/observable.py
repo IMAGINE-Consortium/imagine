@@ -2,7 +2,7 @@ import numpy as np
 from mpi4py import MPI
 from copy import deepcopy
 import logging as log
-from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor
+from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor, mpi_global
 from imagine.tools.icy_decorator import icy
 
 comm = MPI.COMM_WORLD

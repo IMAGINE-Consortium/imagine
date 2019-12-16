@@ -253,7 +253,6 @@ def mpi_trace(data):
     for i in range(local_row_end - local_row_begin):
         eye_pos = local_row_begin + np.uint(i)
         local_acc += np.float64(data[i, eye_pos])
-        print(eye_pos)
     result = np.array(0, dtype=np.float64)
     comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.SUM)
     return result
