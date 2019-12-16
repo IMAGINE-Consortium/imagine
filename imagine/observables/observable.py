@@ -47,7 +47,7 @@ class Observable(object):
         """
         Data gathered from all processors (`numpy.ndarray`, read-only).
         """
-        return mpi_global(self._data)
+        return mpi_global(self.data)
 
     @property
     def size(self):
