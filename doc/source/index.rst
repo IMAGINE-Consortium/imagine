@@ -16,7 +16,8 @@ IMAGINE documentation
    :caption: Contents:
 
    installation
-
+   design
+..    usage
 
 
 .. toctree::
