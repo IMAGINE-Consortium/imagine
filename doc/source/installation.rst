@@ -73,7 +73,7 @@ Also, if you are working on further developing or modifying IMAGINE for your own
 
 .. code-block:: console
 
-    pip install --e .
+    pip install -e .
 
 
 
