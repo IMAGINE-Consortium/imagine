@@ -48,7 +48,7 @@ the YAML file provided:
 
 .. code-block:: console
 
-    conda env create --file=imagine_conda_env.yaml
+    conda env create --file=imagine_conda_env.yml
     conda activate imagine
 
 
