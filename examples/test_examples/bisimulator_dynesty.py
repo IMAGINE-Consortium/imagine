@@ -68,8 +68,10 @@ def testfield(measure_size, simulation_size):
     x = np.linspace(0, 2.*np.pi, measure_size)  # data points in measurements
     np.random.seed(mea_seed)  # seed for signal field
     signal_field = np.square(np.multiply(np.sin(x),
-                                         np.random.normal(loc=true_a, scale=true_b, size=measure_size)))
-    mea_field = np.vstack([signal_field + np.random.normal(loc=0., scale=mea_std, size=measure_size)])
+                                         np.random.normal(loc=true_a, scale=true_b,
+                                                          size=measure_size)))
+    mea_field = np.vstack([signal_field + np.random.normal(loc=0., scale=mea_std, 
+                                                           size=measure_size)])
 
     """
     # 1.2, generate covariances
