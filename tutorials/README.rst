@@ -12,4 +12,4 @@ The tutorials provide a walk-through the essential functionalities of IMAGINE. T
 .. _third tutorial: https://nbviewer.jupyter.org/github/IMAGINE-consortium/imagine/blob/master/tutorials/tutorial_three.ipynb
 .. _fourth tutorial: https://nbviewer.jupyter.org/github/IMAGINE-consortium/imagine/blob/master/tutorials/tutorial_four.ipynb
 .. _fith tutorial: https://nbviewer.jupyter.org/github/IMAGINE-consortium/imagine/blob/master/tutorials/tutorial_five.ipynb
-.. _sixth tutorial: https://nbviewer.jupyter.org/github/IMAGINE-consortium/imagine/blob/master/tutorials/tutorial_five.ipynb
+.. _sixth tutorial: https://nbviewer.jupyter.org/github/IMAGINE-consortium/imagine/blob/master/tutorials/tutorial_six.ipynb
