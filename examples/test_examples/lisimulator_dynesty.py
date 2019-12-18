@@ -22,16 +22,18 @@ mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
 # visualize posterior
-import corner
-import matplotlib
+import corner, matplotlib
+import matplotlib.pyplot as plt
 from imagine.tools.carrier_mapper import unity_mapper
 matplotlib.use('Agg')
 
 
-def testfield(measure_size, simulation_size):
-    
-    log.basicConfig(filename='imagine_li_dynesty.log', level=log.DEBUG)
-    
+def testfield(measure_size, simulation_size, make_plots=True, debug=False):
+    if debug:
+        log.basicConfig(filename='imagine_li_dynesty.log', level=log.DEBUG)
+    else:
+        log.basicConfig(filename='imagine_li_dynesty.log')
+
     """
 
     :return:
@@ -41,11 +43,11 @@ def testfield(measure_size, simulation_size):
 
     """
     # step 0, set 'a' and 'b', 'mea_std'
-    
+
     TestField in LiSimulator is modeled as
         field = gaussian_random(mean=a,std=b)_x * cos(x)
         where x in (0,2pi)
-    
+
     for generating mock data we need
     true values of a and b: true_a, true_b, mea_seed
     measurement uncertainty: mea_std
@@ -101,8 +103,9 @@ def testfield(measure_size, simulation_size):
     """
     # 1.4, visualize mock data
     """
-    matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(measure_size), 'nan')].data[0])
-    matplotlib.pyplot.savefig('testfield_mock_li.pdf')
+    if mpirank==0 and make_plots:
+        plt.plot(x, mock_data[('test', 'nan', str(measure_size), 'nan')].data[0])
+        plt.savefig('testfield_mock_li.pdf')
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -126,7 +129,7 @@ def testfield(measure_size, simulation_size):
     prior = FlatPrior()
 
     """
-    # 2.4, simulator 
+    # 2.4, simulator
     """
     simer = LiSimulator(mock_data)
 
@@ -137,36 +140,37 @@ def testfield(measure_size, simulation_size):
     pipe.random_type = 'controllable'  # 'fixed' random_type doesnt work for Dynesty pipeline, yet
     pipe.seed_tracer = int(23)
     pipe.sampling_controllers = {'nlive': 400}
-    
+
     tmr = Timer()
     tmr.tick('test')
     results = pipe()
     tmr.tock('test')
-    if not mpirank:
+    if mpirank==0:
         print('\n elapse time '+str(tmr.record['test'])+'\n')
 
     """
     # step 3, visualize (with corner package)
     """
-    samples = results['samples']
-    for i in range(len(pipe.active_parameters)):  # convert variables into parameters
-        low, high = pipe.active_ranges[pipe.active_parameters[i]]
-        for j in range(samples.shape[0]):
-            samples[j, i] = unity_mapper(samples[j, i], low, high)
-    # corner plot
-    corner.corner(samples[:, :len(pipe.active_parameters)],
-                  range=[0.99] * len(pipe.active_parameters),
-                  quantiles=[0.02, 0.5, 0.98],
-                  labels=pipe.active_parameters,
-                  show_titles=True,
-                  title_kwargs={"fontsize": 15},
-                  color='steelblue',
-                  truths=truths,
-                  truth_color='firebrick',
-                  plot_contours=True,
-                  hist_kwargs={'linewidth': 2},
-                  label_kwargs={'fontsize': 20})
-    matplotlib.pyplot.savefig('testfield_posterior_li_dynesty.pdf')
+    if mpirank==0 and make_plots:
+        samples = results['samples']
+        for i in range(len(pipe.active_parameters)):  # convert variables into parameters
+            low, high = pipe.active_ranges[pipe.active_parameters[i]]
+            for j in range(samples.shape[0]):
+                samples[j, i] = unity_mapper(samples[j, i], low, high)
+        # corner plot
+        corner.corner(samples[:, :len(pipe.active_parameters)],
+                      range=[0.99] * len(pipe.active_parameters),
+                      quantiles=[0.02, 0.5, 0.98],
+                      labels=pipe.active_parameters,
+                      show_titles=True,
+                      title_kwargs={"fontsize": 15},
+                      color='steelblue',
+                      truths=truths,
+                      truth_color='firebrick',
+                      plot_contours=True,
+                      hist_kwargs={'linewidth': 2},
+                      label_kwargs={'fontsize': 20})
+        plt.savefig('testfield_posterior_li_dynesty.pdf')
 
 
 if __name__ == '__main__':

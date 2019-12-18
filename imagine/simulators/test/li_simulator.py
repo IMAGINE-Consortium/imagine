@@ -32,7 +32,6 @@ class LiSimulator(Simulator):
 
     Parameters
     ----------
-
     measurements
         Measurements object
         for testing, only key ('test',...,...,...) is valid
