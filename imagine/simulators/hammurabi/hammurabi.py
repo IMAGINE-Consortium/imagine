@@ -21,27 +21,25 @@ from .hampyx import Hampyx
 
 @icy
 class Hammurabi(Simulator):
+    """
+    upon initialization, a Hampyx object is initialized
+    and its XML tree should be modified according to measurements
+    without changing its base file
 
+    Parameters
+    ----------
+    measurements
+        Measurements object
+
+    exe_path
+        hammurabi executable path
+
+    xml_path
+        hammurabi xml parameter file path
+    """
     def __init__(self, measurements,
                  xml_path=None,
                  exe_path=None):
-        """
-        upon initialization, a Hampyx object is initialized
-        and its XML tree should be modified according to measurements
-        without changing its base file
-        
-        parameters
-        ----------
-        
-        measurements
-            Measurements object
-        
-        exe_path
-            hammurabi executable path
-        
-        xml_path
-            hammurabi xml parameter file path
-        """
         log.debug('@ hammurabi::__init__')
         self.exe_path = exe_path
         self.xml_path = xml_path
@@ -129,10 +127,10 @@ class Hammurabi(Simulator):
     def update_fields(self, field_list, realization_id):
         """
         update hammurabi XML tree according to field list checklist
-        
+
         parameters
         ----------
-        
+
         realization_id
             id of realization in ensemble, [0,ensemble_size)
         """
@@ -144,18 +142,18 @@ class Hammurabi(Simulator):
             for key, clue in checklist.items():
                 assert (len(clue) == 2)
                 self._ham.mod_par(clue[0], {clue[1]: str(paramlist[key])})
-        
+
     def __call__(self, field_list):
         """
         run hammurabi executable
         pack up outputs in IMAGINE convention
-        
+
         parameters
         ----------
-        
+
         field_list
             list of GeneralField objects
-        
+
         return
         ------
         Simulations object

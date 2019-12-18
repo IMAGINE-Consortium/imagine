@@ -22,16 +22,17 @@ mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
 # visualize posterior
-import corner
-import matplotlib
+import corner, matplotlib
+import matplotlib.pyplot as plt
 from imagine.tools.carrier_mapper import unity_mapper
 matplotlib.use('Agg')
 
 
-def testfield(measure_size, simulation_size):
-    
-    log.basicConfig(filename='imagine_li_multinest.log', level=log.DEBUG)
-
+def testfield(measure_size, simulation_size, debug=False):
+    if debug:
+        log.basicConfig(filename='imagine_li_multinest.log', level=log.DEBUG)
+    else:
+        log.basicConfig(filename='imagine_li_multinest.log')
     """
     # step 0, set 'a' and 'b', 'mea_std'
 
@@ -63,7 +64,7 @@ def testfield(measure_size, simulation_size):
     signal_field = np.multiply(np.cos(x),
                                np.random.normal(loc=true_a, scale=true_b, size=measure_size))
     mea_field = np.vstack([signal_field + np.random.normal(loc=0., scale=mea_std, size=measure_size)])
-    
+
     """
     # 1.2, generate covariances
     """
@@ -83,9 +84,9 @@ def testfield(measure_size, simulation_size):
     """
     # 1.4, visualize mock data
     """
-    if not mpirank:
-        matplotlib.pyplot.plot(x, mock_data[('test', 'nan', str(measure_size), 'nan')].data[0])
-        matplotlib.pyplot.savefig('testfield_mock_li.pdf')
+    if mpirank == 0:
+        plt.plot(x, mock_data[('test', 'nan', str(measure_size), 'nan')].global_data[0])
+        plt.savefig('testfield_mock_li.pdf')
 
     """
     # step 2, prepare pipeline and execute analysis
@@ -109,7 +110,7 @@ def testfield(measure_size, simulation_size):
     prior = FlatPrior()
 
     """
-    # 2.4, simulator 
+    # 2.4, simulator
     """
     simer = LiSimulator(mock_data)
 
@@ -126,7 +127,7 @@ def testfield(measure_size, simulation_size):
     tmr.tick('test')
     results = pipe()  # run with pymultinest
     tmr.tock('test')
-    if not mpirank:
+    if mpirank == 0:
         print('\n elapse time '+str(tmr.record['test'])+'\n')
 
     """
@@ -151,7 +152,7 @@ def testfield(measure_size, simulation_size):
                       plot_contours=True,
                       hist_kwargs={'linewidth': 2},
                       label_kwargs={'fontsize': 20})
-        matplotlib.pyplot.savefig('testfield_posterior_li_multinest.pdf')
+        plt.savefig('testfield_posterior_li_multinest.pdf')
 
 
 if __name__ == '__main__':
