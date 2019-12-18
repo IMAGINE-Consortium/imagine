@@ -22,8 +22,9 @@ environment installing the `Hammurabi`_ code and the following packages:
  * `PyMultiNest <https://johannesbuchner.github.io/PyMultiNest/>`_
  * `Dynesty <https://dynesty.readthedocs.io/en/latest/>`_
  * `healpy <https://healpy.readthedocs.io/>`_
+ * `h5py <https://docs.h5py.org/>`_
 
-The procedure can be simplified setting up an `Anaconda`_ environment.
+The procedure is *significantly* simplified setting up an `Conda`_ environment.
 
 
 Hammurabi
@@ -39,17 +40,23 @@ Instructions for its installation can be found on its project
 
 
 
-Anaconda
---------
+Conda
+-----
 
-Users of Anaconda/Miniconda users can automatically setup a dedicated
-environment with all the dependencies (except for hammurabi) using
-the YAML file provided:
+Users of `Anaconda <https://www.anaconda.com/>`_ or
+`Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_
+users can automatically setup a dedicated environment with all the
+dependencies (except for hammurabi) using the YAML file provided:
 
 .. code-block:: console
 
     conda env create --file=imagine_conda_env.yml
     conda activate imagine
+    python -m ipykernel install --user --name imagine --display-name "Python (imagine)"
+
+The (optional) last line creates a Jupyter kernel linked to the new conda
+environment (which is required, for example, for executing the tutorial
+notebooks).
 
 
 Installing
@@ -81,6 +88,6 @@ Docker
 ======
 
 A docker image is a convenient, light-weight and fast way of deploying IMAGINE.
-One can either build the image directly with the Dockerfile provided
-in the `source repository <https://github.com/IMAGINE-Consortium/imagine/tree/master/docker>`_ or pull our
+One can either build the image directly with the Dockerfile provided in the
+`source repository <https://github.com/IMAGINE-Consortium/imagine/tree/master/docker>`_ or pull our
 `pre-built docker image <https://cloud.docker.com/u/ricphy/repository/docker/ricphy/imagine>`_.
