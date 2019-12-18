@@ -45,7 +45,7 @@ Conda
 
 Users of `Anaconda <https://www.anaconda.com/>`_ or
 `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_
-users can automatically setup a dedicated environment with all the
+can automatically setup a dedicated environment with all the
 dependencies (except for hammurabi) using the YAML file provided:
 
 .. code-block:: console
