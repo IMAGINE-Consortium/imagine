@@ -35,20 +35,27 @@ class MultinestPipeline(Pipeline):
 
         Returns
         -------
-        pyMultinest sampling results
+        results : dict
+            pyMultinest sampling results in a dictionary containing the keys:
+            logZ (the log-evidence), logZerror (the error in log-evidence) and
+            samples (equal weighted posterior)
         """
         log.debug('@ multinest_pipeline::__call__')
-        # create dir for storing pymultinest output
-        path = os.path.join(os.getcwd(),'chains')
-        if not os.path.isdir(path):
-            try: os.mkdir(path)
-            except OSError: pass
-        assert (os.path.isdir(path))
-        # run pymultinest
+
+        # Checks whether a base name for multinest output files was specified
+        if 'outputfiles_basename' not in self._sampling_controllers:
+            # If not, uses default location
+            self._sampling_controllers['outputfiles_basename'] = 'chains/imagine_'
+            os.makedirs('chains', exist_ok=True)
+
+        # Makes sure that the chains directory exists
+        basedir = os.path.split(self._sampling_controllers['outputfiles_basename'])[0]
+        assert os.path.isdir(basedir)
+
+        # Runs pyMultinest
         results = pymultinest.solve(LogLikelihood=self._mpi_likelihood,
                                     Prior=self.prior,
                                     n_dims=len(self._active_parameters),
-                                    outputfiles_basename='chains/imagine_',
                                     **self._sampling_controllers)
         return results
 
