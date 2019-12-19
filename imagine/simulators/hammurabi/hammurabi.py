@@ -58,6 +58,8 @@ class Hammurabi(Simulator):
 
     @property
     def xml_path(self):
+        if xml_path is None:
+            raise ValueError('requires XML file path')
         return self._xml_path
 
     @xml_path.setter
@@ -128,7 +130,7 @@ class Hammurabi(Simulator):
         """
         update hammurabi XML tree according to field list checklist
 
-        parameters
+        Parameters
         ----------
 
         realization_id
@@ -148,14 +150,14 @@ class Hammurabi(Simulator):
         run hammurabi executable
         pack up outputs in IMAGINE convention
 
-        parameters
+        Parameters
         ----------
 
         field_list
             list of GeneralField objects
 
-        return
-        ------
+        Returns
+        -------
         Simulations object
         """
         log.debug('@ hammurabi::__call__')
