@@ -17,7 +17,7 @@ class GeneralField(object):
         Dictionary of full parameter set {name: value}
     ensemble_size : int
         Number of realisations in field ensemble
-    ensemble_seeds
+    ensemble_seeds 
         Random seed(s) for generating random field realisations
     """
     def __init__(self, parameters=dict(), ensemble_size=1, ensemble_seeds=None):

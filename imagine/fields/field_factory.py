@@ -194,7 +194,8 @@ class GeneralFieldFactory(object):
 
         Returns
         -------
-        Python dictionary in form {'parameter-name', physical-value}
+        parameter_dict : dict
+            Python dictionary in form {'parameter-name', physical-value}
         """
         log.debug('@ field_factory::_map_variables_to_parameters')
         assert isinstance(variables, dict)
@@ -230,7 +231,8 @@ class GeneralFieldFactory(object):
 
         Returns
         -------
-        a GeneralField object
+        result_field : imagine.fields.field.GeneralField
+            a GeneralField object
         """
         log.debug('@ field_factory::generate')
         # map variable value to parameter value
