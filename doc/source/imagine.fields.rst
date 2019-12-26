@@ -31,6 +31,14 @@ imagine.fields.field\_factory module
    :undoc-members:
    :show-inheritance:
 
+imagine.fields.grid module
+--------------------------
+
+.. automodule:: imagine.fields.grid
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
