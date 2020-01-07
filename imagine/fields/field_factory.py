@@ -1,9 +1,10 @@
 import numpy as np
 from copy import deepcopy
 import logging as log
-from imagine.fields.field import GeneralField
+from imagine.fields import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
+from imagine.fields.grid import UniformGrid
 
 @icy
 class GeneralFieldFactory(object):
@@ -12,79 +13,83 @@ class GeneralFieldFactory(object):
     ensemble of field configuration DIRECTLY and/or
     handle of field to be conducted by simulators
 
-    Through the method `generate`, factory object take
+    Through the method `generate`, the factory object takes
     a given set of variable values
     (can be at any chain point in bayesian analysis)
-    and translate it into physical parameter value and
-    return a field object with current parameter set
+    and translates it into physical parameter values,
+    returning a field object with current parameter set.
+
+    Example
+    -------
+    To include a new Field_Factory, one needs to create a derived class
+    with customized initialization. Below we show an example which is
+    compatible with the `xConstantField` showed in the
+    :doc:`documentation <imagine.fields>` of `imagine.fields.GeneralField`::
+
+        @icy
+        class xConstantField_Factory(GeneralField):
+            def __init__(self, grid=None, boxsize=None, resolution=None):
+                super().__init__(grid, boxsize, resolution)
+                self.field_class = xConstantField
+                self.default_parameters = {'constantA': 5.0}
+                self.parameter_ranges = {'constantA': [-10., 10.]}
 
     Parameters
     ----------
     boxsize : list/tuple of floats
-        The physical size of simulation box (3D Cartesian frame)
+        The physical size of simulation box (i.e. edges of the box).
     resolution : list/tuple of ints
         The discretization size in corresponding dimension
+    grid : imagine.fields.BaseGrid or None
+        If present, the supplied instance of `imagine.fields.BaseGrid` is
+        used and the arguments `boxsize` and `resolution` are ignored
 
+    Attributes
+    ----------
+    field_class : class
+        Python class whose instances are produces by the present factory
     """
-    def __init__(self, boxsize=None, resolution=None):
+    def __init__(self, grid=None, boxsize=None, resolution=None):
         log.debug('@ field_factory::__init__')
-        self.field_type = 'scalar'
-        self.name = 'general'
+
         self.field_class = GeneralField
-        self.boxsize = boxsize
-        self.resolution = resolution
-        self.default_parameters = dict()
-        # the following two must after .default_parameters initialisation
-        self.active_parameters = tuple()
-        self.parameter_ranges = dict()
+        self.field_name = self.field_class.field_name
+        self.field_type = None
+
+        # Uses user defined grid if `grid` is present
+        if grid is not None:
+            self.grid = grid
+        # Otherwise, assumes a regular Cartesian grid
+        elif box is not None and resolution is not None:
+            self.grid = UniformGrid(box=boxsize, resolution=resolution)
+        else:
+            raise ValueError('Must specify either a valid Grid object or its properties (box and resolution).')
+
+    @property
+    def field_name(self):
+        """Name of the physical field"""
+        return self.field_class.field_name
 
     @property
     def field_type(self):
-        """
-        Specifies what field the factory produce: 'scalar', 'spinor',
-        'vector', 'tensor', etc.
-        """
-        return self._field_type
-
-    @field_type.setter
-    def field_type(self, field_type):
-        assert isinstance(field_type, str)
-        self._field_type = field_type
+        """Type of physical field. See :doc:`code conventions <conventions>`."""
+        return self.field_class.field_type
 
     @property
-    def name(self):
-        """factory name, useful as factory id"""
-        return self._name
-
-    @name.setter
-    def name(self, name):
-        assert isinstance(name, str)
-        self._name = name
-
-    @property
-    def field_class(self):
-        return self._field_class
-
-    @field_class.setter
-    def field_class(self, field_class):
-        self._field_class = field_class
-
-    @property
-    def boxsize(self):
+    def grid(self):
         """
-        Physical size of simulation box, by default the box is 3D cartesian
+        Instance of `imagine.fields.BaseGrid` containing a 3D grid where the
+        field is evaluated
         """
-        return self._boxsize
+        return self._grid
 
-    @boxsize.setter
-    def boxsize(self, boxsize):
-        if boxsize is None:
-            self._boxsize = None
+    @grid.setter
+    def grid(self, grid):
+        if grid is None:
+            self._grid = None
         else:
-            assert isinstance(boxsize, (list, tuple))
-            assert (len(boxsize) == 3)
-            # force size in float
-            self._boxsize = tuple(np.array(boxsize, dtype=np.float))
+            assert isinstance(grid, imagine.fields.BaseGrid)
+            self._grid = grid
 
     @property
     def resolution(self):
@@ -92,16 +97,6 @@ class GeneralFieldFactory(object):
         How many bins on each direction of simulation box
         """
         return self._resolution
-
-    @resolution.setter
-    def resolution(self, resolution):
-        if resolution is None:
-            self._resolution = None
-        else:
-            assert isinstance(resolution, (list, tuple))
-            assert (len(resolution) == 3)
-            # force resolutioin in int
-            self._resolution = tuple(np.array(resolution, dtype=np.int))
 
     @property
     def default_parameters(self):
@@ -141,18 +136,13 @@ class GeneralFieldFactory(object):
     @property
     def parameter_ranges(self):
         """
-        Dictionary storing varying range of all default parameters
+        Dictionary storing varying range of all default parameters in
+        the form {'parameter-name': (min, max)}
         """
         return self._parameter_ranges
 
     @parameter_ranges.setter
     def parameter_ranges(self, new_ranges):
-        """
-        Parameters
-        ----------
-        new_ranges : dict
-            Python dictionary in form {'parameter-name': (min, max)}
-        """
         assert isinstance(new_ranges, dict)
         for k, v in new_ranges.items():
             # check if k is inside default
@@ -169,12 +159,9 @@ class GeneralFieldFactory(object):
     @property
     def default_variables(self):
         """
-        Translates default parameter into default (logic) variable
-        notice that all variables range is always fixed as [0,1]
-
-        Returns
-        -------
-        a dictionary of (logic) variables wrt default_parameters
+        A dictionary containing default parameter values converted into
+        default normalized variables (i.e with values scaled to be in the
+        range [0,1]).
         """
         log.debug('@ field_factory::default_variables')
         tmp = dict()

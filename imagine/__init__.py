@@ -26,11 +26,11 @@ from .pipelines.dynesty_pipeline import DynestyPipeline
 
 # customized modules
 from .simulators.hammurabi.hammurabi import Hammurabi
-from .fields.breg_lsa.hamx_field import BregLSA
-from .fields.breg_lsa.hamx_factory import BregLSAFactory
-from .fields.brnd_es.hamx_field import BrndES
-from .fields.brnd_es.hamx_factory import BrndESFactory
-from .fields.cre_analytic.hamx_field import CREAna
-from .fields.cre_analytic.hamx_factory import CREAnaFactory
-from .fields.tereg_ymw16.hamx_field import TEregYMW16
-from .fields.tereg_ymw16.hamx_factory import TEregYMW16Factory
+#from .fields.breg_lsa.hamx_field import BregLSA
+#from .fields.breg_lsa.hamx_factory import BregLSAFactory
+#from .fields.brnd_es.hamx_field import BrndES
+#from .fields.brnd_es.hamx_factory import BrndESFactory
+#from .fields.cre_analytic.hamx_field import CREAna
+#from .fields.cre_analytic.hamx_factory import CREAnaFactory
+#from .fields.tereg_ymw16.hamx_field import TEregYMW16
+#from .fields.tereg_ymw16.hamx_factory import TEregYMW16Factory

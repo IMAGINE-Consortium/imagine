@@ -6,10 +6,7 @@ Subpackages
 
 .. toctree::
 
-   imagine.fields.breg_lsa
-   imagine.fields.brnd_es
-   imagine.fields.cre_analytic
-   imagine.fields.tereg_ymw16
+   imagine.fields.hamx
    imagine.fields.test_field
 
 Submodules
