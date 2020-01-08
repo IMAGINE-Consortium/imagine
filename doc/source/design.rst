@@ -21,3 +21,7 @@ Design overview
 .. image:: imagine_design.png
     :align: center
     :alt: The IMAGINE pipeline
+
+
+
+.. include:: conventions.rst
