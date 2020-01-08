@@ -1,3 +1,28 @@
+"""
+In the Observable class we define three data types, i.e.,
+- 'measured'
+- 'simulated'
+- 'covariance'
+where
+'measured' indicates the hosted data is from measurements,
+which has a single realization,
+'simulated' indicates the hosted data is from simulations,
+which has multiple realizations,
+'covariance' indicates the hosted data is a covariance matrix,
+which has a single realization but by default should not be stored/read/written
+by a single computing node.
+
+'measred' data puts its identical copies on all computing nodes,
+which means each node has a full storage of 'measured' data.
+
+'simulated' data puts different realizations on different nodes,
+which means each node has part of the full realizations,
+but at least a full version of one single realization.
+
+'covariance' data distributes itself into all computing nodes,
+which means to have a full set of 'covariance' data,
+we have to collect pieces from all the computing nodes.
+"""
 import numpy as np
 from mpi4py import MPI
 from copy import deepcopy
@@ -30,22 +55,22 @@ class Observable(object):
     @property
     def data(self):
         """
-        Data stored in the local processor (`numpy.ndarray`, read-only).
+        Data stored in the LOCAL processor (`numpy.ndarray`, read-only).
         """
         return self._data
 
     @property
     def shape(self):
         """
-        Shape of the global array, i.e. considering all processors
+        Shape of the GLOBAL array, i.e. considering all processors
         (`numpy.ndarray`, read-only).
         """
-        return mpi_shape(self._data)
+        return mpi_shape(self._data)  # estimate shape from all nodes
 
     @property
     def global_data(self):
         """
-        Data gathered from all processors (`numpy.ndarray`, read-only).
+        Data gathered from ALL processors (`numpy.ndarray`, read-only).
         """
         return mpi_global(self.data)
 
@@ -53,6 +78,8 @@ class Observable(object):
     def size(self):
         """
         Local data size (`int`, read-only)
+        this size means the dimension of input data
+        not the sample size of realizations
         """
         return self._data.shape[1]
 
@@ -60,10 +87,10 @@ class Observable(object):
     def ensemble_mean(self):
         log.debug('@ observable::ensemble_mean')
         if (self._dtype == 'measured'):
-            assert (self._data.shape[0] == 1)
-            return self._data
+            assert (self._data.shape[0] == 1)  # single realization
+            return self._data  # since each node has a full copy
         elif (self._dtype == 'simulated'):
-            return mpi_mean(self._data)
+            return mpi_mean(self._data)  # calculate mean from all nodes
         else:
             raise TypeError('unsupported data type')
 
@@ -83,13 +110,17 @@ class Observable(object):
 
     @data.setter
     def data(self, data):
+        """
+        extra input format check for 'measured' and 'covariance'
+        no extra check for 'simulated'
+        """
         log.debug('@ observable::data')
         if data is None:
             self._data = None
         else:
             assert (len(data.shape) == 2)
             assert isinstance(data, np.ndarray)
-            if (self._dtype == 'measured'):
+            if (self._dtype == 'measured'):  # copy single-row data from memory
                 assert (data.shape[0] == 1)
             self._data = np.copy(data)
             if (self._dtype == 'covariance'):
@@ -114,17 +145,22 @@ class Observable(object):
         appending new data happends only to SIMULATED dtype
         the new data to be appended should also be distributed
         which makes the appending operation naturally in parallel
+        
+        rewrite flag will be switched off once rewriten has been performed
         """
         log.debug('@ observable::append')
         assert isinstance(new_data, (np.ndarray, Observable))
+        assert (self._dtype == 'simulated')
         if isinstance(new_data, np.ndarray):
             mpi_prosecutor(new_data)
             if (self._rw_flag):  # rewriting
                 self._data = np.copy(new_data)
+                self._rw_flag = False
             else:
                 self._data = np.vstack([self._data, new_data])
         elif isinstance(new_data, Observable):
             if (self._rw_flag):
                 self._data = np.copy(new_data.data)
+                self._rw_flag = False
             else:
                 self._data = np.vstack([self._data, new_data.data])
