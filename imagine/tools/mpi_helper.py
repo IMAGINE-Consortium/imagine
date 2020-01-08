@@ -418,3 +418,26 @@ def mpi_slogdet(data):
     comm.Allreduce([local_sign, MPI.DOUBLE], [sign, MPI.DOUBLE], op=MPI.PROD)
     assert (logdet != 0 and sign != 0)
     return sign, logdet
+
+def mpi_global(data, root=0):
+    """
+    Gathers data spread accross different processes
+        
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of data distributed over different processes
+    root : int, optional
+        MPI rank of the process where the data should be gathered. 
+        Default: 0
+        
+    Returns
+    -------
+    global_array : numpy.ndarray
+        root process returns the gathered data. 
+        Other processes return `None`
+    """
+    global_array = comm.gather(data, root=root)
+    if global_array is not None:
+        global_array = np.vstack(global_array)
+    return global_array
