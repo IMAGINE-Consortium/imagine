@@ -81,6 +81,11 @@ class GeneralFieldFactory:
         return self.field_class.field_name
 
     @property
+    def name(self):
+        # For backwards-compatibility
+        return self.field_name
+
+    @property
     def field_type(self):
         """Type of physical field. See :doc:`code conventions <conventions>`."""
         return self.field_class.field_type
