@@ -13,7 +13,7 @@ class BaseGrid:
     and resolution.
 
     This is a base class. To create your own grid, you need to subclass
-    `BaseGrid`  and override the method `BaseGrid.generate_coordinates`.
+    `BaseGrid`  and override the method :py:meth:`generate_coordinates`.
 
     Calling the attributes does the conversion between different coordinate
     systems automatically (spherical, cylindrical and cartesian coordinates
@@ -140,7 +140,7 @@ class BaseGrid:
         ('r_cylindrical', 'phi','z'), ('r_spherical','theta', 'phi')
 
         This method is *automatically* called the first time any coordinate
-        is read
+        is read.
         """
         raise NotImplementedError(("Subclasses should implement this!"))
 
@@ -152,10 +152,10 @@ class UniformGrid(BaseGrid):
 
     Example
     -------
-    >> g = grid.UniformGrid([[0,4],[1,2],[1,1]], [5,2,1])
-    >> g.x
+    >>> g = grid.UniformGrid([[0,4],[1,2],[1,1]], [5,2,1])
+    >>> g.x
     array([[[0.],[0.]], [[1.],[1.]], [[2.],[2.]], [[3.],[3.]], [[4.],[4.]]])
-    >> g.y
+    >>> g.y
     array([[[1.], [2.]], [[1.], [2.]], [[1.], [2.]], [[1.], [2.]], [[1.], [2.]]])
 
 

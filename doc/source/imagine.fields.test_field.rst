@@ -12,14 +12,6 @@ imagine.fields.test\_field.test\_field module
    :undoc-members:
    :show-inheritance:
 
-imagine.fields.test\_field.test\_field\_factory module
-------------------------------------------------------
-
-.. automodule:: imagine.fields.test_field.test_field_factory
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 Module contents
 ---------------

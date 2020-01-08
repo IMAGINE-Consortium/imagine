@@ -13,7 +13,7 @@ class GeneralFieldFactory:
     ensemble of field configuration DIRECTLY and/or
     handle of field to be conducted by simulators
 
-    Through the method `generate`, the factory object takes
+    Through the method :py:meth:`generate`, the factory object takes
     a given set of variable values
     (can be at any chain point in bayesian analysis)
     and translates it into physical parameter values,
@@ -23,8 +23,8 @@ class GeneralFieldFactory:
     -------
     To include a new Field_Factory, one needs to create a derived class
     with customized initialization. Below we show an example which is
-    compatible with the `xConstantField` showed in the
-    :doc:`documentation <imagine.fields>` of `imagine.fields.GeneralField`::
+    compatible with the :py:class:`xConstantField` showed in the
+    :doc:`documentation <imagine.fields>` of :py:class:`imagine.fields.GeneralField`::
 
         @icy
         class xConstantField_Factory(GeneralField):
