@@ -7,7 +7,7 @@ from imagine.tools.icy_decorator import icy
 from imagine.fields.grid import UniformGrid
 
 @icy
-class GeneralFieldFactory(object):
+class GeneralFieldFactory:
     """
     GeneralFieldFactory is designed for generating
     ensemble of field configuration DIRECTLY and/or
@@ -53,18 +53,28 @@ class GeneralFieldFactory(object):
         log.debug('@ field_factory::__init__')
 
         self.field_class = GeneralField
-        self.field_name = self.field_class.field_name
-        self.field_type = None
 
-        # Uses user defined grid if `grid` is present
-        if grid is not None:
-            self.grid = grid
-        # Otherwise, assumes a regular Cartesian grid
-        elif box is not None and resolution is not None:
-            self.grid = UniformGrid(box=boxsize, resolution=resolution)
+        if self.field_type is 'dummy':
+            # In dummy fields, we do not use a grid
+            self._grid = None
+            self._box = None
+            self._resolution = None
         else:
-            raise ValueError('Must specify either a valid Grid object or its properties (box and resolution).')
-
+            # Uses user defined grid if `grid` is present
+            if grid is not None:
+                assert isinstance(grid, imagine.fields.BaseGrid)
+                self._grid = grid
+            # Otherwise, assumes a regular Cartesian grid
+            # Which is generated when the property is first called
+            else:
+                self._grid = None
+                self._box = boxsize
+                self._resolution = resolution
+        # Placeholders
+        self._default_parameters = None
+        self._parameter_ranges = {}
+        self._active_parameters = {}
+                
     @property
     def field_name(self):
         """Name of the physical field"""
@@ -81,15 +91,12 @@ class GeneralFieldFactory(object):
         Instance of `imagine.fields.BaseGrid` containing a 3D grid where the
         field is evaluated
         """
+        if self._grid is None:
+            if (self._box is not None) and (self._resolution is not None):
+                self._grid = UniformGrid(box=boxsize, resolution=resolution)
+            elif self.field_type is not 'dummy':
+                raise ValueError('Non-dummy fields must be initialized with either a valid Grid object or its properties (box and resolution).')
         return self._grid
-
-    @grid.setter
-    def grid(self, grid):
-        if grid is None:
-            self._grid = None
-        else:
-            assert isinstance(grid, imagine.fields.BaseGrid)
-            self._grid = grid
 
     @property
     def resolution(self):
