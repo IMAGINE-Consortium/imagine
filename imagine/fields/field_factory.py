@@ -5,6 +5,7 @@ from imagine.fields import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 from imagine.fields.grid import UniformGrid
+import imagine
 
 @icy
 class GeneralFieldFactory:
@@ -62,7 +63,7 @@ class GeneralFieldFactory:
         else:
             # Uses user defined grid if `grid` is present
             if grid is not None:
-                assert isinstance(grid, imagine.fields.BaseGrid)
+                assert isinstance(grid, imagine.fields.grid.BaseGrid)
                 self._grid = grid
             # Otherwise, assumes a regular Cartesian grid
             # Which is generated when the property is first called
