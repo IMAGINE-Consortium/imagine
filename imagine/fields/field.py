@@ -79,7 +79,8 @@ class GeneralField(object):
         :doc:`code conventions <conventions>`.
         """
         if self._data is None:
-            self._data = self.get_field(parameters)
+            self._data = self.get_field(self.parameters)
+        return self._data
 
     @property
     def field_checklist(self):

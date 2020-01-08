@@ -27,7 +27,7 @@ class GeneralFieldFactory:
     :doc:`documentation <imagine.fields>` of :py:class:`imagine.fields.GeneralField`::
 
         @icy
-        class xConstantField_Factory(GeneralField):
+        class xConstantField_Factory(GeneralFieldFactory):
             def __init__(self, grid=None, boxsize=None, resolution=None):
                 super().__init__(grid, boxsize, resolution)
                 self.field_class = xConstantField

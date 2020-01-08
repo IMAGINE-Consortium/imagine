@@ -25,6 +25,14 @@ class BaseGrid:
          Box limits
     resolution : 3-array_like
          containing the resolution along each axis.
+
+    Attributes
+    ----------
+    box : 3x2-array_like
+         Box limits
+
+    resolution : 3-array_like
+         Containing the resolution along each axis (the *shape* of the grid).
     """
     def __init__(self, box, resolution):
 
@@ -130,7 +138,14 @@ class BaseGrid:
     @property
     def cos_phi(self):
         r""":math:`\cos(\phi)`"""
+        if 'phi' in self.coordinates:
+            return np.cos(self.phi)
         return self.x / self.r_cylindrical
+
+    @property
+    def shape(self):
+        """The same as :py:attr:`resolution`"""
+        return self.resolution
 
     def generate_coordinates(self):
         """
