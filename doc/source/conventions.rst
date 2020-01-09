@@ -25,12 +25,12 @@ returns a constant field or, say, the GalMag model).
 
 
 
-=============================  ============  ===================  ========================================
- Field type                     Shape        Units                 Description
-=============================  ============  ===================  ========================================
-'magnetic_field'               (Nx,Ny,Nz,N)  :math:`\mu\rm G`     :math:`\vec{B}`-field
-'cosmic_ray_electron_density'  (Nx,Ny,Nz,NE)    :math:`\rm cm^{-3}`  Number density, :math:`n_{\rm cr}`.
-'thermal_electron_density'     (Nx,Ny,Nz)    :math:`\rm cm^{-3}`  Number density, :math:`n_{\rm e}`
-'dummy'                        None          None                 Only parameter values.
-=============================  ============  ===================  ========================================
+=============================  =============  ===============================  ========================================
+ Field type                     Shape         Units                            Description
+=============================  =============  ===============================  ========================================
+'magnetic_field'               (Nx,Ny,Nz,N)   :math:`\mu\rm G`                 :math:`\vec{B}`-field
+'cosmic_ray_electron_flux'     (Nx,Ny,Nz,NE)  :math:`\rm (GeV m^2 s Sr)^{-1}`  Flux, :math:`n_{\rm cr}`.
+'thermal_electron_density'     (Nx,Ny,Nz)     :math:`\rm cm^{-3}`              Number density, :math:`n_{\rm e}`
+'dummy'                        None           None                             Only parameter values.
+=============================  =============  ===============================  ========================================
 
