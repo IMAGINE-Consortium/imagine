@@ -71,6 +71,8 @@ class Observable(object):
     def global_data(self):
         """
         Data gathered from ALL processors (`numpy.ndarray`, read-only).
+        Note that only master node hosts the global data,
+        while slave nodes hosts None.
         """
         return mpi_global(self.data)
 

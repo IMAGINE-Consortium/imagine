@@ -5,6 +5,7 @@ from imagine.tools.random_seed import seed_generator
 from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans
 from imagine.tools.mpi_helper import mpi_mult, mpi_eye, mpi_trace
 from imagine.tools.mpi_helper import  mpi_shape, mpi_lu_solve, mpi_slogdet
+from imagine.tools.mpi_helper import mpi_global, mpi_local
 from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.covariance_estimator import empirical_cov, oas_cov, oas_mcov
 
@@ -99,7 +100,34 @@ class TestTools(unittest.TestCase):
         test_c = test_c.reshape(1,-1)
         for i in range(len(part_c)):
             self.assertAlmostEqual(part_c[0][i], test_c[0][i])
-                
+            
+    def test_mpi_global(self):
+        if not mpirank:
+            arr_a = np.random.rand(2,128)
+        else:
+            arr_a = np.random.rand(1,128)
+        full_a = np.vstack(comm.allgather(arr_a))
+        test_a = mpi_global(arr_a)
+        if not mpirank:
+            full_a = full_a.reshape(1,-1)
+            test_a = test_a.reshape(1,-1)
+            for i in range(len(full_a)):
+                self.assertAlmostEqual(full_a[0][i], test_a[0][i])
+    
+    def test_mpi_local(self):
+        if not mpirank:
+            arr_a = np.random.rand(32,128)
+        else:
+            arr_a = None
+        test_a = mpi_local(arr_a)
+        arr_a = comm.bcast(arr_a, root=0)
+        local_a_begin, local_a_end = mpi_arrange(arr_a.shape[0])
+        part_a = arr_a[local_a_begin:local_a_end,:]
+        part_a = part_a.reshape(1,-1)
+        test_a = test_a.reshape(1,-1)
+        for i in range(len(part_a)):
+            self.assertAlmostEqual(part_a[0][i], test_a[0][i])
+    
     def test_mpi_eye(self):
         size = 128
         part_eye = mpi_eye(size)

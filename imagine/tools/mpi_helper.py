@@ -419,7 +419,7 @@ def mpi_slogdet(data):
     assert (logdet != 0 and sign != 0)
     return sign, logdet
 
-def mpi_global(data, root=0):
+def mpi_global(data):
     """
     Gathers data spread accross different processes
         
@@ -427,9 +427,6 @@ def mpi_global(data, root=0):
     ----------
     data : numpy.ndarray
         Array of data distributed over different processes
-    root : int, optional
-        MPI rank of the process where the data should be gathered. 
-        Default: 0
         
     Returns
     -------
@@ -437,7 +434,69 @@ def mpi_global(data, root=0):
         root process returns the gathered data. 
         Other processes return `None`
     """
+    local_rows = np.array(data.shape[0], dtype=np.uint)
+    global_rows = np.array(0, dtype=np.uint)
+    comm.Allreduce([local_rows, MPI.LONG], [global_rows, MPI.LONG], op=MPI.SUM)
+    local_row_begin, local_row_end = mpi_arrange(global_rows)
+    if not mpirank:
+        global_array = np.empty((global_rows, data.shape[1]), dtype=np.float64)
+        row_begins = np.empty(mpisize, dtype=np.uint)
+        row_ends = np.empty(mpisize, dtype=np.uint)
+    else:
+        global_array = None
+        row_begins = None
+        row_ends = None
+    comm.Gather([np.array(local_row_begin, dtype=np.uint), MPI.LONG], [row_begins, MPI.LONG], root=0)
+    comm.Gather([np.array(local_row_end, dtype=np.uint), MPI.LONG], [row_ends, MPI.LONG], root=0)
+    if not mpirank:
+        global_array[:local_row_end,:] = data
+        for source in range(1,mpisize):
+            comm.Recv([global_array[row_begins[source]:row_ends[source],:], MPI.DOUBLE] ,source=source, tag=source)
+    else:
+        pass
+        comm.Isend([np.array(data, dtype=np.float64), MPI.DOUBLE], dest=0, tag=mpirank)
+    return global_array
+    """
+    # the alternative way
     global_array = comm.gather(data, root=root)
     if global_array is not None:
         global_array = np.vstack(global_array)
     return global_array
+    """
+
+def mpi_local(data):
+    """
+    Distributes data over available processes
+    
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of data to be distributed over available processes
+        
+    Returns
+    -------
+    local_array : numpy.ndarray
+        return the distributed array on all preocesses
+    """
+    if not mpirank:
+        global_shape = np.array(data.shape, dtype=np.uint)
+        row_begins = np.empty(mpisize, dtype=np.uint)
+        row_ends = np.empty(mpisize, dtype=np.uint)
+    else:
+        global_shape = np.empty(2, dtype=np.uint)
+        row_begins = None
+        row_ends = None
+    comm.Bcast([global_shape, MPI.LONG], root=0)
+    local_row_begin, local_row_end = mpi_arrange(global_shape[0])
+    comm.Gather([np.array(local_row_begin, dtype=np.uint), MPI.LONG], [row_begins, MPI.LONG], root=0)
+    comm.Gather([np.array(local_row_end, dtype=np.uint), MPI.LONG], [row_ends, MPI.LONG], root=0)
+    # start slicing
+    if not mpirank:
+        local_data = np.array(data[local_row_begin:local_row_end,:], dtype=np.float64)
+        for target in range(1,mpisize):
+            sendbuf = np.array(data[row_begins[target]:row_ends[target],:], dtype=np.float64)
+            comm.Send([sendbuf, MPI.DOUBLE], dest=target, tag=target)
+    else:
+        local_data = np.empty((local_row_end-local_row_begin,global_shape[1]), dtype=np.float64)
+        comm.Recv([local_data, MPI.DOUBLE], source=0, tag=mpirank)
+    return local_data
