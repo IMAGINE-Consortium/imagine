@@ -70,7 +70,6 @@ class GeneralField(object):
         """
         raise NotImplementedError
 
-
     @property
     def data(self):
         """

@@ -2,11 +2,13 @@
 Contains the definition of the BaseGrid class and an example of its
 application: a basic uniform grid.
 
-This was strongly based on GalMag's Grid class, initially developed
-by Theo Steininger
+This was strongly based on GalMag's Grid class,
+initially developed by Theo Steininger
 """
 import numpy as np
+from imagine.tools.icy_decorator import icy
 
+@icy
 class BaseGrid:
     """
     Defines a 3D grid object for a given choice of box dimensions
@@ -23,6 +25,7 @@ class BaseGrid:
     ----------
     box : 3x2-array_like
          Box limits
+    
     resolution : 3-array_like
          containing the resolution along each axis.
 
