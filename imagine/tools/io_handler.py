@@ -1,9 +1,21 @@
 """
-The io_handler class is designed for IMAGINE I/O with HDF5+MPI support.
-We expect distributed data shape on each node has the same column size,
-but not necessarily the same row size.
-writing to HDF5 gets each node working in parallel,
-so the final data shape in the HDF5 is basically piling up all rows together.
+The io_handler class is designed for IMAGINE I/O with HDF5+MPI
+
+There are two types of data reading,
+corresponding to the data types defined in the Observable class.
+
+    1. for reading 'measured' data,
+    each node reads the full data.
+    'read_copy' is designed for this case.
+
+    2. for reading 'covariance' data,
+    each node reads a certain rows.
+    'read_dist' is designed for this case.
+
+We do not require writing in parallel since the output workload is not heavy.
+And there are also two types of data writing out, corresponds to the reading,
+i.e., 'write_copy' and 'write_dist'.
+
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
 import numpy as np
@@ -61,14 +73,11 @@ class io_handler(object):
         else:
             assert isinstance(file_path, str)
             self._file_path = file_path
-
-    def write(self, data, file, key):
+            
+    def write_copy(self, data, file, key):
         """
-        Writes a distributed data-set into a binary file.
-        If the given filename does not exist then creates one
-        the data shape must be either in (m,n) on each node
-        each node will write independently and parallel to the HDF5 file
-
+        Writes a copied data-set into a HDF5 file.
+        
         Parameters
         ----------
         data : numpy.ndarray
@@ -85,9 +94,42 @@ class io_handler(object):
         assert isinstance(key, str)
         # combine wk_path with filename
         self.file_path = os.path.join(self._wk_dir, file)
-        # write permission, create if not exist
-        fh = h5py.File(self._file_path, 'w', driver='mpio', comm=comm)
-        fh.atomic = True
+        # master node writing
+        if not mpirank:
+            # write permission, create if not exist
+            with h5py.File(self._file_path, mode='a') as fh:
+                # create group and dataset
+                if not key in fh.keys():
+                    dset = fh.create_dataset(key, data.shape, maxshape=(None, None), dtype=data.dtype)
+                else:  # rewrite
+                    dset = fh[key]
+                    dset.resize(data.shape)
+                # write the master node piece
+                dset[:,:] = data
+        comm.Barrier()
+
+    def write_dist(self, data, file, key):
+        """
+        Writes a distributed data-set into a HDF5 file.
+        If the given filename does not exist then creates one
+        the data shape must be either in (m,n) on each node,
+        each node will pass its content to the master node
+        who is in charge of sequential writing.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            any datatype, distributed data
+        file : str
+            filename
+        key : str
+            in form 'group name/dataset name'
+        """
+        log.debug('@ io_handler::write')
+        assert isinstance(data, np.ndarray)
+        assert (len(data.shape) == 2)
+        assert isinstance(file, str)
+        assert isinstance(key, str)
         # know the global data shape and each rank's offset
         local_rows = np.empty(mpisize, dtype=np.uint)
         local_cols = np.empty(mpisize, dtype=np.uint)
@@ -100,21 +142,67 @@ class io_handler(object):
         offset_begin = np.sum(local_rows[0:mpirank])
         offset_end = offset_begin + local_rows[mpirank]
         global_shape = (np.sum(local_rows), local_cols[0])
-        # create group and dataset
-        if not key in fh.keys():
-            dset = fh.create_dataset(key, global_shape, maxshape=(None, None), dtype=data.dtype)
-        else:  # rewrite
-            dset = fh[key]
-            dset.resize(global_shape)
-        # fill data in parallel
-        dset[offset_begin:offset_end,:] = data
-        fh.close()
+        # combine wk_path with filename
+        self.file_path = os.path.join(self._wk_dir, file)
+        # sequential writing
+        if not mpirank:
+            # write permission, create if not exist
+            with h5py.File(self._file_path, mode='a') as fh:
+                # create group and dataset
+                if not key in fh.keys():
+                    dset = fh.create_dataset(key, global_shape, maxshape=(None, None), dtype=data.dtype)
+                else:  # rewrite
+                    dset = fh[key]
+                    dset.resize(global_shape)
+                # write the master node piece
+                dset[0:local_rows[0],:] = data
+                for source in range(1,mpisize):
+                    source_offset_begin = np.sum(local_rows[0:source])
+                    source_offset_end = source_offset_begin + local_rows[source]
+                    # receive data from slave nodes
+                    source_data = comm.recv(source=source, tag=source)
+                    # write to disk
+                    dset[source_offset_begin:source_offset_end,:] = source_data
+        else:  # else to ``if not mpirank``
+            # send data to the master node
+            comm.isend(data, dest=0, tag=mpirank)
+        comm.Barrier()
 
-    def read(self, file, key):
+    def read_copy(self, file, key):
         """
-        Reads from a binary file and returns a distributed data-set
-        note that the binary file data should contain enough rows
-        to be distributed on the available computing nodes
+        Reads from a HDF5 file identically to all nodes.
+        
+        Parameters
+        ----------
+        data : numpy.ndarray
+            distributed data
+        file : str
+            filename
+        key : str
+            in form 'group name/dataset name'
+
+        Returns
+        -------
+        copied numpy.ndarray
+        the output must be in (1,n) shape on each node
+        """
+        log.debug('@ io_handler::read_copied')
+        assert isinstance(file, str)
+        assert isinstance(key, str)
+        # combine wk_path with filename
+        self.file_path = os.path.join(self._wk_dir, file)
+        # write permission, create if not exist
+        with h5py.File(self._file_path, mode='r') as fh:
+            assert (fh[key].shape[0] == 1)
+            data = fh[key][:,:]
+        comm.Barrier()
+        return data
+        
+    def read_dist(self, file, key):
+        """
+        Reads from a HDF5 file and returns a distributed data-set.
+        Note that the binary file data should contain enough rows
+        to be distributed on the available computing nodes,
         otherwise the mpi_arrange function will raise an error
 
         Parameters
@@ -129,17 +217,18 @@ class io_handler(object):
         Returns
         -------
         distributed numpy.ndarray
-        the output must be in either (1,n) or (m,n) shape on each node
+        the output must be in either at least (1,n),
+        or (m,n) shape on each node
         """
-        log.debug('@ io_handler::read')
+        log.debug('@ io_handler::read_dist')
         assert isinstance(file, str)
         assert isinstance(key, str)
         # combine wk_path with filename
         self.file_path = os.path.join(self._wk_dir, file)
         # write permission, create if not exist
-        fh = h5py.File(self._file_path, 'r', driver='mpio', comm=comm)
-        fh.atomic = True
-        global_shape = fh[key].shape
-        offset_begin, offset_end = mpi_arrange(global_shape[0])
-        data = fh[key][offset_begin:offset_end,:]
+        with h5py.File(self._file_path, mode='r') as fh:
+            global_shape = fh[key].shape
+            offset_begin, offset_end = mpi_arrange(global_shape[0])
+            data = fh[key][offset_begin:offset_end,:]
+        comm.Barrier()
         return data

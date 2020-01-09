@@ -32,27 +32,16 @@ WORKDIR /home/lab
 #Dynesty
 RUN pip3 install dynesty
 
-# HDF5
-RUN wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz && mkdir hdf5 && tar xzf hdf5-1.10.5.tar.gz -C hdf5 --strip-components 1
-WORKDIR /home/lab/hdf5
-RUN ./configure --enable-parallel --enable-shared --prefix=/usr/local && make && make install
-WORKDIR /home/lab
-
 # h5py
-RUN git clone https://github.com/h5py/h5py.git h5py
-WORKDIR /home/lab/h5py
-RUN export CC=mpicc && python3 setup.py configure --mpi --hdf5=/usr/local/hdf5 && python3 setup.py build && python3 setup.py install
-WORKDIR /home/lab
+RUN pip3 install h5py
 
 #IMAGINE
-RUN git clone -b mpi https://gioacchinowang@bitbucket.org/hammurabicode/imagine.git imagine
+RUN git clone -b mpi https://github.com/IMAGINE-Consortium/imagine.git imagine
 WORKDIR /home/lab/imagine
 RUN python3 setup.py install
 WORKDIR /home/lab
 
-
 ### the following scripts for distributing hammurabi X
-
 
 # CFITSIO
 RUN mkdir /home/lab/cfitsio
@@ -104,9 +93,7 @@ ENV PATH /usr/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}
 WORKDIR /home/lab
 
-
 ### clean up
-
 
 # CLEAN PACKAGES
 RUN rm -f *.tar.gz
