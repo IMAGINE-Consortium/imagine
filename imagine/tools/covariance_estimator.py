@@ -71,21 +71,21 @@ def oas_cov(data):
 
     .. math::
            U_{ij} = D_{ij} -  \overline{D}_j\,,\;
-           \text{with}\; \overline{D}_j=\tfrac{1}{N} \sum_{i=1}^N D_{ij}
+           \text{with}\; \overline{D}_j=\tfrac{1}{n} \sum_{i=1}^n D_{ij}
 
     Let
 
     .. math::
-          S = \tfrac{1}{N} U^T U\,,\;
-          t = \text{tr}(S)\quad\text{and}\quad v = \text{tr}(S)
+          S = \tfrac{1}{n} U^T U\,,\;
+          T = \text{tr}(S)\quad\text{and}\quad V = \text{tr}(S^2)
 
     .. math::
-          \tilde\rho = \min\left[1,\frac{(1-2/m)v + t^2}{ (m+1-2/m)(v-t^2/m)}\right]
+          \tilde\rho = \min\left[1,\frac{(1-2/m)V + T^2}{ (n+1-2/m)(V-T^2/m)}\right]
 
     The covariance is given by
 
     .. math::
-          \text{cov}_\text{OAS} = (1-\rho)S + \tfrac{1}{N} t \rho I_m
+          \text{cov}_\text{OAS} = (1-\rho)S + \tfrac{1}{N} \rho T I_m
 
 
     Parameters
