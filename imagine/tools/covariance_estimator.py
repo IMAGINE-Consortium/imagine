@@ -40,13 +40,13 @@ def empirical_cov(data):
     Parameters
     ----------
     data : numpy.ndarray
-        ensemble of observables, in global shape (ensemble size, data size)
+        Ensemble of observables, in global shape (ensemble size, data size).
 
     Returns
     -------
     cov : numpy.ndarray
-        distributed (not copied) covariance matrix in global shape
-        (data size, data size) each node takes part of the rows
+        Distributed (not copied) covariance matrix in global shape (data size, data size),
+        each node takes part of the rows.
     """
     log.debug('@ covariance_estimator::empirical_cov')
     assert isinstance(data, np.ndarray)
@@ -91,12 +91,12 @@ def oas_cov(data):
     Parameters
     ----------
     data : numpy.ndarray
-        distributed data in global shape (ensemble_size, data_size)
+        Distributed data in global shape (ensemble_size, data_size).
 
     Returns
     -------
     cov : numpy.ndarray
-        covariance matrix in global shape (data_size, data_size)
+        Covariance matrix in global shape (data_size, data_size).
     """
     log.debug('@ covariance_estimator::oas_cov')
     _, cov = oas_mcov(data)
@@ -113,14 +113,14 @@ def oas_mcov(data):
     Parameters
     ----------
     data : numpy.ndarray
-        distributed data in global shape (ensemble_size, data_size)
+        Distributed data in global shape (ensemble_size, data_size).
 
     Returns
     -------
     mean : numpy.ndarray
-        copied ensemble mean (on all nodes)
+        Copied ensemble mean (on all nodes).
     cov : numpy.ndarray
-        distributed covariance matrix in shape (data_size, data_size)
+        Distributed covariance matrix in shape (data_size, data_size).
     """
     log.debug('@ covariance_estimator::oas_mcov')
     assert isinstance(data, np.ndarray)

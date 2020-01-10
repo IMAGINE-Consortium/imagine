@@ -3,7 +3,7 @@ This module defines methods related to masking out distributed data
 and/or the associated covariance matrix.
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
-implemented with numpy.ndarray raw data
+Implemented with numpy.ndarray raw data.
 """
 
 import numpy as np
@@ -19,21 +19,21 @@ mpirank = comm.Get_rank()
 
 def mask_obs(obs, mask):
     """
-    Applies a mask to an observable
+    Applies a mask to an observable.
 
     Parameters
     ----------
     data : distributed numpy.ndarray
-        ensemble of observables, in global shape (ensemble size, data size)
-        each node contains part of the global rows
+        Ensemble of observables, in global shape (ensemble size, data size)
+        each node contains part of the global rows.
 
     mask : numpy.ndarray
-        copied mask map in shape (1, data size) on each node
+        Copied mask map in shape (1, data size) on each node.
 
     Returns
     -------
     numpy.ndarray
-        Masked observable of shape (ensemble size, masked data size)
+        Masked observable of shape (ensemble size, masked data size).
     """
     log.debug('@ masker::mask_data')
     assert isinstance(obs, np.ndarray)
@@ -55,20 +55,20 @@ def mask_obs(obs, mask):
 
 def mask_cov(cov, mask):
     """
-    Applies mask to the observable covariance
+    Applies mask to the observable covariance.
 
     Parameters
     ----------
     cov : distributed numpy.ndarray
-        covariance matrix of observalbes in global shape (data size, data size)
-        each node contains part of the global rows
+        Covariance matrix of observalbes in global shape (data size, data size)
+        each node contains part of the global rows.
     mask : numpy.ndarray
-        copied mask map in shape (1, data size)
+        Copied mask map in shape (1, data size).
 
     Returns
     -------
     numpy.ndarray
-        Masked covariance matrix of shape (masked data size, masked data size)
+        Masked covariance matrix of shape (masked data size, masked data size).
     """
     log.debug('@ masker::mask_cov')
     assert isinstance(cov, np.ndarray)

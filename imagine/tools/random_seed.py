@@ -11,18 +11,17 @@ import logging as log
 def seed_generator(trigger):
     """
     Sets trigger as 0 will generate time-thread dependent method
-    otherwise returns the trigger as seed
+    otherwise returns the trigger as seed.
 
     Parameters
     ----------
     trigger : int
-        non-negative value
-        pre-fixed seed value
+        Non-negative pre-fixed seed.
 
     Returns
     -------
-    int
-        A random seed value
+    seed : int
+        A random seed value.
     """
     log.debug('@ random_seed::seed_generator')
     if trigger > 0:
@@ -34,17 +33,17 @@ def seed_generator(trigger):
 
 def ensemble_seed_generator(size):
     """
-    Generates fixed random seed values for each realization in ensemble
+    Generates fixed random seed values for each realization in ensemble.
 
     Parameters
     ----------
     size : int
-        Number of realizations in ensemble
+        Number of realizations in ensemble.
 
     Returns
     -------
-    numpy.ndarray
-        An array of random seeds
+    seeds : numpy.ndarray
+        An array of random seeds.
     """
     log.debug('@ random_seed::ensemble_seed_generator')
     # the uint32 is defined by the random generator's capasity
