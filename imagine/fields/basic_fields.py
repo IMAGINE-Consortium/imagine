@@ -50,34 +50,3 @@ class ThermalElectronDensityField(GeneralField):
     def data_shape(self):
         return tuple(self.grid.shape)
     
-    
-class CosmicRayDistribution(GeneralField):
-    """
-    Base class for cosmic ray thermal electron density
-
-
-    Parameters
-    ----------
-    energy_bins : list or array
-        Values of the edges of the energy bins in GeV
-
-    Atributes
-    ---------
-    energy_bins
-        Values of the edges of the energy bins in GeV
-    data_shape
-        aa
-    """
-    field_name = 'constant_cre_base'
-    field_type = 'cosmic_ray_electron_density'
-    def __init__(self, *args, energy_bins=[], **kwargs):
-        super().__init__(*args, **kwargs)
-        # Sets instance attributes
-        self.data_description = ['grid_x','grid_y','grid_z','Energy_bin']
-        self.energy_bins = np.array(energy_bins)
-        self.energy_bins_units = 'GeV'
-        number_of_bins = energy_bins.size
-        self.data_shape = [i for i in self.grid.shape[i]] + [number_of_bins]
-        self.data_units = 'GeV/(m^2 s Sr)'
-
-
