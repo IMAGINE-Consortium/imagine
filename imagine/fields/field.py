@@ -49,10 +49,7 @@ class GeneralField(object):
         Type of physical field. See :doc:`code conventions <conventions>`.
         (class attribute)
     """
-
     field_name = 'unset' # This is actually a class attribute
-    field_type = None # This is actually a class attribute
-
     def __init__(self, grid=None, parameters=dict(), ensemble_size=1,
                  ensemble_seeds=None):
         log.debug('@ field::__init__')
@@ -60,7 +57,18 @@ class GeneralField(object):
         self.parameters = parameters
         self.ensemble_size = ensemble_size
         self.ensemble_seeds = ensemble_seeds
+        # Placeholders
         self._data = None
+
+    @property
+    def field_type(self):
+        raise NotImplemented
+    @property
+    def data_description(self):
+        raise NotImplemented
+    @property
+    def data_shape(self):
+        raise NotImplemented
 
     def get_field(self, parameters):
         """
@@ -79,6 +87,14 @@ class GeneralField(object):
         """
         if self._data is None:
             self._data = self.get_field(self.parameters)
+        try:
+            assert self._data.shape == self.data_shape
+        except AssertionError:
+            print('Incorrect shape, it should be:', self.data_shape)
+            print('It is instead:', self._data.shape)
+            print('Description:', self.data_description)
+            raise
+
         return self._data
 
     @property

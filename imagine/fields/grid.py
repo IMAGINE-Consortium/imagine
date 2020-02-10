@@ -25,7 +25,7 @@ class BaseGrid:
     ----------
     box : 3x2-array_like
          Box limits
-    
+
     resolution : 3-array_like
          containing the resolution along each axis.
 
@@ -48,6 +48,7 @@ class BaseGrid:
 
         self._coordinates = None
         self._prototype_source = None
+        self.grid_type = None
 
     @property
     def coordinates(self):
