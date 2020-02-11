@@ -45,9 +45,6 @@ class GeneralField(object):
     ----------
     field_name : str
         Name of the physical field (class attribute)
-    field_type : str
-        Type of physical field. See :doc:`code conventions <conventions>`.
-        (class attribute)
     """
     field_name = 'unset' # This is actually a class attribute
     def __init__(self, grid=None, parameters=dict(), ensemble_size=1,
@@ -74,7 +71,7 @@ class GeneralField(object):
         """
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
-        See :doc:`code conventionst <conventions>`.
+        See :doc:`documentation <design_components>`.
         """
         raise NotImplementedError
 
@@ -82,8 +79,7 @@ class GeneralField(object):
     def data(self):
         """
         Field data computed by this class with dimensions compatible with
-        the associated `field_type` following
-        :doc:`code conventions <conventions>`.
+        the associated `field_type`. See :doc:`documentation <design_components>`.
         """
         if self._data is None:
             self._data = self.get_field(self.parameters)

@@ -75,7 +75,7 @@ class GeneralFieldFactory:
         self._default_parameters = None
         self._parameter_ranges = {}
         self._active_parameters = {}
-                
+
     @property
     def field_name(self):
         """Name of the physical field"""
@@ -88,7 +88,7 @@ class GeneralFieldFactory:
 
     @property
     def field_type(self):
-        """Type of physical field. See :doc:`code conventions <conventions>`."""
+        """Type of physical field."""
         return self.field_class.field_type
 
     @property

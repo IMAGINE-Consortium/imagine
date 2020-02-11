@@ -47,6 +47,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
+    #'sphinx.ext.autosectionlabel'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -61,6 +62,14 @@ exclude_patterns = []
 master_doc = 'index'
 
 #html_logo = 'logo.png'
+
+
+dd_function_parentheses = True
+add_module_names = True
+numfig = True
+
+# Reference formatting
+numfig_format = {'figure': "Fig. %s"}
 
 
 # ------------------------------------------------------------------
