@@ -19,6 +19,7 @@ IMAGINE documentation
    installation
    design_components
    bayes
+   parallel
 
 .. toctree::
     :maxdepth: 4
