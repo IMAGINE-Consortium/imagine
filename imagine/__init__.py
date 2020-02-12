@@ -4,8 +4,8 @@ from .likelihoods.ensemble_likelihood import EnsembleLikelihood
 from .likelihoods.simple_likelihood import SimpleLikelihood
 from .fields.field_factory import GeneralFieldFactory
 from .fields.field import GeneralField
-from .fields.basic_fields import *
 from .fields.grid import *
+from .fields.basic_fields import *
 
 from .observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances, Masks
 from .simulators.simulator import Simulator

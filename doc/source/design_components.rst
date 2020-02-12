@@ -80,18 +80,26 @@ The *Field factory*
 
 
 
-^^^^^^^^^^^^^^^
-Magnetic Fields
-^^^^^^^^^^^^^^^
+^^^^
+Grid
+^^^^
 
-.. .. literalinclude:: ../../imagine/fields/template/magnetic_field_template.py
 
 
 ^^^^^^^^^^^^^^^^^
 Thermal electrons
 ^^^^^^^^^^^^^^^^^
 
-.. .. literalinclude:: ../../imagine/fields/template/thermal_electrons_template.py
+
+.. literalinclude:: ../../imagine/fields/templates/thermal_electrons_template.py
+
+
+^^^^^^^^^^^^^^^
+Magnetic Fields
+^^^^^^^^^^^^^^^
+
+
+.. literalinclude:: ../../imagine/fields/templates/magnetic_field_template.py
 
 
 ^^^^^^^^^^^^^^^^^^^^

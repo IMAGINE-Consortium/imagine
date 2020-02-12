@@ -47,7 +47,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    #'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -79,6 +79,7 @@ autodoc_default_options = {'members': None,
 
 autodoc_member_order = 'groupwise'
 autodoc_inherit_docstrings = False
+autosectionlabel_prefix_document = True
 
 # Napoleon configuration
 napoleon_include_private_with_doc = True

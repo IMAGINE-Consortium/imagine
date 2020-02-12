@@ -12,6 +12,14 @@ Subpackages
 Submodules
 ----------
 
+imagine.fields.basic\_fields module
+-----------------------------------
+
+.. automodule:: imagine.fields.basic_fields
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.fields.field module
 ---------------------------
 
