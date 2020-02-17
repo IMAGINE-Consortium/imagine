@@ -1,3 +1,7 @@
+"""
+Datasets are auxiliary classes used to facilitate the reading and inclusion of 
+observational data in the IMAGINE pipeline"""
+
 from imagine.tools.icy_decorator import icy
 import numpy as np
 
@@ -8,17 +12,57 @@ class Dataset:
     """
     def __init__(self):
         self.coords = None
+        self.Nside = None
+        self.frequency = 'nan'
+        self.tag = 'nan'
+        self._cov = None
+        self._error = None
+        self._data = None
+        
     @property
     def name(self):
         return None
 
     @property
     def data(self):
-        raise NotImplemented
+        """ Array in the shape (1, N) """
+        return self._data[np.newaxis,:]
 
     @property
     def key(self):
-        raise NotImplemented
+        """Key used in the Observables_dictionary """
+        return (self.name,self.frequency, self.Nside, self.tag)
+    
+    @property
+    def cov(self):
+        if self._cov is None:
+            self._cov = self._error * np.eye(self._data.size)
+        return self._cov
+            
+
+@icy 
+class TabularDataset(Dataset):
+    """
+    Base class for tabular datasets, where the data is input in either
+    in a Pandas DataFrame or a Python dictionary-like object.
+    """
+    def __init__(self, data, name, data_column='meas', lon_column='lon', 
+                 lat_column='lat', error_column=None, frequency='nan', tag='nan'):
+        super().__init__()
+        if data_column is None:
+            data_column=name
+        self._name = name
+        self._data = data[data_column]
+        self.coords = (data[lon_column], data[lat_column])
+        self.frequency = frequency
+        self.tag = tag
+        if error_column is not None:
+            self._error = data[error_column]
+    
+    @property
+    def name(self):
+        return self._name
+
 
 @icy
 class HEALPixDataset(Dataset):
@@ -26,30 +70,23 @@ class HEALPixDataset(Dataset):
     Base class for HEALPix datasets, which are input as
     a simple 1D-array without explicit coordinate information
     """
-    def __init__(self, data, Nside=None):
+    def __init__(self, data, error=None, cov=None, Nside=None):
         super().__init__()
-
-        self.frequency = 'nan'
-        self.tag = 'nan'
 
         dataNside = np.uint(np.sqrt(data.size/12))
         if Nside is None:
             Nside = dataNside
-        assert Nside == dataNside
+        try:
+            assert 12*int(Nside)**2 == data.size
+        except AssertionError:
+            print(12*int(Nside)**2, data.size)
+            raise
+            
         self.Nside = str(Nside)
 
         assert len(data.shape)==1
         self._data = data
-
-    @property
-    def data(self):
-        """ Array in the shape (1, N) """
-        return data[np.newaxis,:]
-
-    @property
-    def key(self):
-        """Key used in the Observables_dictionary """
-        return (self.name,self.frequency, self.Nside, self.tag)
+        self._error = error
 
 @icy
 class FaradayDepthHEALPixDataset(HEALPixDataset):
@@ -116,7 +153,6 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     * 'PI' - polarisation intensity (in unit K-cmb)
     * 'PA' - polarisation angle (in unit rad, IAU convention)
 
-
     Parameters
     ----------
     data : numpy.ndarray
@@ -148,3 +184,4 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     @property
     def name(self):
         return 'sync'
+

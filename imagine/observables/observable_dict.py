@@ -23,7 +23,7 @@ Conventions for observables entries
     Remarks:
         * `str(freq)`, polarisation-related-flag are redundant for Faraday depth
             and dispersion measure so we put 'nan' instead
-        * `str(pix/nside)` stores either Healpix Nisde, or just number of
+        * `str(pix/nside)` stores either Healpix Nside, or just number of
             pixels/points we do this for flexibility, in case users have non-HEALPix
             based in/output
 
@@ -176,7 +176,7 @@ class Measurements(ObservableDict):
     def __init__(self):
         super(Measurements, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name=None, new=None, plain=False, dataset=None):
         """
         Adds/updates name and data
 
@@ -194,6 +194,11 @@ class Measurements(ObservableDict):
             If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Measurements::append')
+        
+        if dataset is not None:
+            name = dataset.key
+            new = dataset.data
+        
         assert (len(name) == 4)
         if isinstance(new, Observable):
             assert (new.dtype == 'measured')
@@ -299,7 +304,7 @@ class Covariances(ObservableDict):
     def __init__(self):
         super(Covariances, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name=None, new=None, plain=False, dataset=None):
         """
         Adds/updates name and data
 
@@ -317,6 +322,11 @@ class Covariances(ObservableDict):
             If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Covariances::append')
+        
+        if dataset is not None:
+            name = dataset.key
+            new = dataset.cov        
+        
         assert (len(name) == 4)
         if isinstance(new, Observable):  # always rewrite
             if plain:
