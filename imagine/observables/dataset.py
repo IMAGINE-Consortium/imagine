@@ -4,6 +4,7 @@ observational data in the IMAGINE pipeline"""
 
 from imagine.tools.icy_decorator import icy
 import numpy as np
+from astropy import units as u
 
 class Dataset:
     """
@@ -46,19 +47,35 @@ class TabularDataset(Dataset):
     Base class for tabular datasets, where the data is input in either
     in a Pandas DataFrame or a Python dictionary-like object.
     """
-    def __init__(self, data, name, data_column='meas', lon_column='lon', 
-                 lat_column='lat', error_column=None, frequency='nan', tag='nan'):
+    def __init__(self, data, name, data_column=None, units=None,
+                 coordinates_type='galactic', lon_column='lon', lat_column='lat', 
+                 error_column=None, frequency='nan', tag='nan'):
         super().__init__()
         if data_column is None:
             data_column=name
+            
         self._name = name
-        self._data = data[data_column]
-        self.coords = (data[lon_column], data[lat_column])
+        self._data = u.Quantity(data[data_column], units, copy=False)
+        if coordinates_type == 'galactic':
+            self.coords = {'type': coordinates_type,
+                           'lon': u.Quantity(data[lon_column], unit=u.deg), 
+                           'lat': u.Quantity(data[lat_column], unit=u.deg)}
+        elif coordinates_type == 'cartesian':
+            self.coords = {'type': coordinates_type,
+                           'x': u.Quantity(data[x_column], unit=u.kpc), 
+                           'y': u.Quantity(data[y_column], unit=u.kpc),
+                           'z': u.Quantity(data[z_column], unit=u.kpc)}
+        elif coordinates_type == None:
+            pass
+        else:
+            raise ValueError('Unknown coordinates_type!')
+            
         self.frequency = frequency
         self.tag = tag
         if error_column is not None:
-            self._error = data[error_column]
-    
+            self._error = np.array(data[error_column])
+        
+        self.Nside = str(self._data.size)
     @property
     def name(self):
         return self._name
@@ -83,7 +100,6 @@ class HEALPixDataset(Dataset):
             raise
             
         self.Nside = str(Nside)
-
         assert len(data.shape)==1
         self._data = data
         self._error = error
@@ -91,7 +107,7 @@ class HEALPixDataset(Dataset):
 @icy
 class FaradayDepthHEALPixDataset(HEALPixDataset):
     r"""
-    Stores a Faraday depth map into IMAGINE-compatible
+    Stores a Faraday depth map into an IMAGINE-compatible
     dataset
 
     Parameters
@@ -116,7 +132,7 @@ class FaradayDepthHEALPixDataset(HEALPixDataset):
 @icy
 class DispersionMeasureHEALPixDataset(HEALPixDataset):
     r"""
-    Stores a Dispersion measure map into IMAGINE-compatible
+    Stores a dispersion measure map into an IMAGINE-compatible
     dataset
 
     Parameters
@@ -141,8 +157,8 @@ class DispersionMeasureHEALPixDataset(HEALPixDataset):
 @icy
 class SynchrotronHEALPixDataset(HEALPixDataset):
     r"""
-    Stores a synchrotron emission maps into IMAGINE-compatible
-    dataset. These include Stokes parameters, total and polarised
+    Stores a synchrotron emission map into an IMAGINE-compatible
+    dataset. This can be Stokes parameters, total and polarised
     intensity, and polarisation angle.
 
     The parameter `type` and the units of the map in `data` must follow:

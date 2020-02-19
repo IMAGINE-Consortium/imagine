@@ -59,7 +59,7 @@ from mpi4py import MPI
 from imagine.observables.observable import Observable
 from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.icy_decorator import icy
-
+from imagine.observables.dataset import Dataset, HEALPixDataset
 
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
@@ -196,8 +196,16 @@ class Measurements(ObservableDict):
         log.debug('@ observable_dict::Measurements::append')
         
         if dataset is not None:
+            assert isinstance(dataset, Dataset)
             name = dataset.key
             new = dataset.data
+            coords = dataset.coords
+            if isinstance(dataset, HEALPixDataset):
+                plain=False
+            else:
+                plain=True
+        else:
+            coords=None
         
         assert (len(name) == 4)
         if isinstance(new, Observable):
@@ -212,7 +220,9 @@ class Measurements(ObservableDict):
                 assert (new.shape[1] == np.uint(name[2]))
             else:
                 assert (new.shape[1] == 12*np.uint(name[2])**2)
-            self._archive.update({name: Observable(new, 'measured')})  # rw
+            self._archive.update({name: Observable(data=new, 
+                                                   dtype='measured',
+                                                   coords=coords)})  # rw
         else:
             raise TypeError('unsupported data type')
 
@@ -323,9 +333,16 @@ class Covariances(ObservableDict):
         """
         log.debug('@ observable_dict::Covariances::append')
         
+        
         if dataset is not None:
+            assert isinstance(dataset, Dataset)
             name = dataset.key
-            new = dataset.cov        
+            new = dataset.cov
+
+            if isinstance(dataset, HEALPixDataset):
+                plain=False
+            else:
+                plain=True
         
         assert (len(name) == 4)
         if isinstance(new, Observable):  # always rewrite

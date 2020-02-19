@@ -47,9 +47,17 @@ class Observable(object):
     dtype : str
         Data type, must be either: 'measured', 'simulated' or 'covariance'
     """
-    def __init__(self, data=None, dtype=None):
+    def __init__(self, data=None, dtype=None, coords=None):
         self.dtype = dtype
-        self.data = data
+        
+        # Uses the astropy unit, if this is provided
+        try:
+            self.data = data.value
+            self.unit = data.unit
+        except AttributeError:
+            self.data = data
+            self.unit = None
+        self.coords = coords
         self.rw_flag = False
 
     @property
