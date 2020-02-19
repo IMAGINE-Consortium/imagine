@@ -45,10 +45,40 @@ class Dataset:
 class TabularDataset(Dataset):
     """
     Base class for tabular datasets, where the data is input in either
-    in a Pandas DataFrame or a Python dictionary-like object.
+    in a Python dictionary-like object 
+    (astropy.Tables, pandas.DataFrame, etc).
+    
+    Parameters
+    ----------
+    data : dictionary-like
+        astropy.Tables, pandas.DataFrame, or similar object
+        containing the data.
+    data_column : str
+        Key used to access the relevant dataset from the provided data
+        (i.e. data[data_column]).
+    units : astropy.units.Unit or str
+        Units used for the data.
+    coordinates_type : str
+        Type of coordinates used. Can be 'galactic' or 'cartesian'.
+    lon_column : str
+        Key used to access the Galactic longitudes (in deg) from
+        `data`.
+    lat_column : str
+        Key used to access the Galactic latitudes (in deg) from
+        `data`.
+    lat_column : str
+        Key used to access the Galactic latitudes (in deg) from
+        `data`.
+    x_column, y_column, z_column : str
+        Keys used to access the coordinates (in kpc) from
+        `data`.    
+    frequency : str
+        String with the frequency of the measurement in GHz (if relevant)
+    tag : str
     """
     def __init__(self, data, name, data_column=None, units=None,
                  coordinates_type='galactic', lon_column='lon', lat_column='lat', 
+                 x_column='x', y_column='y', z_column='z'
                  error_column=None, frequency='nan', tag='nan'):
         super().__init__()
         if data_column is None:
@@ -70,7 +100,7 @@ class TabularDataset(Dataset):
         else:
             raise ValueError('Unknown coordinates_type!')
             
-        self.frequency = frequency
+        self.frequency = str(frequency)
         self.tag = tag
         if error_column is not None:
             self._error = np.array(data[error_column])
@@ -174,14 +204,12 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     data : numpy.ndarray
       1D-array containing the HEALPix map
     frequency : float
-      Frequency of the radio observation in $\rm cm$
-
+      Frequency of the radio observation in $\rm GHz$
     Nside : int, optional
       For extra internal consistency checking. If `Nside` is present,
       it will be checked whether :math:`12\times N_{side}^2` matches data.size
     type : str
       The type of map being supplied in `data`.
-
 
     Attributes
     -------

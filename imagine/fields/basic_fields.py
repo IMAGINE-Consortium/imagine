@@ -67,7 +67,7 @@ class ThermalElectronDensityField(GeneralField):
 
     @property
     def field_type(self):
-        return 'cosmic_ray_electron_density'
+        return 'thermal_electron_density'
     @property
     def data_description(self):
         return  ['grid_x','grid_y','grid_z']
