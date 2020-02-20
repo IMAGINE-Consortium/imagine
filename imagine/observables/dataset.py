@@ -78,7 +78,7 @@ class TabularDataset(Dataset):
     """
     def __init__(self, data, name, data_column=None, units=None,
                  coordinates_type='galactic', lon_column='lon', lat_column='lat', 
-                 x_column='x', y_column='y', z_column='z'
+                 x_column='x', y_column='y', z_column='z',
                  error_column=None, frequency='nan', tag='nan'):
         super().__init__()
         if data_column is None:
