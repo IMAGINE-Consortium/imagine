@@ -1,6 +1,7 @@
 from imagine.tools.icy_decorator import icy
+from imagine import Measurements, Simulations
+import numpy as np
 
-@icy
 class Simulator(object):
     """
     Simulator base class
@@ -20,12 +21,12 @@ class Simulator(object):
         self.output_units = {}
         self.register_observables(measurements)
          
-    def register_observables(measurements):
+    def register_observables(self, measurements):
         
         assert isinstance(measurements, Measurements)
         
-        for key in measurements:
-            if key[0] in simulated_quantities:
+        for key in measurements.keys():
+            if key[0] in self.simulated_quantities:
                 # Using a list for keys as preserving the _order_ may,
                 # perhaps, be useful later
                 self.observables.append(key) 
@@ -33,7 +34,7 @@ class Simulator(object):
                 self.output_units[key] = measurements[key].unit
         assert len(self.observables)>0, 'No valid observable was requested!'
         
-    def register_fields(field_list):
+    def register_fields(self, field_list):
         """
         Registers the available fields checking wheter requirements 
         are satisfied. Everything is saved on a dictionary, 
@@ -69,34 +70,25 @@ class Simulator(object):
         assert set(self.required_field_types) == set(self.fields.keys()), 'Missing required field'
         
     @property
-    def simulated_quantities():
+    def simulated_quantities(self):
         raise NotImplementedError
     
     @property
-    def required_field_types():
+    def required_field_types(self):
         raise NotImplementedError
     @property
-    def allowed_grid_types():
+    def allowed_grid_types(self):
         raise NotImplementedError
     
-    def simulate():
+    def simulate(self, key, coords_dict, Nside, output_units):
         raise NotImplementedError
+    
     def __call__(self, field_list):
-        self._register_fields(field_list)
-        # The "meat" should be in simulate(), which is called here
+        self.register_fields(field_list)
+        sims = Simulations()
+        for key in self.observables:
+            sim = self.simulate(key=key, coords_dict=self.output_coords[key], 
+                                Nside=None, output_units=self.output_units[key])
+            sims.append(key, sim[np.newaxis,:], plain=True)
+        return sims
         
-        raise NotImplementedError
-
-        
-        
-class Faraday_Simulator(object):
-    @property
-    def simulated_quantities():
-        return {'fd'}
-    
-    @property
-    def required_field_types():
-        return {'magnetic_field', 'thermal_electron_density'}
-    @property
-    def allowed_grid_types():
-        return {'cartesian'}
