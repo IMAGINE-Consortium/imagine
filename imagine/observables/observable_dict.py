@@ -88,7 +88,7 @@ class ObservableDict(object):
     def __getitem__(self, key):
         return self._archive[key]
 
-    def append(self, name, data, plain=False):
+    def append(self, name, new_data, plain=False):
         """
         Adds/updates name and data
 
@@ -99,7 +99,7 @@ class ObservableDict(object):
             ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        data
+        new_data
             distributed/copied ndarray/Observable
         plain : bool
             If True, means unstructured data.
@@ -128,7 +128,7 @@ class Masks(ObservableDict):
     def __init__(self):
         super(Masks, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name, new_data, plain=False):
         """
         Adds/updates name and data
 
@@ -136,10 +136,10 @@ class Masks(ObservableDict):
         ----------
         name : str tuple
             Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            ``(data-name,str(data-freq),str(data-Nside/"tab"),str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        data
+        new_data
             distributed/copied ndarray/Observable
         plain : bool
             If True, means unstructured data.
@@ -147,20 +147,16 @@ class Masks(ObservableDict):
         """
         log.debug('@ observable_dict::Masks::append')
         assert (len(name) == 4)
-        if isinstance(new, Observable):
-            assert (new.dtype == 'measured')
-            if plain:
-                assert (new.shape[1] == np.uint(name[2]))
-            else:
-                assert (new.size == 12*np.uint(name[2])**2)
-            self._archive.update({name: new})
-        elif isinstance(new, np.ndarray):
-            assert (new.shape[0] == 1)
-            if plain:
-                assert (new.shape[1] == np.uint(name[2]))
-            else:
-                assert (new.shape[1] == 12*np.uint(name[2])*np.uint(name[2]))
-            self._archive.update({name: Observable(new, 'measured')})
+        if isinstance(new_data, Observable):
+            assert (new_data.dtype == 'measured')
+            if not plain:
+                assert (new_data.size == 12*np.uint(name[2])**2)
+            self._archive.update({name: new_data})
+        elif isinstance(new_data, np.ndarray):
+            assert (new_data.shape[0] == 1)
+            if not plain:
+                assert (new_data.shape[1] == 12*np.uint(name[2])*np.uint(name[2]))
+            self._archive.update({name: Observable(new_data, 'measured')})
         else:
             raise TypeError('unsupported data type')
 
@@ -176,29 +172,32 @@ class Measurements(ObservableDict):
     def __init__(self):
         super(Measurements, self).__init__()
 
-    def append(self, name=None, new=None, plain=False, dataset=None):
+    def append(self, name=None, new_data=None, plain=False, dataset=None):
         """
         Adds/updates name and data
 
         Parameters
         ----------
+        dataset : imagine.observables.dataset.Dataset
+            The IMAGINE dataset already adjusts the format of the data and sets the
+            adequate key. If `dataset` is present, all other arguments will be ignored.
         name : str tuple
             Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        data
+        new_data : array or Observable
             distributed/copied ndarray/Observable
         plain : bool
-            If True, means unstructured data.
+            If True, means unstructured/tabular data.
             If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Measurements::append')
-        
+
         if dataset is not None:
             assert isinstance(dataset, Dataset)
             name = dataset.key
-            new = dataset.data
+            new_data = dataset.data
             coords = dataset.coords
             if isinstance(dataset, HEALPixDataset):
                 plain=False
@@ -206,25 +205,21 @@ class Measurements(ObservableDict):
                 plain=True
         else:
             coords=None
-        
-        assert (len(name) == 4)
-        if isinstance(new, Observable):
-            assert (new.dtype == 'measured')
-            if plain:
-                assert (new.size == np.uint(name[2]))
-            else:
-                assert (new.size == 12*np.uint(name[2])**2)
-            self._archive.update({name: new})  # rw
-        elif isinstance(new, np.ndarray):
-            if plain:
-                assert (new.shape[1] == np.uint(name[2]))
-            else:
-                assert (new.shape[1] == 12*np.uint(name[2])**2)
-            self._archive.update({name: Observable(data=new, 
+
+        assert (len(name) == 4), 'Wrong format for Observable key!'
+        if isinstance(new_data, Observable):
+            assert (new_data.dtype == 'measured')
+            if not plain:
+                assert (new_data.size == 12*np.uint(name[2])**2)
+            self._archive.update({name: new_data})  # rw
+        elif isinstance(new_data, np.ndarray):
+            if not plain:
+                assert (new_data.shape[1] == 12*np.uint(name[2])**2)
+            self._archive.update({name: Observable(data=new_data,
                                                    dtype='measured',
                                                    coords=coords)})  # rw
         else:
-            raise TypeError('unsupported data type')
+            raise TypeError('Unsupported data type')
 
     def apply_mask(self, mask_dict=None):
         log.debug('@ observable_dict::Measurements::apply_mask')
@@ -259,7 +254,7 @@ class Simulations(ObservableDict):
         ----------
         name : str tuple
             Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         new_data
@@ -269,21 +264,18 @@ class Simulations(ObservableDict):
             If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Simulations::append')
+
         assert (len(name) == 4)
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
             self._archive[name].append(new_data)
         else:  # new_data
             if isinstance(new_data, Observable):
-                if plain:
-                    assert (new_data.size == np.uint(name[2]))
-                else:
+                if not plain:
                     assert (new_data.size == 12*np.uint(name[2])**2)
                 self._archive.update({name: new_data})
             elif isinstance(new_data, np.ndarray):  # distributed data
-                if plain:
-                    assert (new_data.shape[1] == np.uint(name[2]))
-                else:
+                if not plain:
                     assert (new_data.shape[1] == 12*np.uint(name[2])**2)
                 self._archive.update({name: Observable(new_data, 'simulated')})
             else:
@@ -322,7 +314,7 @@ class Covariances(ObservableDict):
         ----------
         name : str tuple
             Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
+            ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         data
@@ -332,8 +324,7 @@ class Covariances(ObservableDict):
             If False (default case), means HEALPix-like sky map.
         """
         log.debug('@ observable_dict::Covariances::append')
-        
-        
+
         if dataset is not None:
             assert isinstance(dataset, Dataset)
             name = dataset.key
@@ -343,18 +334,14 @@ class Covariances(ObservableDict):
                 plain=False
             else:
                 plain=True
-        
+
         assert (len(name) == 4)
         if isinstance(new, Observable):  # always rewrite
-            if plain:
-                assert (new.size == np.uint(name[2]))
-            else:
+            if not plain:
                 assert (new.size == 12*np.uint(name[2])**2)
             self._archive.update({name: new})  # rw
         elif isinstance(new, np.ndarray):
-            if plain:
-                assert (new.shape[1] == np.uint(name[2]))
-            else:
+            if not plain:
                 assert (new.shape[1] == 12*np.uint(name[2])**2)
             self._archive.update({name: Observable(new, 'covariance')})
         else:

@@ -105,7 +105,7 @@ class TabularDataset(Dataset):
         if error_column is not None:
             self._error = np.array(data[error_column])
         
-        self.Nside = str(self._data.size)
+        self.Nside = "tab"
     @property
     def name(self):
         return self._name

@@ -91,7 +91,7 @@ Thermal electrons
 ^^^^^^^^^^^^^^^^^
 
 
-.. literalinclude:: ../../imagine/fields/templates/thermal_electrons_template.py
+.. literalinclude:: ../../imagine/templates/thermal_electrons_template.py
 
 
 ^^^^^^^^^^^^^^^
@@ -99,7 +99,7 @@ Magnetic Fields
 ^^^^^^^^^^^^^^^
 
 
-.. literalinclude:: ../../imagine/fields/templates/magnetic_field_template.py
+.. literalinclude:: ../../imagine/templates/magnetic_field_template.py
 
 
 ^^^^^^^^^^^^^^^^^^^^
@@ -121,6 +121,7 @@ Observables
 Simulators
 ----------
 
+.. literalinclude:: ../../imagine/templates/simulator_template.py
 
 ----------
 Likelihood
