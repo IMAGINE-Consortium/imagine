@@ -23,7 +23,8 @@ class Simulator(object):
         List of Fields
     observables : list
         List of Observable keys
-    output_units : 
+    output_units : astropy.units.Unit
+        Output units used in the simulator
     """
     def __init__(self, measurements):
         self.grid = None
@@ -94,16 +95,16 @@ class Simulator(object):
     @property
     def simulated_quantities(self):
         """
-        Must be overriden with a list or set of simulated quantities this Simulator produces. Example:
-        ['fd', 'sync']
+        Must be overriden with a list or set of simulated quantities this Simulator produces. 
+        Example: ['fd', 'sync']
         """
         raise NotImplementedError
     
     @property
     def required_field_types(self):
         """
-        Must be overriden with a list or set of required field types Simulator needs. Example:
-        ['magnetic_field', 'cosmic_ray_electron_density']
+        Must be overriden with a list or set of required field types Simulator needs. 
+        Example: ['magnetic_field', 'cosmic_ray_electron_density']
         """
         raise NotImplementedError
     @property
