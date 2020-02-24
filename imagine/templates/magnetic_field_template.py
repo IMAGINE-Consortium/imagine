@@ -11,7 +11,7 @@ class MagneticFieldTemplate(MagneticField):
         # available parameters as keys
         return {'Parameter_A': None, 'Parameter_B': None, ...}
     
-    def get_field(parameters):
+    def get_field(self):
         # The coordinates can be accessed from an internal grid object
         x_coord = self.grid.x
         y_coord = self.grid.y

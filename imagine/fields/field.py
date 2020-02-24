@@ -52,7 +52,7 @@ class GeneralField(object):
     def data_shape(self):
         raise NotImplemented
 
-    def get_field(self, parameters):
+    def get_field(self):
         """
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
@@ -67,7 +67,7 @@ class GeneralField(object):
         the associated `field_type`. See :doc:`documentation <design_components>`.
         """
         if self._data is None:
-            self._data = self.get_field(self.parameters)
+            self._data = self.get_field()
         try:
             assert self._data.shape == self.data_shape
         except AssertionError:
