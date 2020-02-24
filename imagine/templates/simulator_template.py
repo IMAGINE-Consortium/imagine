@@ -1,6 +1,7 @@
 from imagine import Simulator
 import numpy as np
 import MY_SIMULATOR
+
 class SimulatorTemplate(Simulator):
     """ 
     Detailed description of the simulator
@@ -61,5 +62,12 @@ class SimulatorTemplate(Simulator):
         # The results should be in a 1-D array of size compatible with 
         # your dataset. I.e. for tabular data: results.size = lat.size
         # and for HEALPix data  results.size = 12*(Nside**2)
+    
+        # Note: Awareness of other observables
+        # While this method will be called for each individual observable
+        # the other observables can be accessed from self.observables
+        # Thus, if your simulator is capable of computing multiple observables
+        # at the same time, the results can be saved to an attribute on the first
+        # call of `simulate` and accessed from this cache later
     
         return results

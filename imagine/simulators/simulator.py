@@ -6,11 +6,24 @@ class Simulator(object):
     """
     Simulator base class
     
-    WORK IN PROGRESS new simulator base class!
+    New Simulators should be introduced by sub-classing the present class.
     
-    Should contain all the book-keeping and checking, with
-    the important calculations delegated to the simulate() method and
-    parameters in subclass-defined properties 
+    Parameters
+    ----------
+    measurements : imagine.Measurements
+        An observables dictionary containing the set of measurements that will be
+        used to prepare the mock observables
+        
+    Attributes
+    ----------
+    grid : imagine.Basegrid
+        Grid object where the fields were evaluated (NB if a common grid is not being 
+        used, this is set to None
+    fields : list
+        List of Fields
+    observables : list
+        List of Observable keys
+    output_units : 
     """
     def __init__(self, measurements):
         self.grid = None
@@ -22,7 +35,16 @@ class Simulator(object):
         self.register_observables(measurements)
          
     def register_observables(self, measurements):
+        """
+        Called during initalization to store the relevant information in the
+        measurements dictionary
         
+        Parameters
+        ----------
+        measurements : imagine.Measurements
+            An observables dictionary containing the set of measurements that will be
+            used to prepare the mock observables
+        """
         assert isinstance(measurements, Measurements)
         
         for key in measurements.keys():
@@ -71,19 +93,65 @@ class Simulator(object):
         
     @property
     def simulated_quantities(self):
+        """
+        Must be overriden with a list or set of simulated quantities this Simulator produces. Example:
+        ['fd', 'sync']
+        """
         raise NotImplementedError
     
     @property
     def required_field_types(self):
+        """
+        Must be overriden with a list or set of required field types Simulator needs. Example:
+        ['magnetic_field', 'cosmic_ray_electron_density']
+        """
         raise NotImplementedError
     @property
     def allowed_grid_types(self):
+        """
+        Must be overriden with a list or set of allowed grid types that work with this Simulator.
+        Example: ['cartesian']
+        """
         raise NotImplementedError
     
     def simulate(self, key, coords_dict, Nside, output_units):
+        """ 
+        Must be overriden with a function that returns the observable described by `key` using
+        the fields in self.fields, in units `output_units`.
+        
+        Parameters
+        ----------
+        key : tuple
+            Observable key in the standard form ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``
+        coords_dict : dictionary
+            Dictionary containing coordinates associated with the observable (or None for HEALPix datasets).
+        Nside : int
+            HEALPix Nside parameter for HEALPix datasets (or None for tabular datasets).
+        output_units : astropy.units.Unit
+            The physical units that should be used for this mock observable
+            
+        Returns
+        -------
+        numpy.ndarray
+            1D *pure* numpy array of length compatible with Nside or coords_dict containing the mock observable 
+            in the output_units.
+        """
         raise NotImplementedError
     
     def __call__(self, field_list):
+        """ 
+        Runs the simulator over a Fields list
+        
+        Paramters
+        ---------
+        field_list : list
+            List of imagine.Field object which should include all the `required_field_types`
+            
+        Returns
+        -------
+        sims : imagine.Simulations
+            A Simulations object containing all the specified mock data
+        """
         self.register_fields(field_list)
         sims = Simulations()
         for key in self.observables:
