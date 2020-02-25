@@ -25,7 +25,7 @@ class GeneralFieldFactory:
     To include a new Field_Factory, one needs to create a derived class
     with customized initialization. Below we show an example which is
     compatible with the :py:class:`xConstantField` showed in the
-    :doc:`documentation <imagine.fields>` of :py:class:`imagine.fields.GeneralField`::
+    :ref:`design_components:Fields` sectionof the documentation::
 
         @icy
         class xConstantField_Factory(GeneralFieldFactory):

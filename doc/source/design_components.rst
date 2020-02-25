@@ -25,19 +25,31 @@ their new data by seeing the impact on different models and toy models.
 In order to be able to do this systematically and rigorously, the basic
 design of IMAGINE first breaks the problem into two abstractions:
 `Fields`_, which represent models of physical fields, and
-`Observables`_, which represent observational or mock data.
-The connection between these two is provided by a `Simulator <Simulators>`_
-which is a mapping from a modelled *Field* into a mock *Observable*.
+`Observables`_, which represent 
+both observational or mock data.
 
-Each of these components are represented by a Python class in IMAGINE.
+New observational data are included in IMAGINE using the `Datasets`_,
+which help effortlessly adjusting the format of the data to the standard
+specifications (and are internally easily converted into *Observables*)
+Also, a collection of *Datasets* contributed by the community can be found in 
+the Consortium's dedicated `Dataset repository <https://github.com/IMAGINE-Consortium/imagine-datasets>`_. 
+
+The connection between a theory and reality done by one of the `Simulators`_.
+Each of these corresponds to a mapping from a set of model *Fields* into a mock 
+*Observables*. The available simulators, importantly, 
+include `Hammurabi <https://bitbucket.org/hammurabicode/hamx/wiki/Home>`_,
+which can compute Faraday rotation measure and diffuse synchrotron and thermal
+dust emission.
+
+Each of these `IMAGINE Components`_ (Fields, Observables, Datasets, Simulators) 
+are represented by a Python class in IMAGINE.
 Therefore, in order to use extend IMAGINE with a specific new field or
-including new observational data, one needs to create a *subclass* of
+including a new observational dataset, one needs to create a *subclass* of
 one of IMAGINE's base classes. This subclass will, very often, be
 a `wrapper <https://en.wikipedia.org/wiki/Wrapper_function>`_ around
 already existing code or scripts. To preserve the modularity and
 flexibility of IMAGINE, one should try to use
-(`as far as possible <Disclaimer>`_)
-only the provided base classes.
+(`as far as possible <Disclaimer>`_) only the provided base classes.
 
 
 .. figure:: imagine_design.png
@@ -48,8 +60,6 @@ only the provided base classes.
 
     The structure of the IMAGINE pipeline.
 
-
-
 :numref:`IMAGINE` describes the typical workflow of IMAGINE and introduces other key base classes.
 Mock and measured data, in the form of `Observables`_, are used
 to compute a likelihood through a `Likelihood`_ class. This, supplemented by a
@@ -58,6 +68,9 @@ posterior distributions and Baysian evidences for the models. The generation
 of different realisations of each Field is managed by the corresponding
 `Field Factory`_ class. Likewise, `Observable Dictionaries`_ help one
 organising and manipulating *Observables*.
+
+
+
 
 ==================
 IMAGINE Components
@@ -110,11 +123,20 @@ Cosmic ray electrons
 
 
 
------------
-Observables
------------
+--------
+Datasets
+--------
+
+
+
+.. _Observables:
+
+-----------------------------------------
+Measurements, Simulations and Covariances
+-----------------------------------------
 
 .. _Observable Dictionaries:
+
 
 
 ----------

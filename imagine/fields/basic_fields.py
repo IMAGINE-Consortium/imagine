@@ -6,8 +6,7 @@ from imagine.tools.icy_decorator import icy
 class DummyField(GeneralField):
     """
     Base class for a dummy Field used for sending parameters and settings to
-    specific Simulators rather than computing and storing a physical field
-
+    specific Simulators rather than computing and storing a physical field.
     """
     field_name = 'dummy_base'
     field_type = 'dummy'
@@ -62,6 +61,9 @@ class MagneticField(GeneralField):
 class ThermalElectronDensityField(GeneralField):
     """
     Base class for cosmic ray thermal electron density
+    
+    For more details, check the :ref:`design_components:Thermal electrons` Section
+    of the documentation.
     """
     field_name = 'thermal_electrons_base'
 
