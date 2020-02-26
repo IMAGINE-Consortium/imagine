@@ -1,19 +1,21 @@
-import os
 from setuptools import setup, find_packages
 
-exec(open('imagine/version.py').read())
-
 setup(name="imagine",
-      version=__version__,
+      version="1.0.0",
       description="Intestellar MAny field inference enGINE",
       license="GPLv3",
-      url="https://gitlab.mpcdf.mpg.de/ift/IMAGINE",
+      url="https://bitbucket.org/hammurabicode/imagine",
+      author="Jiaxin Wang, Theo Steininger",
+      author_email="jiaxin.wang@sjtu.edu.cn",
+      maintainer="Jiaxin Wang",
+      maintainer_email="jiaxin.wang@sjtu.edu.cn",
       packages=find_packages(),
-      dependency_links=['git+https://gitlab.mpcdf.mpg.de/ift/nifty.git/@NIFTy_5#egg=ift_nifty-5.0.0'],
+      include_package_data=True,
+      platforms="any",
       python_requires='>=3.5',
-      install_requires=['nifty5>=5.0.0', 'simplejson'],
+      install_requires=['numpy', 'mpi4py', 'h5py'],
       zip_safe=False,
-      classifiers=["Development Status :: 4 - Beta",
+      classifiers=["Development Status :: 5 - Production/Stable",
                    "Topic :: Utilities",
                    "License :: OSI Approved :: GNU General Public License v3 "
                    "or later (GPLv3+)"],)

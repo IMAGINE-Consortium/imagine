@@ -1,29 +1,51 @@
 """
-provide time-thread dependent seed value
-"""
+This module provides a time-thread dependent seed value.
 
-import numpy
+For the testing suites, please turn to "imagine/tests/tools_tests.py".
+"""
+import numpy as np
 import time
 import threading
+import logging as log
 
+def seed_generator(trigger):
+    """
+    Sets trigger as 0 will generate time-thread dependent method
+    otherwise returns the trigger as seed
 
-def seed_generator(_seed):
+    Parameters
+    ----------
+    trigger : int
+        non-negative value
+        pre-fixed seed value
+
+    Returns
+    -------
+    int
+        A random seed value
     """
-    given 0 will trigger time-thread dependent method
-    :param _seed: pre-fixed seed value
-    :return: modified seed value
-    """
-    if _seed > 0:
-        return _seed
-    elif _seed == 0:
+    log.debug('@ random_seed::seed_generator')
+    if trigger > 0:
+        return int(trigger)
+    elif trigger == 0:
         return round(time.time()*1E+9) % int(1E+8) + threading.get_ident() % int(1E+8)
     else:
         raise ValueError('unsupported random seed value')
 
-def ensemble_seed_generator(_size):
+def ensemble_seed_generator(size):
     """
-    generate fixed random seed values for each realization in ensemble
-    :param _size: number of realizations in ensemble
-    :return: a list of integers
+    Generates fixed random seed values for each realization in ensemble
+
+    Parameters
+    ----------
+    size : int
+        Number of realizations in ensemble
+
+    Returns
+    -------
+    numpy.ndarray
+        An array of random seeds
     """
-    return numpy.random.randint(low=1, high=numpy.uint32(-1)//3, size=_size)
+    log.debug('@ random_seed::ensemble_seed_generator')
+    # the uint32 is defined by the random generator's capasity
+    return np.random.randint(low=1, high=np.uint32(-1)//3, size=np.uint(size))

@@ -1,69 +1,227 @@
 import unittest
 import numpy as np
-
-import mpi4py
-
-from nifty5 import Field, DomainTuple, RGSpace
-from imagine.observables.observable import Observable
-from imagine.tools.masker import mask_obs, mask_cov
+from mpi4py import MPI
 from imagine.tools.random_seed import seed_generator
-from imagine.tools.covariance_estimator import oas_mcov
+from imagine.tools.mpi_helper import mpi_mean, mpi_arrange, mpi_trans
+from imagine.tools.mpi_helper import mpi_mult, mpi_eye, mpi_trace
+from imagine.tools.mpi_helper import  mpi_shape, mpi_lu_solve, mpi_slogdet
+from imagine.tools.mpi_helper import mpi_global, mpi_local
+from imagine.tools.masker import mask_obs, mask_cov
+from imagine.tools.covariance_estimator import empirical_cov, oas_cov, oas_mcov
 
-comm = mpi4py.MPI.COMM_WORLD
+
+comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-
 class TestTools(unittest.TestCase):
-
+    
     def test_seed(self):
         # test seed gen, in base class
         s1 = seed_generator(0)
         s2 = seed_generator(0)
-        self.assertNotEqual(s1, s2)
-        s3 = seed_generator(48)
-        self.assertEqual(s3, 48)
+        self.assertNotEqual(s1,s2)
+        s3 = seed_generator(23)
+        self.assertEqual(s3,23)
 
+    def test_shape(self):
+        if not mpirank:
+            arr = np.random.rand(2,128)
+        else:
+            arr = np.random.rand(1,128)
+        test_shape = mpi_shape(arr)
+        self.assertEqual(test_shape[0], mpisize+1)
+        self.assertEqual(test_shape[1], 128)
+    
+    def test_mean(self):
+        if not mpirank:
+            arr = np.random.rand(2,128)
+        else:
+            arr = np.random.rand(1,128)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_arr = (np.mean(full_arr, axis=0)).reshape(1,-1)
+        test_mean = mpi_mean(arr)
+        # check if almost equal since we forced the array datatype into numpy.float64
+        for i in range(len(test_mean[0])):
+            self.assertAlmostEqual(test_mean[0][i], test_arr[0][i])
+    
     def test_mask(self):
-        msk_arr = np.array([0., 1., 0., 1., 1., 0.]).reshape(1, 6)
-        obs_arr = np.random.rand(1, 6)
-        cov_arr = (Field.from_global_data(DomainTuple.make(RGSpace(shape=(6, 6))),
-                                          np.random.rand(6, 6))).local_data
+        msk_arr = np.random.choice([0,1], size=(1,128))
+        msk_arr = comm.bcast(msk_arr, root=0)
+        if not mpirank:
+            dat_arr = np.random.rand(2,128)
+        else:
+            dat_arr = np.random.rand(1,128)
+        cov_arr = np.random.rand(mpi_arrange(128)[1]-mpi_arrange(128)[0], 128)
         # mask by methods
-        test_obs = mask_obs(obs_arr, msk_arr)
-        test_cov = mask_cov(cov_arr, msk_arr)
+        dat_msk = mask_obs(dat_arr, msk_arr)
+        cov_msk = mask_cov(cov_arr, msk_arr)
         # mask manually
-        fid_obs = np.hstack([obs_arr[0, 1], obs_arr[0, 3], obs_arr[0, 4]])
-        # gather global cov
-        fid_cov = np.zeros((6, 6))
-        comm.Gather(cov_arr, fid_cov, root=0)
-        # mask cov by hand
-        fid_cov = np.delete(fid_cov, [0, 2, 5], 0)
-        fid_cov = np.delete(fid_cov, [0, 2, 5], 1)
-        comm.Bcast(fid_cov, root=0)
-        # compare mask on matrix
-        for i in test_cov:
-            self.assertTrue(i in fid_cov)
-        # compare mask on array
-        self.assertListEqual(list(test_obs[0]), list(fid_obs))
-
-    def test_oas(self):
-        # mock observable
-        arr_a = np.random.rand(1, 4)
-        comm.Bcast(arr_a, root=0)
-        arr_ens = np.zeros((3, 4))
-        null_cov = np.zeros((4, 4))
+        test_dat = dat_arr*msk_arr
+        test_dat = test_dat[test_dat != 0]
+        dat_msk = dat_msk[dat_msk != 0]
+        self.assertListEqual(list(test_dat), list(dat_msk))
+        #
+        cov_mat = np.vstack(comm.allgather(cov_arr))
+        cov_mat = cov_mat*msk_arr
+        cov_mat = np.transpose(cov_mat)
+        cov_mat = cov_mat*msk_arr
+        cov_mat = np.transpose(cov_mat)
+        cov_mat = cov_mat[cov_mat != 0]
+        test_cov = np.vstack(comm.allgather(cov_msk))
+        test_cov = test_cov[test_cov != 0]
+        self.assertListEqual(list(test_cov), list(test_cov))
+    
+    def test_trans(self):
+        if not mpirank:
+            arr = np.random.rand(2,128)
+        else:
+            arr = np.random.rand(1,128)
+        test_arr = mpi_trans(arr)
+        full_arr = np.transpose(np.vstack(comm.allgather(arr)))
+        local_begin, local_end = mpi_arrange(full_arr.shape[0])
+        part_arr = full_arr[local_begin:local_end]
+        for i in range(part_arr.shape[0]):
+            self.assertListEqual(list(part_arr[i]), list(test_arr[i]))
+    
+    def test_mult(self):
+        if not mpirank:
+            arr_a = np.random.rand(2,128)
+        else:
+            arr_a = np.random.rand(1,128)
+        arr_b = mpi_trans(arr_a)
+        test_c = mpi_mult(arr_a, arr_b)
+        # make comparison
+        full_a = np.vstack(comm.allgather(arr_a))
+        full_b = np.vstack(comm.allgather(arr_b))
+        full_c = np.dot(full_a, full_b)
+        local_begin, local_end = mpi_arrange(full_c.shape[0])
+        part_c = (full_c[local_begin:local_end]).reshape(1,-1)
+        test_c = test_c.reshape(1,-1)
+        for i in range(len(part_c)):
+            self.assertAlmostEqual(part_c[0][i], test_c[0][i])
+            
+    def test_mpi_global(self):
+        if not mpirank:
+            arr_a = np.random.rand(2,128)
+        else:
+            arr_a = np.random.rand(1,128)
+        full_a = np.vstack(comm.allgather(arr_a))
+        test_a = mpi_global(arr_a)
+        if not mpirank:
+            full_a = full_a.reshape(1,-1)
+            test_a = test_a.reshape(1,-1)
+            for i in range(len(full_a)):
+                self.assertAlmostEqual(full_a[0][i], test_a[0][i])
+    
+    def test_mpi_local(self):
+        if not mpirank:
+            arr_a = np.random.rand(32,128)
+        else:
+            arr_a = None
+        test_a = mpi_local(arr_a)
+        arr_a = comm.bcast(arr_a, root=0)
+        local_a_begin, local_a_end = mpi_arrange(arr_a.shape[0])
+        part_a = arr_a[local_a_begin:local_a_end,:]
+        part_a = part_a.reshape(1,-1)
+        test_a = test_a.reshape(1,-1)
+        for i in range(len(part_a)):
+            self.assertAlmostEqual(part_a[0][i], test_a[0][i])
+    
+    def test_mpi_eye(self):
+        size = 128
+        part_eye = mpi_eye(size)
+        test_eye = np.eye(size, dtype=np.float64)
+        full_eye = np.vstack(comm.allgather(part_eye))
+        for i in range(full_eye.shape[0]):
+            self.assertListEqual(list(test_eye[i]), list(full_eye[i]))
+            
+    def test_mpi_trace(self):
+        arr = np.random.rand(2,2*mpisize)
+        test_trace = mpi_trace(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        true_trace = np.trace(full_arr)
+        self.assertAlmostEqual(test_trace, true_trace)
+    
+    def test_empirical_cov(self):
+        # mock observable ensemble with identical realizations
+        arr = np.random.rand(1,32)
+        comm.Bcast(arr, root=0)
+        null_cov = np.zeros((32,32))
         # ensemble with identical realisations
-        for i in range(len(arr_ens)):
-            arr_ens[i] = arr_a
-        dtuple = DomainTuple.make((RGSpace(3*mpisize), RGSpace(4)))
-        obs = Observable(dtuple, arr_ens)
-        test_mean, test_cov = oas_mcov(obs)
-        for i in range(len(arr_a)):
-            self.assertAlmostEqual(test_mean[0][i], arr_a[0][i])
-            for j in range(len(arr_a)):
-                self.assertAlmostEqual(test_cov[i][j], null_cov[i][j])
+        local_cov = empirical_cov(arr)
+        full_cov = np.vstack(comm.allgather(local_cov))
+        for i in range(full_cov.shape[0]):
+            for j in range(full_cov.shape[1]):
+                self.assertAlmostEqual(null_cov[i][j], full_cov[i][j])
+                
+    def test_oas_cov(self):
+        # mock observable ensemble with identical realizations
+        arr = np.random.rand(1,32)
+        comm.Bcast(arr, root=0)
+        null_cov = np.zeros((32,32))
+        # ensemble with identical realisations
+        local_cov = oas_cov(arr)        
+        full_cov = np.vstack(comm.allgather(local_cov))
+        for i in range(full_cov.shape[0]):
+            for j in range(full_cov.shape[1]):
+                self.assertAlmostEqual(null_cov[i][j], full_cov[i][j])
+                
+    def test_oas_mcov(self):
+        # mock observable ensemble with identical realizations
+        arr = np.random.rand(1,32)
+        comm.Bcast(arr, root=0)
+        null_cov = np.zeros((32,32))
+        # ensemble with identical realisations
+        mean, local_cov = oas_mcov(arr)        
+        full_cov = np.vstack(comm.allgather(local_cov))
+        for k in range(mean.shape[1]):
+            self.assertAlmostEqual(mean[0][k], arr[0][k])
+        for i in range(full_cov.shape[0]):
+            for j in range(full_cov.shape[1]):
+                self.assertAlmostEqual(null_cov[i,j], full_cov[i,j])
+    
+    def test_lu_solve(self):
+        np.random.seed(mpirank)
+        arr = np.random.rand(2, 2*mpisize)
+        full_arr = np.vstack(comm.allgather(arr))
+        brr = np.random.rand(1, 2*mpisize)
+        comm.Bcast(brr, root=0)
+        xrr = mpi_lu_solve(arr, brr)
+        test_xrr = (np.linalg.solve(full_arr, brr.T)).T
+        for i in range(xrr.shape[1]):
+            self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
+    
+    def test_lu_solve_odd(self):
+        cols = 32
+        rows = mpi_arrange(cols)[1] - mpi_arrange(cols)[0]
+        arr = np.random.rand(rows, cols)
+        full_arr = np.vstack(comm.allgather(arr))
+        brr = np.random.rand(1, cols)
+        comm.Bcast(brr, root=0)
+        xrr = mpi_lu_solve(arr, brr)
+        test_xrr = (np.linalg.solve(full_arr, brr.T)).T
+        for i in range(xrr.shape[1]):
+            self.assertAlmostEqual(xrr[0,i], test_xrr[0,i])
 
+    def test_slogdet(self):
+        np.random.seed(mpirank)
+        arr = np.random.rand(2, 2*mpisize)
+        sign, logdet = mpi_slogdet(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_sign, test_logdet = np.linalg.slogdet(full_arr)
+        self.assertEqual(sign, test_sign)
+        self.assertAlmostEqual(logdet, test_logdet)
+
+    def test_slogdet_odd(self):
+        cols = 32
+        rows = mpi_arrange(cols)[1] - mpi_arrange(cols)[0]
+        arr = np.random.rand(rows, cols)
+        sign, logdet = mpi_slogdet(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        test_sign, test_logdet = np.linalg.slogdet(full_arr)
+        self.assertEqual(sign, test_sign)
+        self.assertAlmostEqual(logdet, test_logdet)
 
 if __name__ == '__main__':
     unittest.main()

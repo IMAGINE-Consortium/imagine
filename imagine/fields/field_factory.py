@@ -1,61 +1,33 @@
-"""
-GeneralFieldFactory is designed for generating
-ensemble of field configuration DIRECTLY
-and/or
-handle of field to be conducted by simulators
-
-through member function .generate,
-factory object take a given set of variable values
-(can be at any chain point in bayesian analysis)
-and translate it into physical parameter value and
-return a field object with current parameter set
-
-members:
-.name
-    -- factory name, useful as factory id
-.type
-    -- specify what field the factory produce, 'scalar', 'spinor', 'vector', 'tensor' ...
-.boxsize
-    -- physical size of simulation box, by default the box is 3D cartesian
-.resolution
-    -- how many bins on each direction of simulation box
-
-.default_parameters
-    -- dictionary storing parameter name as entry, default parameter value as content
-.default_variables
-    -- return a dict of (logic) variables wrt default_parameters
-.active_parameters
-    -- tuple of parameter names which can vary, not necessary to cover all default parameters
-
-.parameter_ranges
-    -- dictionary storing varying range of all default parameters
-._map_variables_to_parameters
-    -- given variable dict, translate to parameter dict with parameter value mapped from variable value
-
-.generate
-    -- takes active variable dict, ensemble size and random seed value defined in Pipeline
-    it translates active variable value to parameter value and update a copy of default parameter dict
-    and send it to field class, which will hand in to simulator.
-"""
-
 import numpy as np
 from copy import deepcopy
 import logging as log
-
 from imagine.fields.field import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 
-
 @icy
 class GeneralFieldFactory(object):
+    """
+    GeneralFieldFactory is designed for generating
+    ensemble of field configuration DIRECTLY and/or
+    handle of field to be conducted by simulators
 
+    Through the method `generate`, factory object take
+    a given set of variable values
+    (can be at any chain point in bayesian analysis)
+    and translate it into physical parameter value and
+    return a field object with current parameter set
+
+    Parameters
+    ----------
+    boxsize : list/tuple of floats
+        The physical size of simulation box (3D Cartesian frame)
+    resolution : list/tuple of ints
+        The discretization size in corresponding dimension
+
+    """
     def __init__(self, boxsize=None, resolution=None):
-        """
-
-        :param boxsize: list/tuple of float, physical size of simulation box (3D Cartesian frame)
-        :param resolution: list/tuple of int, discretization size in corresponding dimension
-        """
+        log.debug('@ field_factory::__init__')
         self.field_type = 'scalar'
         self.name = 'general'
         self.field_class = GeneralField
@@ -65,9 +37,13 @@ class GeneralFieldFactory(object):
         # the following two must after .default_parameters initialisation
         self.active_parameters = tuple()
         self.parameter_ranges = dict()
-        
+
     @property
     def field_type(self):
+        """
+        Specifies what field the factory produce: 'scalar', 'spinor',
+        'vector', 'tensor', etc.
+        """
         return self._field_type
 
     @field_type.setter
@@ -77,13 +53,14 @@ class GeneralFieldFactory(object):
 
     @property
     def name(self):
+        """factory name, useful as factory id"""
         return self._name
 
     @name.setter
     def name(self, name):
         assert isinstance(name, str)
         self._name = name
-    
+
     @property
     def field_class(self):
         return self._field_class
@@ -91,9 +68,12 @@ class GeneralFieldFactory(object):
     @field_class.setter
     def field_class(self, field_class):
         self._field_class = field_class
-    
+
     @property
     def boxsize(self):
+        """
+        Physical size of simulation box, by default the box is 3D cartesian
+        """
         return self._boxsize
 
     @boxsize.setter
@@ -108,6 +88,9 @@ class GeneralFieldFactory(object):
 
     @property
     def resolution(self):
+        """
+        How many bins on each direction of simulation box
+        """
         return self._resolution
 
     @resolution.setter
@@ -122,6 +105,10 @@ class GeneralFieldFactory(object):
 
     @property
     def default_parameters(self):
+        """
+        Dictionary storing parameter name as entry, default parameter value
+        as content
+        """
         return self._default_parameters
 
     @default_parameters.setter
@@ -136,6 +123,10 @@ class GeneralFieldFactory(object):
 
     @property
     def active_parameters(self):
+        """
+        Tuple of parameter names which can vary, not necessary to cover all
+        default parameters
+        """
         return self._active_parameters
 
     @active_parameters.setter
@@ -149,13 +140,18 @@ class GeneralFieldFactory(object):
 
     @property
     def parameter_ranges(self):
+        """
+        Dictionary storing varying range of all default parameters
+        """
         return self._parameter_ranges
 
     @parameter_ranges.setter
     def parameter_ranges(self, new_ranges):
         """
-        :param new_ranges: {'parameter-name': (min, max)}
-        :return:
+        Parameters
+        ----------
+        new_ranges : dict
+            Python dictionary in form {'parameter-name': (min, max)}
         """
         assert isinstance(new_ranges, dict)
         for k, v in new_ranges.items():
@@ -173,10 +169,14 @@ class GeneralFieldFactory(object):
     @property
     def default_variables(self):
         """
-        translate default parameter into default (logic) variable
+        Translates default parameter into default (logic) variable
         notice that all variables range is always fixed as [0,1]
-        :return: default variable dict
+
+        Returns
+        -------
+        a dictionary of (logic) variables wrt default_parameters
         """
+        log.debug('@ field_factory::default_variables')
         tmp = dict()
         for par, def_val in self.default_parameters.items():
             low, high = self.parameter_ranges[par]
@@ -185,10 +185,19 @@ class GeneralFieldFactory(object):
 
     def _map_variables_to_parameters(self, variables):
         """
+        Converts Bayesian sampling variables into model parameters
 
-        :param variables: {'parameter-name', logic-value}
-        :return: {'parameter-name', physical-value}
+        Parameters
+        ----------
+        variables : dict
+            Python dictionary in form {'parameter-name', logic-value}
+
+        Returns
+        -------
+        parameter_dict : dict
+            Python dictionary in form {'parameter-name', physical-value}
         """
+        log.debug('@ field_factory::_map_variables_to_parameters')
         assert isinstance(variables, dict)
         parameter_dict = dict()
         for variable_name in variables:
@@ -203,13 +212,29 @@ class GeneralFieldFactory(object):
 
     def generate(self, variables=dict(), ensemble_size=1, ensemble_seeds=None):
         """
+        Takes an active variable dictionary, an ensemble size and a random seed
+        value, translates the active variables to parameter values (updating the
+        default parameter dictionary accordingly) and send this to an instance
+        of the field class.
 
-        :param variables: a dict of variables with name and value
-        :param ensemble_size: number of instances in a field ensemble
-        :param ensemble_seeds: seeds for generating random numbers in realising instances in field ensemble
-        if ensemble_seeds is None, field_class initialization will take all seed as 0
-        :return: a GeneralField object
+        Parameters
+        ----------
+        variables : dict
+            Dictionary of variables with name and value
+        ensemble_size : int
+            Number of instances in a field ensemble
+        ensemble_seeds
+            seeds for generating random numbers
+            in realising instances in field ensemble
+            if ensemble_seeds is None,
+            field_class initialization will take all seed as 0
+
+        Returns
+        -------
+        result_field : imagine.fields.field.GeneralField
+            a GeneralField object
         """
+        log.debug('@ field_factory::generate')
         # map variable value to parameter value
         # in mapping, variable name will be checked in default_parameters
         mapped_variables = self._map_variables_to_parameters(variables)

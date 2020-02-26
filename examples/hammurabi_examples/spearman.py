@@ -1,3 +1,6 @@
+"""
+posterior correlation estimation
+"""
 import numpy as np
 from scipy.stats import spearmanr
 

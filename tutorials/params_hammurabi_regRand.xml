@@ -11,11 +11,14 @@
         <faraday cue="" filename="" nside=""/> <!-- Faraday depth (optional) -->
         <sync cue="" freq="" filename="" nside=""/> <!-- synchrotron dmission (optional) -->
     </observable>
+    <!-- mask map, input -->
+    <!-- the mask map is universally applied to all observable outputs -->
+    <mask cue="0" filename="mask.fits"/>
     <!-- physical field in/out -->
-    <!-- resolution defined in './Grid/Box' -->
-    <!-- CRE field resolution defined in './CRE/Numeric' -->
+
+    <!-- physical field in/out -->
     <fieldio>
-        
+
     </fieldio>
     <!-- field & observable grid -->
     <grid>
@@ -25,7 +28,7 @@
             <y value=""/> <!-- kpc (optional, default) -->
             <z value=""/> <!-- pc (optional, default) -->
         </observer>
-        
+
         <!-- LoS integration helio/observer-centric spherical shell setting -->
         <shell> <!-- (optional) if nothing under observable -->
             <layer type="auto">
@@ -38,25 +41,19 @@
                     <cut value=""/> <!-- cut at half of total shell radius -->
                 </manual>
             </layer>
-            <!-- helio/observer-centric radial limit -->
-            <ec_r_min value=""/> <!-- kpc (default) -->
-            <ec_r_max value=""/> <!-- kpc (default) -->
+            <!-- observer-centric radial limit -->
+            <oc_r_min value="0.0"/> <!-- kpc -->
+            <oc_r_max value="30.0"/> <!-- kpc -->
             <!-- galactic-centric radial limit -->
-            <gc_r_min value=""/> <!-- kpc (default) -->
-            <gc_r_max value="15"/> <!-- kpc (default) -->
+            <gc_r_min value="0.0"/> <!-- kpc -->
+            <gc_r_max value="15.0"/> <!-- kpc -->
             <!-- galactic-centric height limit -->
-            <gc_z_min value=""/> <!-- kpc (default) -->
-            <gc_z_max value="2"/> <!-- kpc (default) -->
-            <!-- radial integration resolution -->
-            <ec_r_res value="0.5"/> <!-- kpc (default) -->
-            <!-- galactic latitude limit, both poles -->
-            <lat_min value=""/> <!--  (default) -->
-            <lat_max value=""/> <!--  (default) -->
-            <!-- galactic longitude limit, both poles -->
-            <lon_min value=""/> <!--  (default) -->
-            <lon_max value=""/> <!--  (default) -->
+            <gc_z_min value="-2"/> <!-- kpc -->
+            <gc_z_max value="2"/> <!-- kpc -->
+            <!-- observer-centric radial integral resolution -->
+            <oc_r_res value="0.5"/> <!-- kpc -->
         </shell>
-        
+
         <!-- turbulent GMF grid -->
         <box_brnd> <!-- (optional) if no brnd I/O AND no internal brnd model -->
             <!-- grid vertex size -->
@@ -78,17 +75,17 @@
         <!-- if cue="0", all child elements are opitonal -->
         <regular cue="" type="">
             <!-- WMAP LSA -->
-            <wmap>
+            <lsa>
                 <b0 value="1"/> <!-- microG -->
                 <psi0 value=""/> <!-- deg -->
                 <psi1 value=""/> <!-- deg -->
                 <chi0 value=""/> <!-- deg -->
-            </wmap>
+            </lsa>
             <!-- Jaffe -->
             <jaffe>
                 <quadruple cue=""/> <!-- quadruple pattern in halo -->
                 <bss cue=""/> <!-- bi-symmetric -->
-                
+
                 <disk_amp value=""/> <!-- disk amplitude, microG -->
                 <disk_z0 value=""/> <!-- disk height scale, kpc -->
                 <halo_amp value=""/> <!-- halo amplitude, microG -->
@@ -96,7 +93,7 @@
                 <r_inner value=""/> <!-- inner R scale, kpc -->
                 <r_scale value=""/> <!-- R scale, kpc -->
                 <r_peak value=""/> <!-- R peak, kpc -->
-                
+
                 <ring cue=""/> <!-- molecular ring -->
                 <bar cue=""/> <!-- elliptical bar -->
                 <!-- either ring or bar -->
@@ -106,7 +103,7 @@
                 <bar_a value=""/> <!-- major scale, kpc -->
                 <bar_b value=""/> <!-- minor scale, kpc -->
                 <bar_phi0 value=""/> <!-- bar major direction -->
-                
+
                 <arm_num value=""/> <!-- spiral arms -->
                 <arm_r0 value=""/> <!-- arm ref radius -->
                 <arm_z0 value=""/> <!-- arm heigth scale, kpc -->
@@ -119,7 +116,7 @@
                 <arm_amp3 value=""/>
                 <arm_amp4 value=""/>
                 <arm_pitch value=""/> <!-- pitch angle, deg -->
-                
+
                 <comp_c value=""/> <!-- compress factor -->
                 <comp_d value=""/> <!-- arm cross-sec scale, kpc -->
                 <comp_r value=""/> <!-- radial cutoff scale, kpc -->
@@ -143,7 +140,9 @@
                 <es>
                     <rms value=""/> <!-- RMS -->
                     <k0 value=""/> <!-- cutoff, 1/(Lambda in kpc) -->
+                    <k1 value="0.1"/> <!-- inverse cascading cutoff, 1/(Lambda in kpc) -->
                     <a0 value=""/> <!-- 5/3, Kolmogorov -->
+                    <a1 value="0.0"/> <!-- inverse cascade -->
                     <rho value=""/> <!-- [0,1] -->
                     <!-- energy density rescaling -->
                     <r0 value=""/> <!-- in kpc -->
@@ -171,8 +170,8 @@
             </local>
         </random>
     </magneticfield>
-    <!-- free electron field -->
-    <freeelectron>
+    <!-- thermal electron field -->
+    <thermalelectron>
         <!-- if cue="0", all child elements are opitonal -->
         <regular cue="" type="">
             <!-- YMW16 -->
@@ -289,7 +288,7 @@
                 <!-- to be implemented -->
             </local>
         </random>
-    </freeelectron>
+    </thermalelectron>
     <!-- analytic CRE -->
     <!-- flux norm comes with unit [GeV m^2 s Sr]^-1 -->
     <!-- if cue="0", all child elements are opitonal -->

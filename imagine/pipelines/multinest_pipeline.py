@@ -6,35 +6,56 @@ from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
 
+
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-
 @icy
 class MultinestPipeline(Pipeline):
+    """
+    Initialises Bayesian analysis pipeline with pyMultinest
 
+    See base class for initialization details.
+
+    Note
+    ----
+    Instances of this class are callable
+
+    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-        """
-        """
         super(MultinestPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
 
-    def __call__(self):
+    def __call__(self, kwargs=dict()):
         """
+        Parameters
+        ----------
+        kwargs : dict
+            Dummy argument. Unused.
 
-        :return: pyMultinest sampling results
+        Returns
+        -------
+        results : dict
+            pyMultinest sampling results in a dictionary containing the keys:
+            logZ (the log-evidence), logZerror (the error in log-evidence) and
+            samples (equal weighted posterior)
         """
-        # create dir for storing pymultinest output
-        path = os.path.join(os.getcwd(),'chains')
-        if not os.path.isdir(path):
-            try: os.mkdir(path)
-            except OSError: pass
-        assert (os.path.isdir(path))
-        # run pymultinest
+        log.debug('@ multinest_pipeline::__call__')
+
+        # Checks whether a base name for multinest output files was specified
+        if 'outputfiles_basename' not in self._sampling_controllers:
+            # If not, uses default location
+            self._sampling_controllers['outputfiles_basename'] = 'chains/imagine_'
+            os.makedirs('chains', exist_ok=True)
+
+        # Makes sure that the chains directory exists
+        basedir = os.path.split(self._sampling_controllers['outputfiles_basename'])[0]
+        assert os.path.isdir(basedir)
+
+        # Runs pyMultinest
         results = pymultinest.solve(LogLikelihood=self._mpi_likelihood,
                                     Prior=self.prior,
                                     n_dims=len(self._active_parameters),
-                                    outputfiles_basename='chains/imagine_',
                                     **self._sampling_controllers)
         return results
 
@@ -42,14 +63,22 @@ class MultinestPipeline(Pipeline):
         """
         mpi log-likelihood calculator
         PyMultinest supports execution with MPI
-        where sampler on each node follows different journey in parameter space
+        where sampler on each node follows DIFFERENT journeys in parameter space
         but keep in communication
-        so we need to register parameter position on each node
+        so we need to firstly register parameter position on each node
         and calculate log-likelihood value of each node with joint force of all nodes
         in this way, ensemble size is multiplied by the number of working nodes
-        :param cube: list of variable values
-        :return: log-likelihood value
+
+        Parameters
+        ----------
+        cube
+            list of variable values
+
+        Returns
+        -------
+        log-likelihood value
         """
+        log.debug('@ multinest_pipeline::_mpi_likelihood')
         # gather cubes from all nodes
         cube_local_size = cube.size
         cube_pool = np.empty(cube_local_size*mpisize, dtype=np.float64)
@@ -70,9 +99,10 @@ class MultinestPipeline(Pipeline):
         cube has been 'broadcasted' in the 2nd step in _mpi_likelihood
         now self._simulator will work on each node and provide multiple ensemble size
         """
+        log.debug('@ multinest_pipeline::_core_likelihood')
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug('cube %s requested. returned most negative possible number' % str(instant_cube))
+            log.debug('cube %s requested. returned most negative possible number' % str(cube))
             return np.nan_to_num(-np.inf)
         # return active variables from pymultinest cube to factories
         # and then generate new field objects

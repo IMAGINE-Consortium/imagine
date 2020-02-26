@@ -1,46 +1,53 @@
 import numpy as np
 import logging as log
-import pymultinest
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import Prior
 from imagine.simulators.simulator import Simulator
-from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.timer import Timer
-from imagine.tools.random_seed import seed_generator, ensemble_seed_generator
+from imagine.tools.random_seed import ensemble_seed_generator
 from imagine.tools.icy_decorator import icy
-
 
 @icy
 class Pipeline(object):
+    """
+    Base class used for for initialing Bayesian analysis pipeline
 
+    Attributes
+    ----------
+    dynesty_parameter_dict : dict
+        extra parameters for controlling Dynesty
+        i.e., 'nlive', 'bound', 'sample'
+    sample_callback : bool
+        not implemented yet
+    likelihood_rescaler : double
+        Rescale log-likelihood value
+    random_type : str
+        'free',
+            by default thread-time dependent seed;
+        'controllable',
+            each simulator run use seed generated from higher level seed;
+        'fixed',
+            take a list of fixed integers as seed for all simulator runs
+    seed_tracer : int
+        Used in 'controllable' random_type
+    likelihood_threshold : double
+          By default, log-likelihood should be negative
+
+    Parameters
+    ----------
+    simulator : imagine.simulators.simulator.Simulator
+        Simulator object
+    factory_list : list
+        List or tuple of field factory objects
+    likelihood : imagine.likelihoods.likelihood.Likelihood
+        Likelihood object
+    prior : imagine.priors.prior.Prior
+        Prior object
+    ensemble_size : int
+        Number of observable realizations PER COMPUTING NODE to be generated in simulator
+    """
     def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-        """
-        initialize Bayesian analysis pipeline with pyMultinest
-        :param simulator: Simulator object
-        :param factory_list: list/tuple of factory objects
-        :param likelihood: Likelihood object
-        :param prior: Prior object
-        :param ensemble_size: number of observable realizations to be generated in simulator
-
-        hidden controllers:
-
-        dynesty_parameter_dict
-            -- extra parameters for controlling Dynesty
-            i.e., 'nlive', 'bound', 'sample'
-        sample_callback
-            -- not implemented yet
-        likelihood_rescaler
-            -- rescale log-likelihood value
-        random_type
-            -- 'free' by default
-            -- 'controllable', each simulator run use seed generated from higher level seed
-            -- 'fixed', take a list of fixed integers as seed for all simulator runs
-        seed_tracer
-            -- useful in 'controllable' random_type
-        likelihood_threshold
-            -- by default, log-likelihood should be negative
-        """
         self.active_parameters = tuple()
         self.active_ranges = dict()
         self.factory_list = factory_list
@@ -61,6 +68,8 @@ class Pipeline(object):
         # checking likelihood threshold
         self.check_threshold = False
         self.likelihood_threshold = 0.
+        # Place holder
+        self.dynesty_parameter_dict = None
 
     @property
     def active_parameters(self):
@@ -87,12 +96,16 @@ class Pipeline(object):
     @factory_list.setter
     def factory_list(self, factory_list):
         """
-        extract active_parameters and their ranges from each factory
+        Extracts active_parameters and their ranges from each factory
+
         notice that once done
         the parameter/variable ordering is fixed wrt factory ordering
         which is useful in recovering variable logic value for each factory
-        :param factory_list:
-        :return:
+
+        Parameters
+        ----------
+        factory_list : list
+            List of field factory objects
         """
         assert isinstance(factory_list, (list, tuple))
         for factory in factory_list:
@@ -120,7 +133,7 @@ class Pipeline(object):
     def likelihood(self, likelihood):
         assert isinstance(likelihood, Likelihood)
         self._likelihood = likelihood
-    
+
     @property
     def prior(self):
         return self._prior
@@ -178,7 +191,7 @@ class Pipeline(object):
     def random_type(self, random_type):
         assert isinstance(random_type, str)
         self._random_type = random_type
-    
+
     @property
     def seed_tracer(self):
         return self._seed_tracer
@@ -203,13 +216,14 @@ class Pipeline(object):
 
     @likelihood_threshold.setter
     def likelihood_threshold(self, likelihood_threshold):
-        self._likelihood_threshold = likelihood_threshold
+        self._likelihood_threshold = np.float64(likelihood_threshold)
 
     def _randomness(self):
         """
         manipulate random seed(s)
         isolating this process for convenience of testing
         """
+        log.debug('@ pipeline::_randomness')
         # prepare ensemble seeds
         if self._random_type == 'free':
             assert(self._ensemble_seeds is None)
@@ -224,15 +238,23 @@ class Pipeline(object):
 
     def _core_likelihood(self, cube):
         """
-        log-likelihood calculator
-        :param cube: list of variable values
-        :return: log-likelihood value
+        Log-likelihood calculator
+
+        Parameters
+        ----------
+        cube
+            list of variable values
+
+        Returns
+        -------
+        log-likelihood
         """
+        log.debug('@ pipeline::_core_likelihood')
         #t = Timer()
         log.debug('sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug('cube %s requested. returned most negative possible number' % str(instant_cube))
+            log.debug('cube %s requested. returned most negative possible number' % str(cube))
             return np.nan_to_num(-np.inf)
         # return active variables from pymultinest cube to factories
         # and then generate new field objects
@@ -272,4 +294,4 @@ class Pipeline(object):
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashould')
-        return current_likelihood * self.likelihood_rescaler
+        return current_likelihood * self._likelihood_rescaler

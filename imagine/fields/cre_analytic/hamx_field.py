@@ -3,7 +3,6 @@ hammurabiX analytic CRE field
 """
 
 import logging as log
-
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 
@@ -19,7 +18,10 @@ class CREAna(GeneralField):
     def field_checklist(self):
         """
         record XML location of physical parameters
-        :return: dict of XML locations
+        
+        return
+        ------
+        dict of XML locations
         """
         checklist = {'alpha': (['cre', 'analytic', 'alpha'], 'value'),
                      'beta': (['cre', 'analytic', 'beta'], 'value'),
@@ -34,7 +36,10 @@ class CREAna(GeneralField):
     def field_controllist(self):
         """
         record XML location of logical parameters
-        :return: dict of XML locations
+        
+        return
+        ------
+        dict of XML locations
         """
         controllist = {'cue': (['cre'], {'cue': '1'}),
                        'type': (['cre'], {'type': 'analytic'})}

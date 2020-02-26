@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
-
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
+from imagine.observables.observable_dict import Measurements
 from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
 from imagine.fields.test_field.test_field_factory import TestFieldFactory
 from imagine.priors.flat_prior import FlatPrior

@@ -1,5 +1,7 @@
 FROM ubuntu:latest
 
+MAINTAINER jiaxin.wang@sjtu.edu.cn
+
 # users may need python3-tk, please install it manually: apt-get install python3-tk
 
 RUN apt-get update
@@ -9,6 +11,37 @@ RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corne
 
 RUN mkdir /home/lab
 WORKDIR /home/lab
+
+#mpi4py
+RUN apt-get install -y --fix-missing libopenmpi-dev openmpi-bin openmpi-doc
+RUN pip3 install mpi4py
+
+#MultiNest
+RUN apt-get install -y --fix-missing libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
+RUN git clone https://github.com/JohannesBuchner/MultiNest.git
+WORKDIR /home/lab/MultiNest/build
+RUN cmake .. && make && make install
+WORKDIR /home/lab
+
+# PyMultiNest
+RUN git clone https://github.com/JohannesBuchner/PyMultiNest.git
+WORKDIR /home/lab/PyMultiNest
+RUN python3 setup.py install
+WORKDIR /home/lab
+
+#Dynesty
+RUN pip3 install dynesty
+
+# h5py
+RUN pip3 install h5py
+
+#IMAGINE
+RUN git clone -b mpi https://github.com/IMAGINE-Consortium/imagine.git imagine
+WORKDIR /home/lab/imagine
+RUN python3 setup.py install
+WORKDIR /home/lab
+
+### the following scripts for distributing hammurabi X
 
 # CFITSIO
 RUN mkdir /home/lab/cfitsio
@@ -20,7 +53,7 @@ WORKDIR /home/lab
 # FFTW
 RUN mkdir /home/lab/fftw
 RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar xzf fftw-3.3.8.tar.gz -C fftw --strip-components 1
-WORKDIR /home/lab/fftw
+WORKDIR fftw
 RUN ./configure --enable-threads --enable-openmp --enable-shared --prefix=/usr/local/ && make && make install
 WORKDIR /home/lab
 
@@ -30,7 +63,7 @@ RUN wget http://downloads.sourceforge.net/project/healpix/Healpix_3.50/Healpix_3
 WORKDIR /home/lab/healpix
 # write config file on fly
 RUN echo '4\n\
-	/sur/local/bin\n\
+	/usr/local/bin\n\
 	/usr/local/include\n\
 	4\n\
 	y\n\
@@ -49,38 +82,8 @@ WORKDIR /home/lab/googletest/build
 RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make && make install && cp ../googletest/src/* /usr/local/src
 WORKDIR /home/lab
 
-#mpi4py
-RUN apt-get install -y --fix-missing libopenmpi-dev openmpi-bin openmpi-doc
-RUN pip3 install mpi4py
-
-#(Py)MultiNest
-RUN apt-get install -y --fix-missing libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
-
-RUN git clone https://github.com/JohannesBuchner/MultiNest.git
-WORKDIR /home/lab/MultiNest/build
-RUN cmake .. && make && make install
-WORKDIR /home/lab
-
-RUN git clone https://github.com/JohannesBuchner/PyMultiNest.git
-WORKDIR /home/lab/PyMultiNest
-RUN python3 setup.py install
-WORKDIR /home/lab
-
-#Dynesty
-RUN pip3 install dynesty
-
-#hdf5
-RUN apt-get install -y --fix-missing libhdf5-100 libhdf5-dev libhdf5-openmpi-100 libhdf5-openmpi-dev hdf5-tools
-
-#h5py
-RUN pip3 install h5py
-
-#NIFTy
-RUN pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty.git@NIFTy_5
-RUN pip3 install --user git+https://gitlab.mpcdf.mpg.de/mtr/pypocketfft
-
 # HAMMURABI X
-RUN git clone https://bitbucket.org/hammurabicode/hamx hamx
+RUN git clone https://gioacchinowang@bitbucket.org/hammurabicode/hamx.git hamx
 WORKDIR /home/lab/hamx
 RUN mkdir /home/lab/hamx/build
 WORKDIR /home/lab/hamx/build
@@ -90,11 +93,7 @@ ENV PATH /usr/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/hammurabi/lib:${LD_LIBRARY_PATH}
 WORKDIR /home/lab
 
-#IMAGINE
-RUN git clone https://ricphy@bitbucket.org/hammurabicode/imagine.git imagine
-WORKDIR /home/lab/imagine
-RUN python3 setup.py install
-WORKDIR /home/lab
+### clean up
 
 # CLEAN PACKAGES
 RUN rm -f *.tar.gz

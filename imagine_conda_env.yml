@@ -1,0 +1,15 @@
+name: imagine
+channels:
+  - anaconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7.*
+  - h5py=2.10.*=mpi*
+  - mpi4py=3.0.*
+  - numpy=1.17.*
+  - healpy=1.13.*
+  - pymultinest=2.7
+  - dynesty=1.0.*
+  - ipyparallel=6.2.*
+  - matplotlib=3.1.*
