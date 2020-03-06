@@ -67,6 +67,8 @@ RUN make
 WORKDIR /home/lab
 ENV HEALPIX_TARGET optimized_gcc 
 ENV HEALPIX /home/lab/healpix
+ENV LD_LIBRARY_PATH ${HEALPIX}/lib:${LD_LIBRARY_PATH}
+
 
 # GOOGLE TEST
 RUN git clone https://github.com/google/googletest.git googletest
