@@ -59,20 +59,16 @@ WORKDIR /home/lab
 
 # HEALPIX
 RUN mkdir /home/lab/healpix
-RUN wget http://downloads.sourceforge.net/project/healpix/Healpix_3.50/Healpix_3.50_2018Dec10.tar.gz && tar xzf Healpix_3.50_2018Dec10.tar.gz -C healpix --strip-components 1
+RUN wget https://sourceforge.net/projects/healpix/files/Healpix_3.60/Healpix_3.60_2019Dec18.tar.gz && tar xzf Healpix_3.60_2019Dec18.tar.gz -C healpix --strip-components 1
 WORKDIR /home/lab/healpix
-# write config file on fly
-RUN echo '4\n\
-	/usr/local/bin\n\
-	/usr/local/include\n\
-	4\n\
-	y\n\
-	0\n'\
-	> hlpx_config
-RUN ./configure -L < hlpx_config && make 
+RUN ./configure --auto=cxx
+RUN make
+#
 WORKDIR /home/lab
 ENV HEALPIX_TARGET optimized_gcc 
 ENV HEALPIX /home/lab/healpix
+ENV LD_LIBRARY_PATH ${HEALPIX}/lib:${LD_LIBRARY_PATH}
+
 
 # GOOGLE TEST
 RUN git clone https://github.com/google/googletest.git googletest
