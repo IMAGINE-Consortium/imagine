@@ -6,6 +6,7 @@ This was strongly based on GalMag's Grid class,
 initially developed by Theo Steininger
 """
 import numpy as np
+import astropy.units as u
 from imagine.tools.icy_decorator import icy
 
 @icy
@@ -38,12 +39,9 @@ class BaseGrid:
          Containing the resolution along each axis (the *shape* of the grid).
     """
     def __init__(self, box, resolution):
-
-        self.box = np.empty((3, 2), dtype=np.float)
+        self.box = box
+        
         self.resolution = np.empty((3,), dtype=np.int)
-
-        # use numpy upcasting of scalars and dtype conversion
-        self.box[:] = box
         self.resolution[:] = resolution
 
         self._coordinates = None
@@ -55,6 +53,15 @@ class BaseGrid:
         """A dictionary contaning all the coordinates"""
         if self._coordinates is None:
             self._coordinates = self.generate_coordinates()
+            # Checks the input units
+            for k in self._coordinates:
+                assert isinstance(self._coordinates[k],u.Quantity), k+' must be a Quantity'
+                if k in ('x','y','z','r_spherical', 'r_cylindrical'):
+                    assert self._coordinates[k].unit.is_equivalent(u.kpc), k+' must be in length units'
+                elif k in ('theta','phi'):
+                    assert self._coordinates[k].unit.is_equivalent(u.rad,
+                        equivalencies=u.dimensionless_angles()), k+' must be an angle or dimensionless'
+            
         return self._coordinates
 
     @property
@@ -171,12 +178,14 @@ class UniformGrid(BaseGrid):
 
     Example
     -------
-    >>> g = grid.UniformGrid([[0,4],[1,2],[1,1]], [5,2,1])
+    >>> import magnetizer.grid as grid
+    >>> import astropy.units as u
+    >>> xlims = [0,4]*u.kpc; ylims = [1,2]*u.kpc; zlims = [1,1]*u.kpc
+    >>> g = grid.UniformGrid([xlims, ylims, zlims], [5,2,1])
     >>> g.x
     array([[[0.],[0.]], [[1.],[1.]], [[2.],[2.]], [[3.],[3.]], [[4.],[4.]]])
     >>> g.y
     array([[[1.], [2.]], [[1.], [2.]], [[1.], [2.]], [[1.], [2.]], [[1.], [2.]]])
-
 
     Calling the attributes does the conversion between different coordinate
     systems automatically.
@@ -184,7 +193,11 @@ class UniformGrid(BaseGrid):
     Parameters
     ----------
     box : 3x2-array_like
-         Box limits
+         Box limits. Each row corresponds to a different coordinate and should 
+         contain units. For 'cartesian' grid_type, the rows should contain
+         (in order)'x','y' and 'z'. 
+         For 'cylindrical' they should have  'r_cylindrical', 'phi' and 'z'.
+         for 'spherical', 'r_spherical','theta' and 'phi'.
     resolution : 3-array_like
          containing the resolution along each axis.
     grid_type : str, optional
@@ -216,11 +229,16 @@ class UniformGrid(BaseGrid):
 
         # Creates array with starting and endpoints as specified in self.box
         # and with self.resolution
-        # (the naming and structure allows later making the arrays distributed)
-        box = self.box
-        local_slice = (slice(box[0, 0], box[0, 1], self.resolution[0]*1j),
-                       slice(box[1, 0], box[1, 1], self.resolution[1]*1j),
-                       slice(box[2, 0], box[2, 1], self.resolution[2]*1j))
+        
+        # Stores the dimensions (the begin of the interval is taken as reference)
+        ubox = [row[0].unit for row in self.box]
+        # Constructs a dimensionless version (to enforce consistent dimensions
+        # in the intervals and avoid problems in mgrid)
+        box_vals = [ [(b/unit).value for b in row] for row, unit in zip(self.box, ubox) ]
+        
+        local_slice = (slice(box_vals[0][0], box_vals[0][1], self.resolution[0]*1j),
+                       slice(box_vals[1][0], box_vals[1][1], self.resolution[1]*1j),
+                       slice(box_vals[2][0], box_vals[2][1], self.resolution[2]*1j))
 
         local_coordinates = np.mgrid[local_slice]
 
@@ -233,7 +251,8 @@ class UniformGrid(BaseGrid):
         else:
             raise ValueError
 
-        coordinates_dict = {k: i for k, i in zip(selected_coords,
-                                                 local_coordinates)}
+        coordinates_dict = {k: cgrid*unit for k, cgrid, unit in zip(selected_coords,
+                                                                    local_coordinates,
+                                                                    ubox)}
 
         return coordinates_dict
