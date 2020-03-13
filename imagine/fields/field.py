@@ -46,6 +46,9 @@ class GeneralField(object):
     def field_type(self):
         raise NotImplemented
     @property
+    def field_units(self):
+        raise NotImplemented
+    @property
     def data_description(self):
         raise NotImplemented
     @property
@@ -68,6 +71,8 @@ class GeneralField(object):
         """
         if self._data is None:
             self._data = self.get_field()
+            assert self.field_units.is_equivalent(self._data.unit), 'Field units should be '+self.field_units
+        
         try:
             assert self._data.shape == self.data_shape
         except AssertionError:

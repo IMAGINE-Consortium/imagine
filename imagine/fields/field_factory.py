@@ -1,6 +1,7 @@
 import numpy as np
 from copy import deepcopy
 import logging as log
+import astropy.unit as u
 from imagine.fields import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
@@ -160,7 +161,6 @@ class GeneralFieldFactory:
         for k, v in new_ranges.items():
             # check if k is inside default
             assert (k in self.default_parameters.keys())
-            assert isinstance(v, (list, tuple))
             assert (len(v) == 2)
         try:
             self._parameter_ranges.update(new_ranges)
@@ -205,9 +205,15 @@ class GeneralFieldFactory:
             # and, also being active
             assert (variable_name in self.default_parameters and variable_name in self.active_parameters)
             low, high = self.parameter_ranges[variable_name]
+            # Ensures consistent physical units, if needed
+            if isinstance(low, u.Quantity):
+                units = low.unit; low = low.value
+                high = high.to(units).value
+            else:
+                units = 1
             # unity_mapper defined in imainge.tools.carrier_mapper
             mapped_variable = unity_mapper(variables[variable_name], low, high)
-            parameter_dict[variable_name] = mapped_variable
+            parameter_dict[variable_name] = mapped_variable * units
         return parameter_dict
 
     def generate(self, variables=dict(), ensemble_size=1, ensemble_seeds=None):

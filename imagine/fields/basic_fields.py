@@ -1,4 +1,5 @@
 import numpy as np
+import astropy.units as u
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 
@@ -17,6 +18,9 @@ class DummyField(GeneralField):
     @property
     def field_type(self):
         return None
+    @property
+    def field_units(self):
+        raise None
 
 @icy
 class MagneticField(GeneralField):
@@ -51,6 +55,9 @@ class MagneticField(GeneralField):
     def field_type(self):
         return 'magnetic_field'
     @property
+    def field_units(self):
+        return u.microgauss
+    @property
     def data_description(self):
         return  ['grid_x','grid_y','grid_z','component (x,y,z)']
     @property
@@ -70,6 +77,9 @@ class ThermalElectronDensityField(GeneralField):
     @property
     def field_type(self):
         return 'thermal_electron_density'
+    @property
+    def field_units(self):
+        return u.cm**(-3)
     @property
     def data_description(self):
         return  ['grid_x','grid_y','grid_z']
