@@ -2,3 +2,4 @@ mock
 numpy
 h5py
 astropy
+scipy
