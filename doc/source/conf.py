@@ -22,7 +22,8 @@ MOCK_MODULES = [
   'pymultinest',
   'dynesty',
   'healpy',
-  'h5py']
+  'h5py',
+  'scipy']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
