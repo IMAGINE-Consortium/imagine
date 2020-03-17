@@ -6,6 +6,7 @@ from imagine.fields import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 from imagine.fields.grid import UniformGrid
+from imagine.priors import FlatPrior
 import imagine
 
 @icy
@@ -76,7 +77,7 @@ class GeneralFieldFactory:
         self._default_parameters = None
         self._parameter_ranges = {}
         self._active_parameters = {}
-
+        
     @property
     def field_name(self):
         """Name of the physical field"""
@@ -84,7 +85,7 @@ class GeneralFieldFactory:
 
     @property
     def name(self):
-        # For backwards-compatibility
+        # For backwards-compatibility only
         return self.field_name
 
     @property
@@ -93,10 +94,15 @@ class GeneralFieldFactory:
         return self.field_class.field_type
 
     @property
+    def field_units(self):
+        """Units of physical field."""
+        return self.field_class.field_units
+
+    @property
     def grid(self):
         """
         Instance of `imagine.fields.BaseGrid` containing a 3D grid where the
-        field is evaluated
+        field is/was evaluated
         """
         if self._grid is None:
             if (self._box is not None) and (self._resolution is not None):
@@ -147,6 +153,19 @@ class GeneralFieldFactory:
         self._active_parameters = tuple(active_parameters)
         log.debug('set active parameters %s' % str(active_parameters))
 
+    @property
+    def prior(self):
+        """
+        Dictionary storing varying range of all default parameters in
+        the form {'parameter-name': (min, max)}
+        """
+        return self._parameter_ranges
+    
+#     @parameter_ranges.setter
+#     def prior(self, new_prior):
+#         assert isinstance(new_prior, Prior)
+        
+        
     @property
     def parameter_ranges(self):
         """

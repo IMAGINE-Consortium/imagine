@@ -2,7 +2,7 @@ import numpy as np
 import logging as log
 from imagine.likelihoods.likelihood import Likelihood
 from imagine.fields.field_factory import GeneralFieldFactory
-from imagine.priors.prior import Prior
+from imagine.priors.prior import GeneralPrior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.timer import Timer
 from imagine.tools.random_seed import ensemble_seed_generator

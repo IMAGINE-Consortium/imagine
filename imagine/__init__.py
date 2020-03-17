@@ -9,8 +9,8 @@ from .fields.basic_fields import *
 
 from .observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances, Masks
 from .simulators.simulator import Simulator
-from .priors.prior import Prior
 from .priors.flat_prior import FlatPrior
+from .priors import GeneralPrior
 from .pipelines.pipeline import Pipeline
 from .pipelines.multinest_pipeline import MultinestPipeline
 from .pipelines.dynesty_pipeline import DynestyPipeline
