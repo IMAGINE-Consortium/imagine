@@ -115,11 +115,13 @@ simulators, but can be left as `None` in the general case).
 
 To test a Field class, :py:class:`FieldFoo`, one can
 instantiate the field object::
+
     bar = FieldFoo(grid=example_grid, parameters={'answer': 42})
 
 where `example_grid` is a previously instantiated grid object.
 Assuming we are dealing with a scalar, the radial dependence can be easily
 plotted using::
+
     plt.bar(bar.grid.r_spherical.ravel(), bar.data.ravel())
 
 
@@ -127,9 +129,52 @@ plotted using::
 Grid
 ^^^^
 
-Except for `Dummy`_ fields, Field objects operate of a coordinate grid.
+Field objects require (with the exception of `Dummy`_ fields) a coordinate grid
+to operate.
+In IMAGINE this is expressed as an instance of the
+:py:class:`imagine.fields.grid.BaseGrid` class, which represents coordinates as
+a set of three 3-dimensional arrays.
+The grid object supports cartesian, cylindrical and spherical coordinate systems,
+handling any conversions between these automatically through the properties.
+
+The convention is that :math:`0` of the coordinates corresponds to the
+Galaxy (or galaxy) centre, with the :math:`z` coordinate giving the distance to
+the midplane.
+
+For constructing a grid with uniformly-distributed coordinates one can use the
+:py:class:`imagine.fields.grid.UniformGrid` that accompanies IMAGINE.
+For example, one can create a grid where the cylindrical coordinates are equally
+spaced using::
+
+    cylindrical_grid = img.UniformGrid(box=[[0.25*u.kpc, 15*u.kpc],
+                                            [-180*u.deg, np.pi*u.rad],
+                                            [-15*u.kpc, 15*u.kpc]],
+                          resolution = [9,12,9],
+                          grid_type = 'cylindrical')
+
+The :py:data:`box` argument contains the lower and upper limits of the
+coordinates (respectively :math:`r`, :math:`\phi` and :math:`z`,
+:py:data:`resolution` specifies the number of points for each dimension, and
+:py:data:`grid_type` chooses this to be cylindrical coordinates.
+
+The coordinate grid can be accessed through the properties
+:py:data:`cylindrical_grid.x`,
+:py:data:`cylindrical_grid.y`,
+:py:data:`cylindrical_grid.z`,
+:py:data:`cylindrical_grid.r_cylindrical`,
+:py:data:`cylindrical_grid.r_spherical`,
+:py:data:`cylindrical_grid.theta` (polar angle), and
+:py:data:`cylindrical_grid.phi` (azimuthal angle),
+with conversions handled automatically.
+Thus, if one wants to access, for instance, the corresponding :math:`x`
+cartesian coordinate values, this can be done simply using::
+
+    cylindrical_grid.x[:,:,:]
 
 
+To create a personalised (non-uniform) grid, one needs to subclass
+:py:class:`imagine.fields.grid.BaseGrid` and override the method :py:meth:`generate_coordinates`. The :py:class:`imagine.fields.grid.UniformGrid`
+class should itself provide a good example/template of how to do this.
 
 
 ^^^^^^^^^^^^^^^^^
@@ -230,12 +275,14 @@ Cosmic ray electrons
 
 *Under development*
 
-.. .. literalinclude:: ../../imagine/fields/template/cre_density_template.py
+.. .. literalinclude:: ../../imagine/templates/cre_density_template.py
 
 
 ^^^^^
 Dummy
 ^^^^^
+
+.. literalinclude:: ../../imagine/templates/dummy_field_template.py
 
 
 ^^^^^^^^^^^^^^^^^^^^

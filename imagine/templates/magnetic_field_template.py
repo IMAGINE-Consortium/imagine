@@ -6,6 +6,8 @@ import MY_GMF_MODEL # Substitute this by your own code
 @icy
 class MagneticFieldTemplate(MagneticField):
     """ Here comes the description of the magnetic field model """
+    field_name = 'name_of_the_magnetic_field'
+
     @property
     def field_checklist(self):
         # This property returns a dictionary with all the
