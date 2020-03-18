@@ -37,7 +37,7 @@ one of IMAGINE's base classes. This subclass will, very often, be
 a `wrapper <https://en.wikipedia.org/wiki/Wrapper_function>`_ around
 already existing code or scripts. To preserve the modularity and
 flexibility of IMAGINE, one should try to use
-(`as far as possible <Disclaimer>`_) only the provided base classes.
+(as far as possible, but see the `Disclaimer`_) only the provided base classes.
 
 
 .. figure:: imagine_design.png
@@ -73,17 +73,62 @@ pre-existing code.
 Fields
 ------
 
+In IMAGINE terminology, a **field** refers to any  *computational model* of a
+spatially varying physical quantity, such as the Galactic Magnetic Field (GMF),
+the thermal electron distribution, or the Cosmic Ray (CR) distribution.
+Generally, a field object will have a set of parameters — e.g. a GMF field
+object may have a pitch angle, scale radius, amplitude, etc.
+*Field* objects are used as inputs by the `Simulators`_, which *simulate*
+those physical models, i.e. they allow constructing construct *observables*
+based on a set models.
 
+During the sampling, the `Pipeline`_ does not handle fields directly  but
+instead relies on `Field Factory`_ objects.
+While the *field objects* will do the actual computation of the physical field,
+given a set of physical parameters and a coordinate grid,
+the *field factory objects* take care of book-keeping tasks: they hold the
+parameter ranges and default values, they translate the dimensionless parameters
+used by the sampler (always in the interval :math:`[0,1]`) to physical
+parameters, they store the `Prior`_ associated with that *field*.
 
-.. _Field Factory:
+To convert ones own model into a IMAGINE-compatible field, one must create
+subclass one of the base classes available the
+:py:mod:`imagine.fields.basic_fields`, most likely using one of the available
+templates to write a *wrapper* to the original code which are discussed in the
+sections below.
+If basic field type one is interested is *not* available as a basic field, one can
+create it directly subclassing  :py:class:`imagine.fields.field.GeneralField` —
+and if you think this could benefit the wider community, please consider
+submitting a
+`pull request <https://github.com/IMAGINE-Consortium/imagine/pulls>`_ or
+openning an `issue <https://github.com/IMAGINE-Consortium/imagine/issues>`_
+requesting the inclusion of the new field type!
 
-The *Field factory*
+It is assumed that Field objects can be expressed as a parametrised *mapping of
+a coordinate grid into a physical field*. The grid is represented by a IMAGINE `Grid`_ object, discussed in detail in the next section.
+The design of any field is done writing a subclass that overrides the method :py:meth:`get_field`, using it to conduct the computation of the field
+at each spatial point. For this, the coordinate grid on which the field should be evaluated can be accessed from `self.grid` and the parameters from
+`self.parameters`.
+The same parameters need to listed as keys in the `field_checklist` dictionary
+(the values in the dictionary are used to supply extra information to specific
+simulators, but can be left as `None` in the general case).
 
+To test a Field class, :py:class:`FieldFoo`, one can
+instantiate the field object::
+    bar = FieldFoo(grid=example_grid, parameters={'answer': 42})
+
+where `example_grid` is a previously instantiated grid object.
+Assuming we are dealing with a scalar, the radial dependence can be easily
+plotted using::
+    plt.bar(bar.grid.r_spherical.ravel(), bar.data.ravel())
 
 
 ^^^^
 Grid
 ^^^^
+
+Except for `Dummy`_ fields, Field objects operate of a coordinate grid.
+
 
 
 
@@ -101,6 +146,36 @@ Note that the return value of the method :py:meth:`get_field` must be of type
 :py:class:`astropy.units.Quantity`, with shape consistent with the coordinate
 grid, and units of :math:`\rm cm^{-3}`.
 
+The template assumes that one already possesses a model for distribution of
+thermal :math:`e^-` in a module :py:mod:`MY_GALAXY_MODEL`. Such model needs to
+be able to map an arbitrary coordinate grid into a densities.
+
+Of course, one can also write ones model (if it is simple enough) into the
+derived subclass definition. On example of a class derived from
+:py:class:`imagine.fields.basic_fields.ThermalElectronDensityField` can be seen
+bellow::
+
+    from imagine import ThermalElectronDensityField
+
+    class ExponentialThermalElectrons(ThermalElectronDensityField):
+        """Example: thermal electron density of an (double) exponential disc"""
+
+        field_name = 'exponential_disc_thermal_electrons'
+
+        @property
+        def field_checklist(self):
+            return {'central_density' : None, 'scale_radius' : None, 'scale_height' : None}
+
+        def get_field(self):
+            R = self.grid.r_cylindrical
+            z = self.grid.z
+            Re = self.parameters['scale_radius']
+            he = self.parameters['scale_height']
+            n0 = self.parameters['central_density']
+
+            return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
+
+
 ^^^^^^^^^^^^^^^
 Magnetic Fields
 ^^^^^^^^^^^^^^^
@@ -109,8 +184,11 @@ One can add a new model for magnetic fields subclassing
 :py:class:`imagine.fields.basic_fields.MagneticField` as illustrated in the
 template below.
 
-
 .. literalinclude:: ../../imagine/templates/magnetic_field_template.py
+
+It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
+which, given a set of parameters and 3 arrays containing coordinate values,
+computes the magnetic field vector at each point.
 
 The method :py:meth:`get_field` must return an :py:class:`astropy.units.Quantity`,
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
@@ -119,6 +197,30 @@ indices 0, 1 and 2, respectively). The Quantity returned by the method must
 correpond to a magnetic field (i.e. units must be :math:`\mu\rm G`, :math:`\rm G`,
 :math:`\rm nT`, or similar).
 
+A simple example, comprising a constant magnetic field can be seen below::
+
+    from imagine import MagneticField
+
+    class ConstantMagneticField(MagneticField):
+        """Example: constant magnetic field"""
+        field_name = 'constantB'
+
+        @property
+        def field_checklist(self):
+            return {'Bx': None, 'By': None, 'Bz': None}
+
+        def get_field(self):
+            # Creates an empty array to store the result
+            B = np.empty(self.data_shape) * self.parameters['Bx'].unit
+            # For a magnetic field, the output must be of shape:
+            # (Nx,Ny,Nz,Nc) where Nc is the index of the component.
+            # Computes Bx
+            B[:,:,:,0] = self.parameters['Bx']*np.ones(self.grid.shape)
+            # Computes By
+            B[:,:,:,1] = self.parameters['By']*np.ones(self.grid.shape)
+            # Computes Bz
+            B[:,:,:,2] = self.parameters['Bz']*np.ones(self.grid.shape)
+            return B
 
 
 
@@ -126,8 +228,36 @@ correpond to a magnetic field (i.e. units must be :math:`\mu\rm G`, :math:`\rm G
 Cosmic ray electrons
 ^^^^^^^^^^^^^^^^^^^^
 
+*Under development*
+
 .. .. literalinclude:: ../../imagine/fields/template/cre_density_template.py
 
+
+^^^^^
+Dummy
+^^^^^
+
+
+^^^^^^^^^^^^^^^^^^^^
+Field Factory
+^^^^^^^^^^^^^^^^^^^^
+
+Field Factories are an additional layer of infrastructure used by the samplers
+to provide the connection between the sampling of points in the likelihood space
+and the field object that will be given to the simulator.
+
+A *Field Factory* object has a list of all of the field’s parameters and also a
+list of the subset of those that are to be varied in the sampler
+— the active parameters.
+It also holds the allowed value ranges for each varied parameter as well as
+default values which are used for inactive parameters. At each step the
+`Pipeline`_ it asks the field factory for the next point in parameter space,
+and the factory gives it one in the form of a  field object that can be handed
+to the simulator, which in turn provides simulated observables for comparison
+with the measured observables in the likelihood module.
+
+
+.. literalinclude:: ../../imagine/templates/field_factory_template.py
 
 
 --------
