@@ -78,7 +78,7 @@ autodoc_default_options = {'members': None,
                            'special-members': '__call__'}
 
 autodoc_member_order = 'groupwise'
-autodoc_inherit_docstrings = False
+autodoc_inherit_docstrings = True
 autosectionlabel_prefix_document = True
 
 # Napoleon configuration

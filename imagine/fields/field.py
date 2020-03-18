@@ -16,8 +16,8 @@ class GeneralField(object):
 
     Parameters
     ----------
-    grid : imagine.fields.BaseGrid or None
-        Instance of `imagine.fields.BaseGrid` containing a 3D grid where the field
+    grid : imagine.fields.grid.BaseGrid or None
+        Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D grid where the field
         is evaluated
     parameters : dict
         Dictionary of full parameter set {name: value}
@@ -25,11 +25,6 @@ class GeneralField(object):
         Number of realisations in field ensemble
     ensemble_seeds
         Random seed(s) for generating random field realisations
-
-    Attributes
-    ----------
-    field_name : str
-        Name of the physical field (class attribute)
     """
     field_name = 'unset' # This is actually a class attribute
     def __init__(self, grid=None, parameters=dict(), ensemble_size=1,
@@ -44,15 +39,19 @@ class GeneralField(object):
 
     @property
     def field_type(self):
+        """Description the field"""
         raise NotImplemented
     @property
     def field_units(self):
+        """Physical units of the field"""
         raise NotImplemented
     @property
     def data_description(self):
+        """Summary of what is in each axis of the data array"""
         raise NotImplemented
     @property
     def data_shape(self):
+        """Shape of the field data array"""
         raise NotImplemented
 
     def get_field(self):
@@ -67,12 +66,12 @@ class GeneralField(object):
     def data(self):
         """
         Field data computed by this class with dimensions compatible with
-        the associated `field_type`. See :doc:`documentation <design_components>`.
+        the associated `field_type`.
         """
         if self._data is None:
             self._data = self.get_field()
             assert self.field_units.is_equivalent(self._data.unit), 'Field units should be '+self.field_units
-        
+
         try:
             assert self._data.shape == self.data_shape
         except AssertionError:
@@ -85,6 +84,7 @@ class GeneralField(object):
 
     @property
     def field_checklist(self):
+        """Dictionary with all parameter names as keys"""
         return dict()
 
     @property
@@ -110,6 +110,8 @@ class GeneralField(object):
 
     @property
     def parameters(self):
+        """
+        Dictionary containing parameters used for this field."""
         return self._parameters
 
     @parameters.setter

@@ -92,20 +92,22 @@ Thermal electrons
 ^^^^^^^^^^^^^^^^^
 
 A new model for the distribution of thermal electrons can be introduced
-subclassing :py:class:`imagine.ThermalElectronDensityField` according to
-the template below.
+subclassing :py:class:`imagine.fields.basic_fields.ThermalElectronDensityField`
+according to the template below.
 
 .. literalinclude:: ../../imagine/templates/thermal_electrons_template.py
 
 Note that the return value of the method :py:meth:`get_field` must be of type
 :py:class:`astropy.units.Quantity`, with shape consistent with the coordinate
-grid, and units of :math:`cm^{-3}`.
+grid, and units of :math:`\rm cm^{-3}`.
 
 ^^^^^^^^^^^^^^^
 Magnetic Fields
 ^^^^^^^^^^^^^^^
 
-One can add a new model for magnetic fields s
+One can add a new model for magnetic fields subclassing
+:py:class:`imagine.fields.basic_fields.MagneticField` as illustrated in the
+template below.
 
 
 .. literalinclude:: ../../imagine/templates/magnetic_field_template.py
@@ -114,8 +116,10 @@ The method :py:meth:`get_field` must return an :py:class:`astropy.units.Quantity
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
 the last axis corresponds to the component (with x, y and z associated with
 indices 0, 1 and 2, respectively). The Quantity returned by the method must
-correpond to a magnetic field (i.e. :math:`\mu\rm G`, :math:`\rm G`,
-:math:`\rm T`, etc).
+correpond to a magnetic field (i.e. units must be :math:`\mu\rm G`, :math:`\rm G`,
+:math:`\rm nT`, or similar).
+
+
 
 
 ^^^^^^^^^^^^^^^^^^^^

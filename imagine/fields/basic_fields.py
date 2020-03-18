@@ -33,20 +33,16 @@ class MagneticField(GeneralField):
 
     Parameters
     ----------
-    grid : imagine.fields.BaseGrid or None
-        Instance of `imagine.fields.BaseGrid` containing a 3D grid where the field
-        is evaluated
+
+    grid : imagine.fields.grid.BaseGrid or None
+        Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D
+        grid where the field is evaluated
     parameters : dict
         Dictionary of full parameter set {name: value}
     ensemble_size : int
         Number of realisations in field ensemble
     ensemble_seeds
         Random seed(s) for generating random field realisations
-
-    Attributes
-    ----------
-    field_name : str
-        Name of the physical field (class attribute)
 
     """
     field_name = 'magnetic_field_base'
@@ -67,10 +63,24 @@ class MagneticField(GeneralField):
 @icy
 class ThermalElectronDensityField(GeneralField):
     """
-    Base class for cosmic ray thermal electron density
-    
-    For more details, check the :ref:`design_components:Thermal electrons` Section
-    of the documentation.
+    Base class for the inclusion of models for spatial distribution of thermal
+    electrons. It should be subclassed following the template provided.
+
+    For more details, check the :ref:`design_components:Thermal electrons`
+    Section of the documentation.
+
+    Parameters
+    ----------
+    grid : imagine.fields.grid.BaseGrid or None
+        Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D
+        grid where the field is evaluated
+    parameters : dict
+        Dictionary of full parameter set {name: value}
+    ensemble_size : int
+        Number of realisations in field ensemble
+    ensemble_seeds
+        Random seed(s) for generating random field realisations
+
     """
     field_name = 'thermal_electrons_base'
 
