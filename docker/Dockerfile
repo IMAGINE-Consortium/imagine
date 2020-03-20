@@ -20,7 +20,7 @@ RUN pip3 install mpi4py
 RUN apt-get install -y --fix-missing libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
 RUN git clone https://github.com/JohannesBuchner/MultiNest.git
 WORKDIR /home/lab/MultiNest/build
-RUN cmake .. && make && make install
+RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install
 WORKDIR /home/lab
 
 # PyMultiNest
@@ -55,7 +55,8 @@ RUN git clone https://github.com/google/googletest.git googletest
 WORKDIR /home/lab/googletest
 RUN mkdir /home/lab/googletest/build
 WORKDIR /home/lab/googletest/build
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install && cp ../googletest/src/* /tmp/local/src
+RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install 
+RUN mkdir /tmp/local/src && cp ../googletest/src/* /tmp/local/src
 WORKDIR /home/lab
 
 # HAMMURABI X
@@ -68,17 +69,14 @@ WORKDIR /home/lab/hamx
 RUN python3 setup.py install
 WORKDIR /home/lab
 
-# SET PATH
-ENV PATH /tmp/local/hammurabi/bin:${PATH}
-ENV LD_LIBRARY_PATH /tmp/local/hammurabi/lib:${LD_LIBRARY_PATH}
-
 ### end of hammurabi X
 
 # CLEAN PACKAGES
 RUN rm -f *.tar.gz
 
 # SET PATH
-ENV LD_LIBRARY_PATH /tmp/local/lib:${LD_LIBRARY_PATH}
+ENV PATH /tmp/local/hammurabi/bin:${PATH}
+ENV LD_LIBRARY_PATH /tmp/local/lib:/tmp/local/hammurabi/lib:${LD_LIBRARY_PATH}
 
 # ALIAS
 RUN echo "alias mpirun='mpirun --mca btl ^vader --allow-run-as-root'" >> ~/.bashrc
