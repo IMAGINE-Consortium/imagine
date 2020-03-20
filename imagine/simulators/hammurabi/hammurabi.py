@@ -1,45 +1,37 @@
-"""
-interface to hammurabiX python wrapper
-
-hammurabi python wrapper hosts a XML tree
-where all parameters are registered
-the major purpose of this interface
-is to do modifications to this XML tree
-
-to accommodate updates of Hampyx in future
-only register/update_observables/fields need modifications
-"""
-
 import numpy as np
 import logging as log
 from imagine.simulators.simulator import Simulator
 from imagine.observables.observable_dict import Measurements, Simulations
 from imagine.tools.icy_decorator import icy
 from imagine.tools.timer import Timer
-from .hampyx import Hampyx
+from hampyx import Hampyx
 
 
 @icy
 class Hammurabi(Simulator):
     """
-    upon initialization, a Hampyx object is initialized
-    and its XML tree should be modified according to measurements
-    without changing its base file
-
-    Parameters
-    ----------
-    measurements
-        Measurements object
-
-    exe_path
-        hammurabi executable path
-
-    xml_path
-        hammurabi xml parameter file path
+    This is an interface to hammurabi X Python wrapper.
     """
+    
     def __init__(self, measurements,
                  xml_path=None,
                  exe_path=None):
+        """
+        Upon initialization, a Hampyx object is initialized
+        and its XML tree should be modified according to measurements
+        without changing its base file.
+        
+        Parameters
+        ----------
+        measurements : Measurements object
+            IMAGINE defined dictionary of measured data.
+        
+        exe_path : string
+            Absolute hammurabi executable path.
+        
+        xml_path : string
+            Absolute hammurabi xml parameter file path.
+        """
         log.debug('@ hammurabi::__init__')
         self.exe_path = exe_path
         self.xml_path = xml_path
@@ -86,7 +78,7 @@ class Hammurabi(Simulator):
 
     def register_observables(self):
         """
-        modify hammurabi XML tree according to known output_checklist
+        Modify hammurabi XML tree according to known output_checklist.
         """
         log.debug('@ hammurabi::register_observables')
         # clean up
@@ -114,7 +106,7 @@ class Hammurabi(Simulator):
 
     def register_fields(self, field_list):
         """
-        update hammurabi XML tree according to field list controllist
+        Update hammurabi XML tree according to field list controllist.
         """
         log.debug('@ hammurabi::register_fields')
         for field in field_list:
@@ -128,13 +120,13 @@ class Hammurabi(Simulator):
 
     def update_fields(self, field_list, realization_id):
         """
-        update hammurabi XML tree according to field list checklist
+        Update hammurabi XML tree according to field list checklist.
 
         Parameters
         ----------
 
-        realization_id
-            id of realization in ensemble, [0,ensemble_size)
+        realization_id : integer
+            ID of realization in ensemble, [0,ensemble_size).
         """
         log.debug('@ hammurabi::update_fields')
         for field in field_list:
@@ -147,18 +139,18 @@ class Hammurabi(Simulator):
 
     def __call__(self, field_list):
         """
-        run hammurabi executable
-        pack up outputs in IMAGINE convention
+        Run hammurabi executable,
+        then pack up outputs in IMAGINE convention.
 
         Parameters
         ----------
 
-        field_list
+        field_list : list
             list of GeneralField objects
 
         Returns
         -------
-        Simulations object
+        simulated results : Simulations object
         """
         log.debug('@ hammurabi::__call__')
         #t = Timer()
