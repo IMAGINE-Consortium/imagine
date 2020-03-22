@@ -6,7 +6,7 @@ from imagine.fields import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 from imagine.fields.grid import UniformGrid
-from imagine.priors import FlatPrior
+from imagine.priors import GeneralPrior, FlatPrior
 import imagine
 
 @icy
@@ -56,7 +56,7 @@ class GeneralFieldFactory:
         log.debug('@ field_factory::__init__')
 
         self.field_class = GeneralField
-
+            
         if self.field_type is 'dummy':
             # In dummy fields, we do not use a grid
             self._grid = None
@@ -74,10 +74,12 @@ class GeneralFieldFactory:
                 self._box = boxsize
                 self._resolution = resolution
         # Placeholders
-        self._default_parameters = None
+        self._default_parameters = {}
         self._parameter_ranges = {}
         self._active_parameters = {}
+        self._priors = None
         
+    
     @property
     def field_name(self):
         """Name of the physical field"""
@@ -154,17 +156,30 @@ class GeneralFieldFactory:
         log.debug('set active parameters %s' % str(active_parameters))
 
     @property
-    def prior(self):
+    def priors(self):
         """
-        Dictionary storing varying range of all default parameters in
-        the form {'parameter-name': (min, max)}
-        """
-        return self._parameter_ranges
-    
-#     @parameter_ranges.setter
-#     def prior(self, new_prior):
-#         assert isinstance(new_prior, Prior)
+        A dictionary containing the priors associated with each parameter.
+        Each prior is represented by an instance of
+        :py:class:`imagine.priors.prior.GeneralPrior`.
         
+        To set new priors one can update the priors dictionary using attribution
+        (any missing values will be set to FlatPrior).
+        """
+        if self._priors is None:
+            self._initialize_priors()
+        return self._priors
+    
+    @priors.setter
+    def priors(self, new_prior_dict):
+        if self._priors is None:
+            self._initialize_priors()
+        for name, prior in new_prior_dict.items():
+            assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
+            assert (name in self.default_parameters), 'Prior for an unknown parameter'
+            self._priors[name] = prior
+    
+    def _initialize_priors(self):
+        self._priors = {name: FlatPrior() for name in self.default_parameters}
         
     @property
     def parameter_ranges(self):

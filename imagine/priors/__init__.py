@@ -1,3 +1,3 @@
 
-from .flat_prior import FlatPrior
+from .basic_priors import *
 from .prior import GeneralPrior

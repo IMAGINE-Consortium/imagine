@@ -1,4 +1,4 @@
-from scipy.stats import gaussian_kde
+import scipy.stats as stats
 from imagine.tools.icy_decorator import icy
 from scipy.interpolate import CubicSpline
 import numpy as np
@@ -63,41 +63,44 @@ class GeneralPrior:
         inverse.    
     """
     def __init__(self, samples=None, pdf_fun=None, 
-                 pdf_x=None, pdf_y=None, interval=None,
+                 pdf_x=None, pdf_y=None, interval=[0,1],
                  bw_method=None, pdf_npoints=1500, inv_cdf_npoints=1500):
         
+        self.range = interval
+        
         if (pdf_x is None) and (pdf_y is None):
+            # PDF from samples mode -------------------
             if samples is not None:
                 assert (pdf_fun is None), 'Either provide the samples or the PDF, not both.'
                 if interval is not None:
                     ok = (samples>interval[0]) * (samples<interval[1])
                     samples = samples[ok]
-                pdf_fun = gaussian_kde(samples, bw_method=bw_method)
+                pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
                 xmin, xmax = samples.min(), samples.max()
+            # PDF from function mode -------------------
             elif pdf_fun is not None:
                 assert (pdf_x is None) and (pdf_y is None), 'Either provide the pdf datapoints or function, not both.'
                 if interval is not None:
                     xmin, xmax = interval
                 else:
-                    xmin, xmax = 0, 1
-            # Evaluates the PDF 
-            pdf_x = np.linspace(xmin,xmax,pdf_npoints)
-            pdf_y = pdf_fun(pdf_x)
-            # Normalizes
-            inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
-            pdf_y = pdf_y/inv_norm
-            
-            pdf_x = (pdf_x - pdf_x.min())/(pdf_x.max() - pdf_x.min())
-            self.range = (xmin, xmax)
-        elif interval is not None:
-            ok = (samples>interval[0]) * (samples<interval[1])
-            pdf_x = pdf_x[ok]; pdf_y = pdf_y[ok]
-        
+                    xmin, xmax = 0, 1  
+                    
+            if pdf_fun is not None:
+                # Evaluates the PDF 
+                pdf_x = np.linspace(xmin,xmax,pdf_npoints)
+                pdf_y = pdf_fun(pdf_x)
+                # Normalizes
+                inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
+                pdf_y = pdf_y/inv_norm
+
+                pdf_x = (pdf_x - pdf_x.min())/(pdf_x.max() - pdf_x.min())
+                self.range = (xmin, xmax)
         
         # Placeholders
         self.inv_cdf_npoints = inv_cdf_npoints
         self._cdf = None
         self._inv_cdf = None
+        self.distr = None
         
         if (pdf_x is not None) and (pdf_y is not None):
             self._pdf = CubicSpline(pdf_x, pdf_y)
@@ -107,28 +110,29 @@ class GeneralPrior:
     @property
     def pdf(self):
         """
-        Probability density function (PDF) associated with this prior,
-        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
+        Probability density function (PDF) associated with this prior.
         """
         return self._pdf
     
     
     def pdf_unscaled(self, x):
         """
-        Probability density function (PDF) associated with this prior,
-        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
+        Probability density function (PDF) associated with this prior.
         """
-        x_scaled = (x - self.range[0])/(self.range[1] - self.range[0])
-        return self.pdf(x_scaled)
+        
+        return self.pdf(self._scale_parameter(x))
+    
+    def _scale_parameter(self, x):
+        return (x - self.range[0])/(self.range[1] - self.range[0])
     
     @property
     def cdf(self):
         """
-        Cumulative distribution function (CDF) associated with this prior,
-        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
+        Cumulative distribution function (CDF) associated with this prior.
         """
         if self._cdf is None:
-            self._cdf = self.pdf.antiderivative()
+            if self.pdf is not None:
+                self._cdf = self.pdf.antiderivative()
         return self._cdf
     
     @property
@@ -137,10 +141,19 @@ class GeneralPrior:
         Inverse of the CDF associated with this prior,
         expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
         """
-        if self._inv_cdf is None:
+        if (self._inv_cdf is None) and (self.cdf is not None):
             t = np.linspace(0,1, self.inv_cdf_npoints)
-            y = self.cdf(t)/np.max(self.cdf(t))
-                
+            y = self.cdf(t)
+            # Rescales the image of the function to [0,1]
+            y = (y-y.min())/(y.max()-y.min())
+            # For some distributions, there will be multiple
+            # values of y=0 for the same t. The following corrects this
+            # by simply removing this part of the cdf
+            select_zeros = y==0
+            if len(select_zeros)>1:
+                y = y[~select_zeros]
+                t = t[~select_zeros]
+            # Creates interpolated spline
             self._inv_cdf = CubicSpline(y, t)
             
         return self._inv_cdf
@@ -151,4 +164,47 @@ class GeneralPrior:
         The "prior mapping", i.e. returns the value of the
         inverse of the CDF at point(s) `x`.
         """
+        
         return self.inv_cdf(x)
+
+@icy
+class scipyPrior(GeneralPrior):
+    """
+    Constructs a prior from a continuous distribution defined in `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html>`_. 
+    
+    Parameters
+    -----------
+    distr : scipy.stats.rv_continuous
+        A distribution function expressed as an instance of 
+        :py:class:`scipy.stats.rv_continuous`.
+    loc : float
+        Same meaning as in :py:class:`scipy.stats.rv_continuous`: sets the
+        centre of the distribution (generally, the mean or mode).
+    scale : float
+        Same meaning as in :py:class:`scipy.stats.rv_continuous`: sets the
+        width of the distribution (e.g. the standard deviation in the normal 
+        case).
+    interval : tuple or list
+        A pair of points representing, respectively, the minimum and maximum 
+        parameter values to be considered (will be used to rescale the 
+        interval).
+    """
+    def __init__(self, distr=None, *args, loc=0.0, scale=1.0, 
+                 interval=[-1.0,1.0], **kwargs):
+        super().__init__(interval=interval)
+        
+        assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
+        
+        xmin, xmax = interval
+
+        loc = self._scale_parameter(loc)
+        self.distr = distr(*args, loc=loc, scale=scale/(xmax - xmin), **kwargs)
+        
+        self._pdf = self.distr.pdf
+        self._cdf = self.distr.cdf
+    
+        # In principle, it should be possible to use scipy's built-in
+        # ppf for this (which is supposed to be accurate and fast), 
+        # but this has not yet being implemented as it requires
+        # some extra rescaling to work with the truncation
+        # self._inv_cdf = self.distr.ppf
