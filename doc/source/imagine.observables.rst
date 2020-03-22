@@ -4,6 +4,14 @@ imagine.observables package
 Submodules
 ----------
 
+imagine.observables.dataset module
+----------------------------------
+
+.. automodule:: imagine.observables.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.observables.observable module
 -------------------------------------
 

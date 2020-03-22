@@ -13,16 +13,17 @@ IMAGINE documentation
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
    installation
-   design
-..    usage
-
+   tutorials
+   design_components
+   bayes
+   parallel
 
 .. toctree::
-    :maxdepth: 5
+    :maxdepth: 4
     :caption: API Reference
 
     imagine

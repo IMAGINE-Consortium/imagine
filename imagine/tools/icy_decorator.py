@@ -1,6 +1,6 @@
 """
-this decorator can prevent adding
-additional attributes to initialized class instances
+This decorator can prevent (accidentally) adding
+additional attributes to initialized class instances.
 """
 
 from functools import wraps

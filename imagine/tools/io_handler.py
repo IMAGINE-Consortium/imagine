@@ -5,7 +5,7 @@ but parallel HDF5 is not required.
 There are two types of data reading,
 corresponding to the data types defined in the Observable class.
 
-    1. for reading 'measured' data,
+    1. for reading 'measured' data (including mask maps),
     each node reads the full data.
     'read_copy' is designed for this case.
 
@@ -33,12 +33,12 @@ mpirank = comm.Get_rank()
 
 class io_handler(object):
     """
-    Handles the IO
+    Handles the I/O.
 
     Parameters
     ----------
     wkdir : string
-        the absolute path of the working directory
+        The absolute path of the working directory.
     """
     def __init__(self, wk_dir=None):
         if wk_dir is None:
@@ -51,14 +51,14 @@ class io_handler(object):
     @property
     def wk_dir(self):
         """
-        String containing the absolute path of the working directory
+        String containing the absolute path of the working directory.
         """
         return self._wk_dir
 
     @property
     def file_path(self):
         """
-        Absolute path of the HDF5 binary file
+        Absolute path of the HDF5 binary file.
         """
         return self._file_path
 
@@ -78,15 +78,17 @@ class io_handler(object):
     def write_copy(self, data, file, key):
         """
         Writes a copied data-set into a HDF5 file.
+        In practice, it writes out the data stored in the master node,
+        by defaut taking all nodes have the same copies.
         
         Parameters
         ----------
         data : numpy.ndarray
-            any datatype, distributed data
+            Distributed/copied data.
         file : str
-            filename
+            Strong for filename.
         key : str
-            in form 'group name/dataset name'
+            String for HDF5 group and dataset names, e.g., 'group name/dataset name'.
         """
         log.debug('@ io_handler::write')
         assert isinstance(data, np.ndarray)
@@ -120,11 +122,11 @@ class io_handler(object):
         Parameters
         ----------
         data : numpy.ndarray
-            any datatype, distributed data
+            Distributed data.
         file : str
-            filename
+            String for filename.
         key : str
-            in form 'group name/dataset name'
+            String for HDF5 group and dataset names, e.g., 'group name/dataset name'.
         """
         log.debug('@ io_handler::write')
         assert isinstance(data, np.ndarray)
@@ -171,21 +173,23 @@ class io_handler(object):
 
     def read_copy(self, file, key):
         """
-        Reads from a HDF5 file identically to all nodes.
+        Reads from a HDF5 file identically to all nodes,
+        by doing so, each node contains an identical copy of the data stored
+        in the file.
         
         Parameters
         ----------
         data : numpy.ndarray
-            distributed data
+            Distributed data.
         file : str
-            filename
+            String for filename.
         key : str
-            in form 'group name/dataset name'
+            String for HDF5 group and dataset names, e.g., 'group name/dataset name'.
 
         Returns
         -------
-        copied numpy.ndarray
-        the output must be in (1,n) shape on each node
+        Copied numpy.ndarray.
+            The output must be in (1,n) shape on each node.
         """
         log.debug('@ io_handler::read_copied')
         assert isinstance(file, str)
@@ -204,22 +208,21 @@ class io_handler(object):
         Reads from a HDF5 file and returns a distributed data-set.
         Note that the binary file data should contain enough rows
         to be distributed on the available computing nodes,
-        otherwise the mpi_arrange function will raise an error
+        otherwise the mpi_arrange function will raise an error.
 
         Parameters
         ----------
         data : numpy.ndarray
-            distributed data
+            Distributed data.
         file : str
-            filename
+            String for filename.
         key : str
-            in form 'group name/dataset name'
+            String for HDF5 group and dataset names, e.g., 'group name/dataset name'.
 
         Returns
         -------
-        distributed numpy.ndarray
-        the output must be in either at least (1,n),
-        or (m,n) shape on each node
+        Distributed numpy.ndarray.
+            The output must be in either at least (1,n), or (m,n) shape on each node.
         """
         log.debug('@ io_handler::read_dist')
         assert isinstance(file, str)

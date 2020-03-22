@@ -6,14 +6,19 @@ Subpackages
 
 .. toctree::
 
-   imagine.fields.breg_lsa
-   imagine.fields.brnd_es
-   imagine.fields.cre_analytic
-   imagine.fields.tereg_ymw16
+   imagine.fields.hamx
    imagine.fields.test_field
 
 Submodules
 ----------
+
+imagine.fields.basic\_fields module
+-----------------------------------
+
+.. automodule:: imagine.fields.basic_fields
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 imagine.fields.field module
 ---------------------------

@@ -13,8 +13,8 @@ Alternatively, one can opt for using a `Docker`_ image (see below).
 Setting up the environment
 ==========================
 
-Before installing IMAGINE, one needs to prepare one has to prepare the
-environment installing the `Hammurabi`_ code and the following packages:
+Before installing IMAGINE, one needs to prepare the environment installing
+the `Hammurabi`_ code and the following packages:
 
  * `Python3 <https://python.org>`_
  * `NumPy <https://numpy.org/>`_

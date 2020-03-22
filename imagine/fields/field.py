@@ -4,40 +4,87 @@ from imagine.tools.icy_decorator import icy
 @icy
 class GeneralField(object):
     """
-    Field base class
+    This is the base class which can be used to include a completely new field
+    in the IMAGINE pipeline. Base classes for specific physical quantites
+    (e.g. magnetic fields) are already available in the module
+    :mod:`imagine.fields.basic_fields`.
+    Thus, before subclassing `GeneralField`, check whether a more specialized
+    subclass is not available.
 
-    This generalfield class registers the full default parameter value
-    which is passed down from field factory and then
-    prepares to hand it to simulators.
-
+    For more details check the :ref:`design_components:Fields` section in the
+    documentation.
 
     Parameters
     ----------
+    grid : imagine.fields.grid.BaseGrid or None
+        Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D grid where the field
+        is evaluated
     parameters : dict
         Dictionary of full parameter set {name: value}
     ensemble_size : int
         Number of realisations in field ensemble
-    ensemble_seeds 
+    ensemble_seeds
         Random seed(s) for generating random field realisations
     """
-    def __init__(self, parameters=dict(), ensemble_size=1, ensemble_seeds=None):
+    field_name = 'unset' # This is actually a class attribute
+    def __init__(self, grid=None, parameters=dict(), ensemble_size=1,
+                 ensemble_seeds=None):
         log.debug('@ field::__init__')
-        self.name = 'general'
+        self.grid = grid
         self.parameters = parameters
         self.ensemble_size = ensemble_size
         self.ensemble_seeds = ensemble_seeds
+        # Placeholders
+        self._data = None
 
     @property
-    def name(self):
-        return self._name
+    def field_type(self):
+        """Description the field"""
+        raise NotImplemented
+    @property
+    def field_units(self):
+        """Physical units of the field"""
+        raise NotImplemented
+    @property
+    def data_description(self):
+        """Summary of what is in each axis of the data array"""
+        raise NotImplemented
+    @property
+    def data_shape(self):
+        """Shape of the field data array"""
+        raise NotImplemented
 
-    @name.setter
-    def name(self, name):
-        assert isinstance(name, str)
-        self._name = name
+    def get_field(self):
+        """
+        This should be overridden with a derived class. It must return an array
+        with dimensions compatible with the associated `field_type`.
+        See :doc:`documentation <design_components>`.
+        """
+        raise NotImplementedError
+
+    @property
+    def data(self):
+        """
+        Field data computed by this class with dimensions compatible with
+        the associated `field_type`.
+        """
+        if self._data is None:
+            self._data = self.get_field()
+            assert self.field_units.is_equivalent(self._data.unit), 'Field units should be '+self.field_units
+
+        try:
+            assert self._data.shape == self.data_shape
+        except AssertionError:
+            print('Incorrect shape, it should be:', self.data_shape)
+            print('It is instead:', self._data.shape)
+            print('Description:', self.data_description)
+            raise
+
+        return self._data
 
     @property
     def field_checklist(self):
+        """Dictionary with all parameter names as keys"""
         return dict()
 
     @property
@@ -63,6 +110,8 @@ class GeneralField(object):
 
     @property
     def parameters(self):
+        """
+        Dictionary containing parameters used for this field."""
         return self._parameters
 
     @parameters.setter
