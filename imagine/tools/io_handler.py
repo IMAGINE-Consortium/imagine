@@ -1,5 +1,6 @@
 """
-The io_handler class is designed for IMAGINE I/O with HDF5 (not binded with MPI).
+The io_handler class is designed for IMAGINE I/O with HDF5+MPI,
+but parallel HDF5 is not required.
 
 There are two types of data reading,
 corresponding to the data types defined in the Observable class.
