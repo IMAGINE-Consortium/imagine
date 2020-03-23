@@ -21,15 +21,12 @@ class DynestyPipeline(Pipeline):
     ----
     Instances of this class are callable
     """
-    def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-        super(DynestyPipeline, self).__init__(simulator, factory_list, likelihood, prior, ensemble_size)
-
-    def __call__(self, kwargs=dict()):
+    def __call__(self, **kwargs):
         """
         Parameters
         ----------
-        kwargs : dict
-            extra input argument controlling sampling process
+        **kwargs : pymultinest parameters
+            Extra input argument controlling sampling process
             i.e., 'dlogz' for stopping criteria
 
         Returns
