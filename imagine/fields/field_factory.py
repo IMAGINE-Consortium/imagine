@@ -27,7 +27,7 @@ class GeneralFieldFactory:
     To include a new Field_Factory, one needs to create a derived class
     with customized initialization. Below we show an example which is
     compatible with the :py:class:`xConstantField` showed in the
-    :ref:`design_components:Fields` sectionof the documentation::
+    :ref:`design_components:Fields` section of the documentation::
 
         @icy
         class xConstantField_Factory(GeneralFieldFactory):
@@ -76,7 +76,7 @@ class GeneralFieldFactory:
         # Placeholders
         self._default_parameters = {}
         self._parameter_ranges = {}
-        self._active_parameters = {}
+        self._active_parameters = ()
         self._priors = None
         
     

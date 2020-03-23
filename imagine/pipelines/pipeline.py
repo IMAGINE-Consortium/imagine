@@ -47,13 +47,13 @@ class Pipeline(object):
     ensemble_size : int
         Number of observable realizations PER COMPUTING NODE to be generated in simulator
     """
-    def __init__(self, simulator, factory_list, likelihood, prior, ensemble_size=1):
-        self.active_parameters = tuple()
-        self.active_ranges = dict()
+    def __init__(self, simulator, factory_list, likelihood, ensemble_size=1):
+        
         self.factory_list = factory_list
+        # NB setting the factory list automatically sets: the active parameters,
+        # parameter ranges and priors, based on the list
         self.simulator = simulator
         self.likelihood = likelihood
-        self.prior = prior
         self.ensemble_size = ensemble_size
         self.sampling_controllers = dict()
         self.sample_callback = False
@@ -71,49 +71,61 @@ class Pipeline(object):
         # Place holder
         self.dynesty_parameter_dict = None
 
+    
     @property
     def active_parameters(self):
+        """
+        List of all the active parameters
+        """
+        # The user should not set this attribute manually
         return self._active_parameters
-
-    @active_parameters.setter
-    def active_parameters(self, parameter_list):
-        assert isinstance(parameter_list, (list, tuple))
-        self._active_parameters = tuple(parameter_list)
 
     @property
     def active_ranges(self):
+        """
+        Ranges of all active parameters
+        """
+        # The user should not set this attribute manually
         return self._active_ranges
 
-    @active_ranges.setter
-    def active_ranges(self, active_ranges):
-        assert isinstance(active_ranges, dict)
-        self._active_ranges = active_ranges
+    @property
+    def priors(self):
+        """
+        Dictionary containing priors for all active parameters
+        """
+        # The user should not set this attribute manually
+        return self._priors
 
     @property
     def factory_list(self):
+        """
+        List of field factories currently being used.
+        
+        Updating the factory list automatically extracts active_parameters,
+        parameter ranges and priors from each field factory.
+        """
         return self._factory_list
 
     @factory_list.setter
     def factory_list(self, factory_list):
-        """
-        Extracts active_parameters and their ranges from each factory
-
-        notice that once done
-        the parameter/variable ordering is fixed wrt factory ordering
-        which is useful in recovering variable logic value for each factory
-
-        Parameters
-        ----------
-        factory_list : list
-            List of field factory objects
-        """
-        assert isinstance(factory_list, (list, tuple))
+        # Notice that the parameter/variable ordering is fixed wrt
+        # factory ordering. This is useful for recovering variable logic value 
+        # for each factory and necessary to construct the common prior function.
+        assert isinstance(factory_list, (list, tuple)), 'Factory list must be a tuple or list'
+        self._active_parameters = tuple()
+        self._active_ranges = dict()
+        self._priors = dict()
+        
         for factory in factory_list:
             assert isinstance(factory, GeneralFieldFactory)
             for ap_name in factory.active_parameters:
                 assert isinstance(ap_name, str)
+                # Sets the parameters and ranges
                 self._active_parameters += (str(factory.name+'_'+ap_name),)
                 self._active_ranges[str(factory.name+'_'+ap_name)] = factory.parameter_ranges[ap_name]
+                # Sets the Prior
+                assert isinstance(prior, Prior)
+                self._priors[str(factory.name+'_'+ap_name)] = factory.priors[ap_name]
         self._factory_list = factory_list
 
     @property
@@ -134,14 +146,26 @@ class Pipeline(object):
         assert isinstance(likelihood, Likelihood)
         self._likelihood = likelihood
 
-    @property
-    def prior(self):
-        return self._prior
-
-    @prior.setter
-    def prior(self, prior):
-        assert isinstance(prior, Prior)
-        self._prior = prior
+    def prior(self, cube):
+        """
+        MultiNest style prior. Takes a cube containing a uniform sampling of 
+        values and maps then into a distribution compatible with the priors
+        specified in the Field Factories.
+        
+        Parameters
+        ----------
+        cube : array
+            Each row of the array corresponds to a different parameter in the sampling.
+            Warning: the function will modify `cube` inplace.
+        
+        Returns
+        -------
+        cube
+            The modified cube
+        """
+        for i, parameter in enumerate(priors_list):
+            cube[i] = self.priors[parameter]
+        return cube
 
     @property
     def ensemble_size(self):
@@ -220,7 +244,7 @@ class Pipeline(object):
 
     def _randomness(self):
         """
-        manipulate random seed(s)
+        Manipulate random seed(s)
         isolating this process for convenience of testing
         """
         log.debug('@ pipeline::_randomness')
