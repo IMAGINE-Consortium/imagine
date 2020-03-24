@@ -18,7 +18,8 @@ IMAGINE documentation
 
    installation
    tutorials
-   design_components
+   design
+   components
    bayes
    parallel
 
