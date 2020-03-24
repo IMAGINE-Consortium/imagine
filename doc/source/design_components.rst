@@ -50,9 +50,9 @@ flexibility of IMAGINE, one should try to use
 
 :numref:`IMAGINE` describes the typical workflow of IMAGINE and introduces other key base classes.
 Mock and measured data, in the form of `Observables`_, are used
-to compute a likelihood through a `Likelihood`_ class. This, supplemented by a
-`Prior`_, allows a `Pipeline`_ object to sample the parameter space and compute
-posterior distributions and Baysian evidences for the models. The generation
+to compute a likelihood through a `Likelihood`_ class. This, supplemented by
+`Priors`_, allows a `Pipeline`_ object to sample the parameter space and compute
+posterior distributions and  Bayesian evidences for the models. The generation
 of different realisations of each Field is managed by the corresponding
 `Field Factory`_ class. Likewise, `Observable Dictionaries`_ help one
 organising and manipulating *Observables*.
@@ -89,7 +89,7 @@ given a set of physical parameters and a coordinate grid,
 the *field factory objects* take care of book-keeping tasks: they hold the
 parameter ranges and default values, they translate the dimensionless parameters
 used by the sampler (always in the interval :math:`[0,1]`) to physical
-parameters, they store the `Prior`_ associated with that *field*.
+parameters, they store `Priors`_ associated with each parameter of that *field*.
 
 To convert ones own model into a IMAGINE-compatible field, one must create
 subclass one of the base classes available the
@@ -282,6 +282,30 @@ Cosmic ray electrons
 Dummy
 ^^^^^
 
+There are situations when one may want to sample parameters which are not
+used to evaluate a field on a grid before being sent to a Simulator object.
+One possible use for this is representing a global property of the physical
+system which affects the observations (for instance, some global property of
+the ISM or, if modelling an external galaxy, the position of the galaxy).
+
+Another common use of dummy fields is when a field is generated at runtime
+*by the simulator*. One example is the range built-in fields available in
+Hammurabi: instead of requesting IMAGINE to produce these fields and hand it to
+Hammurabi to compute the associated synchrotron observables, one can use dummy
+fields to request Hammurabi to generate these fields internally for a given
+choice of parameters.
+
+Using dummy fields to bypass the design of a full IMAGINE Field may simplify
+implementation of a Simulator wrapper and (sometimes) may be offer good
+performance. However, this practice of generating the actual field within the
+Simulator *breaks the modularity of IMAGINE*, and it becomes impossible to
+check the validity of the results plugging the same field on a different
+Simulator. Thus, use this with care!
+
+
+A dummy field can be implementing subclassing
+:py:class:`imagine.fields.basic_fields.DummyField` as shown bellow.
+
 .. literalinclude:: ../../imagine/templates/dummy_field_template.py
 
 
@@ -289,22 +313,44 @@ Dummy
 Field Factory
 ^^^^^^^^^^^^^^^^^^^^
 
-Field Factories are an additional layer of infrastructure used by the samplers
+Field Factories, represented in IMAGINE by a subclass of
+:py:class:`imagine.fields.field_factory.GeneralFieldFactory`
+are an additional layer of infrastructure used by the samplers
 to provide the connection between the sampling of points in the likelihood space
 and the field object that will be given to the simulator.
 
-A *Field Factory* object has a list of all of the field’s parameters and also a
+A *Field Factory* object has a list of all of the field's parameters and a
 list of the subset of those that are to be varied in the sampler
-— the active parameters.
-It also holds the allowed value ranges for each varied parameter as well as
-default values which are used for inactive parameters. At each step the
+— the latter are called the **active parameters**.
+The Field Factory also holds the allowed value ranges for each parameter,
+the default values (which are used for inactive parameters) and the prior
+distribution associated with each parameter.
+
+At each step the
 `Pipeline`_ it asks the field factory for the next point in parameter space,
-and the factory gives it one in the form of a  field object that can be handed
+and the factory gives it one in the form of a Field object that can be handed
 to the simulator, which in turn provides simulated observables for comparison
 with the measured observables in the likelihood module.
 
+Given a Field `YourFieldClass` (which must be an instance of class derived from
+:py:class:`imagine.fields.field.GeneralField`) the following template can be
+used construct a field factory:
 
 .. literalinclude:: ../../imagine/templates/field_factory_template.py
+
+The object `Prior A` must be an instance of
+:py:class:`imagine.priors.prior.GeneralPrior` (see section `Priors`_ for
+details). Any parameter ommitted in the dictionary supplied to the priors
+property will use a flat prior (i.e. a uniform, where all parameter values are
+equally likely).
+
+One can initialize the Field Factory supplying the grid on which the
+corresponding Field will be evaluated::
+
+      myFactory = YourField_Factory(grid=cartesian_grid)
+
+The factory object :py:obj:`myFactory` can now be handled to the `Pipeline`_,
+which will generate new fields through the method :py:meth:`generate`.
 
 
 --------
@@ -334,9 +380,9 @@ Likelihood
 ----------
 
 
------
-Prior
------
+------
+Priors
+------
 
 
 
