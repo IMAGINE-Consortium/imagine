@@ -90,6 +90,7 @@ For constructing a grid with uniformly-distributed coordinates one can use the
 For example, one can create a grid where the cylindrical coordinates are equally
 spaced using::
 
+    import imagine as img
     cylindrical_grid = img.UniformGrid(box=[[0.25*u.kpc, 15*u.kpc],
                                             [-180*u.deg, np.pi*u.rad],
                                             [-15*u.kpc, 15*u.kpc]],
@@ -335,9 +336,31 @@ Simulators
 
 .. _Likelihood:
 
-----------
-Likelihood
-----------
+-----------
+Likelihoods
+-----------
+
+Likelihoods define how to quantitatively compare the simulated and measured
+observables.  They are represented within IMAGINE by an instance of class
+derived from :py:class:`imagine.likelihoods.likelihood.Likelihood`.
+There are two pre-implemented subclasses within IMAGINE:
+
+ * :py:class:`imagine.likelihoods.simple_likelihood.SimpleLikelihood`:
+   this is the traditional method, which is like a :math:`\chi^2` based on the
+   covariance matrix of the measurements (i.e., noise).
+ * :py:class:`imagine.likelihoods.simple_likelihood.EnsembleLikelihood`:
+    combines covariance matrices from measurements with the expected galactic
+    variance from models that include a stochastic component.
+
+Likelihoods need to be initialized before running the pipeline, and require measurements (at the front end).  In most cases, data sets will not have covariance matrices but only noise values, in which case the covariance matrix is only the diagonal.
+
+::
+
+  likelihood = EnsembleLikelihood(data, covariancematrix)
+
+The optional input argument covariancematrix does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
+
+If the EnsembleLikelihood is used, then the sampler will be run multiple times at each point in likelihood space to create an ensemble of simulated observables.  The covariance of these observables can then be included in the likelihood quantitatively so that the comparison of the measured observables
 
 
 
@@ -347,6 +370,32 @@ Likelihood
 ------
 Priors
 ------
+
+A powerful aspect of a fully Baysean analysis approach is the possibility of
+explicitly stating any prior expectations about the parameter values based on
+previous knowledge. A prior is represented by an instance of
+:py:class:`imagine.priors.prior.GeneralPrior` or one of its subclasses.
+
+To use a prior, one has to initialize it and include it in the associated
+:ref:`Field Factory`. In the absence of an explicitly selected a prior for a
+given parameter, a *flat prior* is chosen by default (i.e. any parameter within
+the range are equally likely before the looking at the observational data).
+
+After the flat prior, a common choice is that the parameter values are
+characterized by a Gaussian distribution around some central value.
+This can be achieved using the
+:py:class:`imagine.priors.basic_priors.GaussianPrior` class. As an example,
+let us suppose one has a parameter which characterizes the strength of a
+component of the magnetic field, and that ones prior expectation is that this
+should be gaussian distributed with mean :math:`1\mu\rm G` and standard
+deviation :math:`5\mu\rm G`. Moreover, let us assumed that the model only works
+within the range :math:`[-30\mu \rm G, 30\mu G]`. A prior consistent with these
+requirements can be achieved using::
+
+  import imagine as img
+  import astropy.units as u
+  myGaussianPrior = img.GaussianPrior(mu=1*u.microgauss, sigma=5*u.microgauss,
+                                      interval=[-30*u.microgauss,30*u.microgauss])
 
 
 

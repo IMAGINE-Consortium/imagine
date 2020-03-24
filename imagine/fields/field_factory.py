@@ -27,7 +27,7 @@ class GeneralFieldFactory:
     To include a new Field_Factory, one needs to create a derived class
     with customized initialization. Below we show an example which is
     compatible with the :py:class:`xConstantField` showed in the
-    :ref:`design_components:Fields` section of the documentation::
+    :ref:`components:Fields` section of the documentation::
 
         @icy
         class xConstantField_Factory(GeneralFieldFactory):
@@ -56,7 +56,7 @@ class GeneralFieldFactory:
         log.debug('@ field_factory::__init__')
 
         self.field_class = GeneralField
-            
+
         if self.field_type is 'dummy':
             # In dummy fields, we do not use a grid
             self._grid = None
@@ -78,8 +78,8 @@ class GeneralFieldFactory:
         self._parameter_ranges = {}
         self._active_parameters = ()
         self._priors = None
-        
-    
+
+
     @property
     def field_name(self):
         """Name of the physical field"""
@@ -161,14 +161,14 @@ class GeneralFieldFactory:
         A dictionary containing the priors associated with each parameter.
         Each prior is represented by an instance of
         :py:class:`imagine.priors.prior.GeneralPrior`.
-        
+
         To set new priors one can update the priors dictionary using attribution
         (any missing values will be set to FlatPrior).
         """
         if self._priors is None:
             self._initialize_priors()
         return self._priors
-    
+
     @priors.setter
     def priors(self, new_prior_dict):
         if self._priors is None:
@@ -177,10 +177,10 @@ class GeneralFieldFactory:
             assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
             assert (name in self.default_parameters), 'Prior for an unknown parameter'
             self._priors[name] = prior
-    
+
     def _initialize_priors(self):
         self._priors = {name: FlatPrior() for name in self.default_parameters}
-        
+
     @property
     def parameter_ranges(self):
         """

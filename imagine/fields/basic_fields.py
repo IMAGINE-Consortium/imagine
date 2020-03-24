@@ -28,7 +28,7 @@ class MagneticField(GeneralField):
     Base class for the inclusion of new models for magnetic fields.
     It should be subclassed following the template provided.
 
-    For more details, check the :ref:`design_components:Magnetic Fields` Section
+    For more details, check the :ref:`components:Magnetic Fields` Section
     of the documentation.
 
     Parameters
@@ -66,7 +66,7 @@ class ThermalElectronDensityField(GeneralField):
     Base class for the inclusion of models for spatial distribution of thermal
     electrons. It should be subclassed following the template provided.
 
-    For more details, check the :ref:`design_components:Thermal electrons`
+    For more details, check the :ref:`components:Thermal electrons`
     Section of the documentation.
 
     Parameters

@@ -11,7 +11,7 @@ class GeneralField(object):
     Thus, before subclassing `GeneralField`, check whether a more specialized
     subclass is not available.
 
-    For more details check the :ref:`design_components:Fields` section in the
+    For more details check the :ref:`components:Fields` section in the
     documentation.
 
     Parameters
@@ -58,7 +58,7 @@ class GeneralField(object):
         """
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
-        See :doc:`documentation <design_components>`.
+        See :doc:`documentation <components>`.
         """
         raise NotImplementedError
 

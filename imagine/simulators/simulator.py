@@ -9,7 +9,7 @@ class Simulator(object):
     New Simulators should be introduced by sub-classing the present class.
     Overriding the method :py:meth:`simulate` to convert a list of fields
     into simulated observables. For more details see
-    :ref:`design_components:Simulators` section of the documentation.
+    :ref:`components:Simulators` section of the documentation.
 
     Parameters
     ----------
