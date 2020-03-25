@@ -306,6 +306,81 @@ which will generate new fields through the method :py:meth:`generate`.
 Datasets
 --------
 
+:py:class:`imagine.observables.dataset.Dataset` objects are helpers
+used for the inclusion of observational data in IMAGINE.
+They convert the measured data and uncertainties to a standard format which
+can be later handed to an
+:ref:`observable dictionary <Observable Dictionaries>`.
+There are two main types of datasets: `Tabular datasets`_ and
+`HEALPix datasets`_.
+
+
+
+.. _Tabular datasets:
+
+As the name indicates, in **tabular datasets** the observational data was
+originally
+in tabular format, i.e. a table where each row corresponds to a different
+*position in the sky* and columns contain (at least) the sky coordinates,
+the measurement and the associated error. A final requirement is that the
+dataset is stored in a *dictionary-like* object i.e. the columns can be
+selected by column name.
+
+To construct a tabular dataset, one needs to instantiate
+:py:class:`imagine.observables.dataset.TabularDataset`.
+
+.. To exemplify this, we
+
+::
+
+    from astroquery.vizier import Vizier
+    from imagine.observables.dataset import TabularDataset
+
+    class FaradayRotationMao2010(TabularDataset):
+        def __init__(self):
+            # Fetches the catalogue
+            catalog = Vizier.get_catalogs('J/ApJ/714/1170')[0]
+            # Reads it to the TabularDataset (the catalogue obj actually contains units)
+            super().__init__(catalog, name='fd', units=catalog['RM'].unit,
+                             data_column='RM', error_column='e_RM',
+                             lat_column='GLAT', lon_column='GLON')
+
+.. _HEALPix datasets:
+
+**HEALPix datasets** will generally comprise maps of the full-sky, where
+`HEALPix <https://healpix.sourceforge.io/>`_ pixelation is employed.
+:py:class:`imagine.observables.dataset.HEALPixDataset`
+:py:class:`imagine.observables.dataset.SynchrotronHEALPixDataset`
+:py:class:`imagine.observables.dataset.FaradayDepthHEALPixDataset`
+:py:class:`imagine.observables.dataset.DispersionMeasureHEALPixDataset`
+
+
+::
+
+    import requests, io
+    import numpy as np
+    from astropy.io import fits
+    from astropy import units as u
+    from imagine.observables.dataset import FaradayDepthHEALPixDataset
+
+    class FaradayDepthOppermann2012(FaradayDepthHEALPixDataset):
+        def __init__(self, skip=None):
+            # Fetches and reads the
+            download = requests.get('https://wwwmpa.mpa-garching.mpg.de/ift/faraday/2012/faraday.fits')
+            raw_dataset = fits.open(io.BytesIO(download.content))
+            # Adjusts the data to the right format
+            fd_raw = raw_dataset[3].data.astype(np.float)
+            sigma_fd_raw = raw_dataset[4].data.astype(np.float)
+            # Includes units in the data
+            fd_raw *= u.rad/u.m/u.m
+            sigma_fd_raw *= u.rad/u.m/u.m
+
+            # If requested, makes it small, to save memory in this example
+            if skip is not None:
+                fd_raw = fd_raw[::skip]
+                sigma_fd_raw = sigma_fd_raw[::skip]
+            # Loads into the Dataset
+            super().__init__(data=fd_raw, error=sigma_fd_raw)
 
 
 
@@ -317,6 +392,7 @@ Measurements, Simulations and Covariances
 
 .. _Observable Dictionaries:
 
+--
 
 
 

@@ -170,13 +170,17 @@ class GeneralPrior:
 @icy
 class scipyPrior(GeneralPrior):
     """
-    Constructs a prior from a continuous distribution defined in `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html>`_.
+    Constructs a prior from a continuous distribution defined in `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions>`_.
 
     Parameters
     -----------
     distr : scipy.stats.rv_continuous
         A distribution function expressed as an instance of
         :py:class:`scipy.stats.rv_continuous`.
+    *args :
+        Any positional arguments required by the function selected in
+        :py:data:`distr` (e.g for `scipy.stats.chi2 <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2.html>`_, one needs to
+        supply the number of degrees of freedom, :py:data:`df`)
     loc : float
         Same meaning as in :py:class:`scipy.stats.rv_continuous`: sets the
         centre of the distribution (generally, the mean or mode).
@@ -189,7 +193,7 @@ class scipyPrior(GeneralPrior):
         parameter values to be considered (will be used to rescale the
         interval).
     """
-    def __init__(self, distr=None, *args, loc=0.0, scale=1.0,
+    def __init__(self, distr, *args, loc=0.0, scale=1.0,
                  interval=[-1.0,1.0], **kwargs):
         super().__init__(interval=interval)
 
