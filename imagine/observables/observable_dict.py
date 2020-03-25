@@ -100,7 +100,7 @@ class ObservableDict(object):
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         new_data
-            distributed/copied ndarray/Observable
+            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
         plain : bool
             If True, means unstructured data.
             If False (default case), means HEALPix-like sky map.
@@ -140,7 +140,7 @@ class Masks(ObservableDict):
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         new_data
-            distributed/copied ndarray/Observable
+            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
         plain : bool
             If True, means unstructured data.
             If False (default case), means HEALPix-like sky map.
@@ -186,8 +186,8 @@ class Measurements(ObservableDict):
             ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        new_data : array or Observable
-            distributed/copied ndarray/Observable
+        new_data : numpy.ndarray or imagine.observables.observable.Observable
+            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
         plain : bool
             If True, means unstructured/tabular data.
             If False (default case), means HEALPix-like sky map.
@@ -258,7 +258,7 @@ class Simulations(ObservableDict):
             If data is independent from frequency, set 'nan'.
             `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
         new_data
-            distributed/copied ndarray/Observable
+            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
         plain : bool
             If True, means unstructured data.
             If False (default case), means HEALPix-like sky map.

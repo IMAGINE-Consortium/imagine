@@ -163,7 +163,7 @@ class GeneralFieldFactory:
         :py:class:`imagine.priors.prior.GeneralPrior`.
 
         To set new priors one can update the priors dictionary using attribution
-        (any missing values will be set to FlatPrior).
+        (any missing values will be set to :py:class:`imagine.priors.basic_priors.FlatPrior`).
         """
         if self._priors is None:
             self._initialize_priors()

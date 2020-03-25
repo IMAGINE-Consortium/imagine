@@ -88,6 +88,13 @@ napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
 
 
+intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                      'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+                      'astropy': ('https://docs.astropy.org/en/stable/', None),
+                      'python': ('https://docs.python.org/3', None),
+                      'pandas': ('https://pandas.pydata.org/pandas-docs/stable/',None)
+                      }
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
