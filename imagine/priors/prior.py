@@ -2,6 +2,7 @@ import scipy.stats as stats
 from imagine.tools.icy_decorator import icy
 from scipy.interpolate import CubicSpline
 import numpy as np
+import astropy.units as u
 
 @icy
 class GeneralPrior:
@@ -63,11 +64,13 @@ class GeneralPrior:
         inverse.
     """
     def __init__(self, samples=None, pdf_fun=None,
-                 pdf_x=None, pdf_y=None, interval=[0,1],
+                 pdf_x=None, pdf_y=None, interval=None,
                  bw_method=None, pdf_npoints=1500, inv_cdf_npoints=1500):
 
+        # Ensures interval is quantity with consistent units
+        interval = u.Quantity(interval)
         self.range = interval
-
+        
         if (pdf_x is None) and (pdf_y is None):
             # PDF from samples mode -------------------
             if samples is not None:
@@ -80,21 +83,18 @@ class GeneralPrior:
             # PDF from function mode -------------------
             elif pdf_fun is not None:
                 assert (pdf_x is None) and (pdf_y is None), 'Either provide the pdf datapoints or function, not both.'
-                if interval is not None:
-                    xmin, xmax = interval
-                else:
-                    xmin, xmax = 0, 1
-
+                xmin, xmax = interval
+                
             if pdf_fun is not None:
                 # Evaluates the PDF
                 pdf_x = np.linspace(xmin,xmax,pdf_npoints)
                 pdf_y = pdf_fun(pdf_x)
-                # Normalizes
+                # Normalizes and removes units
                 inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
-                pdf_y = pdf_y/inv_norm
-
-                pdf_x = (pdf_x - pdf_x.min())/(pdf_x.max() - pdf_x.min())
-                self.range = (xmin, xmax)
+                pdf_y = (pdf_y/inv_norm).value
+                pdf_x = ((pdf_x - pdf_x.min())/(pdf_x.max() - pdf_x.min())).value
+                # Recovers units
+                self.range = (xmin, xmax)*self.range.unit
 
         # Placeholders
         self.inv_cdf_npoints = inv_cdf_npoints

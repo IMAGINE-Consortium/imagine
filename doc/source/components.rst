@@ -50,7 +50,7 @@ requesting the inclusion of the new field type!
 
 It is assumed that Field objects can be expressed as a parametrised *mapping of
 a coordinate grid into a physical field*. The grid is represented by a IMAGINE `Grid`_ object, discussed in detail in the next section.
-The design of any field is done writing a subclass that overrides the method :py:meth:`get_field`, using it to conduct the computation of the field
+The design of any field is done writing a subclass that overrides the method :py:meth:`get_field <imagine.fields.field.GeneralField.get_field>`, using it to conduct the computation of the field
 at each spatial point. For this, the coordinate grid on which the field should be evaluated can be accessed from `self.grid` and the parameters from
 `self.parameters`.
 The same parameters need to listed as keys in the `field_checklist` dictionary
@@ -118,7 +118,7 @@ cartesian coordinate values, this can be done simply using::
 
 
 To create a personalised (non-uniform) grid, one needs to subclass
-:py:class:`imagine.fields.grid.BaseGrid` and override the method :py:meth:`generate_coordinates`. The :py:class:`imagine.fields.grid.UniformGrid`
+:py:class:`imagine.fields.grid.BaseGrid` and override the method :py:meth:`generate_coordinates <imagine.fields.grid.BaseGrid.generate_coordinates>`. The :py:class:`imagine.fields.grid.UniformGrid`
 class should itself provide a good example/template of how to do this.
 
 
@@ -287,9 +287,8 @@ used construct a field factory:
 
 The object `Prior A` must be an instance of
 :py:class:`imagine.priors.prior.GeneralPrior` (see section `Priors`_ for
-details). Any parameter ommitted in the dictionary supplied to the priors
-property will use a flat prior (i.e. a uniform, where all parameter values are
-equally likely).
+details). A flat prior (i.e. a uniform, where all parameter values are
+equally likely) can be set using the :py:class:`imagine.priors.basic_priors.FlatPrior` class.
 
 One can initialize the Field Factory supplying the grid on which the
 corresponding Field will be evaluated::
@@ -297,7 +296,7 @@ corresponding Field will be evaluated::
       myFactory = YourField_Factory(grid=cartesian_grid)
 
 The factory object :py:obj:`myFactory` can now be handled to the `Pipeline`_,
-which will generate new fields through the method :py:meth:`generate`.
+which will generate new fields through the method :py:meth:`generate <imagine.fields.field_factory.GeneralFieldFactory.generate>`.
 
 
 .. _Datasets:
@@ -310,7 +309,7 @@ Datasets
 used for the inclusion of observational data in IMAGINE.
 They convert the measured data and uncertainties to a standard format which
 can be later handed to an
-:ref:`observable dictionary <Observable Dictionaries>`.
+:ref:`observable dictionary <ObservableDictionaries>`.
 There are two main types of datasets: `Tabular datasets`_ and
 `HEALPix datasets`_.
 
@@ -390,7 +389,7 @@ To construct a tabular dataset, one needs to instantiate
 Measurements, Simulations and Covariances
 -----------------------------------------
 
-.. _Observable Dictionaries:
+.. _ObservableDictionaries:
 
 --
 

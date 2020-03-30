@@ -16,7 +16,7 @@ class FlatPrior(GeneralPrior):
         # Updates ranges
         super().__init__(interval=interval)
         # Constant pdf (for illustration)
-        self._pdf = np.vectorize(lambda x: 1)
+        self._pdf = lambda x: np.ones_like(x)
     
     def __call__(self, cube):
         """

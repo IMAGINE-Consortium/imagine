@@ -165,21 +165,22 @@ class GeneralFieldFactory:
         To set new priors one can update the priors dictionary using attribution
         (any missing values will be set to :py:class:`imagine.priors.basic_priors.FlatPrior`).
         """
-        if self._priors is None:
-            self._initialize_priors()
         return self._priors
 
     @priors.setter
     def priors(self, new_prior_dict):
         if self._priors is None:
-            self._initialize_priors()
-        for name, prior in new_prior_dict.items():
+            self._priors = {}
+        
+        parameter_ranges = {}
+        
+        for name in self.default_parameters:
+            assert (name in new_prior_dict), 'Missing Prior for '+name
+            prior = new_prior_dict[name]
             assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
-            assert (name in self.default_parameters), 'Prior for an unknown parameter'
             self._priors[name] = prior
-
-    def _initialize_priors(self):
-        self._priors = {name: FlatPrior() for name in self.default_parameters}
+            parameter_ranges[name] = prior.range
+        self.parameter_ranges = parameter_ranges
 
     @property
     def parameter_ranges(self):

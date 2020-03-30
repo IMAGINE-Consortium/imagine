@@ -55,7 +55,7 @@ to compute a likelihood through a :ref:`Likelihood` class. This, supplemented by
 :ref:`Priors`, allows a :ref:`Pipeline` object to sample the parameter space and compute
 posterior distributions and  Bayesian evidences for the models. The generation
 of different realisations of each Field is managed by the corresponding
-:ref:`Field Factory` class. Likewise, :ref:`Observable Dictionaries` help one
+:ref:`Field Factory` class. Likewise, :ref:`Observable Dictionaries <ObservableDictionaries>` help one
 organising and manipulating *Observables*.
 
 
