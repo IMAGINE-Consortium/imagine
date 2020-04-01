@@ -132,7 +132,7 @@ according to the template below.
 
 .. literalinclude:: ../../imagine/templates/thermal_electrons_template.py
 
-Note that the return value of the method :py:meth:`get_field` must be of type
+Note that the return value of the method :py:meth:`get_field()  <imagine.fields.basic_fields.ThermalElectronDensityField>` must be of type
 :py:class:`astropy.units.Quantity`, with shape consistent with the coordinate
 grid, and units of :math:`\rm cm^{-3}`.
 
@@ -180,7 +180,7 @@ It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
 which, given a set of parameters and 3 arrays containing coordinate values,
 computes the magnetic field vector at each point.
 
-The method :py:meth:`get_field` must return an :py:class:`astropy.units.Quantity`,
+The method :py:meth:`get_field() <imagine.fields.basic_fields.MagneticField.get_field>` must return an :py:class:`astropy.units.Quantity`,
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
 the last axis corresponds to the component (with x, y and z associated with
 indices 0, 1 and 2, respectively). The Quantity returned by the method must

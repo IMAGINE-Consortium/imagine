@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
 setup(name="imagine",
-      version="1.2.0",
+      version="2.0.0",
       description="Intestellar MAny field inference enGINE",
       license="GPLv3",
       url="https://github.com/IMAGINE-Consortium/imagine/",
-      author="IMAGINE Consortium, Jiaxin Wang, Theo Steininger",
+      author="IMAGINE Consortium",
       author_email="jiaxin.wang@sjtu.edu.cn",
       maintainer="Jiaxin Wang, Luiz Felippe S. Rodrigues",
       maintainer_email="jiaxin.wang@sjtu.edu.cn",
