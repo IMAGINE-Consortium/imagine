@@ -7,12 +7,13 @@ from .fields.field import GeneralField
 from .fields.grid import *
 from .fields.basic_fields import *
 
-from .observables.observable_dict import ObservableDict, Measurements, Simulations, Covariances, Masks
+from .observables.observable_dict import Measurements, Simulations, Covariances, Masks
 from .simulators.simulator import Simulator
 from .priors import GeneralPrior, FlatPrior, GaussianPrior
 from .pipelines.pipeline import Pipeline
 from .pipelines.multinest_pipeline import MultinestPipeline
 from .pipelines.dynesty_pipeline import DynestyPipeline
+from .observables import dataset
 
 # auxiliary tools
 #from .tools.mpi_helper import mpi_arrange

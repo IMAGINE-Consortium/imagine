@@ -1,5 +1,6 @@
 import logging as log
 from imagine.tools.icy_decorator import icy
+import numpy as np
 
 @icy
 class GeneralField(object):
@@ -23,15 +24,19 @@ class GeneralField(object):
         Dictionary of full parameter set {name: value}
     ensemble_size : int
         Number of realisations in field ensemble
-    ensemble_seeds
-        Random seed(s) for generating random field realisations
+    ensemble_seeds : list
+        Random seeds for generating random field realisations
     """
     field_name = 'unset' # This is actually a class attribute
-    def __init__(self, grid=None, parameters=dict(), ensemble_size=1,
+    def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
                  ensemble_seeds=None):
         log.debug('@ field::__init__')
         self.grid = grid
         self.parameters = parameters
+        # For convenience, when ensemble info is not available, 
+        # assumes an ensemble of 1
+        if (ensemble_size is None) and (ensemble_seeds is None):
+            ensemble_size = 1
         self.ensemble_size = ensemble_size
         self.ensemble_seeds = ensemble_seeds
         # Placeholders
@@ -41,6 +46,17 @@ class GeneralField(object):
     def field_type(self):
         """Description the field"""
         raise NotImplemented
+        
+    
+    @property
+    def stochastic_field(self):
+        """
+        Should be overriden with value True if the field is stochastic 
+        or False if the field is deterministic (i.e. the output depends only
+        on the parameter values and not on the seed value).
+        """
+        raise NotImplemented
+        
     @property
     def field_units(self):
         """Physical units of the field"""
@@ -54,7 +70,7 @@ class GeneralField(object):
         """Shape of the field data array"""
         raise NotImplemented
 
-    def get_field(self):
+    def get_field(self, seed):
         """
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
@@ -67,20 +83,41 @@ class GeneralField(object):
         """
         Field data computed by this class with dimensions compatible with
         the associated `field_type`.
+        
+        The data is returned as a list, where each element corresponding to 
+        a single realisation. If the field is *not* stochastic, all the list 
+        elements are references to the same object.
         """
         if self._data is None:
-            self._data = self.get_field()
-            assert self.field_units.is_equivalent(self._data.unit), 'Field units should be '+self.field_units
+            
+            if self.stochastic_field:
+                self._data = []
+                for i, seed in enumerate(self.ensemble_seeds):
+                    # Computes the field, checks, appends
+                    field = self.get_field(seed)
+                    self._check_realisation(field)
+                    self._data.append(field)
+            else:
+                # If the field is deterministic, only a single realisation 
+                # is needed
+                field = self.get_field(None)
+                self._check_realisation(field)
+                self._data = [field]*self.ensemble_size
 
+        return self._data
+
+    
+    def _check_realisation(self,field):
+        # Checks the units
+        assert self.field_units.is_equivalent(field.unit), 'Field units should be '+self.field_units
+        # Checks the shape
         try:
-            assert self._data.shape == self.data_shape
+            assert field.shape == self.data_shape
         except AssertionError:
             print('Incorrect shape, it should be:', self.data_shape)
             print('It is instead:', self._data.shape)
             print('Description:', self.data_description)
             raise
-
-        return self._data
 
     @property
     def field_checklist(self):
@@ -88,24 +125,17 @@ class GeneralField(object):
         return dict()
 
     @property
-    def ensemble_size(self):
-        return self._ensemble_size
-
-    @ensemble_size.setter
-    def ensemble_size(self, ensemble_size):
-        assert (ensemble_size > 0)
-        self._ensemble_size = round(ensemble_size)
-
-    @property
     def ensemble_seeds(self):
         return self._ensemble_seeds
 
     @ensemble_seeds.setter
     def ensemble_seeds(self, ensemble_seeds):
-        if ensemble_seeds is None:  # in case no seeds given, all 0
-            self._ensemble_seeds = [int(0)]*self._ensemble_size
+        if ensemble_seeds is None:  # in case no seeds given, choose something
+            self._ensemble_seeds = np.random.randint(0,2**32,self.ensemble_size)
         else:
-            assert (len(ensemble_seeds) == self._ensemble_size)
+            if self.ensemble_size is None:
+                self.ensemble_size = len(ensemble_seeds)
+            assert len(ensemble_seeds) == self.ensemble_size
             self._ensemble_seeds = ensemble_seeds
 
     @property

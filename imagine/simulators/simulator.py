@@ -6,7 +6,7 @@ class Simulator(object):
     """
     Simulator base class
 
-    New Simulators should be introduced by sub-classing the present class.
+    New Simulators must be introduced by sub-classing the present class.
     Overriding the method :py:meth:`simulate` to convert a list of fields
     into simulated observables. For more details see
     :ref:`components:Simulators` section of the documentation.
@@ -31,11 +31,13 @@ class Simulator(object):
     """
     def __init__(self, measurements):
         self.grid = None
+        self.grids = None
         self.use_common_grid = True
         self.fields = None
         self.observables = []
         self.output_coords = {}
         self.output_units = {}
+        self._ensemble_size = None
         self.register_observables(measurements)
 
     def register_observables(self, measurements):
@@ -60,37 +62,68 @@ class Simulator(object):
                 self.output_units[key] = measurements[key].unit
         assert len(self.observables)>0, 'No valid observable was requested!'
 
-    def register_fields(self, field_list):
+        
+    @property
+    def ensemble_size(self):
+        return self._ensemble_size
+
+    def register_ensemble_size(self, field_list):
         """
-        Registers the available fields checking wheter requirements
-        are satisfied. Everything is saved on a dictionary,
-        Faraday_Simulator.fields, where field_types are keys.
+        Checks whether fields have consistent ensemble size and stores this information
+        """
+        set_of_field_sizes = {f.ensemble_size for f in field_list}
+        assert len(set_of_field_sizes)==1, 'All fields should have the same ensemble size'
+        self._ensemble_size = set_of_field_sizes.pop()
+        
+    def prepare_fields(self, field_list, i):
+        """
+        Registers the available fields checking whether all requirements
+        are satisfied. all data is saved on a dictionary, simulator.fields,
+        where field_types are keys.
+        
+        The `fields` dictionary is reconstructed for *each realisation* of the
+        ensemble. It relies on caching within the Field objects to avoid
+        computing the same quantities multiple times. 
+        
+        If there is more than one field of the same type, they are summed together.
 
         Parameters
         ----------
         field_list : list
             List containing Field objects
+        i : int
+            Index of the realisation of the fields that is being registred
         """
         self.fields = {}; self.grid = None
 
         for field in field_list:
             if field.field_type in self.required_field_types:
-                # Makes sure this is the only field of this type
-                assert field.field_type not in self.fields, 'More than one field of the same type'
-
                 # Checks whether the grid_type is correct
                 if ((field.grid is not None) and
                     (self.allowed_grid_types is not None)):
                     assert field.grid.grid_type in self.allowed_grid_types, 'Grid type not allowed'
-
                 # Checks whether the grids are consistent
                 # (if fields were evaluated on the same grid)
                 if self.use_common_grid:
                     if self.grid is None:
                         self.grid = field.grid
                     assert self.grid is field.grid, 'Multiple grids when a common grid is required'
+                else:
+                    if self.grids is None:
+                        self.grids = {}
+                    elif field.field_type in self.grids:
+                        assert self.grids[field.field_type] is field.grid, 'Fields of the same type must have the same grid'
+                    else:
+                        self.grids[field.field_type] = field.grid
+                    
                 # Finally, stores the field
-                self.fields[field.field_type] = field
+                if field.field_type not in self.fields:
+                    self.fields[field.field_type] = field.data[i]
+                else:
+                    # If multiple fields of the same type are present, sums them
+                    self.fields[field.field_type] = self.fields[field.field_type] + field.data[i]
+                    # NB the '+=' has *not* been used to changes in the original field.data
+                    # due to its 'inplace' nature
 
         # Makes sure all required fields were included
         assert set(self.required_field_types) == set(self.fields.keys()), 'Missing required field'
@@ -149,17 +182,21 @@ class Simulator(object):
         Parameters
         ----------
         field_list : list
-            List of imagine.Field object which should include all the `required_field_types`
+            List of imagine.Field object which must include all the `required_field_types`
 
         Returns
         -------
         sims : imagine.Simulations
             A Simulations object containing all the specified mock data
         """
-        self.register_fields(field_list)
         sims = Simulations()
-        for key in self.observables:
-            sim = self.simulate(key=key, coords_dict=self.output_coords[key],
-                                Nside=None, output_units=self.output_units[key])
-            sims.append(key, sim[np.newaxis,:], plain=True)
+        self.register_ensemble_size(field_list)
+        for i in range(self.ensemble_size):
+            # Prepares all fields
+            self.prepare_fields(field_list, i)
+            for key in self.observables:
+                sim = self.simulate(key=key, coords_dict=self.output_coords[key],
+                                    Nside=None, output_units=self.output_units[key])
+                sims.append(key, sim[np.newaxis,:].to_value(self.output_units[key]),
+                            plain=True)
         return sims

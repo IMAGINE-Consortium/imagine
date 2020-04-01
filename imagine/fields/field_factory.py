@@ -251,7 +251,7 @@ class GeneralFieldFactory:
             parameter_dict[variable_name] = mapped_variable * units
         return parameter_dict
 
-    def generate(self, variables=dict(), ensemble_size=1, ensemble_seeds=None):
+    def generate(self, variables=dict(), ensemble_size=None, ensemble_seeds=None):
         """
         Takes an active variable dictionary, an ensemble size and a random seed
         value, translates the active variables to parameter values (updating the
