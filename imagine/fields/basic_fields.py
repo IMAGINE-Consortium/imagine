@@ -1,26 +1,25 @@
+r"""
+This module contains basic base classes that can be used to include new fields
+in IMAGINE. The classes found here here correspond to the physical fields most
+commonly found by members of the IMAGINE community and may be improved in the
+future.
+
+A brief summary of the module:
+
+* :py:class:`MagneticField` — for models of the galactic/Galactic Magnetic Field, :math:`\mathbf{B}(\mathbf{r})`
+* :py:class:`ThermalElectronDensityField` — for models of the density of thermal electrons, :math:`n_e(\mathbf{r})`
+* :py:class:`CosmicRayElectronDensityField`— for models of the density/flux of cosmic ray electrons, :math:`n_{\rm cr}(\mathbf{r})`
+* :py:class:`DummyField` — allows passing parameters to a :py:obj:`Simulator <imagine.simulators.simulator.Simulator>` without having to evaluate anything on a :py:obj:`Grid <imagine.fields.grid.Grid>`
+
+
+See also :doc:`IMAGINE Components <components>` section of the docs.
+"""
 import numpy as np
 import astropy.units as u
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
 
-@icy
-class DummyField(GeneralField):
-    """
-    Base class for a dummy Field used for sending parameters and settings to
-    specific Simulators rather than computing and storing a physical field.
-    """
-    field_name = 'dummy_base'
-    field_type = 'dummy'
-    @property
-    def data(self):
-        # A dummy field should never have data called!
-        raise NotImplementedError('A dummy field should have no data!')
-    @property
-    def field_type(self):
-        return None
-    @property
-    def field_units(self):
-        raise None
+
 
 @icy
 class MagneticField(GeneralField):
@@ -97,3 +96,31 @@ class ThermalElectronDensityField(GeneralField):
     def data_shape(self):
         return tuple(self.grid.shape)
 
+
+@icy
+class CosmicRayElectronDensityField(GeneralField):
+    """
+    Not yet implemented
+    """
+    def __init__():
+        raise NotImplementedError
+
+
+@icy
+class DummyField(GeneralField):
+    """
+    Base class for a dummy Field used for sending parameters and settings to
+    specific Simulators rather than computing and storing a physical field.
+    """
+    field_name = 'dummy_base'
+    field_type = 'dummy'
+    @property
+    def data(self):
+        # A dummy field should never have data called!
+        raise NotImplementedError('A dummy field should have no data!')
+    @property
+    def field_type(self):
+        return None
+    @property
+    def field_units(self):
+        raise None

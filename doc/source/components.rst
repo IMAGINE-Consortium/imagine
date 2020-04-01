@@ -40,34 +40,63 @@ subclass one of the base classes available the
 :py:mod:`imagine.fields.basic_fields`, most likely using one of the available
 templates to write a *wrapper* to the original code which are discussed in the
 sections below.
-If basic field type one is interested is *not* available as a basic field, one can
-create it directly subclassing  :py:class:`imagine.fields.field.GeneralField` —
+If basic field type one is interested is *not* available as a basic field, one
+can create it directly subclassing
+:py:class:`imagine.fields.field.GeneralField` —
 and if you think this could benefit the wider community, please consider
 submitting a
 `pull request <https://github.com/IMAGINE-Consortium/imagine/pulls>`_ or
 openning an `issue <https://github.com/IMAGINE-Consortium/imagine/issues>`_
 requesting the inclusion of the new field type!
 
-It is assumed that Field objects can be expressed as a parametrised *mapping of
-a coordinate grid into a physical field*. The grid is represented by a IMAGINE `Grid`_ object, discussed in detail in the next section.
-The design of any field is done writing a subclass that overrides the method :py:meth:`get_field <imagine.fields.field.GeneralField.get_field>`, using it to conduct the computation of the field
-at each spatial point. For this, the coordinate grid on which the field should be evaluated can be accessed from `self.grid` and the parameters from
-`self.parameters`.
-The same parameters need to listed as keys in the `field_checklist` dictionary
-(the values in the dictionary are used to supply extra information to specific
-simulators, but can be left as `None` in the general case).
+It is assumed that **Field** objects can be expressed as a parametrised *mapping of
+a coordinate grid into a physical field*. The grid is represented by a IMAGINE
+:ref:`Grid` object, discussed in detail in the next section.
+If the field of random or **stochastic** nature (e.g. the density field of
+a turbulent medium), IMAGINE will compute a *fnite ensemble* of different
+realisations which are later used in the inference to deteremine the likelihood
+of the actual observation given accounting for the model's expected variability.
 
 To test a Field class, :py:class:`FieldFoo`, one can
 instantiate the field object::
 
-    bar = FieldFoo(grid=example_grid, parameters={'answer': 42})
+    bar = FieldFoo(grid=example_grid, parameters={'answer': 42*u.cm}, ensemble_size=2)
 
-where `example_grid` is a previously instantiated grid object.
-Assuming we are dealing with a scalar, the radial dependence can be easily
-plotted using::
+where :py:obj:`example_grid` is a previously instantiated grid object. The argument
+:py:data:`parameters` receives a dictionary of all the parameters used by
+:py:obj:`FieldFoo`, these are usually expressed as dimensional quantities
+(using :py:mod:`astropy.units`).
+Finally, the argument :py:data:`ensemble_size`, as the name suggests allows
+requestion a number of different realisations of the field (for non-stochastic
+fields, all these will be references to the same data).
 
-    plt.bar(bar.grid.r_spherical.ravel(), bar.data.ravel())
+To further illustrate, assuming we are dealing with a scalar,
+the (spherical) radial dependence of the above defined :py:obj:`bar`
+can be easily plotted using::
 
+    import matplotlib.pyplot as plt
+    plt.plot(bar.grid.r_spherical.ravel(),
+             bar.data[ensemble_index].ravel())
+
+
+The design of any field is done writing a *subclass* of one of the classes in
+:py:mod:`imagine.fields.basic_fields` or
+:py:class:`imagine.GeneralField <imagine.fields.field.GeneralField>`
+that overrides the method
+:py:meth:`get_field(seed) <imagine.fields.field.GeneralField.get_field>`,
+using it to computate the field on each spatial point.
+For this, the coordinate grid on which the field should
+be evaluated can be accessed from
+:py:data:`self.grid <imagine.fields.field.GeneralField.grid>`
+and the parameters from
+:py:data:`self.parameters <imagine.fields.field.GeneralField.parameters>`.
+The same parameters must be listed as *keys* in the
+:py:data:`field_checklist <imagine.fields.field.GeneralField.field_checklist>`
+dictionary (the values in the dictionary are used to supply extra information
+to specific simulators, but can be left as `None` in the general case).
+
+
+.. _Grid:
 
 ^^^^
 Grid

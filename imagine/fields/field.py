@@ -27,13 +27,12 @@ class GeneralField(object):
     ensemble_seeds : list
         Random seeds for generating random field realisations
     """
-    field_name = 'unset' # This is actually a class attribute
     def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
                  ensemble_seeds=None):
         log.debug('@ field::__init__')
         self.grid = grid
         self.parameters = parameters
-        # For convenience, when ensemble info is not available, 
+        # For convenience, when ensemble info is not available,
         # assumes an ensemble of 1
         if (ensemble_size is None) and (ensemble_seeds is None):
             ensemble_size = 1
@@ -46,17 +45,23 @@ class GeneralField(object):
     def field_type(self):
         """Description the field"""
         raise NotImplemented
-        
-    
+
+    @property
+    def field_name(self):
+        """
+        Should be overriden with the name of the field
+        """
+        raise NotImplemented
+
     @property
     def stochastic_field(self):
         """
-        Should be overriden with value True if the field is stochastic 
+        Should be overriden with value True if the field is stochastic
         or False if the field is deterministic (i.e. the output depends only
         on the parameter values and not on the seed value).
         """
         raise NotImplemented
-        
+
     @property
     def field_units(self):
         """Physical units of the field"""
@@ -75,6 +80,12 @@ class GeneralField(object):
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
         See :doc:`documentation <components>`.
+
+        Parameters
+        ----------
+        seed : int
+            If the field is stochastic, this argument allows setting the random
+            number generator seed accordingly.
         """
         raise NotImplementedError
 
@@ -83,13 +94,13 @@ class GeneralField(object):
         """
         Field data computed by this class with dimensions compatible with
         the associated `field_type`.
-        
-        The data is returned as a list, where each element corresponding to 
-        a single realisation. If the field is *not* stochastic, all the list 
+
+        The data is returned as a list, where each element corresponding to
+        a single realisation. If the field is *not* stochastic, all the list
         elements are references to the same object.
         """
         if self._data is None:
-            
+
             if self.stochastic_field:
                 self._data = []
                 for i, seed in enumerate(self.ensemble_seeds):
@@ -98,7 +109,7 @@ class GeneralField(object):
                     self._check_realisation(field)
                     self._data.append(field)
             else:
-                # If the field is deterministic, only a single realisation 
+                # If the field is deterministic, only a single realisation
                 # is needed
                 field = self.get_field(None)
                 self._check_realisation(field)
@@ -106,7 +117,7 @@ class GeneralField(object):
 
         return self._data
 
-    
+
     def _check_realisation(self,field):
         # Checks the units
         assert self.field_units.is_equivalent(field.unit), 'Field units should be '+self.field_units

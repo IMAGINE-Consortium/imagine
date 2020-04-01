@@ -8,13 +8,19 @@ class MagneticFieldTemplate(MagneticField):
     """ Here comes the description of the magnetic field model """
     field_name = 'name_of_the_magnetic_field'
 
+    stochastic_field = False # Must be True if it is stochastic
+
     @property
     def field_checklist(self):
         # This property returns a dictionary with all the
         # available parameters as keys
         return {'Parameter_A': None, 'Parameter_B': None, ...}
 
-    def get_field(self):
+    def get_field(self, seed):
+        # If this is an stochastic field, the integer `seed `must be
+        # used to set the random seed for a single realisation.
+        # Otherwise, `seed` should be ignored.
+
         # The coordinates can be accessed from an internal grid object
         x_coord = self.grid.x
         y_coord = self.grid.y
