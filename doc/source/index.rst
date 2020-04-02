@@ -12,7 +12,8 @@ IMAGINE: Interstellar MAGnetic field INference Engine
     :width: 400px
 
 
-Welcome to the documentation of the IMAGINE software package,
+Welcome to the documentation of the
+`IMAGINE software package <https://github.com/IMAGINE-Consortium/imagine/>`_,
 a publicly available Bayesian platform that allows
 using a variety of observational data sets to constrain models for
 the main ingredients of the interstellar medium of the Galaxy.
