@@ -3,13 +3,35 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-IMAGINE documentation
-===================================
+IMAGINE: Interstellar MAGnetic field INference Engine
+======================================================
 
 .. image:: elephant.png
     :align: center
     :alt: The IMAGINE pipeline
     :width: 400px
+
+
+Welcome to the documentation of the IMAGINE software package,
+a publicly available Bayesian platform that allows
+using a variety of observational data sets to constrain models for
+the main ingredients of the interstellar medium of the Galaxy.
+IMAGINE calculates simulated data sets from the galaxy models and compares these to
+the observational data sets through a likelihood evaluation.
+It then samples this multi-dimensional likelihood space, which allows one to
+update prior knowledge, and thus to find the position with the
+:ref:`best-fit model <posterior>` parameters and/or compute the
+:ref:`model evidence <evidence>` (which enables rigorous comparison of competing
+models).
+
+IMAGINE is developed and maintained by the
+`IMAGINE consortium <https://www.astro.ru.nl/imagine/>`_,
+a diverse group of researchers whose common interest revolves
+around developing a integrated understanding of the various components of the
+Galactic interstellar medium (with emphasis on the Galactic magnetic field and
+its interaction with cosmic rays). For more details on IMAGINE science case,
+please refer the
+`IMAGINE whitepaper <https://doi.org/10.1088/1475-7516/2018/08/049>`_.
 
 
 .. toctree::
@@ -20,7 +42,8 @@ IMAGINE documentation
    tutorials
    design
    components
-   bayes
+   posterior
+   evidence
    parallel
 
 .. toctree::
