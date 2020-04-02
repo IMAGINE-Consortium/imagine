@@ -31,7 +31,7 @@ a diverse group of researchers whose common interest revolves
 around developing a integrated understanding of the various components of the
 Galactic interstellar medium (with emphasis on the Galactic magnetic field and
 its interaction with cosmic rays). For more details on IMAGINE science case,
-please refer the
+please refer to the
 `IMAGINE whitepaper <https://doi.org/10.1088/1475-7516/2018/08/049>`_.
 
 
