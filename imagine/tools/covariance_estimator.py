@@ -35,11 +35,15 @@ def empirical_cov(data):
     log.debug('@ covariance_estimator::empirical_cov')
     assert isinstance(data, np.ndarray)
     assert (len(data.shape) == 2)
-    # get ensemble size
-    ensemble_size = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [ensemble_size, MPI.LONG], op=MPI.SUM)
-    u = data - mpi_mean(data)  # copied mean
-    return mpi_mult(mpi_trans(u), u) / ensemble_size
+    # Get ensemble size (i.e. the number of rows)
+    ensemble_size = np.array(0, dtype=np.uint64)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64),
+                    MPI.LONG], [ensemble_size, MPI.LONG],
+                   op=MPI.SUM)
+    # Calculates covariance
+    u = data - mpi_mean(data)
+    cov = mpi_mult(mpi_trans(u), u) / ensemble_size
+    return cov
 
 def oas_cov(data):
     """
@@ -98,10 +102,11 @@ def oas_mcov(data):
     assert (len(data.shape) == 2)
     # data size
     data_size = data.shape[1]
-    # ensemble size
-    ensemble_size = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [ensemble_size, MPI.LONG], op=MPI.SUM)
-    # calculate OAS covariance extimator from empirical covariance estimator
+    ensemble_size = np.array(0, dtype=np.uint64)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64), MPI.LONG],
+                   [ensemble_size, MPI.LONG], op=MPI.SUM)
+
+    # Calculates OAS covariance extimator from empirical covariance estimator
     mean = mpi_mean(data)
     u = data - mean
     s = mpi_mult(mpi_trans(u), u) / ensemble_size

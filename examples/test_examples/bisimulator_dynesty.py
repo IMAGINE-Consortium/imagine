@@ -170,4 +170,4 @@ def testfield(measure_size, simulation_size):
 
 
 if __name__ == '__main__':
-    testfield(10, 100//mpisize)
+    testfield(20, 100//mpisize)

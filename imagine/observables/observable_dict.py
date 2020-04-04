@@ -128,7 +128,7 @@ class Masks(ObservableDict):
     def __init__(self):
         super(Masks, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name, data, plain=False):
         """
         Adds/updates name and data
 
@@ -147,20 +147,20 @@ class Masks(ObservableDict):
         """
         log.debug('@ observable_dict::Masks::append')
         assert (len(name) == 4)
-        if isinstance(new, Observable):
-            assert (new.dtype == 'measured')
+        if isinstance(data, Observable):
+            assert (data.dtype == 'measured')
             if plain:
-                assert (new.shape[1] == np.uint(name[2]))
+                assert (data.shape[1] == np.uint64(name[2]))
             else:
-                assert (new.size == 12*np.uint(name[2])**2)
-            self._archive.update({name: new})
-        elif isinstance(new, np.ndarray):
-            assert (new.shape[0] == 1)
+                assert (data.size == 12*np.uint64(name[2])**2)
+            self._archive.update({name: data})
+        elif isinstance(data, np.ndarray):
+            assert (data.shape[0] == 1)
             if plain:
-                assert (new.shape[1] == np.uint(name[2]))
+                assert (data.shape[1] == np.uint64(name[2]))
             else:
-                assert (new.shape[1] == 12*np.uint(name[2])*np.uint(name[2]))
-            self._archive.update({name: Observable(new, 'measured')})
+                assert (data.shape[1] == 12*np.uint64(name[2])*np.uint64(name[2]))
+            self._archive.update({name: Observable(data, 'measured')})
         else:
             raise TypeError('unsupported data type')
 
@@ -176,7 +176,7 @@ class Measurements(ObservableDict):
     def __init__(self):
         super(Measurements, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name, data, plain=False):
         """
         Adds/updates name and data
 
@@ -195,19 +195,19 @@ class Measurements(ObservableDict):
         """
         log.debug('@ observable_dict::Measurements::append')
         assert (len(name) == 4)
-        if isinstance(new, Observable):
-            assert (new.dtype == 'measured')
+        if isinstance(data, Observable):
+            assert (data.dtype == 'measured')
             if plain:
-                assert (new.size == np.uint(name[2]))
+                assert (data.size == np.uint64(data[2]))
             else:
-                assert (new.size == 12*np.uint(name[2])**2)
-            self._archive.update({name: new})  # rw
-        elif isinstance(new, np.ndarray):
+                assert (data.size == 12*np.uint64(name[2])**2)
+            self._archive.update({name: data})  # rw
+        elif isinstance(data, np.ndarray):
             if plain:
-                assert (new.shape[1] == np.uint(name[2]))
+                assert (data.shape[1] == np.uint64(name[2]))
             else:
-                assert (new.shape[1] == 12*np.uint(name[2])**2)
-            self._archive.update({name: Observable(new, 'measured')})  # rw
+                assert (data.shape[1] == 12*np.uint64(name[2])**2)
+            self._archive.update({name: Observable(data, 'measured')})  # rw
         else:
             raise TypeError('unsupported data type')
 
@@ -236,7 +236,7 @@ class Simulations(ObservableDict):
     def __init__(self):
         super(Simulations, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name, data, plain=False):
         """
         Adds/updates name and data
 
@@ -257,20 +257,20 @@ class Simulations(ObservableDict):
         assert (len(name) == 4)
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
-            self._archive[name].append(new)
+            self._archive[name].append(data)
         else:  # new
-            if isinstance(new, Observable):
+            if isinstance(data, Observable):
                 if plain:
-                    assert (new.size == np.uint(name[2]))
+                    assert (data.size == np.uint64(name[2]))
                 else:
-                    assert (new.size == 12*np.uint(name[2])**2)
-                self._archive.update({name: new})
-            elif isinstance(new, np.ndarray):  # distributed data
+                    assert (data.size == 12*np.uint64(name[2])**2)
+                self._archive.update({name: data})
+            elif isinstance(data, np.ndarray):  # distributed data
                 if plain:
-                    assert (new.shape[1] == np.uint(name[2]))
+                    assert (data.shape[1] == np.uint64(name[2]))
                 else:
-                    assert (new.shape[1] == 12*np.uint(name[2])**2)
-                self._archive.update({name: Observable(new, 'simulated')})
+                    assert (data.shape[1] == 12*np.uint64(name[2])**2)
+                self._archive.update({name: Observable(data, 'simulated')})
             else:
                 raise TypeError('unsupported data type')
 
@@ -299,7 +299,7 @@ class Covariances(ObservableDict):
     def __init__(self):
         super(Covariances, self).__init__()
 
-    def append(self, name, new, plain=False):
+    def append(self, name, data, plain=False):
         """
         Adds/updates name and data
 
@@ -318,18 +318,18 @@ class Covariances(ObservableDict):
         """
         log.debug('@ observable_dict::Covariances::append')
         assert (len(name) == 4)
-        if isinstance(new, Observable):  # always rewrite
+        if isinstance(data, Observable):  # always rewrite
             if plain:
-                assert (new.size == np.uint(name[2]))
+                assert (data.size == np.uint64(name[2]))
             else:
-                assert (new.size == 12*np.uint(name[2])**2)
-            self._archive.update({name: new})  # rw
-        elif isinstance(new, np.ndarray):
+                assert (data.size == 12*np.uint64(name[2])**2)
+            self._archive.update({name: data})  # rw
+        elif isinstance(data, np.ndarray):
             if plain:
-                assert (new.shape[1] == np.uint(name[2]))
+                assert (data.shape[1] == np.uint64(name[2]))
             else:
-                assert (new.shape[1] == 12*np.uint(name[2])**2)
-            self._archive.update({name: Observable(new, 'covariance')})
+                assert (data.shape[1] == 12*np.uint64(name[2])**2)
+            self._archive.update({name: Observable(data, 'covariance')})
         else:
             raise TypeError('unsupported data type')
 
