@@ -27,7 +27,7 @@ import numpy as np
 from mpi4py import MPI
 from copy import deepcopy
 import logging as log
-from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor
+from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor, mpi_global
 from imagine.tools.icy_decorator import icy
 
 comm = MPI.COMM_WORLD
@@ -142,7 +142,7 @@ class Observable(object):
         assert (rw_flag in (True, False))
         self._rw_flag = deepcopy(rw_flag)
 
-    def append(self, new):
+    def append(self, new_data):
         """
         appending new data happends only to SIMULATED dtype
         the new data to be appended should also be distributed
@@ -159,10 +159,10 @@ class Observable(object):
                 self._data = np.copy(new_data)
                 self._rw_flag = False
             else:
-                self._data = np.vstack([self._data, new])
-        elif isinstance(new, Observable):
+                self._data = np.vstack([self._data, new_data])
+        elif isinstance(new_data, Observable):
             if (self._rw_flag):
                 self._data = np.copy(new_data.data)
                 self._rw_flag = False
             else:
-                self._data = np.vstack([self._data, new.data])
+                self._data = np.vstack([self._data, new_data.data])
