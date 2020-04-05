@@ -198,7 +198,7 @@ class Measurements(ObservableDict):
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
             if plain:
-                assert (data.size == np.uint64(data[2]))
+                assert (data.size == np.uint64(name[2]))
             else:
                 assert (data.size == 12*np.uint64(name[2])**2)
             self._archive.update({name: data})  # rw
