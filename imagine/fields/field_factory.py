@@ -284,7 +284,8 @@ class GeneralFieldFactory:
         # update is safe
         work_parameters.update(mapped_variables)
         # generate fields
-        result_field = self.field_class(parameters=work_parameters,
+        result_field = self.field_class(grid=self.grid,
+                                        parameters=work_parameters,
                                         ensemble_size=ensemble_size,
                                         ensemble_seeds=ensemble_seeds)
         log.debug('generated field with work-parameters %s' % work_parameters)

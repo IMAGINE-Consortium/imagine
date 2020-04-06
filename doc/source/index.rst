@@ -28,7 +28,7 @@ models).
 IMAGINE is developed and maintained by the
 `IMAGINE consortium <https://www.astro.ru.nl/imagine/>`_,
 a diverse group of researchers whose common interest revolves
-around developing a integrated understanding of the various components of the
+around developing an integrated understanding of the various components of the
 Galactic interstellar medium (with emphasis on the Galactic magnetic field and
 its interaction with cosmic rays). For more details on IMAGINE science case,
 please refer to the

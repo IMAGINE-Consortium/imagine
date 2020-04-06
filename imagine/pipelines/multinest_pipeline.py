@@ -43,7 +43,7 @@ class MultinestPipeline(Pipeline):
         # Makes sure that the chains directory exists
         basedir = os.path.split(self._sampling_controllers['outputfiles_basename'])[0]
         assert os.path.isdir(basedir)
-
+        
         # Runs pyMultinest
         results = pymultinest.solve(LogLikelihood=self._mpi_likelihood,
                                     Prior=self.prior,

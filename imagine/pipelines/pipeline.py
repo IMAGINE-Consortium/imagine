@@ -124,8 +124,9 @@ class Pipeline(object):
                 self._active_parameters += (str(factory.name+'_'+ap_name),)
                 self._active_ranges[str(factory.name+'_'+ap_name)] = factory.parameter_ranges[ap_name]
                 # Sets the Prior
-                assert isinstance(prior, Prior)
-                self._priors[str(factory.name+'_'+ap_name)] = factory.priors[ap_name]
+                prior = factory.priors[ap_name]
+                assert isinstance(prior, GeneralPrior)
+                self._priors[str(factory.name+'_'+ap_name)] = prior
         self._factory_list = factory_list
 
     @property
@@ -163,8 +164,8 @@ class Pipeline(object):
         cube
             The modified cube
         """
-        for i, parameter in enumerate(priors_list):
-            cube[i] = self.priors[parameter]
+        for i, parameter in enumerate(self.priors):
+            cube[i] = self.priors[parameter](cube[i])
         return cube
 
     @property
