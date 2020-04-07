@@ -272,11 +272,11 @@ class Simulations(ObservableDict):
         else:  # new_data
             if isinstance(new_data, Observable):
                 if not plain:
-                    assert (new_data.size == 12*np.uint(name[2])**2)
+                    assert (new_data.size == 12*np.uint64(name[2])**2)
                 self._archive.update({name: new_data})
             elif isinstance(new_data, np.ndarray):  # distributed data
                 if not plain:
-                    assert (new_data.shape[1] == 12*np.uint(name[2])**2)
+                    assert (new_data.shape[1] == 12*np.uint64(name[2])**2)
                 self._archive.update({name: Observable(new_data, 'simulated')})
             else:
                 raise TypeError('unsupported data type')
@@ -338,11 +338,11 @@ class Covariances(ObservableDict):
         assert (len(name) == 4)
         if isinstance(new, Observable):  # always rewrite
             if not plain:
-                assert (new.size == 12*np.uint(name[2])**2)
+                assert (new.size == 12*np.uint64(name[2])**2)
             self._archive.update({name: new})  # rw
         elif isinstance(new, np.ndarray):
             if not plain:
-                assert (new.shape[1] == 12*np.uint(name[2])**2)
+                assert (new.shape[1] == 12*np.uint64(name[2])**2)
             self._archive.update({name: Observable(new, 'covariance')})
         else:
             raise TypeError('unsupported data type')

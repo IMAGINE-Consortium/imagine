@@ -52,8 +52,8 @@ def empirical_cov(data):
     assert isinstance(data, np.ndarray)
     assert (len(data.shape) == 2)
     # Get ensemble size (i.e. the number of rows)
-    ensemble_size = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint),
+    ensemble_size = np.array(0, dtype=np.uint64)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64),
                     MPI.LONG], [ensemble_size, MPI.LONG],
                    op=MPI.SUM)
     # Calculates covariance
@@ -128,8 +128,8 @@ def oas_mcov(data):
 
     # Finds ensemble size and data size
     data_size = data.shape[1]
-    ensemble_size = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG],
+    ensemble_size = np.array(0, dtype=np.uint64)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64), MPI.LONG],
                    [ensemble_size, MPI.LONG], op=MPI.SUM)
 
     # Calculates OAS covariance extimator from empirical covariance estimator

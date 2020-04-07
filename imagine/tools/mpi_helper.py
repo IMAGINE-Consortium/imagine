@@ -37,8 +37,8 @@ def mpi_arrange(size):
     ave = size//mpisize
     if (ave == 0):
         raise ValueError('over distribution')
-    return np.uint(res + mpirank*ave), np.uint(res + (mpirank+1)*ave + 
-                                               np.uint(mpirank < size%mpisize))
+    return np.uint64(res + mpirank*ave), np.uint64(res + (mpirank+1)*ave +
+                                               np.uint64(mpirank < size%mpisize))
 
 def mpi_shape(data):
     """
@@ -55,9 +55,9 @@ def mpi_shape(data):
     result : numpy.uint
         Glboal row and column number.
     """
-    global_row = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [global_row, MPI.LONG], op=MPI.SUM)
-    global_column = np.array(data.shape[1], dtype=np.uint)
+    global_row = np.array(0, dtype=np.uint64)
+    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64), MPI.LONG], [global_row, MPI.LONG], op=MPI.SUM)
+    global_column = np.array(data.shape[1], dtype=np.uint64)
     return global_row, global_column
 
 def mpi_prosecutor(data):
@@ -75,10 +75,10 @@ def mpi_prosecutor(data):
     log.debug('@ mpi_helper::mpi_prosecutor')
     assert isinstance(data, np.ndarray)
     # get the global shape
-    local_rows = np.empty(mpisize, dtype=np.uint)
-    local_cols = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
-    comm.Allgather([np.array(data.shape[1], dtype=np.uint), MPI.LONG], [local_cols, MPI.LONG])
+    local_rows = np.empty(mpisize, dtype=np.uint64)
+    local_cols = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(data.shape[0], dtype=np.uint64), MPI.LONG], [local_rows, MPI.LONG])
+    comm.Allgather([np.array(data.shape[1], dtype=np.uint64), MPI.LONG], [local_cols, MPI.LONG])
     check_begin, check_end = mpi_arrange(np.sum(local_rows))
     if (data.shape[0] != check_end - check_begin):
         raise ValueError('incorrect data allocation')
@@ -108,10 +108,10 @@ def mpi_mean(data):
     assert (len(data.shape)==2)
     assert isinstance(data, np.ndarray)
     # get the global shape
-    local_rows = np.empty(mpisize, dtype=np.uint)
-    local_cols = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
-    comm.Allgather([np.array(data.shape[1], dtype=np.uint), MPI.LONG], [local_cols, MPI.LONG])
+    local_rows = np.empty(mpisize, dtype=np.uint64)
+    local_cols = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(data.shape[0], dtype=np.uint64), MPI.LONG], [local_rows, MPI.LONG])
+    comm.Allgather([np.array(data.shape[1], dtype=np.uint64), MPI.LONG], [local_cols, MPI.LONG])
     # do summation first before averaging out
     partial_sum = np.empty(data.shape[1], dtype=np.float64)
     partial_sum = np.sum(data, axis=0).reshape((data.shape[1],))
@@ -140,17 +140,17 @@ def mpi_trans(data):
     assert (len(data.shape)==2)
     assert isinstance(data, np.ndarray)
     # get the global shape before transpose
-    local_rows = np.empty(mpisize, dtype=np.uint)
-    local_cols = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(data.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
-    comm.Allgather([np.array(data.shape[1], dtype=np.uint), MPI.LONG], [local_cols, MPI.LONG])
+    local_rows = np.empty(mpisize, dtype=np.uint64)
+    local_cols = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(data.shape[0], dtype=np.uint64), MPI.LONG], [local_rows, MPI.LONG])
+    comm.Allgather([np.array(data.shape[1], dtype=np.uint64), MPI.LONG], [local_cols, MPI.LONG])
     # the algorithm cuts local data into sub-pieces and passing them to the corresponding nodes
     # which means we need to calculate the arrangement of pre-trans "columns" into post-trans "rows" 
     cut_col_begin, cut_col_end = mpi_arrange(local_cols[0])
-    cut_col_begins = np.empty(mpisize, dtype=np.uint)
-    cut_col_ends = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(cut_col_begin, dtype=np.uint), MPI.LONG], [cut_col_begins, MPI.LONG])
-    comm.Allgather([np.array(cut_col_end, dtype=np.uint), MPI.LONG], [cut_col_ends, MPI.LONG])
+    cut_col_begins = np.empty(mpisize, dtype=np.uint64)
+    cut_col_ends = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(cut_col_begin, dtype=np.uint64), MPI.LONG], [cut_col_begins, MPI.LONG])
+    comm.Allgather([np.array(cut_col_end, dtype=np.uint64), MPI.LONG], [cut_col_ends, MPI.LONG])
     # prepare empty post-trans local data shape
     new_data = np.empty((cut_col_end-cut_col_begin, np.sum(local_rows)), dtype=np.float64)
     # send and receive sub-pieces
@@ -199,15 +199,15 @@ def mpi_mult(left, right):
     assert isinstance(left, np.ndarray)
     assert isinstance(right, np.ndarray)
     # know the total rows
-    result_global_row = np.array(0, dtype=np.uint)
-    comm.Allreduce([np.array(left.shape[0], dtype=np.uint), MPI.LONG], [result_global_row, MPI.LONG], op=MPI.SUM)
+    result_global_row = np.array(0, dtype=np.uint64)
+    comm.Allreduce([np.array(left.shape[0], dtype=np.uint64), MPI.LONG], [result_global_row, MPI.LONG], op=MPI.SUM)
     # prepare the distributed result
     result = np.zeros((left.shape[0], result_global_row), dtype=np.float64)
     # collect left and right matrix row info
-    left_rows = np.empty(mpisize, dtype=np.uint)
-    right_rows = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(left.shape[0], dtype=np.uint), MPI.LONG], [left_rows, MPI.LONG])
-    comm.Allgather([np.array(right.shape[0], dtype=np.uint), MPI.LONG], [right_rows, MPI.LONG])
+    left_rows = np.empty(mpisize, dtype=np.uint64)
+    right_rows = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(left.shape[0], dtype=np.uint64), MPI.LONG], [left_rows, MPI.LONG])
+    comm.Allgather([np.array(right.shape[0], dtype=np.uint64), MPI.LONG], [right_rows, MPI.LONG])
     assert (np.sum(right_rows) == left.shape[1])  # ensure left*right is legal
     # local self mult
     left_col_begin = np.sum(right_rows[:mpirank])
@@ -251,7 +251,7 @@ def mpi_trace(data):
     local_acc = np.array(0, dtype=np.float64)
     local_row_begin, local_row_end = mpi_arrange(data.shape[1])
     for i in range(local_row_end - local_row_begin):
-        eye_pos = local_row_begin + np.uint(i)
+        eye_pos = local_row_begin + np.uint64(i)
         local_acc += np.float64(data[i, eye_pos])
     result = np.array(0, dtype=np.float64)
     comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.SUM)
@@ -276,7 +276,7 @@ def mpi_eye(size):
     local_row_begin, local_row_end = mpi_arrange(size)
     local_matrix = np.zeros((local_row_end - local_row_begin, size), dtype=np.float64)
     for i in range(local_row_end - local_row_begin):
-        eye_pos = local_row_begin + np.uint(i)
+        eye_pos = local_row_begin + np.uint64(i)
         local_matrix[i, eye_pos] =  1.0
     return local_matrix
 
@@ -308,21 +308,21 @@ def mpi_lu_solve(operator, source):
     xsplit_begin, xsplit_end = mpi_arrange(global_rows)
     xsplit = np.array(x[0,xsplit_begin:xsplit_end])
     # collect local rows for each node
-    local_rows = np.empty(mpisize, dtype=np.uint)
-    xsplit_begins = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(u.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
-    comm.Allgather([np.array(xsplit_begin, dtype=np.uint), MPI.LONG], [xsplit_begins, MPI.LONG])
+    local_rows = np.empty(mpisize, dtype=np.uint64)
+    xsplit_begins = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(u.shape[0], dtype=np.uint64), MPI.LONG], [local_rows, MPI.LONG])
+    comm.Allgather([np.array(xsplit_begin, dtype=np.uint64), MPI.LONG], [xsplit_begins, MPI.LONG])
     # start gauss method
     # goes column by column
     for c in range(global_rows-1):
         # find the pivot rank and local row
-        pivot_rank = np.array(0, dtype=np.uint)
-        pivot_r = np.uint(c)  # local row index hosting the pivot
+        pivot_rank = np.array(0, dtype=np.uint64)
+        pivot_r = np.uint64(c)  # local row index hosting the pivot
         for i in range(len(local_rows)):
             if (pivot_r >= local_rows[i]):
                 pivot_r -= local_rows[i]
             else:
-                pivot_rank = np.uint(i)
+                pivot_rank = np.uint64(i)
                 break
         # propagate pivot rank and pivot row
         if mpirank == pivot_rank:
@@ -345,9 +345,9 @@ def mpi_lu_solve(operator, source):
         op_rank = mpisize - 1 - i  # operational rank
         if (mpirank == op_rank):
             for j in range(local_rows[mpirank]):
-                local_r = np.uint(local_rows[mpirank] - 1 - j)
-                local_c = np.uint(xsplit_begin + local_r)
-                local_c_plus = np.uint(local_c + 1)
+                local_r = np.uint64(local_rows[mpirank] - 1 - j)
+                local_c = np.uint64(xsplit_begin + local_r)
+                local_c_plus = np.uint64(local_c + 1)
                 x[0,local_c] = (x[0,local_c] -
                                 np.dot(u[local_r, local_c_plus:],
                                        x[0,local_c_plus:]) 
@@ -378,21 +378,21 @@ def mpi_slogdet(data):
     global_rows = data.shape[1]
     u = deepcopy(data.astype(np.float64))
     # collect local rows for each node
-    local_rows = np.empty(mpisize, dtype=np.uint)
-    comm.Allgather([np.array(u.shape[0], dtype=np.uint), MPI.LONG], [local_rows, MPI.LONG])
+    local_rows = np.empty(mpisize, dtype=np.uint64)
+    comm.Allgather([np.array(u.shape[0], dtype=np.uint64), MPI.LONG], [local_rows, MPI.LONG])
     # start gauss method
     # the hidden global row count in other nodes
     global_row_begin = np.sum(local_rows[0:mpirank])
     # goes column by column
     for c in range(global_rows-1):
         # find the pivot rank and local row
-        pivot_rank = np.array(0, dtype=np.uint)
-        pivot_r = np.uint(c)  # local row index hosting the pivot
+        pivot_rank = np.array(0, dtype=np.uint64)
+        pivot_r = np.uint64(c)  # local row index hosting the pivot
         for i in range(len(local_rows)):
             if (pivot_r >= local_rows[i]):
                 pivot_r -= local_rows[i]
             else:
-                pivot_rank = np.uint(i)
+                pivot_rank = np.uint64(i)
                 break
         # propagate pivot rank and pivot row
         if mpirank == pivot_rank:
@@ -413,7 +413,7 @@ def mpi_slogdet(data):
     local_sign = np.array(1.0, dtype=np.float64)
     local_logdet = np.array(0.0, dtype=np.float64)
     for local_r in range(local_rows[mpirank]):
-        local_c = np.uint(local_r + global_row_begin)
+        local_c = np.uint64(local_r + global_row_begin)
         target = u[local_r, local_c]
         target_sign = 2.0*np.float64(target>0) - 1.0
         local_sign *= target_sign
@@ -439,20 +439,20 @@ def mpi_global(data):
         The root process returns the gathered data,
         other processes return `None`.
     """
-    local_rows = np.array(data.shape[0], dtype=np.uint)
-    global_rows = np.array(0, dtype=np.uint)
+    local_rows = np.array(data.shape[0], dtype=np.uint64)
+    global_rows = np.array(0, dtype=np.uint64)
     comm.Allreduce([local_rows, MPI.LONG], [global_rows, MPI.LONG], op=MPI.SUM)
     local_row_begin, local_row_end = mpi_arrange(global_rows)
     if not mpirank:
         global_array = np.empty((global_rows, data.shape[1]), dtype=np.float64)
-        row_begins = np.empty(mpisize, dtype=np.uint)
-        row_ends = np.empty(mpisize, dtype=np.uint)
+        row_begins = np.empty(mpisize, dtype=np.uint64)
+        row_ends = np.empty(mpisize, dtype=np.uint64)
     else:
         global_array = None
         row_begins = None
         row_ends = None
-    comm.Gather([np.array(local_row_begin, dtype=np.uint), MPI.LONG], [row_begins, MPI.LONG], root=0)
-    comm.Gather([np.array(local_row_end, dtype=np.uint), MPI.LONG], [row_ends, MPI.LONG], root=0)
+    comm.Gather([np.array(local_row_begin, dtype=np.uint64), MPI.LONG], [row_begins, MPI.LONG], root=0)
+    comm.Gather([np.array(local_row_end, dtype=np.uint64), MPI.LONG], [row_ends, MPI.LONG], root=0)
     if not mpirank:
         global_array[:local_row_end,:] = data
         for source in range(1,mpisize):
@@ -484,17 +484,17 @@ def mpi_local(data):
         Return the distributed array on all preocesses.
     """
     if not mpirank:
-        global_shape = np.array(data.shape, dtype=np.uint)
-        row_begins = np.empty(mpisize, dtype=np.uint)
-        row_ends = np.empty(mpisize, dtype=np.uint)
+        global_shape = np.array(data.shape, dtype=np.uint64)
+        row_begins = np.empty(mpisize, dtype=np.uint64)
+        row_ends = np.empty(mpisize, dtype=np.uint64)
     else:
-        global_shape = np.empty(2, dtype=np.uint)
+        global_shape = np.empty(2, dtype=np.uint64)
         row_begins = None
         row_ends = None
     comm.Bcast([global_shape, MPI.LONG], root=0)
     local_row_begin, local_row_end = mpi_arrange(global_shape[0])
-    comm.Gather([np.array(local_row_begin, dtype=np.uint), MPI.LONG], [row_begins, MPI.LONG], root=0)
-    comm.Gather([np.array(local_row_end, dtype=np.uint), MPI.LONG], [row_ends, MPI.LONG], root=0)
+    comm.Gather([np.array(local_row_begin, dtype=np.uint64), MPI.LONG], [row_begins, MPI.LONG], root=0)
+    comm.Gather([np.array(local_row_end, dtype=np.uint64), MPI.LONG], [row_ends, MPI.LONG], root=0)
     # start slicing
     if not mpirank:
         local_data = np.array(data[local_row_begin:local_row_end,:], dtype=np.float64)
