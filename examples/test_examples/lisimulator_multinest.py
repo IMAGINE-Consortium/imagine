@@ -20,7 +20,6 @@ from imagine.tools.timer import Timer
 comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
-
 # visualize posterior
 import corner, matplotlib
 import matplotlib.pyplot as plt
@@ -50,11 +49,9 @@ def testfield(measure_size, simulation_size, debug=False):
     mea_std = 0.1  # std of gaussian measurement error
     mea_seed = 233
     truths = [true_a, true_b]  # will be used in visualizing posterior
-
     """
     # step 1, prepare mock data
     """
-
     """
     # 1.1, generate measurements
     mea_field = signal_field + noise_field
@@ -84,14 +81,14 @@ def testfield(measure_size, simulation_size, debug=False):
     """
     # 1.4, visualize mock data
     """
+    gbl_data = mock_data[('test', 'nan', str(measure_size), 'nan')].global_data
     if mpirank == 0:
-        plt.plot(x, mock_data[('test', 'nan', str(measure_size), 'nan')].global_data[0])
+        plt.plot(x, gbl_data[0])
         plt.savefig('testfield_mock_li.pdf')
 
     """
     # step 2, prepare pipeline and execute analysis
     """
-
     """
     # 2.1, ensemble likelihood
     """
