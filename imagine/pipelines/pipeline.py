@@ -70,7 +70,7 @@ class Pipeline(object):
         self.likelihood_threshold = 0.
         # Place holder
         self.dynesty_parameter_dict = None
-
+        self.sampler = None
     
     @property
     def active_parameters(self):
