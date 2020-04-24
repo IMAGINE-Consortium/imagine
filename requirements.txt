@@ -3,3 +3,5 @@ numpy
 h5py
 astropy
 scipy
+nbsphinx
+nbsphinx-link
