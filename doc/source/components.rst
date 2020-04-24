@@ -6,10 +6,12 @@
 IMAGINE Components
 ==================
 
-In the following sections we describe each of the basic components of IMAGINE
-and demonstrate how to use templates to write wrappers allow the inclusion of
-pre-existing code.
+In the following sections we describe each of the basic components of IMAGINE.
+We also demonstrate how to write wrappers that allow the inclusion of external
+(pre-existing) code, and provide code templates for this.
 
+.. contents:: Contents
+   :local:
 
 .. _Fields:
 
@@ -114,7 +116,7 @@ The convention is that :math:`0` of the coordinates corresponds to the
 Galaxy (or galaxy) centre, with the :math:`z` coordinate giving the distance to
 the midplane.
 
-For constructing a grid with uniformly-distributed coordinates one can use the
+To construct a grid with uniformly-distributed coordinates one can use the
 :py:class:`imagine.fields.grid.UniformGrid` that accompanies IMAGINE.
 For example, one can create a grid where the cylindrical coordinates are equally
 spaced using::
@@ -127,7 +129,7 @@ spaced using::
                           grid_type = 'cylindrical')
 
 The :py:data:`box` argument contains the lower and upper limits of the
-coordinates (respectively :math:`r`, :math:`\phi` and :math:`z`,
+coordinates (respectively :math:`r`, :math:`\phi` and :math:`z`),
 :py:data:`resolution` specifies the number of points for each dimension, and
 :py:data:`grid_type` chooses this to be cylindrical coordinates.
 
@@ -167,7 +169,7 @@ grid, and units of :math:`\rm cm^{-3}`.
 
 The template assumes that one already possesses a model for distribution of
 thermal :math:`e^-` in a module :py:mod:`MY_GALAXY_MODEL`. Such model needs to
-be able to map an arbitrary coordinate grid into a densities.
+be able to map an arbitrary coordinate grid into densities.
 
 Of course, one can also write ones model (if it is simple enough) into the
 derived subclass definition. On example of a class derived from
@@ -206,7 +208,7 @@ template below.
 .. literalinclude:: ../../imagine/templates/magnetic_field_template.py
 
 It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
-which, given a set of parameters and 3 arrays containing coordinate values,
+which, given a set of parameters and three 3-arrays containing coordinate values,
 computes the magnetic field vector at each point.
 
 The method :py:meth:`get_field() <imagine.fields.basic_fields.MagneticField.get_field>` must return an :py:class:`astropy.units.Quantity`,
@@ -481,9 +483,16 @@ previous knowledge. A prior is represented by an instance of
 :py:class:`imagine.priors.prior.GeneralPrior` or one of its subclasses.
 
 To use a prior, one has to initialize it and include it in the associated
-:ref:`Field Factory`. In the absence of an explicitly selected a prior for a
-given parameter, a *flat prior* is chosen by default (i.e. any parameter within
-the range are equally likely before the looking at the observational data).
+:ref:`Field Factory`. The simplest choice is a :py:class:`FlatPrior <imagine.priors.basic_priors.FlatPrior>`
+(i.e. any parameter within the range are equally likely before the looking at
+the observational data), which can be initialized in the following way::
+
+  import imagine as img
+  import astropy.units as u
+  myFlatPrior = img.FlatPrior(interval=[-2*u.pc,10*u.pc])
+
+where the range for this parameter was chosen to be between :math:`-2` and
+:math:`10\rm pc`.
 
 After the flat prior, a common choice is that the parameter values are
 characterized by a Gaussian distribution around some central value.
@@ -500,6 +509,8 @@ requirements can be achieved using::
   import astropy.units as u
   myGaussianPrior = img.GaussianPrior(mu=1*u.microgauss, sigma=5*u.microgauss,
                                       interval=[-30*u.microgauss,30*u.microgauss])
+
+
 
 
 

@@ -40,12 +40,17 @@ please refer to the
    :caption: Contents:
 
    installation
-   tutorials
    design
    components
    posterior
    evidence
    parallel
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials:
+
+   tutorial_one
 
 .. toctree::
     :maxdepth: 4

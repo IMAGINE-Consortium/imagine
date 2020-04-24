@@ -14,7 +14,7 @@ In order to be able to do this systematically and rigorously, the basic
 design of IMAGINE first breaks the problem into two abstractions:
 :ref:`Fields`, which represent models of physical fields, and
 :ref:`Observables`, which represent
-both observational or mock data.
+both observational and mock data.
 
 New observational data are included in IMAGINE using the :ref:`Datasets`,
 which help effortlessly adjusting the format of the data to the standard
@@ -22,7 +22,7 @@ specifications (and are internally easily converted into *Observables*)
 Also, a collection of *Datasets* contributed by the community can be found in
 the Consortium's dedicated `Dataset repository <https://github.com/IMAGINE-Consortium/imagine-datasets>`_.
 
-The connection between a theory and reality done by one of the :ref:`Simulators`.
+The connection between a theory and reality is done by one of the :ref:`Simulators`.
 Each of these corresponds to a mapping from a set of model *Fields* into a mock
 *Observables*. The available simulators, importantly,
 include `Hammurabi <https://bitbucket.org/hammurabicode/hamx/wiki/Home>`_,

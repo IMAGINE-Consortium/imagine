@@ -48,7 +48,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'nbsphinx','nbsphinx_link',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
