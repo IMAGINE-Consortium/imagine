@@ -12,6 +12,7 @@ from .simulators.simulator import Simulator
 from .priors import GeneralPrior, FlatPrior, GaussianPrior
 from .pipelines.pipeline import Pipeline
 from .pipelines.multinest_pipeline import MultinestPipeline
+from .pipelines.ultranest_pipeline import UltranestPipeline
 from .pipelines.dynesty_pipeline import DynestyPipeline
 from .observables import dataset
 
