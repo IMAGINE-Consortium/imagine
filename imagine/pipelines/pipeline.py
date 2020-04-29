@@ -193,31 +193,6 @@ class Pipeline(object):
             log.debug('set pymultinest parameter %s' % str(pp_dict))
 
     @property
-    def sample_callback(self):
-        return self._sample_callback
-
-    @sample_callback.setter
-    def sample_callback(self, sample_callback):
-        self._sample_callback = sample_callback
-
-    @property
-    def likelihood_rescaler(self):
-        return self._likelihood_rescaler
-
-    @likelihood_rescaler.setter
-    def likelihood_rescaler(self, likelihood_rescaler):
-        self._likelihood_rescaler = likelihood_rescaler
-
-    @property
-    def random_type(self):
-        return self._random_type
-
-    @random_type.setter
-    def random_type(self, random_type):
-        assert isinstance(random_type, str)
-        self._random_type = random_type
-
-    @property
     def seed_tracer(self):
         return self._seed_tracer
 
@@ -226,14 +201,6 @@ class Pipeline(object):
         assert isinstance(seed_tracer, int)
         self._seed_tracer = seed_tracer
         np.random.seed(self._seed_tracer)
-
-    @property
-    def check_threshold(self):
-        return self._check_threshold
-
-    @check_threshold.setter
-    def check_threshold(self, check_threshold):
-        self._check_threshold = check_threshold
 
     @property
     def likelihood_threshold(self):
@@ -250,14 +217,14 @@ class Pipeline(object):
         """
         log.debug('@ pipeline::_randomness')
         # prepare ensemble seeds
-        if self._random_type == 'free':
+        if self.random_type == 'free':
             assert(self._ensemble_seeds is None)
-        elif self._random_type == 'controllable':
+        elif self.random_type == 'controllable':
             assert isinstance(self._seed_tracer, int)
-            self._ensemble_seeds = ensemble_seed_generator(self._ensemble_size)
-        elif self._random_type == 'fixed':
+            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
+        elif self.random_type == 'fixed':
             np.random.seed(self._seed_tracer)
-            self._ensemble_seeds = ensemble_seed_generator(self._ensemble_size)
+            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
         else:
             raise ValueError('unsupport random type')
 
@@ -297,7 +264,7 @@ class Pipeline(object):
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
             field_list += (factory.generate(variables=variable_dict,
-                                            ensemble_size=self._ensemble_size,
+                                            ensemble_size=self.ensemble_size,
                                             ensemble_seeds=self._ensemble_seeds),)
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
@@ -308,7 +275,7 @@ class Pipeline(object):
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
         # check likelihood value until negative (or no larger than given threshold)
-        if self._check_threshold and current_likelihood > self._likelihood_threshold:
+        if self.check_threshold and current_likelihood > self._likelihood_threshold:
             raise ValueError('log-likelihood beyond threashold')
         return current_likelihood * self.likelihood_rescaler
     
