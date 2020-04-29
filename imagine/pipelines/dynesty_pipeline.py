@@ -23,7 +23,7 @@ class DynestyPipeline(Pipeline):
         ----------
         dynamic : bool
             Uses *dynamic* nested sampling, i.e. adjust the number of
-            live points on the fly to achieve optimal description of the 
+            live points on the fly to achieve optimal description of the
             posterior. If False, regular (static) nested sampling is used
             (with the number of live points specified by `nlive`).
         **kwargs : Dynesty parameters
@@ -35,7 +35,7 @@ class DynestyPipeline(Pipeline):
         Dynesty sampling results
         """
         log.debug('@ dynesty_pipeline::__call__')
-        
+
         if self.sampler is None:
             # init dynesty
             if dynamic:
@@ -47,6 +47,7 @@ class DynestyPipeline(Pipeline):
                                            self.prior,
                                            len(self._active_parameters),
                                            **self._sampling_controllers)
+
         self.sampler.run_nested(**kwargs)
         return self.sampler.results
 
@@ -68,7 +69,7 @@ class DynestyPipeline(Pipeline):
         -------
         log-likelihood value
         """
-        log.debug('@ multinest_pipeline::_mpi_likelihood')
+        log.debug('@ dynesty_pipeline::_mpi_likelihood')
         # gather cubes from all nodes
         cube_local_size = cube.size
         cube_pool = np.empty(cube_local_size*mpisize, dtype=np.float64)
@@ -76,53 +77,3 @@ class DynestyPipeline(Pipeline):
         # check if all nodes are at the same parameter-space position
         assert ((cube_pool == np.tile(cube_pool[:cube_local_size], mpisize)).all())
         return self._core_likelihood(cube)
-
-    def _core_likelihood(self, cube):
-        """
-        core log-likelihood calculator
-        cube remains the same on each node
-        now self._simulator will work on each node and provide multiple ensemble size
-
-        Parameters
-        ----------
-        cube
-            list of variable values
-
-        Returns
-        -------
-        log-likelihood value
-        """
-        log.debug('@ multinest_pipeline::_core_likelihood')
-        # security boundary check
-        if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug('cube %s requested. returned most negative possible number' % str(cube))
-            return np.nan_to_num(-np.inf)
-        # return active variables from pymultinest cube to factories
-        # and then generate new field objects
-        head_idx = int(0)
-        tail_idx = int(0)
-        field_list = tuple()
-        # random seeds manipulation
-        self._randomness()
-        # the ordering in factory list and variable list is vital
-        for factory in self._factory_list:
-            variable_dict = dict()
-            tail_idx = head_idx + len(factory.active_parameters)
-            factory_cube = cube[head_idx:tail_idx]
-            for i, av in enumerate(factory.active_parameters):
-                variable_dict[av] = factory_cube[i]
-            field_list += (factory.generate(variables=variable_dict,
-                                            ensemble_size=self._ensemble_size,
-                                            ensemble_seeds=self._ensemble_seeds),)
-            log.debug('create '+factory.name+' field')
-            head_idx = tail_idx
-        assert(head_idx == len(self._active_parameters))
-        observables = self._simulator(field_list)
-        # apply mask
-        observables.apply_mask(self.likelihood.mask_dict)
-        # add up individual log-likelihood terms
-        current_likelihood = self.likelihood(observables)
-        # check likelihood value until negative (or no larger than given threshold)
-        if self._check_threshold and current_likelihood > self._likelihood_threshold:
-            raise ValueError('log-likelihood beyond threashould')
-        return current_likelihood * self.likelihood_rescaler

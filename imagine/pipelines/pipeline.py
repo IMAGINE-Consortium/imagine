@@ -261,10 +261,11 @@ class Pipeline(object):
         else:
             raise ValueError('unsupport random type')
 
+
     def _core_likelihood(self, cube):
         """
-        Log-likelihood calculator
-
+        core log-likelihood calculator
+        
         Parameters
         ----------
         cube
@@ -272,7 +273,7 @@ class Pipeline(object):
 
         Returns
         -------
-        log-likelihood
+        log-likelihood value
         """
         log.debug('@ pipeline::_core_likelihood')
         #t = Timer()
@@ -301,22 +302,13 @@ class Pipeline(object):
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
         assert(head_idx == len(self._active_parameters))
-        # create observables from fresh fields
-        #t.tick('simulator')
         observables = self._simulator(field_list)
-        #t.tock('simulator')
         # apply mask
-        #t.tick('mask')
         observables.apply_mask(self.likelihood.mask_dict)
-        #t.tock('mask')
-        log.debug('create observables')
         # add up individual log-likelihood terms
-        #t.tick('likeli')
         current_likelihood = self.likelihood(observables)
-        #t.tock('likeli')
-        log.debug('calc instant likelihood')
-        #print('timing results: \n %s' % str(t.record))
         # check likelihood value until negative (or no larger than given threshold)
         if self._check_threshold and current_likelihood > self._likelihood_threshold:
-            raise ValueError('log-likelihood beyond threashould')
-        return current_likelihood * self._likelihood_rescaler
+            raise ValueError('log-likelihood beyond threashold')
+        return current_likelihood * self.likelihood_rescaler
+    
