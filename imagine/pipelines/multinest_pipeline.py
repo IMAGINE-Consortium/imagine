@@ -23,6 +23,10 @@ class MultinestPipeline(Pipeline):
     Instances of this class are callable
 
     """
+    @property
+    def sampler_supports_mpi(self):
+        return True
+    
     def __call__(self, **kwargs):
         """
         Returns
@@ -46,41 +50,10 @@ class MultinestPipeline(Pipeline):
         
         # Runs pyMultinest
         results = pymultinest.solve(LogLikelihood=self._mpi_likelihood,
-                                    Prior=self.prior,
+                                    Prior=self.prior_transform,
                                     n_dims=len(self._active_parameters),
                                     **self._sampling_controllers)
+        
+        self._samples_array = results['samples']
+        
         return results
-
-    def _mpi_likelihood(self, cube):
-        """
-        mpi log-likelihood calculator
-        PyMultinest supports execution with MPI
-        where sampler on each node follows DIFFERENT journeys in parameter space
-        but keep in communication
-        so we need to firstly register parameter position on each node
-        and calculate log-likelihood value of each node with joint force of all nodes
-        in this way, ensemble size is multiplied by the number of working nodes
-
-        Parameters
-        ----------
-        cube
-            list of variable values
-
-        Returns
-        -------
-        log-likelihood value
-        """
-        log.debug('@ multinest_pipeline::_mpi_likelihood')
-        # gather cubes from all nodes
-        cube_local_size = cube.size
-        cube_pool = np.empty(cube_local_size*mpisize, dtype=np.float64)
-        comm.Allgather([cube, MPI.DOUBLE], [cube_pool, MPI.DOUBLE])
-        # calculate log-likelihood for each node
-        loglike_pool = np.empty(mpisize, dtype=np.float64)
-        for i in range(mpisize):  # loop through nodes
-            cube_local = cube_pool[i*cube_local_size : (i+1)*cube_local_size]
-            loglike_pool[i] = self._core_likelihood(cube_local)
-        # scatter log-likelihood to each node
-        loglike_local = np.empty(1, dtype=np.float64)
-        comm.Scatter([loglike_pool, MPI.DOUBLE], [loglike_local, MPI.DOUBLE], root=0)
-        return loglike_local

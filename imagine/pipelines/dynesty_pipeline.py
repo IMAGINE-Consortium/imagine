@@ -17,6 +17,10 @@ class DynestyPipeline(Pipeline):
 
     See base class for initialization details.
     """
+    @property
+    def sampler_supports_mpi(self):
+        return False
+    
     def __call__(self, dynamic=True, **kwargs):
         """
         Parameters
@@ -44,36 +48,14 @@ class DynestyPipeline(Pipeline):
                 dynesty_sampler = dynesty.NestedSampler
 
             self.sampler = dynesty_sampler(self._mpi_likelihood,
-                                           self.prior,
+                                           self.prior_transform,
                                            len(self._active_parameters),
                                            **self._sampling_controllers)
 
         self.sampler.run_nested(**kwargs)
-        return self.sampler.results
-
-    def _mpi_likelihood(self, cube):
-        """
-        mpi log-likelihood calculator
-        Dynesty does not support execution with MPI
-        where sampler on each node follows THE SAME journey in parameter space
-        but not keep in communication
-        so we calculate log-likelihood value of each node with joint force of all nodes
-        in this way, ensemble size is multiplied by the number of working nodes
-
-        Parameters
-        ----------
-        cube
-            list of variable values
-
-        Returns
-        -------
-        log-likelihood value
-        """
-        log.debug('@ dynesty_pipeline::_mpi_likelihood')
-        # gather cubes from all nodes
-        cube_local_size = cube.size
-        cube_pool = np.empty(cube_local_size*mpisize, dtype=np.float64)
-        comm.Allgather([cube, MPI.DOUBLE], [cube_pool, MPI.DOUBLE])
-        # check if all nodes are at the same parameter-space position
-        assert ((cube_pool == np.tile(cube_pool[:cube_local_size], mpisize)).all())
-        return self._core_likelihood(cube)
+        
+        self.sampler.results = self.sampler.results
+        
+        self._samples_array = results['samples']
+        
+        return results
