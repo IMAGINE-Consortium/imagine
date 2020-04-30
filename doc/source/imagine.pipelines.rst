@@ -28,6 +28,14 @@ imagine.pipelines.pipeline module
    :undoc-members:
    :show-inheritance:
 
+imagine.pipelines.ultranest\_pipeline module
+--------------------------------------------
+
+.. automodule:: imagine.pipelines.ultranest_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
