@@ -20,6 +20,7 @@ MOCK_MODULES = [
   'mpi4py',
   'mpi4py.MPI',
   'pymultinest',
+  'ultranest',
   'dynesty',
   'healpy',
   'h5py',
