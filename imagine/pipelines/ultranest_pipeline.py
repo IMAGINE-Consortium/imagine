@@ -55,5 +55,7 @@ class UltranestPipeline(Pipeline):
             results = self.sampler.run(**kwargs_actual)
 
         self._samples_array = results['samples']
+        self._evidence = results['logz']
+        self._evidence_err = results['logzerr']
         
         return results

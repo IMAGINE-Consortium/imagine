@@ -20,7 +20,7 @@ class DynestyPipeline(Pipeline):
     @property
     def sampler_supports_mpi(self):
         return False
-    
+
     def __call__(self, dynamic=True, **kwargs):
         """
         Parameters
@@ -53,9 +53,11 @@ class DynestyPipeline(Pipeline):
                                            **self._sampling_controllers)
 
         self.sampler.run_nested(**kwargs)
-        
+
         self.sampler.results = self.sampler.results
-        
+
         self._samples_array = results['samples']
-        
+        self._evidence = results['logz']
+        self._evidence_err = results['logzerr']
+
         return results

@@ -26,7 +26,7 @@ class MultinestPipeline(Pipeline):
     @property
     def sampler_supports_mpi(self):
         return True
-    
+
     def __call__(self, **kwargs):
         """
         Returns
@@ -47,13 +47,15 @@ class MultinestPipeline(Pipeline):
         # Makes sure that the chains directory exists
         basedir = os.path.split(self._sampling_controllers['outputfiles_basename'])[0]
         assert os.path.isdir(basedir)
-        
+
         # Runs pyMultinest
         results = pymultinest.solve(LogLikelihood=self._mpi_likelihood,
                                     Prior=self.prior_transform,
                                     n_dims=len(self._active_parameters),
                                     **self._sampling_controllers)
-        
+
         self._samples_array = results['samples']
-        
+        self._evidence = results['logz']
+        self._evidence_err = results['logzerr']
+
         return results
