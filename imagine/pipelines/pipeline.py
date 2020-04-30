@@ -119,7 +119,7 @@ class Pipeline(object):
             raise ValueError('Evidence not set! Have you run the pipeline?')
         else:
             return self._evidence
-    
+        
     @property
     def log_evidence_err(self):
         """
@@ -130,29 +130,19 @@ class Pipeline(object):
         ----
         Available only after the pipeline is run.
         """
-        assert self._evidence_err is not None, 'Evidence not set! Did you run the pipeline?'
+        assert self._evidence_err is not None, 'Evidence error not set! Did you run the pipeline?'
         
         return self._evidence_err
-        
-    @property
-    def log_evidence_err(self):
-        """
-        Error estimate in the natural logarithm of the *Bayesian model evidence*. 
-        Available once the pipeline is run.
-        
-        Note
-        ----
-        Available only after the pipeline is run.
-        """
-        assert self._evidence is not None, 'Evidence error not set! Did you run the pipeline?'
-        
-        return self._evidence
     
     @property
     def samples_scaled(self):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values of the samples 
         produced in the run, scaled to the interval [0,1].
+        
+        Note
+        ----
+        Available only after the pipeline is run.
         """
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
         
@@ -163,6 +153,10 @@ class Pipeline(object):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values of the samples 
         produced in the run.
+        
+        Note
+        ----
+        Available only after the pipeline is run.
         """        
         table = self.samples_scaled
         
