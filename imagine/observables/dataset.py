@@ -5,6 +5,7 @@ observational data in the IMAGINE pipeline"""
 from imagine.tools.icy_decorator import icy
 import numpy as np
 from astropy import units as u
+from imagine.tools.mpi_helper import mpi_eye, mpi_distribute_matrix
 
 class Dataset:
     """
@@ -37,7 +38,7 @@ class Dataset:
     @property
     def cov(self):
         if self._cov is None:
-            self._cov = self._error * np.eye(self._data.size)
+            self._cov = self._error * mpi_eye(self._data.size)
         return self._cov
 
 
@@ -105,7 +106,7 @@ class TabularDataset(Dataset):
         self.frequency = str(frequency)
         self.tag = tag
         if error_column is not None:
-            self._error = np.array(data[error_column])
+            self._error = u.Quantity(data[error_column], units, copy=False)
 
         self.Nside = "tab"
     @property
@@ -134,7 +135,13 @@ class HEALPixDataset(Dataset):
         self.Nside = str(Nside)
         assert len(data.shape)==1
         self._data = data
-        self._error = error
+
+        if cov is not None:
+            assert error is None
+
+            self._cov = mpi_distribute_matrix(cov)
+        else:
+            self._error = error
 
 @icy
 class FaradayDepthHEALPixDataset(HEALPixDataset):

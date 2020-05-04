@@ -18,14 +18,14 @@ def mpi_arrange(size):
     """
     With known global size, number of mpi nodes, and current rank,
     returns the begin and end index for distributing the global size.
-    
+
     Parameters
     ----------
-    
+
     size : integer (positive)
         The total size of target to be distributed.
         It can be a row size or a column size.
-    
+
     Returns
     -------
     result : numpy.uint
@@ -43,13 +43,13 @@ def mpi_arrange(size):
 def mpi_shape(data):
     """
     Returns the global number of rows and columns of given distributed data.
-    
+
     Parameters
     ----------
-    
+
     data : numpy.ndarray
         The distributed data.
-        
+
     Returns
     -------
     result : numpy.uint
@@ -65,10 +65,10 @@ def mpi_prosecutor(data):
     Check if the data is distributed in the correct way
     covariance matrix is distributed exactly the same manner as multi-realization data
     if not, an error will be raised.
-    
+
     Parameters
     ----------
-    
+
     data : numpy.ndarray
         The distributed data to be examined.
     """
@@ -84,7 +84,7 @@ def mpi_prosecutor(data):
         raise ValueError('incorrect data allocation')
     if np.any((local_cols-local_cols[0]).astype(bool)):
         raise ValueError('incorrect data allocation')
-        
+
 def mpi_mean(data):
     """
     calculate the mean of distributed array
@@ -92,13 +92,13 @@ def mpi_mean(data):
     but if given (1,n) data shape
     the average is done along row direction the result
     note that the numerical values will be converted into double
-    
+
     Parameters
     ----------
-    
+
     data : numpy.ndarray
         Distributed data.
-        
+
     Returns
     -------
     result : numpy.ndarray
@@ -124,13 +124,13 @@ def mpi_trans(data):
     """
     Transpose distributed data,
     note that the numerical values will be converted into double.
-    
+
     Parameters
     ----------
-    
+
     data : numpy.ndarray
         Distributed data.
-        
+
     Returns
     -------
     result : numpy.ndarray
@@ -145,7 +145,7 @@ def mpi_trans(data):
     comm.Allgather([np.array(data.shape[0], dtype=np.uint64), MPI.LONG], [local_rows, MPI.LONG])
     comm.Allgather([np.array(data.shape[1], dtype=np.uint64), MPI.LONG], [local_cols, MPI.LONG])
     # the algorithm cuts local data into sub-pieces and passing them to the corresponding nodes
-    # which means we need to calculate the arrangement of pre-trans "columns" into post-trans "rows" 
+    # which means we need to calculate the arrangement of pre-trans "columns" into post-trans "rows"
     cut_col_begin, cut_col_end = mpi_arrange(local_cols[0])
     cut_col_begins = np.empty(mpisize, dtype=np.uint64)
     cut_col_ends = np.empty(mpisize, dtype=np.uint64)
@@ -171,23 +171,23 @@ def mpi_trans(data):
             comm.Recv([local_recv_buf, MPI.DOUBLE], source=source, tag=mpirank)
             new_data[:, np.sum(local_rows[0:source]):np.sum(local_rows[0:source+1])] = local_recv_buf
     return new_data
-    
+
 def mpi_mult(left, right):
     """
     Calculate matrix multiplication of two distributed data,
     the result is data1*data2 in multi-node distribution
     note that the numerical values will be converted into double.
     We send the distributed right rows into other nodes (aka cannon method).
-    
+
     Parameters
     ----------
-    
+
     left : numpy.ndarray
         Distributed left side data.
-        
+
     right : numpy.ndarray
         Distributed right side data.
-        
+
     Returns
     -------
     result : numpy.ndarray
@@ -234,12 +234,12 @@ def mpi_mult(left, right):
 def mpi_trace(data):
     """
     Computes the trace of the given distributed data.
-    
+
     Parameters
     ----------
     data : numpy.ndarray
         Array of data distributed over different processes.
-        
+
     Returns
     -------
     result : numpy.float64
@@ -256,17 +256,17 @@ def mpi_trace(data):
     result = np.array(0, dtype=np.float64)
     comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.SUM)
     return result
-    
+
 def mpi_eye(size):
     """
     Produces an eye matrix according of shape (size,size)
     distributed over the various running MPI processes
-    
+
     Parameters
     ----------
     size : integer
         Distributed matrix size.
-        
+
     Returns
     -------
     result : numpy.ndarray, double data type
@@ -280,18 +280,42 @@ def mpi_eye(size):
         local_matrix[i, eye_pos] =  1.0
     return local_matrix
 
+def mpi_distribute_matrix(full_matrix):
+    """
+
+
+    Parameters
+    ----------
+    size : integer
+        Distributed matrix size.
+
+    Returns
+    -------
+    result : numpy.ndarray, double data type
+        Distributed eye matrix.
+    """
+    size, s = full_matrix.shape
+    assert size==s
+
+    local_row_begin, local_row_end = mpi_arrange(size)
+
+    local_matrix = full_matrix[local_row_begin:local_row_end, :]
+
+    return local_matrix
+
+
 def mpi_lu_solve(operator, source):
     """
     Simple LU Gauss method WITHOUT pivot permutation.
-    
+
     Parameters
     ----------
     operator : distributed numpy.ndarray
         Matrix representation of the left-hand-side operator.
-        
+
     source : copied numpy.ndarray
         Vector representation of the right-hand-side source.
-        
+
     Returns
     -------
     result : numpy.ndarray, double data type
@@ -350,22 +374,22 @@ def mpi_lu_solve(operator, source):
                 local_c_plus = np.uint64(local_c + 1)
                 x[0,local_c] = (x[0,local_c] -
                                 np.dot(u[local_r, local_c_plus:],
-                                       x[0,local_c_plus:]) 
+                                       x[0,local_c_plus:])
                                )/u[local_r,local_c]
         # update x
         comm.Bcast([x, MPI.DOUBLE], root=op_rank)
     return x
-                
+
 def mpi_slogdet(data):
     """
     Computes log determinant according to
     simple LU Gauss method WITHOUT pivot permutation.
-        
+
     Parameters
     ----------
     data : numpy.ndarray
         Array of data distributed over different processes.
-        
+
     Returns
     -------
     sign : numpy.ndarray
@@ -427,12 +451,12 @@ def mpi_slogdet(data):
 def mpi_global(data):
     """
     Gathers data spread accross different processes.
-        
+
     Parameters
     ----------
     data : numpy.ndarray
         Array of data distributed over different processes.
-        
+
     Returns
     -------
     global array : numpy.ndarray
@@ -472,12 +496,12 @@ def mpi_global(data):
 def mpi_local(data):
     """
     Distributes data over available processes
-    
+
     Parameters
     ----------
     data : numpy.ndarray
         Array of data to be distributed over available processes.
-        
+
     Returns
     -------
     local array : numpy.ndarray
