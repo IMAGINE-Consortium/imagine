@@ -29,7 +29,7 @@ from copy import deepcopy
 import logging as log
 from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor, mpi_global
 from imagine.tools.icy_decorator import icy
-
+import astropy.units as u
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
@@ -49,14 +49,16 @@ class Observable(object):
     """
     def __init__(self, data=None, dtype=None, coords=None):
         self.dtype = dtype
-        
-        # Uses the astropy unit, if this is provided
-        try:
+
+        if isinstance(data, u.Quantity):
             self.data = data.value
             self.unit = data.unit
-        except AttributeError:
+        elif isinstance(data, np.ndarray):
             self.data = data
             self.unit = None
+        else:
+            raise ValueError
+
         self.coords = coords
         self.rw_flag = False
 
@@ -152,10 +154,10 @@ class Observable(object):
 
     def append(self, new_data):
         """
-        appending new data happends only to SIMULATED dtype
+        appending new data happens only to SIMULATED dtype
         the new data to be appended should also be distributed
         which makes the appending operation naturally in parallel
-        
+
         rewrite flag will be switched off once rewriten has been performed
         """
         log.debug('@ observable::append')
