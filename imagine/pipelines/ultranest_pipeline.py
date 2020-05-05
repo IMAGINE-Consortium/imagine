@@ -23,7 +23,7 @@ class UltranestPipeline(Pipeline):
     @property
     def sampler_supports_mpi(self):
         return True
-    
+
     def __call__(self, **kwargs):
         """
         Returns
@@ -39,7 +39,7 @@ class UltranestPipeline(Pipeline):
             # Runs pyMultinest
             self.sampler = ultranest.ReactiveNestedSampler(
                 param_names=list(self.active_parameters),
-                loglike=self._mpi_likelihood,
+                loglike=self._likelihood_function,
                 transform=self.prior_transform,
                 #resume='subfolder',
                 #run_num=None,
@@ -49,13 +49,14 @@ class UltranestPipeline(Pipeline):
                 #num_bootstraps=30,
                 vectorized=False
                 )
+
             kwargs_actual = self.sampling_controllers.copy()
             kwargs_actual.update(kwargs)
-            
+
             results = self.sampler.run(**kwargs_actual)
 
         self._samples_array = results['samples']
         self._evidence = results['logz']
         self._evidence_err = results['logzerr']
-        
+
         return results

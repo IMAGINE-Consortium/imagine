@@ -47,7 +47,7 @@ class DynestyPipeline(Pipeline):
             else:
                 dynesty_sampler = dynesty.NestedSampler
 
-            self.sampler = dynesty_sampler(self._mpi_likelihood,
+            self.sampler = dynesty_sampler(self._likelihood_function,
                                            self.prior_transform,
                                            len(self._active_parameters),
                                            **self._sampling_controllers)

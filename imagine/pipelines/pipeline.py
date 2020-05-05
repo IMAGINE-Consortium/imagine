@@ -35,7 +35,7 @@ class Pipeline(object):
             each simulator run use seed generated from higher level seed;
         'fixed',
             take a list of fixed integers as seed for all simulator runs
-            
+
 
     Parameters
     ----------
@@ -51,7 +51,7 @@ class Pipeline(object):
         Number of observable realizations PER COMPUTING NODE to be generated in simulator
     """
     def __init__(self, simulator, factory_list, likelihood, ensemble_size=1):
-        
+
         self.factory_list = factory_list
         # NB setting the factory list automatically sets: the active parameters,
         # parameter ranges and priors, based on the list
@@ -62,6 +62,7 @@ class Pipeline(object):
         self.sample_callback = False
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
+        self.distribute_ensemble = True
         # default ensemble seeds, corresponding to 'free' random type
         self._ensemble_seeds = None
         # tracer used in 'controllable' random type
@@ -77,7 +78,7 @@ class Pipeline(object):
         self._evidence = None
         self._evidence_err = None
         self._samples_array = None
-     
+
     @property
     def active_parameters(self):
         """
@@ -105,7 +106,7 @@ class Pipeline(object):
     @property
     def log_evidence(self):
         r"""
-        Natural logarithm of the *marginal likelihood* or *Bayesian model evidence*, 
+        Natural logarithm of the *marginal likelihood* or *Bayesian model evidence*,
         :math:`\ln\mathcal{Z}`, where
 
         .. math::
@@ -119,73 +120,75 @@ class Pipeline(object):
             raise ValueError('Evidence not set! Have you run the pipeline?')
         else:
             return self._evidence
-        
+
     @property
     def log_evidence_err(self):
         """
-        Error estimate in the natural logarithm of the *Bayesian model evidence*. 
+        Error estimate in the natural logarithm of the *Bayesian model evidence*.
         Available once the pipeline is run.
-        
+
         Note
         ----
         Available only after the pipeline is run.
         """
         assert self._evidence_err is not None, 'Evidence error not set! Did you run the pipeline?'
-        
+
         return self._evidence_err
-    
+
     @property
     def samples_scaled(self):
         """
-        An :py:class:`astropy.table.QTable` object containing parameter values of the samples 
+        An :py:class:`astropy.table.QTable` object containing parameter values of the samples
         produced in the run, scaled to the interval [0,1].
-        
+
         Note
         ----
         Available only after the pipeline is run.
         """
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
-        
+
         return QTable(data=self._samples_array, names=self.active_parameters)
-    
+
     @property
     def samples(self):
         """
-        An :py:class:`astropy.table.QTable` object containing parameter values of the samples 
+        An :py:class:`astropy.table.QTable` object containing parameter values of the samples
         produced in the run.
-        
+
         Note
         ----
         Available only after the pipeline is run.
-        """        
+        """
         table = self.samples_scaled
-        
+
         for param in self.active_parameters:
             pmin, pmax = self.active_ranges[param]
             table[param] = table[param]*(pmax - pmin)+pmin
-        
+
         return table
-    
+
     @property
     def factory_list(self):
         """
-        List of field factories currently being used.
-        
+        List of the
+        :py:class:`Field Factories <imagine.fields.field_factory.GeneralFieldFactory>`
+        currently being used.
+
         Updating the factory list automatically extracts active_parameters,
         parameter ranges and priors from each field factory.
         """
         return self._factory_list
-    
+
     @factory_list.setter
     def factory_list(self, factory_list):
         # Notice that the parameter/variable ordering is fixed wrt
-        # factory ordering. This is useful for recovering variable logic value 
+        # factory ordering. This is useful for recovering variable logic value
         # for each factory and necessary to construct the common prior function.
         assert isinstance(factory_list, (list, tuple)), 'Factory list must be a tuple or list'
         self._active_parameters = tuple()
         self._active_ranges = dict()
         self._priors = dict()
-        
+
         for factory in factory_list:
             assert isinstance(factory, GeneralFieldFactory)
             for ap_name in factory.active_parameters:
@@ -198,13 +201,17 @@ class Pipeline(object):
                 assert isinstance(prior, GeneralPrior)
                 self._priors[str(factory.name+'_'+ap_name)] = prior
         self._factory_list = factory_list
-    
+
     @property
     def sampler_supports_mpi(self):
         raise NotImplementedError('Value of property must be set in sub-class!')
-    
+
     @property
     def simulator(self):
+        """
+        The :py:class:`Simulator <imagine.simulators.simulator.Simulator>`
+        object used by the pipeline
+        """
         return self._simulator
 
     @simulator.setter
@@ -214,6 +221,10 @@ class Pipeline(object):
 
     @property
     def likelihood(self):
+        """
+        The :py:class:`Likelihood <imagine.likelihoods.likelihood.Likelihood>`
+        object used by the pipeline
+        """
         return self._likelihood
 
     @likelihood.setter
@@ -221,17 +232,17 @@ class Pipeline(object):
         assert isinstance(likelihood, Likelihood)
         self._likelihood = likelihood
 
-        
+
     def prior_pdf(self, cube):
         """
-        Probability distribution associated with the all parameters being used by 
+        Probability distribution associated with the all parameters being used by
         the multiple Field Factories
-        
+
         Parameters
         ----------
         cube : array
             Each row of the array corresponds to a different parameter in the sampling.
-            
+
         Returns
         -------
         cube_rtn
@@ -241,22 +252,22 @@ class Pipeline(object):
         for i, parameter in enumerate(self.priors):
             cube_rtn[i] = self.priors[parameter].pdf(cube_rtn[i])
         return cube_rtn
-    
-    
+
+
     def prior_transform(self, cube):
         """
-        Prior transform cube (i.e. MultiNest style prior). 
-        
-        Takes a cube containing a uniform sampling of  values and maps then onto 
+        Prior transform cube (i.e. MultiNest style prior).
+
+        Takes a cube containing a uniform sampling of  values and maps then onto
         a distribution compatible with the priors specified in the
         Field Factories.
-        
+
         Parameters
         ----------
         cube : array
             Each row of the array corresponds to a different parameter in the sampling.
             Warning: the function will modify `cube` inplace.
-        
+
         Returns
         -------
         cube
@@ -265,6 +276,26 @@ class Pipeline(object):
         for i, parameter in enumerate(self.priors):
             cube[i] = self.priors[parameter](cube[i])
         return cube
+
+    @property
+    def distribute_ensemble(self):
+        """
+        If True (default), whenever the sampler requires a likelihood evaluation,
+        the ensemble of stochastic fields realizations is distributed among
+        all the nodes.
+
+        Otherwise, each likelihood evaluations will go through the whole
+        ensemble size on a single node. See :doc:`parallel` for details.
+        """
+        return self._distribute_ensemble
+
+    @distribute_ensemble.setter
+    def distribute_ensemble(self, distr_ensemble):
+        if distr_ensemble:
+            self._likelihood_function = self._mpi_likelihood
+        else:
+            self._likelihood_function = self._core_likelihood
+        self._distribute_ensemble = distr_ensemble
 
     @property
     def ensemble_size(self):
@@ -285,10 +316,8 @@ class Pipeline(object):
     def sampling_controllers(self, pp_dict):
         try:
             self._sampling_controllers.update(pp_dict)
-            log.debug('update pymultinest parameter %s' % str(pp_dict))
         except AttributeError:
             self._sampling_controllers = pp_dict
-            log.debug('set pymultinest parameter %s' % str(pp_dict))
 
     @property
     def seed_tracer(self):
@@ -300,7 +329,7 @@ class Pipeline(object):
         assert isinstance(seed_tracer, int)
         self._seed_tracer = seed_tracer
         np.random.seed(self._seed_tracer)
-        
+
     def _randomness(self):
         """
         Manipulate random seed(s)
@@ -311,7 +340,7 @@ class Pipeline(object):
         if self.random_type == 'free':
             assert(self._ensemble_seeds is None)
         elif self.random_type == 'controllable':
-            assert isinstance(self._seed_tracer, int)  
+            assert isinstance(self._seed_tracer, int)
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
         elif self.random_type == 'fixed':
             np.random.seed(self._seed_tracer)
@@ -324,7 +353,7 @@ class Pipeline(object):
     def _core_likelihood(self, cube):
         """
         core log-likelihood calculator
-        
+
         Parameters
         ----------
         cube
@@ -370,8 +399,8 @@ class Pipeline(object):
         if self.check_threshold and current_likelihood > self.likelihood_threshold:
             raise ValueError('log-likelihood beyond threshold')
         return current_likelihood * self.likelihood_rescaler
-    
-    
+
+
     def _mpi_likelihood(self, cube):
         """
         mpi log-likelihood calculator
@@ -391,30 +420,31 @@ class Pipeline(object):
         -------
         log-likelihood value
         """
-        
+
         if self.sampler_supports_mpi:
 
             log.debug('@ multinest_pipeline::_mpi_likelihood')
-            
+
             # Gathers cubes from all nodes
             cube_local_size = cube.size
             cube_pool = np.empty(cube_local_size*mpisize, dtype=np.float64)
             comm.Allgather([cube, MPI.DOUBLE], [cube_pool, MPI.DOUBLE])
-            
+
             # Calculates log-likelihood for each node
             loglike_pool = np.empty(mpisize, dtype=np.float64)
             for i in range(mpisize):  # loop through nodes
                 cube_local = cube_pool[i*cube_local_size : (i+1)*cube_local_size]
+
                 loglike_pool[i] = self._core_likelihood(cube_local)
-            
+
             # Scatters log-likelihood to each node
             loglike_local = np.empty(1, dtype=np.float64)
             comm.Scatter([loglike_pool, MPI.DOUBLE], [loglike_local, MPI.DOUBLE], root=0)
-            
+
             return loglike_local[0] # Some samplers require a scalar value
-        
+
         else:
-        
+
             log.debug('@ dynesty_pipeline::_mpi_likelihood')
             # gather cubes from all nodes
             cube_local_size = cube.size
