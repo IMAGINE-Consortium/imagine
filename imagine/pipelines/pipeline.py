@@ -64,7 +64,7 @@ class Pipeline(object):
         self.likelihood_rescaler = 1.
         self.distribute_ensemble = True
         # default ensemble seeds, corresponding to 'free' random type
-        self._ensemble_seeds = None
+        self.ensemble_seeds = None
         # tracer used in 'controllable' random type
         self.seed_tracer = int(0)
         # random type
@@ -338,7 +338,7 @@ class Pipeline(object):
         log.debug('@ pipeline::_randomness')
         # prepare ensemble seeds
         if self.random_type == 'free':
-            assert(self._ensemble_seeds is None)
+            assert(self.ensemble_seeds is None)
         elif self.random_type == 'controllable':
             assert isinstance(self._seed_tracer, int)
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
@@ -386,7 +386,7 @@ class Pipeline(object):
                 variable_dict[av] = factory_cube[i]
             field_list += (factory.generate(variables=variable_dict,
                                             ensemble_size=self.ensemble_size,
-                                            ensemble_seeds=self._ensemble_seeds),)
+                                            ensemble_seeds=self.ensemble_seeds),)
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
         assert(head_idx == len(self._active_parameters))
