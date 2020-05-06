@@ -24,15 +24,11 @@ which means to have a full set of 'covariance' data,
 we have to collect pieces from all the computing nodes.
 """
 import numpy as np
-from mpi4py import MPI
 from copy import deepcopy
 import logging as log
 from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor, mpi_global
 from imagine.tools.icy_decorator import icy
 import astropy.units as u
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
 
 @icy
 class Observable(object):

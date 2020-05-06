@@ -54,16 +54,11 @@ Masking method
 """
 import numpy as np
 import logging as log
-from mpi4py import MPI
 
 from imagine.observables.observable import Observable
 from imagine.tools.masker import mask_obs, mask_cov
 from imagine.tools.icy_decorator import icy
 from imagine.observables.dataset import Dataset, HEALPixDataset
-
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
 
 @icy
 class ObservableDict(object):

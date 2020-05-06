@@ -5,16 +5,10 @@ For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
 Implemented with numpy.ndarray raw data.
 """
-
 import numpy as np
 from copy import deepcopy
-from mpi4py import MPI
 import logging as log
 from imagine.tools.mpi_helper import mpi_arrange
-
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
 
 
 def mask_obs(obs, mask):
