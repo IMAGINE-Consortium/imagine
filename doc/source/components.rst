@@ -279,7 +279,7 @@ check the validity of the results plugging the same field on a different
 Simulator. Thus, use this with care!
 
 
-A dummy field can be implementing subclassing
+A dummy field can be implemented subclassing
 :py:class:`imagine.fields.basic_fields.DummyField` as shown bellow.
 
 .. literalinclude:: ../../imagine/templates/dummy_field_template.py
@@ -310,9 +310,9 @@ and the factory gives it one in the form of a Field object that can be handed
 to the simulator, which in turn provides simulated observables for comparison
 with the measured observables in the likelihood module.
 
-Given a Field `YourFieldClass` (which must be an instance of class derived from
-:py:class:`imagine.fields.field.GeneralField`) the following template can be
-used construct a field factory:
+Given a Field `YourFieldClass` (which must be an instance of a class derived
+from :py:class:`GeneralField <imagine.fields.field.GeneralField>`)
+the following template can be used construct a field factory:
 
 .. literalinclude:: ../../imagine/templates/field_factory_template.py
 
@@ -344,6 +344,23 @@ can be later handed to an
 There are two main types of datasets: `Tabular datasets`_ and
 `HEALPix datasets`_.
 
+A (growing) number of ready-to-use datasets are available at the community
+maintained `imagine-datasets <https://github.com/IMAGINE-Consortium/imagine-datasets>`_
+repository. Below the usage of an imported dataset is illustrated::
+
+    import imagine as img
+    import imagine_datasets as img_datasets
+
+    # Loads the dataset (usually involves downloading the data)
+    my_data = img_datasets.AuthorYear()
+
+    # Initialises ObservableDict objects
+    measurement = img.Measurements()
+    covariances = img.Covariances()
+
+    # Loads the data on the ObservableDict's
+    measurement.append(dataset=my_data)
+    covariances.append(dataset=my_data)
 
 
 .. _Tabular datasets:
@@ -371,7 +388,7 @@ To construct a tabular dataset, one needs to instantiate
             # Fetches the catalogue
             catalog = Vizier.get_catalogs('J/ApJ/714/1170')[0]
             # Reads it to the TabularDataset (the catalogue obj actually contains units)
-            super().__init__(catalog, name='fd', units=catalog['RM'].unit,
+            super().__init__(catalog, name='fd', units=catalog['RM'].unit, tab=None,
                              data_column='RM', error_column='e_RM',
                              lat_column='GLAT', lon_column='GLON')
 
