@@ -56,6 +56,8 @@ class TabularDataset(Dataset):
         Can be a :py:class:`dict`, :py:class:`astropy.table.Table`,
         :py:class:`pandas.DataFrame`, or similar object
         containing the data.
+    name : str
+        Standard name of this type of observable. E.g. 'fd', 'sync', 'dm'.
     data_column : str
         Key used to access the relevant dataset from the provided data
         (i.e. data[data_column]).
@@ -78,6 +80,12 @@ class TabularDataset(Dataset):
     frequency : str
         String with the frequency of the measurement in GHz (if relevant)
     tag : str
+        Extra information associated with the observable.
+          * 'I' - total intensity (in unit K-cmb)
+          * 'Q' - Stokes Q (in unit K-cmb, IAU convention)
+          * 'U' - Stokes U (in unit K-cmb, IAU convention)
+          * 'PI' - polarisation intensity (in unit K-cmb)
+          * 'PA' - polarisation angle (in unit rad, IAU convention)
     """
     def __init__(self, data, name, data_column=None, units=None,
                  coordinates_type='galactic', lon_column='lon', lat_column='lat',

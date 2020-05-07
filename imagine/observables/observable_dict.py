@@ -301,7 +301,7 @@ class Covariances(ObservableDict):
     def __init__(self):
         super(Covariances, self).__init__()
 
-    def append(self, name=None, new=None, plain=False, dataset=None):
+    def append(self, name=None, new_data=None, plain=False, dataset=None):
         """
         Adds/updates name and data
 
@@ -323,7 +323,7 @@ class Covariances(ObservableDict):
         if dataset is not None:
             assert isinstance(dataset, Dataset)
             name = dataset.key
-            new = dataset.cov
+            new_data = dataset.cov
 
             if isinstance(dataset, HEALPixDataset):
                 plain=False
@@ -331,14 +331,14 @@ class Covariances(ObservableDict):
                 plain=True
 
         assert (len(name) == 4)
-        if isinstance(new, Observable):  # always rewrite
+        if isinstance(new_data, Observable):  # always rewrite
             if not plain:
-                assert (new.size == 12*np.uint64(name[2])**2)
-            self._archive.update({name: new})  # rw
-        elif isinstance(new, np.ndarray):
+                assert (new_data.size == 12*np.uint64(name[2])**2)
+            self._archive.update({name: new_data})  # rw
+        elif isinstance(new_data, np.ndarray):
             if not plain:
-                assert (new.shape[1] == 12*np.uint64(name[2])**2)
-            self._archive.update({name: Observable(new, 'covariance')})
+                assert (new_data.shape[1] == 12*np.uint64(name[2])**2)
+            self._archive.update({name: Observable(new_data, 'covariance')})
         else:
             raise TypeError('unsupported data type')
 
