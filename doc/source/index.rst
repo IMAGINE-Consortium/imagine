@@ -51,6 +51,7 @@ please refer to the
    :caption: Tutorials:
 
    tutorial_one
+   tutorial_datasets
 
 .. toctree::
     :maxdepth: 4
