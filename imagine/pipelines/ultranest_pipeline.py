@@ -53,10 +53,10 @@ class UltranestPipeline(Pipeline):
             kwargs_actual = self.sampling_controllers.copy()
             kwargs_actual.update(kwargs)
 
-            results = self.sampler.run(**kwargs_actual)
+            self.results = self.sampler.run(**kwargs_actual)
 
-        self._samples_array = results['samples']
-        self._evidence = results['logz']
-        self._evidence_err = results['logzerr']
+        self._samples_array = self.results['samples']
+        self._evidence = self.results['logz']
+        self._evidence_err = self.results['logzerr']
 
-        return results
+        return self.results

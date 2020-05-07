@@ -49,13 +49,13 @@ class MultinestPipeline(Pipeline):
         assert os.path.isdir(basedir)
 
         # Runs pyMultinest
-        results = pymultinest.solve(LogLikelihood=self._likelihood_function,
-                                    Prior=self.prior_transform,
-                                    n_dims=len(self._active_parameters),
-                                    **self._sampling_controllers)
+        self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
+                                         Prior=self.prior_transform,
+                                         n_dims=len(self._active_parameters),
+                                         **self._sampling_controllers)
 
-        self._samples_array = results['samples']
-        self._evidence = results['logz']
-        self._evidence_err = results['logzerr']
+        self._samples_array = self.results['samples']
+        self._evidence = self.results['logZ']
+        self._evidence_err = self.results['logZerr']
 
-        return results
+        return self.results

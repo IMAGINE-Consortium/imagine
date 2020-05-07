@@ -7,6 +7,7 @@ from imagine.simulators.simulator import Simulator
 from imagine.tools.timer import Timer
 from imagine.tools.random_seed import ensemble_seed_generator
 from imagine.tools.icy_decorator import icy
+import imagine.tools.misc as misc
 from astropy.table import QTable
 
 from mpi4py import MPI
@@ -75,9 +76,12 @@ class Pipeline(object):
         # Place holder
         self.dynesty_parameter_dict = None
         self.sampler = None
+        self.results = None
         self._evidence = None
         self._evidence_err = None
+        self._posterior_summary = None
         self._samples_array = None
+        self._samples = None
 
     @property
     def active_parameters(self):
@@ -102,6 +106,66 @@ class Pipeline(object):
         """
         # The user should not be able to set this attribute manually
         return self._priors
+
+    @property
+    def posterior_summary(self):
+        r"""
+        A dictionary containing a summary of posterior statistics for each of
+        the active parameters.  These are: 'median', 'errlo'
+        (15.87th percentile), 'errup' (84.13th percentile), 'mean' and 'stdev'.
+        """
+
+        if self._posterior_summary is None:
+            samp = self.samples
+
+            self._posterior_summary = {}
+
+            for column in samp.columns:
+                percentiles = np.percentile(samp[column], [15.87, 50,  84.13])
+                column_dict = {s:  percentiles[i]
+                               for i,s in enumerate(('errlo', 'median', 'errup'))}
+                column_dict['mean'] = np.mean(samp[column])
+                column_dict['stdev'] = np.std(samp[column])
+                self._posterior_summary[column] = column_dict
+
+        return self._posterior_summary
+
+    def posterior_report(self, significant_digits=2):
+        """
+        Displays the best fit values and 1-sigma errors for each active parameter.
+
+        If running on a jupyter-notebook, a nice LaTeX display is used.
+
+        Parameters
+        ----------
+        significant_digits : int
+            The number of significant digits to be used
+        """
+        from IPython.display import display, Math
+        """Reports the """
+        out = ''
+
+        for param, pdict in self.posterior_summary.items():
+            if misc.is_notebook():
+                out += r'\\ \text{ '
+            out += param
+            med, low, up = (pdict[a].value for a in ['median', 'errlo', 'errup'])
+
+            v, l, u = misc.adjust_error_intervals(med, low, up, digits=significant_digits)
+            if misc.is_notebook():
+                # Extracts LaTeX representation from astropy unit object
+                unit_latex = pdict['median'].unit._repr_latex_().replace('$','')
+                # Prepares LaTeX output string
+                out += r': }}\; {0}_{{ {1} }}^{{ +{2} }}\,'.format(v, l, u)
+                out += unit_latex +r'\\'
+            else:
+                out += r': {0} ({1})/(+{2}) '.format(v, l, u)
+                out += str(pdict['median'].unit)+'\n'
+
+        if misc.is_notebook():
+            display(Math(out))
+        else:
+            print(out)
 
     @property
     def log_evidence(self):
@@ -140,13 +204,8 @@ class Pipeline(object):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values of the samples
         produced in the run, scaled to the interval [0,1].
-
-        Note
-        ----
-        Available only after the pipeline is run.
         """
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
-
         return QTable(data=self._samples_array, names=self.active_parameters)
 
     @property
@@ -154,18 +213,15 @@ class Pipeline(object):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values of the samples
         produced in the run.
-
-        Note
-        ----
-        Available only after the pipeline is run.
         """
-        table = self.samples_scaled
+        if self._samples is None:
+            self._samples = self.samples_scaled
 
-        for param in self.active_parameters:
-            pmin, pmax = self.active_ranges[param]
-            table[param] = table[param]*(pmax - pmin)+pmin
+            for param in self.active_parameters:
+                pmin, pmax = self.active_ranges[param]
+                self._samples[param] = self._samples[param]*(pmax - pmin)+pmin
 
-        return table
+        return self._samples
 
     @property
     def factory_list(self):
@@ -344,7 +400,6 @@ class Pipeline(object):
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
         elif self.random_type == 'fixed':
             np.random.seed(self._seed_tracer)
-            ##lfsr Hasn't this already been done earlier? How is this different from controllable?
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
         else:
             raise ValueError('unsupport random type')

@@ -46,5 +46,5 @@ def ensemble_seed_generator(size):
         An array of random seeds.
     """
     log.debug('@ random_seed::ensemble_seed_generator')
-    # the uint32 is defined by the random generator's capasity
+    # the uint32 is defined by the random generator's capacity
     return np.random.randint(low=1, high=np.uint32(-1)//3, size=np.uint64(size))
