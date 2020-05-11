@@ -97,7 +97,8 @@ class Simulator(object):
         self.fields = {}; self.grid = None
 
         for field in field_list:
-            if field.field_type in self.required_field_types:
+            if field.field_type in (list(self.required_field_types)
+                                    + list(self.optional_field_types)):
                 # Checks whether the grid_type is correct
                 if ((field.grid is not None) and
                     (self.allowed_grid_types is not None)):
@@ -126,7 +127,7 @@ class Simulator(object):
                     # due to its 'inplace' nature
 
         # Makes sure all required fields were included
-        assert set(self.required_field_types) == set(self.fields.keys()), 'Missing required field'
+        assert set(self.required_field_types) <= set(self.fields.keys()), 'Missing required field'
 
     @property
     def simulated_quantities(self):
@@ -139,10 +140,21 @@ class Simulator(object):
     @property
     def required_field_types(self):
         """
-        Must be overriden with a list or set of required field types Simulator needs.
+        Must be overriden with a list or set of required field types that
+        the Simulator needs.
         Example: ['magnetic_field', 'cosmic_ray_electron_density']
         """
         raise NotImplementedError
+        
+    @property
+    def optional_field_types(self):
+        """
+        Can be overriden with a list or set of field types that Simulator can use
+        if available.
+        Example: ['magnetic_field', 'cosmic_ray_electron_density']
+        """
+        return []
+        
     @property
     def allowed_grid_types(self):
         """
