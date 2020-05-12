@@ -52,6 +52,7 @@ please refer to the
 
    tutorial_one
    tutorial_datasets
+   tutorial_fields
 
 .. toctree::
     :maxdepth: 4
