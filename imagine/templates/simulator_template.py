@@ -56,6 +56,9 @@ class SimulatorTemplate(Simulator):
         
         # Fields can be accessed from a dictionary stored in self.fields
         my_field = self.fields['field_type_1']
+        # If a dummy field is being used, instead of an actual realisation,
+        # the parameters can be accessed from self.fields['dummy']
+        my_dummy_field_parameters = self.fields['dummy']        
         # If a common grid is used, it can be accessed from
         grid = self.grid
         # If fields are allowed to use different grids, 

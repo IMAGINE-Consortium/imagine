@@ -119,6 +119,10 @@ class GeneralField(object):
         The data is returned as a list, where each element corresponding to
         a single realisation. If the field is *not* stochastic, all the list
         elements are references to the same object.
+        
+        If the field_type is 'dummy', dictionaries containing parameters are
+        returned instead of data arrays
+        
         """
         if self._data is None:
             self._data = [self._get_data(i) 
@@ -175,12 +179,3 @@ class GeneralField(object):
             self._parameters = parameters
             log.debug('set full-set parameters %s' % str(parameters))
 
-    def report_parameters(self, realization_id=int(0)):
-        """
-        return parameters with random seed associated to realization id
-        """
-        log.debug('@ field::report_parameters')
-        # if checklist has 'random_seed' entry
-        if 'random_seed' in self.field_checklist.keys():
-            self._parameters.update({'random_seed': self._ensemble_seeds[realization_id]})
-        return self._parameters

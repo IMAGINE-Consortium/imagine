@@ -120,12 +120,16 @@ class Simulator(object):
                 # Finally, stores the field
                 if field.field_type not in self.fields:
                     self.fields[field.field_type] = field._get_data(i)
-                else:
-                    # If multiple fields of the same type are present, sums them
-                    self.fields[field.field_type] = self.fields[field.field_type] + field._get_data(i)
+                elif field.field_type != 'dummy':
+                    # If multiple fields of the same type are present, sums them up
+                    self.fields[field.field_type] = (self.fields[field.field_type] 
+                                                     + field._get_data(i) )
                     # NB the '+=' has *not* been used to changes in the original data
                     # due to its 'inplace' nature
-
+                else:
+                    # Only a single dummy is allowed
+                    raise ValueError('Only one dummy Field is allowed!')
+                    
         # Makes sure all required fields were included
         assert set(self.required_field_types) <= set(self.fields.keys()), 'Missing required field'
 

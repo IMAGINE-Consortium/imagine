@@ -118,12 +118,17 @@ class DummyField(GeneralField):
     field_name = 'dummy_base'
     field_type = 'dummy'
     @property
-    def data(self):
-        # A dummy field should never have data called!
-        raise NotImplementedError('A dummy field should have no data!')
-    @property
     def field_type(self):
         return None
     @property
     def field_units(self):
         raise None
+        
+    def _get_data(self, iseed):
+        # In the case of a dummy field, a dictionary is returned instead of 
+        # of a data array, updated with the present value of the random seed
+        parameters = self._parameters.copy()
+        parameters['random_seed'] = self.ensemble_seeds[iseed]
+        return parameters
+        
+        
