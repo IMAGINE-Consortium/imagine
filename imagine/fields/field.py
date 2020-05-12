@@ -40,6 +40,7 @@ class GeneralField(object):
         self.ensemble_seeds = ensemble_seeds
         # Placeholders
         self._data = None
+        self._deterministic_data = None
 
     @property
     def field_type(self):
@@ -88,6 +89,26 @@ class GeneralField(object):
             number generator seed accordingly.
         """
         raise NotImplementedError
+        
+    def _get_data(self, iseed):
+        # Equivalent to the user-facing data property, but does not evaluate 
+        # and cache the whole ensemble at once
+        
+        if self.stochastic_field:
+            # Computes stochastic field
+            seed = self.ensemble_seeds[iseed]
+            field = self.get_field(seed)
+            self._check_realisation(field)
+        elif self._deterministic_data is None:
+            # Computes and caches deterministic field
+            field = self.get_field(None)
+            self._check_realisation(field)
+            self._deterministic_data = field
+        else:
+            # Uses the cache of deterministic field
+            field = self._deterministic_data
+                    
+        return field
 
     @property
     def data(self):
@@ -100,21 +121,9 @@ class GeneralField(object):
         elements are references to the same object.
         """
         if self._data is None:
-
-            if self.stochastic_field:
-                self._data = []
-                for i, seed in enumerate(self.ensemble_seeds):
-                    # Computes the field, checks, appends
-                    field = self.get_field(seed)
-                    self._check_realisation(field)
-                    self._data.append(field)
-            else:
-                # If the field is deterministic, only a single realisation
-                # is needed
-                field = self.get_field(None)
-                self._check_realisation(field)
-                self._data = [field]*self.ensemble_size
-
+            self._data = [self._get_data(i) 
+                          for i in range(self.ensemble_size)]
+                
         return self._data
 
 

@@ -119,11 +119,11 @@ class Simulator(object):
                     
                 # Finally, stores the field
                 if field.field_type not in self.fields:
-                    self.fields[field.field_type] = field.data[i]
+                    self.fields[field.field_type] = field._get_data(i)
                 else:
                     # If multiple fields of the same type are present, sums them
-                    self.fields[field.field_type] = self.fields[field.field_type] + field.data[i]
-                    # NB the '+=' has *not* been used to changes in the original field.data
+                    self.fields[field.field_type] = self.fields[field.field_type] + field._get_data(i)
+                    # NB the '+=' has *not* been used to changes in the original data
                     # due to its 'inplace' nature
 
         # Makes sure all required fields were included

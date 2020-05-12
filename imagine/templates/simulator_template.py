@@ -7,7 +7,7 @@ class SimulatorTemplate(Simulator):
     Detailed description of the simulator
     """
     def __init__(self, measurements, extra_args):
-        # Send the measurenents to parent class
+        # Send the measurements to parent class
         super().__init__(measurements)
         
         # Any initialization task involving extra_args
@@ -18,7 +18,12 @@ class SimulatorTemplate(Simulator):
         return {'my_observable_quantity'}
     @property
     def required_field_types(self):
+        # A list or set of what is required for the simulator to work
         return {'field_type_1', 'field_type_2'}
+    @property
+    def optional_field_types(self):
+        # Fields which may be used if available
+        return {'optional_field_type_1', ... }
     @property
     def allowed_grid_types(self):
         return {'grid_type'}
@@ -61,6 +66,7 @@ class SimulatorTemplate(Simulator):
         results = MY_SIMULATOR.simulate(args)
         # The results should be in a 1-D array of size compatible with 
         # your dataset. I.e. for tabular data: results.size = lat.size
+        # (or any other coordinate)
         # and for HEALPix data  results.size = 12*(Nside**2)
     
         # Note: Awareness of other observables
