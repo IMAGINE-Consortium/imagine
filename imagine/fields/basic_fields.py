@@ -102,6 +102,9 @@ class CosmicRayElectronDensityField(GeneralField):
     """
     Not yet implemented
     """
+    def field_type(self):
+        return 'cosmic_ray_electron_density'
+    
     def __init__():
         raise NotImplementedError
 
