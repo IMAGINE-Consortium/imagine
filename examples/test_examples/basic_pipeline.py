@@ -114,62 +114,68 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
                            levels=levels)
     figure.savefig(output_file)
 
-# True values of the parameters
-a0=3.; b0=6
-# Generates the mock data
-mockDataset = prepare_mock_dataset(a0, b0)
 
-# Prepares Measurements and Covariances objects
-measurements = img.Measurements()
-measurements.append(dataset=mockDataset)
-covariances = img.Covariances()
-covariances.append(dataset=mockDataset)
+if __name__ == '__main__':
 
-# Generates the grid
-one_d_grid = img.UniformGrid(box=[[0,2*np.pi]*u.kpc,
-                                  [0,0]*u.kpc,
-                                  [0,0]*u.kpc],
-                             resolution=[30,1,1])
+    output_file_plot = 'basic_pipeline_corner.pdf'
+    output_text = 'basic_pipeline_results.txt'
 
-# Prepares the thermal electron field factory
-ne_factory = testFields.CosThermalElectronDensity_Factory(grid=one_d_grid)
-ne_factory.default_parameters= {'a': 1*u.rad/u.kpc,
-                                'beta':  np.pi/2*u.rad,
-                                'gamma': np.pi/2*u.rad}
 
-# Prepares the random magnetic field factory
-B_factory = testFields.NaiveGaussianMagneticField_Factory(grid=one_d_grid)
-B_factory.active_parameters = ('a0','b0')
-B_factory.priors ={'a0': img.FlatPrior(interval=[-5,5]*u.microgauss),
-                   'b0': img.FlatPrior(interval=[0,10]*u.microgauss)}
+    # True values of the parameters
+    a0=3.; b0=6
+    # Generates the mock data
+    mockDataset = prepare_mock_dataset(a0, b0)
 
-# Sets the field factory list
-factory_list = [ne_factory, B_factory]
+    # Prepares Measurements and Covariances objects
+    measurements = img.Measurements()
+    measurements.append(dataset=mockDataset)
+    covariances = img.Covariances()
+    covariances.append(dataset=mockDataset)
 
-# Initializes the simulator
-simer = TestSimulator(measurements)
+    # Generates the grid
+    one_d_grid = img.UniformGrid(box=[[0,2*np.pi]*u.kpc,
+                                      [0,0]*u.kpc,
+                                      [0,0]*u.kpc],
+                                resolution=[30,1,1])
 
-# Initializes the likelihood
-likelihood = img.EnsembleLikelihood(measurements, covariances)
+    # Prepares the thermal electron field factory
+    ne_factory = testFields.CosThermalElectronDensity_Factory(grid=one_d_grid)
+    ne_factory.default_parameters= {'a': 1*u.rad/u.kpc,
+                                    'beta':  np.pi/2*u.rad,
+                                    'gamma': np.pi/2*u.rad}
 
-# Define the pipeline using the UltraNest sampler, giving it the required elements
-pipeline = img.UltranestPipeline(simer, factory_list, likelihood, ensemble_size=250)
+    # Prepares the random magnetic field factory
+    B_factory = testFields.NaiveGaussianMagneticField_Factory(grid=one_d_grid)
+    B_factory.active_parameters = ('a0','b0')
+    B_factory.priors ={'a0': img.FlatPrior(interval=[-5,5]*u.microgauss),
+                      'b0': img.FlatPrior(interval=[0,10]*u.microgauss)}
 
-# Set its random seed with a positive integer, or 0 to start randomly from the system clock.
-pipeline.random_type = 'free'
-# Set some controller parameters that are specific to UltraNest.
-pipeline.sampling_controllers = {'max_ncalls': 200,
-                                 'Lepsilon': 0.1,
-                                 'dlogz': 0.5,
-                                 'min_num_live_points': 100}
+    # Sets the field factory list
+    factory_list = [ne_factory, B_factory]
 
-# RUNS THE PIPELINE
-results = pipeline()
+    # Initializes the simulator
+    simer = TestSimulator(measurements)
 
-# Reports the evidence
-print('log evidence:', pipeline.log_evidence)
-print('log evidence error:', pipeline.log_evidence_err)
+    # Initializes the likelihood
+    likelihood = img.EnsembleLikelihood(measurements, covariances)
 
-# Reports the posterior
-plot_results(pipeline, [a0,b0])
+    # Defines the pipeline using the UltraNest sampler, giving it the required elements
+    pipeline = img.UltranestPipeline(simer, factory_list, likelihood, ensemble_size=200)
+    pipeline.random_type = 'controllable'
+    # Set some controller parameters that are specific to UltraNest.
+    pipeline.sampling_controllers = {'max_ncalls': 250,
+                                    'Lepsilon': 0.1,
+                                    'dlogz': 0.5,
+                                    'min_num_live_points': 100}
+
+    # RUNS THE PIPELINE
+    results = pipeline()
+
+    # Reports the evidence
+    with open(output_text,'w+') as f:
+        f.write('log evidence: {}'.format( pipeline.log_evidence))
+        f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
+
+    # Reports the posterior
+    plot_results(pipeline, [a0,b0], output_file=output_file_plot)
 
