@@ -121,8 +121,14 @@ class DummyField(GeneralField):
         return 'dummy'
     @property
     def field_units(self):
-        raise None
-        
+        return None
+    @property
+    def simulator_controllist(self):
+        """
+        Dictionary containing fixed Simulator settings 
+        """
+        return dict()
+    
     def _get_data(self, iseed):
         # In the case of a dummy field, a dictionary is returned instead of 
         # of a data array, updated with the present value of the random seed
