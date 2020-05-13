@@ -34,6 +34,7 @@ class Simulator(object):
         self.grids = None
         self.use_common_grid = True
         self.fields = None
+        self.field_checklist = {}
         self.observables = []
         self.output_coords = {}
         self.output_units = {}
@@ -103,6 +104,7 @@ class Simulator(object):
                 if ((field.grid is not None) and
                     (self.allowed_grid_types is not None)):
                     assert field.grid.grid_type in self.allowed_grid_types, 'Grid type not allowed'
+                
                 # Checks whether the grids are consistent
                 # (if fields were evaluated on the same grid)
                 if self.use_common_grid:
@@ -116,16 +118,21 @@ class Simulator(object):
                         assert self.grids[field.field_type] is field.grid, 'Fields of the same type must have the same grid'
                     else:
                         self.grids[field.field_type] = field.grid
-                    
+                
                 # Finally, stores the field
                 if field.field_type not in self.fields:
+                    # Stores the data
                     self.fields[field.field_type] = field._get_data(i)
+                    # Stores the checklist dictionary
+                    self.field_checklist[field.field_type] = field.field_checklist                    
                 elif field.field_type != 'dummy':
                     # If multiple fields of the same type are present, sums them up
                     self.fields[field.field_type] = (self.fields[field.field_type] 
                                                      + field._get_data(i) )
                     # NB the '+=' has *not* been used to changes in the original data
                     # due to its 'inplace' nature
+                    self.field_checklist[field.field_type] = self.field_checklist[field.field_type].copy()
+                    self.field_checklist[field.field_type].update(field.field_checklist)
                 else:
                     # Only a single dummy is allowed
                     raise ValueError('Only one dummy Field is allowed!')
