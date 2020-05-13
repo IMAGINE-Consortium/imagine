@@ -116,10 +116,9 @@ class DummyField(GeneralField):
     specific Simulators rather than computing and storing a physical field.
     """
     field_name = 'dummy_base'
-    field_type = 'dummy'
     @property
     def field_type(self):
-        return None
+        return 'dummy'
     @property
     def field_units(self):
         raise None

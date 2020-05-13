@@ -234,7 +234,8 @@ class UniformGrid(BaseGrid):
         ubox = [row[0].unit for row in self.box]
         # Constructs a dimensionless version (to enforce consistent dimensions
         # in the intervals and avoid problems in mgrid)
-        box_vals = [ [(b/unit).value for b in row] for row, unit in zip(self.box, ubox) ]
+        box_vals = [ [b.to_value(unit) for b in row] 
+                     for row, unit in zip(self.box, ubox) ]
         
         local_slice = (slice(box_vals[0][0], box_vals[0][1], self.resolution[0]*1j),
                        slice(box_vals[1][0], box_vals[1][1], self.resolution[1]*1j),
