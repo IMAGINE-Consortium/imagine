@@ -211,7 +211,8 @@ It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
 which, given a set of parameters and three 3-arrays containing coordinate values,
 computes the magnetic field vector at each point.
 
-The method :py:meth:`get_field() <imagine.fields.basic_fields.MagneticField.get_field>` must return an :py:class:`astropy.units.Quantity`,
+The method :py:meth:`get_field() <imagine.fields.basic_fields.MagneticField.get_field>`
+must return an :py:class:`astropy.units.Quantity`,
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
 the last axis corresponds to the component (with x, y and z associated with
 indices 0, 1 and 2, respectively). The Quantity returned by the method must
@@ -283,6 +284,22 @@ A dummy field can be implemented subclassing
 :py:class:`imagine.fields.basic_fields.DummyField` as shown bellow.
 
 .. literalinclude:: ../../imagine/templates/dummy_field_template.py
+
+Dummy fields are generally Simulator-specific and the properties
+:py:data:`field_checklist` and :py:data:`simulator_controllist` are
+convenient ways of sending extra settings information to the associated
+Simulator. The values in :py:data:`field_checklist` allow transmitting settings
+associated with specific parameters, while the dictionary
+:py:data:`simulator_controllist` can be used to tell how the presence of the
+the current dummy field should modify the Simulator's global settings.
+
+For example, in the case of Hammurabi a dummy field can be used
+to request one of its built-in fields, which has to be set up by modifying
+Hammurabi's XML parameter files.
+In this particular case, :py:data:`field_checklist` is used to supply the
+position of a parameter in the XML file, while :py:data:`simulator_controllist`
+indicates how to modify the switch in the XML file that enables this specific
+built-in field.
 
 
 .. _Field Factory:
