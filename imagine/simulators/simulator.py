@@ -126,8 +126,7 @@ class Simulator(object):
                     self.fields[field.field_type] = field._get_data(i)
                     # Stores the checklist dictionary
                     self.field_checklist[field.field_type] = field.field_checklist
-                    if field.field_type == 'dummy':
-                        self.controllist = field.simulator_controllist
+
                 elif field.field_type != 'dummy':
                     # If multiple fields of the same type are present, sums them up
                     self.fields[field.field_type] = (self.fields[field.field_type]
@@ -144,9 +143,8 @@ class Simulator(object):
                     self.field_checklist[field.field_type] = self.field_checklist[field.field_type].copy()
                     self.field_checklist[field.field_type].update(field.field_checklist)
 
-                    # Controllists are combined in the same way
-                    self.controllist = self.controllist.copy()
-                    self.controllist.update(field.simulator_controllist)
+                if field.field_type == 'dummy':
+                    self.controllist[field.field_name] = field.simulator_controllist
 
         # Makes sure all required fields were included
         assert set(self.required_field_types) <= set(self.fields.keys()), 'Missing required field'
