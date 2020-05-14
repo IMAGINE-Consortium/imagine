@@ -42,7 +42,6 @@ class MagneticField(GeneralField):
         Number of realisations in field ensemble
     ensemble_seeds
         Random seed(s) for generating random field realisations
-
     """
     field_name = 'magnetic_field_base'
 
@@ -104,7 +103,7 @@ class CosmicRayElectronDensityField(GeneralField):
     """
     def field_type(self):
         return 'cosmic_ray_electron_density'
-    
+
     def __init__():
         raise NotImplementedError
 
@@ -125,15 +124,15 @@ class DummyField(GeneralField):
     @property
     def simulator_controllist(self):
         """
-        Dictionary containing fixed Simulator settings 
+        Dictionary containing fixed Simulator settings
         """
         return dict()
-    
+
     def _get_data(self, iseed):
-        # In the case of a dummy field, a dictionary is returned instead of 
+        # In the case of a dummy field, a dictionary is returned instead of
         # of a data array, updated with the present value of the random seed
         parameters = self._parameters.copy()
         parameters['random_seed'] = self.ensemble_seeds[iseed]
         return parameters
-        
-        
+
+

@@ -27,7 +27,7 @@ from .observables import dataset
 #from .tools.icy_decorator import icy
 
 # customized modules
-from .simulators.hammurabi.hammurabi import Hammurabi
+from .simulators.hammurabi import Hammurabi
 #from .fields.breg_lsa.hamx_field import BregLSA
 #from .fields.breg_lsa.hamx_factory import BregLSAFactory
 #from .fields.brnd_es.hamx_field import BrndES

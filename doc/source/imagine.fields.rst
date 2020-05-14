@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    imagine.fields.hamx
    imagine.fields.test_field

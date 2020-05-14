@@ -44,6 +44,14 @@ imagine.tools.masker module
    :undoc-members:
    :show-inheritance:
 
+imagine.tools.misc module
+-------------------------
+
+.. automodule:: imagine.tools.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.tools.mpi\_helper module
 --------------------------------
 
@@ -59,6 +67,7 @@ imagine.tools.random\_seed module
    :members:
    :undoc-members:
    :show-inheritance:
+
 
 imagine.tools.timer module
 --------------------------

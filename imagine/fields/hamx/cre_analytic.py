@@ -1,24 +1,19 @@
-import logging as log
-from imagine.fields.field import GeneralField
-from imagine.fields.field_factory import GeneralFieldFactory
+from imagine import DummyField, GeneralFieldFactory, FlatPrior
 from imagine.tools.icy_decorator import icy
 
 @icy
-class CREAna(GeneralField):
+class CREAna(DummyField):
     """
-    hammurabiX analytic CRE field
+    This dummy field instructs the :py:class:`Hammurabi <imagine.simulators.hammurabi.Hammurabi>`
+    simulator class to use the HammurabiX's builtin analytic cosmic ray electron
+    distribution
     """
     field_name = 'cre_ana'
-    field_type = 'dummy'
 
     @property
     def field_checklist(self):
         """
-        record XML location of physical parameters
-
-        return
-        ------
-        dict of XML locations
+        Hammurabi XML locations of physical parameters
         """
         checklist = {'alpha': (['cre', 'analytic', 'alpha'], 'value'),
                      'beta': (['cre', 'analytic', 'beta'], 'value'),
@@ -32,11 +27,7 @@ class CREAna(GeneralField):
     @property
     def field_controllist(self):
         """
-        record XML location of logical parameters
-
-        return
-        ------
-        dict of XML locations
+        Hammurabi XML locations of logical parameters
         """
         controllist = {'cue': (['cre'], {'cue': '1'}),
                        'type': (['cre'], {'type': 'analytic'})}
@@ -46,7 +37,8 @@ class CREAna(GeneralField):
 @icy
 class CREAnaFactory(GeneralFieldFactory):
     """
-    hammurabiX analytic CRE field
+    Field factory that produces the dummy field :py:class:`CREAna`
+    (see its docs for details).
     """
     def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
         super(CREAnaFactory, self).__init__(boxsize, resolution)
@@ -58,11 +50,11 @@ class CREAnaFactory(GeneralFieldFactory):
                                    'z0': 1.0,
                                    'E0': 20.6,
                                    'j0': 0.0217}
-        self.parameter_ranges = {'alpha': [2., 4.],
-                                 'beta': [-1., 1.],
-                                 'theta': [-1., 1.],
-                                 'r0': [0.1, 10.],
-                                 'z0': [0.1, 3.],
-                                 'E0': [10., 30.],
-                                 'j0': [0., 0.1]}
+        self.priors = {'alpha': FlatPrior([2., 4.]),
+                       'beta': FlatPrior([-1., 1.]),
+                       'theta': FlatPrior([-1., 1.]),
+                       'r0': FlatPrior([0.1, 10.]),
+                       'z0': FlatPrior([0.1, 3.]),
+                       'E0': FlatPrior([10., 30.]),
+                       'j0': FlatPrior([0., 0.1])}
         self.active_parameters = active_parameters
