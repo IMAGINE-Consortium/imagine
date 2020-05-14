@@ -25,7 +25,7 @@ class CREAna(DummyField):
         return checklist
 
     @property
-    def field_controllist(self):
+    def simulator_controllist(self):
         """
         Hammurabi XML locations of logical parameters
         """
