@@ -159,6 +159,12 @@ class Observable(object):
         log.debug('@ observable::append')
         assert isinstance(new_data, (np.ndarray, Observable))
         assert (self._dtype == 'simulated')
+
+
+        if isinstance(new_data, u.Quantity):
+            assert self.unit == new_data.unit
+            new_data = new_data.value
+
         if isinstance(new_data, np.ndarray):
             mpi_prosecutor(new_data)
             if (self._rw_flag):  # rewriting

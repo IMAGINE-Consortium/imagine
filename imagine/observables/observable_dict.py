@@ -270,8 +270,6 @@ class Simulations(ObservableDict):
                     assert (new_data.size == 12*np.uint64(name[2])**2)
                 self._archive.update({name: new_data})
             elif isinstance(new_data, np.ndarray):  # distributed data
-                if not plain:
-                    assert (new_data.shape[1] == 12*np.uint64(name[2])**2)
                 self._archive.update({name: Observable(new_data, 'simulated')})
             else:
                 raise TypeError('unsupported data type')

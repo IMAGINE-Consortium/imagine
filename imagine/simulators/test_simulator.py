@@ -1,7 +1,6 @@
 """
-built only for testing purposes only
+For testing purposes only
 """
-
 import numpy as np
 import astropy.units as u
 from imagine import Simulator
@@ -40,7 +39,7 @@ class TestSimulator(Simulator):
     def allowed_grid_types(self):
         return {'cartesian'}
 
-    def simulate(self, key, coords_dict, Nside, output_units):
+    def simulate(self, key, coords_dict, realization_id, output_units):
         # Accesses fields and grid
 
         Bpara = self.fields['magnetic_field'][:,:,:,self.B_axis]
@@ -53,13 +52,11 @@ class TestSimulator(Simulator):
 
         # Converts the grids to a format compatible with the interpolator
         # (comment: this is a bit silly, but what is the native numpy alternative?)
-#         points = np.vstack((x.ravel(), y.ravel(), z.ravel())).T
-        fd_interp = RegularGridInterpolator(points=(x[:,0,0],  y[0,:,0],
-                                                    z[0,0,:]),
-                                            values=fd,
-                                            method='nearest')
+        fd_interp = RegularGridInterpolator(points=(x[:,0,0],y[0,:,0],z[0,0,:]),
+                                            values=fd, method='nearest')
 
-        interp_points = np.array([coords_dict[c].to_value(u.kpc) for c in ('x','y','z')]).T
+        interp_points = np.array([coords_dict[c].to_value(u.kpc)
+                                  for c in ('x','y','z')]).T
 
         results = fd_interp(interp_points)*output_units
 

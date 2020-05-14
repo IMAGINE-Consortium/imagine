@@ -228,7 +228,7 @@ class Simulator(object):
             self.prepare_fields(field_list, i)
             for key in self.observables:
                 sim = self.simulate(key=key, coords_dict=self.output_coords[key],
-                                    Nside=None, output_units=self.output_units[key])
-                sims.append(key, sim[np.newaxis,:].to_value(self.output_units[key]),
-                            plain=True)
+                                    realization_id=i,
+                                    output_units=self.output_units[key])
+                sims.append(key, sim[np.newaxis,:].to(self.output_units[key]))
         return sims
