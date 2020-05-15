@@ -89,11 +89,11 @@ class GeneralField(object):
             number generator seed accordingly.
         """
         raise NotImplementedError
-        
+
     def _get_data(self, iseed):
-        # Equivalent to the user-facing data property, but does not evaluate 
+        # Equivalent to the user-facing data property, but does not evaluate
         # and cache the whole ensemble at once
-        
+
         if self.stochastic_field:
             # Computes stochastic field
             seed = self.ensemble_seeds[iseed]
@@ -107,7 +107,7 @@ class GeneralField(object):
         else:
             # Uses the cache of deterministic field
             field = self._deterministic_data
-                    
+
         return field
 
     @property
@@ -119,15 +119,15 @@ class GeneralField(object):
         The data is returned as a list, where each element corresponding to
         a single realisation. If the field is *not* stochastic, all the list
         elements are references to the same object.
-        
+
         If the field_type is 'dummy', dictionaries containing parameters are
         returned instead of data arrays
-        
+
         """
         if self._data is None:
-            self._data = [self._get_data(i) 
+            self._data = [self._get_data(i)
                           for i in range(self.ensemble_size)]
-                
+
         return self._data
 
 

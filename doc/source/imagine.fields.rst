@@ -8,7 +8,6 @@ Subpackages
    :maxdepth: 4
 
    imagine.fields.hamx
-   imagine.fields.test_field
 
 Submodules
 ----------
@@ -49,6 +48,14 @@ imagine.fields.grid module
 --------------------------
 
 .. automodule:: imagine.fields.grid
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+imagine.fields.test\_field module
+---------------------------------
+
+.. automodule:: imagine.fields.test_field
    :members:
    :undoc-members:
    :show-inheritance:
