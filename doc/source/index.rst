@@ -53,6 +53,7 @@ please refer to the
    tutorial_one
    tutorial_datasets
    tutorial_fields
+   tutorial_hammurabi
 
 .. toctree::
     :maxdepth: 4
