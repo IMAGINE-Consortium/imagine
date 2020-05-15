@@ -118,6 +118,9 @@ class Hammurabi(Simulator):
         checklist = self.field_checklist['dummy']
         parameters = self.fields['dummy']
 
+        # hammurabiX does not support int64 seeds
+        parameters['random_seed'] = np.uint16(parameters['random_seed'])
+
         for name, (keychain, attribute_tag) in checklist.items():
             self._ham.mod_par(keychain, {attribute_tag: str(parameters[name])})
 
