@@ -39,7 +39,7 @@ parameters, they store `Priors`_ associated with each parameter of that *field*.
 
 To convert ones own model into a IMAGINE-compatible field, one must create
 subclass one of the base classes available the
-:py:mod:`imagine.fields.basic_fields`, most likely using one of the available
+:py:mod:`imagine.fields.base_fields`, most likely using one of the available
 templates to write a *wrapper* to the original code which are discussed in the
 sections below.
 If basic field type one is interested is *not* available as a basic field, one
@@ -82,7 +82,7 @@ can be easily plotted using::
 
 
 The design of any field is done writing a *subclass* of one of the classes in
-:py:mod:`imagine.fields.basic_fields` or
+:py:mod:`imagine.fields.base_fields` or
 :py:class:`imagine.GeneralField <imagine.fields.field.GeneralField>`
 that overrides the method
 :py:meth:`get_field(seed) <imagine.fields.field.GeneralField.get_field>`,
@@ -158,12 +158,12 @@ Thermal electrons
 ^^^^^^^^^^^^^^^^^
 
 A new model for the distribution of thermal electrons can be introduced
-subclassing :py:class:`imagine.fields.basic_fields.ThermalElectronDensityField`
+subclassing :py:class:`imagine.fields.base_fields.ThermalElectronDensityField`
 according to the template below.
 
 .. literalinclude:: ../../imagine/templates/thermal_electrons_template.py
 
-Note that the return value of the method :py:meth:`get_field()  <imagine.fields.basic_fields.ThermalElectronDensityField>` must be of type
+Note that the return value of the method :py:meth:`get_field()  <imagine.fields.base_fields.ThermalElectronDensityField>` must be of type
 :py:class:`astropy.units.Quantity`, with shape consistent with the coordinate
 grid, and units of :math:`\rm cm^{-3}`.
 
@@ -173,7 +173,7 @@ be able to map an arbitrary coordinate grid into densities.
 
 Of course, one can also write ones model (if it is simple enough) into the
 derived subclass definition. On example of a class derived from
-:py:class:`imagine.fields.basic_fields.ThermalElectronDensityField` can be seen
+:py:class:`imagine.fields.base_fields.ThermalElectronDensityField` can be seen
 bellow::
 
     from imagine import ThermalElectronDensityField
@@ -202,7 +202,7 @@ Magnetic Fields
 ^^^^^^^^^^^^^^^
 
 One can add a new model for magnetic fields subclassing
-:py:class:`imagine.fields.basic_fields.MagneticField` as illustrated in the
+:py:class:`imagine.fields.base_fields.MagneticField` as illustrated in the
 template below.
 
 .. literalinclude:: ../../imagine/templates/magnetic_field_template.py
@@ -211,7 +211,7 @@ It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
 which, given a set of parameters and three 3-arrays containing coordinate values,
 computes the magnetic field vector at each point.
 
-The method :py:meth:`get_field() <imagine.fields.basic_fields.MagneticField.get_field>`
+The method :py:meth:`get_field() <imagine.fields.base_fields.MagneticField.get_field>`
 must return an :py:class:`astropy.units.Quantity`,
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
 the last axis corresponds to the component (with x, y and z associated with
@@ -281,7 +281,7 @@ Simulator. Thus, use this with care!
 
 
 A dummy field can be implemented subclassing
-:py:class:`imagine.fields.basic_fields.DummyField` as shown bellow.
+:py:class:`imagine.fields.base_fields.DummyField` as shown bellow.
 
 .. literalinclude:: ../../imagine/templates/dummy_field_template.py
 
