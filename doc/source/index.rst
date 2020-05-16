@@ -55,6 +55,7 @@ please refer to the
    tutorial_fields
    tutorial_simulator
    tutorial_hammurabi
+   tutorial_priors
 
 .. toctree::
     :maxdepth: 4

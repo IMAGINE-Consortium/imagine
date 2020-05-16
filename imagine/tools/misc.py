@@ -20,7 +20,7 @@ def is_notebook():
 def adjust_error_intervals(value, low, up, digits=2):
     """
     Takes values of a quantity at -1sigma (low), median (value) and +1sigma (up)
-    and prepares them to be reporter as :math:`v^{+err_up}_{err_down}`.
+    and prepares them to be reported as :math:`v^{+err\,up}_{-err\,down}`.
 
     Parameters
     ----------
