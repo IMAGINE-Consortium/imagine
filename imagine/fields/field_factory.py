@@ -1,4 +1,3 @@
-import numpy as np
 from copy import deepcopy
 import logging as log
 import astropy.units as u
@@ -6,8 +5,9 @@ from imagine.fields import GeneralField
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 from imagine.fields.grid import UniformGrid
-from imagine.priors import GeneralPrior, FlatPrior
+from imagine.priors import GeneralPrior
 import imagine
+
 
 @icy
 class GeneralFieldFactory:
@@ -57,7 +57,7 @@ class GeneralFieldFactory:
 
         self.field_class = GeneralField
 
-        if self.field_type is 'dummy':
+        if self.field_type == 'dummy':
             # In dummy fields, we do not use a grid
             self._grid = None
             self._box = None
@@ -78,7 +78,6 @@ class GeneralFieldFactory:
         self._parameter_ranges = {}
         self._active_parameters = ()
         self._priors = None
-
 
     @property
     def field_name(self):
@@ -108,9 +107,12 @@ class GeneralFieldFactory:
         """
         if self._grid is None:
             if (self._box is not None) and (self._resolution is not None):
-                self._grid = UniformGrid(box=boxsize, resolution=resolution)
-            elif self.field_type is not 'dummy':
-                raise ValueError('Non-dummy fields must be initialized with either a valid Grid object or its properties (box and resolution).')
+                self._grid = UniformGrid(box=self._box,
+                                         resolution=self._resolution)
+            elif self.field_type != 'dummy':
+                raise ValueError('Non-dummy fields must be initialized with'
+                                 'either a valid Grid object or its properties'
+                                 '(box and resolution).')
         return self._grid
 
     @property
@@ -162,8 +164,9 @@ class GeneralFieldFactory:
         Each prior is represented by an instance of
         :py:class:`imagine.priors.prior.GeneralPrior`.
 
-        To set new priors one can update the priors dictionary using attribution
-        (any missing values will be set to :py:class:`imagine.priors.basic_priors.FlatPrior`).
+        To set new priors one can update the priors dictionary using
+        attribution (any missing values will be set to
+        :py:class:`imagine.priors.basic_priors.FlatPrior`).
         """
         return self._priors
 
@@ -171,9 +174,9 @@ class GeneralFieldFactory:
     def priors(self, new_prior_dict):
         if self._priors is None:
             self._priors = {}
-        
+
         parameter_ranges = {}
-        
+
         for name in self.default_parameters:
             assert (name in new_prior_dict), 'Missing Prior for '+name
             prior = new_prior_dict[name]
@@ -238,7 +241,8 @@ class GeneralFieldFactory:
         for variable_name in variables:
             # variable_name must have been registered in .default_parameters
             # and, also being active
-            assert (variable_name in self.default_parameters and variable_name in self.active_parameters)
+            assert (variable_name in self.default_parameters and
+                    variable_name in self.active_parameters)
             low, high = self.parameter_ranges[variable_name]
             # Ensures consistent physical units, if needed
             if isinstance(low, u.Quantity):
@@ -253,10 +257,10 @@ class GeneralFieldFactory:
 
     def generate(self, variables=dict(), ensemble_size=None, ensemble_seeds=None):
         """
-        Takes an active variable dictionary, an ensemble size and a random seed
-        value, translates the active variables to parameter values (updating the
-        default parameter dictionary accordingly) and send this to an instance
-        of the field class.
+        Takes an active variable dictionary, an ensemble size and a random
+        seed value, translates the active variables to parameter values
+        (updating the default parameter dictionary accordingly) and send this
+        to an instance of the field class.
 
         Parameters
         ----------

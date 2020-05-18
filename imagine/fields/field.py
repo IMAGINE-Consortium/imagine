@@ -2,6 +2,7 @@ import logging as log
 from imagine.tools.icy_decorator import icy
 import numpy as np
 
+
 @icy
 class GeneralField(object):
     """
@@ -18,8 +19,8 @@ class GeneralField(object):
     Parameters
     ----------
     grid : imagine.fields.grid.BaseGrid or None
-        Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D grid where the field
-        is evaluated
+        Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a
+        3D grid where the field is evaluated
     parameters : dict
         Dictionary of full parameter set {name: value}
     ensemble_size : int
@@ -45,14 +46,14 @@ class GeneralField(object):
     @property
     def field_type(self):
         """Description the field"""
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
     def field_name(self):
         """
         Should be overriden with the name of the field
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
     def stochastic_field(self):
@@ -61,20 +62,22 @@ class GeneralField(object):
         or False if the field is deterministic (i.e. the output depends only
         on the parameter values and not on the seed value).
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
     def field_units(self):
         """Physical units of the field"""
-        raise NotImplemented
+        raise NotImplementedError
+
     @property
     def data_description(self):
         """Summary of what is in each axis of the data array"""
-        raise NotImplemented
+        raise NotImplementedError
+
     @property
     def data_shape(self):
         """Shape of the field data array"""
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_field(self, seed):
         """
@@ -130,8 +133,7 @@ class GeneralField(object):
 
         return self._data
 
-
-    def _check_realisation(self,field):
+    def _check_realisation(self, field):
         # Checks the units
         assert self.field_units.is_equivalent(field.unit), 'Field units should be '+self.field_units
         # Checks the shape
@@ -155,7 +157,8 @@ class GeneralField(object):
     @ensemble_seeds.setter
     def ensemble_seeds(self, ensemble_seeds):
         if ensemble_seeds is None:  # in case no seeds given, choose something
-            self._ensemble_seeds = np.random.randint(0,2**32,self.ensemble_size)
+            self._ensemble_seeds = np.random.randint(0, 2**32,
+                                                     self.ensemble_size)
         else:
             if self.ensemble_size is None:
                 self.ensemble_size = len(ensemble_seeds)
@@ -178,4 +181,3 @@ class GeneralField(object):
         except AttributeError:
             self._parameters = parameters
             log.debug('set full-set parameters %s' % str(parameters))
-

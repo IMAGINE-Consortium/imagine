@@ -4,6 +4,7 @@ from scipy.interpolate import CubicSpline
 import numpy as np
 import astropy.units as u
 
+
 @icy
 class GeneralPrior:
     """
@@ -70,13 +71,13 @@ class GeneralPrior:
         # Ensures interval is quantity with consistent units
         interval = u.Quantity(interval)
         self.range = interval
-        
+
         if (pdf_x is None) and (pdf_y is None):
             # PDF from samples mode -------------------
             if samples is not None:
                 assert (pdf_fun is None), 'Either provide the samples or the PDF, not both.'
                 if interval is not None:
-                    ok = (samples>interval[0]) * (samples<interval[1])
+                    ok = (samples > interval[0]) * (samples < interval[1])
                     samples = samples[ok]
                 pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
                 xmin, xmax = samples.min(), samples.max()
@@ -84,10 +85,10 @@ class GeneralPrior:
             elif pdf_fun is not None:
                 assert (pdf_x is None) and (pdf_y is None), 'Either provide the pdf datapoints or function, not both.'
                 xmin, xmax = interval
-                
+
             if pdf_fun is not None:
                 # Evaluates the PDF
-                pdf_x = np.linspace(xmin,xmax,pdf_npoints)
+                pdf_x = np.linspace(xmin, xmax, pdf_npoints)
                 pdf_y = pdf_fun(pdf_x)
                 # Normalizes and removes units
                 inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
@@ -113,7 +114,6 @@ class GeneralPrior:
         Probability density function (PDF) associated with this prior.
         """
         return self._pdf
-
 
     def pdf_unscaled(self, x):
         """
@@ -142,15 +142,15 @@ class GeneralPrior:
         expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
         """
         if (self._inv_cdf is None) and (self.cdf is not None):
-            t = np.linspace(0,1, self.inv_cdf_npoints)
+            t = np.linspace(0, 1, self.inv_cdf_npoints)
             y = self.cdf(t)
             # Rescales the image of the function to [0,1]
             y = (y-y.min())/(y.max()-y.min())
             # For some distributions, there will be multiple
             # values of y=0 for the same t. The following corrects this
             # by simply removing this part of the cdf
-            select_zeros = y==0
-            if len(select_zeros)>1:
+            select_zeros = (y == 0)
+            if len(select_zeros) > 1:
                 y = y[~select_zeros]
                 t = t[~select_zeros]
             # Creates interpolated spline
@@ -158,19 +158,19 @@ class GeneralPrior:
 
         return self._inv_cdf
 
-
     def __call__(self, x):
         """
         The "prior mapping", i.e. returns the value of the
         inverse of the CDF at point(s) `x`.
         """
-
         return self.inv_cdf(x)
+
 
 @icy
 class scipyPrior(GeneralPrior):
     """
-    Constructs a prior from a continuous distribution defined in `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions>`_.
+    Constructs a prior from a continuous distribution defined in
+    `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions>`_.
 
     Parameters
     -----------
