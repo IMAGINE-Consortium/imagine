@@ -2,7 +2,6 @@ import numpy as np
 import logging as log
 from imagine.simulators.simulator import Simulator
 from imagine.tools.icy_decorator import icy
-from imagine.tools.timer import Timer
 from hampyx import Hampyx
 import astropy.units as u
 
@@ -151,7 +150,7 @@ class Hammurabi(Simulator):
         elif key[0] == 'dm':
             return u.pc/u.cm**3
         else:
-            raise Value
+            raise ValueError
 
 
 

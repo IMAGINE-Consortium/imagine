@@ -1,4 +1,4 @@
-from imagine import DummyField, GeneralFieldFactory, FlatPrior
+from imagine import DummyField, GeneralFieldFactory
 from imagine.tools.icy_decorator import icy
 
 @icy

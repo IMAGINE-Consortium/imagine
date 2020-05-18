@@ -14,11 +14,9 @@ A brief summary of the module:
 
 See also :doc:`IMAGINE Components <components>` section of the docs.
 """
-import numpy as np
 import astropy.units as u
 from imagine.fields.field import GeneralField
 from imagine.tools.icy_decorator import icy
-
 
 
 @icy
@@ -48,15 +46,19 @@ class MagneticField(GeneralField):
     @property
     def field_type(self):
         return 'magnetic_field'
+
     @property
     def field_units(self):
         return u.microgauss
+
     @property
     def data_description(self):
-        return  ['grid_x','grid_y','grid_z','component (x,y,z)']
+        return ['grid_x', 'grid_y', 'grid_z', 'component (x,y,z)']
+
     @property
     def data_shape(self):
         return tuple([i for i in self.grid.shape] + [3])
+
 
 @icy
 class ThermalElectronDensityField(GeneralField):
@@ -85,12 +87,15 @@ class ThermalElectronDensityField(GeneralField):
     @property
     def field_type(self):
         return 'thermal_electron_density'
+
     @property
     def field_units(self):
         return u.cm**(-3)
+
     @property
     def data_description(self):
-        return  ['grid_x','grid_y','grid_z']
+        return ['grid_x', 'grid_y', 'grid_z']
+
     @property
     def data_shape(self):
         return tuple(self.grid.shape)
@@ -115,12 +120,15 @@ class DummyField(GeneralField):
     specific Simulators rather than computing and storing a physical field.
     """
     field_name = 'dummy_base'
+
     @property
     def field_type(self):
         return 'dummy'
+
     @property
     def field_units(self):
         return None
+
     @property
     def simulator_controllist(self):
         """
@@ -134,5 +142,3 @@ class DummyField(GeneralField):
         parameters = self._parameters.copy()
         parameters['random_seed'] = self.ensemble_seeds[iseed]
         return parameters
-
-

@@ -4,7 +4,6 @@ from imagine.likelihoods.likelihood import Likelihood
 from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import GeneralPrior
 from imagine.simulators.simulator import Simulator
-from imagine.tools.timer import Timer
 from imagine.tools.random_seed import ensemble_seed_generator
 from imagine.tools.icy_decorator import icy
 import imagine.tools.misc as misc
@@ -419,7 +418,6 @@ class Pipeline(object):
         log-likelihood value
         """
         log.debug('@ pipeline::_core_likelihood')
-        #t = Timer()
         log.debug('sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):

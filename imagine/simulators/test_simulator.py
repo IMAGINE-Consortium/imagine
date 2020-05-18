@@ -9,7 +9,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 @icy
 class TestSimulator(Simulator):
-    """
+    r"""
     Example simulator for illustration and testing
 
     Computes a Faraday-depth-like property at a given point without
@@ -27,7 +27,7 @@ class TestSimulator(Simulator):
         elif LoS_axis=='z':
             self.B_axis = 2
         else:
-            raise valueError
+            raise ValueError
 
     @property
     def simulated_quantities(self):

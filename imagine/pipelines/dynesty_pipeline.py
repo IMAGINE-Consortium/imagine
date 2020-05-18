@@ -1,14 +1,8 @@
 import logging as log
 import dynesty
-import numpy as np
-from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
 
-
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
 
 @icy
 class DynestyPipeline(Pipeline):
@@ -54,7 +48,7 @@ class DynestyPipeline(Pipeline):
 
         self.sampler.run_nested(**kwargs)
 
-        self.sampler.results = self.sampler.results
+        results = self.sampler.results
 
         self._samples_array = results['samples']
         self._evidence = results['logz']

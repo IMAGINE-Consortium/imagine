@@ -1,15 +1,9 @@
-import numpy as np
 import logging as log
 import os
 import pymultinest
-from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
 
-
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
 
 @icy
 class MultinestPipeline(Pipeline):

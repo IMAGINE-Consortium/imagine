@@ -1,11 +1,8 @@
 import numpy as np
 import logging as log
-import os
 import ultranest
-from mpi4py import MPI
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
-from imagine.tools.carrier_mapper import unity_mapper
 
 
 @icy

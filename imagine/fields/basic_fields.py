@@ -1,10 +1,9 @@
 from imagine import MagneticField, ThermalElectronDensityField
-from imagine import GeneralFieldFactory, FlatPrior
 from imagine.tools.icy_decorator import icy
 import numpy as np
 import scipy.stats as stats
-import astropy.units as u
 
+@icy
 class ConstantMagneticField(MagneticField):
     """
     Constant magnetic field
@@ -34,6 +33,7 @@ class ConstantMagneticField(MagneticField):
         return B
 
 
+@icy
 class ExponentialThermalElectrons(ThermalElectronDensityField):
     """
     Thermal electron distribution in a double exponential disc
@@ -68,6 +68,7 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
 
         return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
 
+@icy
 class RandomThermalElectrons(ThermalElectronDensityField):
     """
     Thermal electron densities drawn from a Gaussian distribution
