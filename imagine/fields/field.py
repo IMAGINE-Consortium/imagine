@@ -2,7 +2,6 @@ import logging as log
 from imagine.tools.icy_decorator import icy
 import numpy as np
 
-
 @icy
 class GeneralField(object):
     """
@@ -29,8 +28,9 @@ class GeneralField(object):
         Random seeds for generating random field realisations
     """
     def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
-                 ensemble_seeds=None):
+                 ensemble_seeds=None, dependencies={}):
         log.debug('@ field::__init__')
+        
         self.grid = grid
         self.parameters = parameters
         # For convenience, when ensemble info is not available,
@@ -42,12 +42,18 @@ class GeneralField(object):
         # Placeholders
         self._data = None
         self._deterministic_data = None
+        self.dependencies = dependencies
 
     @property
     def field_type(self):
         """Description the field"""
         raise NotImplementedError
 
+    @property
+    def dependencies_list(self):
+        """Dependencies on other fields"""
+        return []
+        
     @property
     def field_name(self):
         """
@@ -128,11 +134,19 @@ class GeneralField(object):
 
         """
         if self._data is None:
+            self._check_dependencies()
+            
             self._data = [self._get_data(i)
                           for i in range(self.ensemble_size)]
 
         return self._data
 
+    def _check_dependencies(self):
+        for dep in self.dependencies_list:
+            if dep not in self.dependencies:
+                raise KeyError('Missing field dependency {}'.format(dep))
+        
+    
     def _check_realisation(self, field):
         # Checks the units
         assert self.field_units.is_equivalent(field.unit), 'Field units should be '+self.field_units
