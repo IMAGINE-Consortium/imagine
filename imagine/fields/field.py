@@ -1,8 +1,6 @@
 import logging as log
-from imagine.tools.icy_decorator import icy
 import numpy as np
 
-@icy
 class GeneralField(object):
     """
     This is the base class which can be used to include a completely new field
@@ -40,9 +38,10 @@ class GeneralField(object):
         self.ensemble_size = ensemble_size
         self.ensemble_seeds = ensemble_seeds
         # Placeholders
-        self._data = None
         self._deterministic_data = None
         self.dependencies = dependencies
+        
+        assert self.field_type not in self.dependencies_list, 'Field cannot depend on its own field type'
 
     @property
     def field_type(self):
@@ -85,11 +84,13 @@ class GeneralField(object):
         """Shape of the field data array"""
         raise NotImplementedError
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
         """
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
         See :doc:`documentation <components>`.
+        
+        Should not be used directly (use :py:meth:`get_data` instead).
 
         Parameters
         ----------
@@ -99,18 +100,38 @@ class GeneralField(object):
         """
         raise NotImplementedError
 
-    def _get_data(self, iseed):
-        # Equivalent to the user-facing data property, but does not evaluate
-        # and cache the whole ensemble at once
+    def get_data(self, i_realization=0, dependencies={}):
+        """
+        Evaluates the physical field defined by this class.
 
+        Parameters
+        ----------
+        i_realization : int
+            If the field is stochastic, this indexes the realization generated.
+            Default value: 0 (i.e. the first realization).
+        dependencies : dict
+            If the :py:data:`dependencies_list` is non-empty, a dictionary containing 
+            the requested dependencies must be provided.
+            
+        Returns
+        -------
+        field : astropy.units.quantity.Quantity
+            Array of shape :py:data:`data_shape` whose contents are described by 
+            :py:data:`data_description` in units :py:data:`field_units`.
+        """
         if self.stochastic_field:
+            assert i_realization<self.ensemble_size
+            # Checks and updates dependencies
+            self._update_dependencies(dependencies)
             # Computes stochastic field
-            seed = self.ensemble_seeds[iseed]
-            field = self.get_field(seed)
+            seed = self.ensemble_seeds[i_realization]
+            field = self.compute_field(seed)
             self._check_realisation(field)
         elif self._deterministic_data is None:
+            # Checks and updates dependencies
+            self._update_dependencies(dependencies)
             # Computes and caches deterministic field
-            field = self.get_field(None)
+            field = self.compute_field(None)
             self._check_realisation(field)
             self._deterministic_data = field
         else:
@@ -119,32 +140,11 @@ class GeneralField(object):
 
         return field
 
-    @property
-    def data(self):
-        """
-        Field data computed by this class with dimensions compatible with
-        the associated `field_type`.
-
-        The data is returned as a list, where each element corresponding to
-        a single realisation. If the field is *not* stochastic, all the list
-        elements are references to the same object.
-
-        If the field_type is 'dummy', dictionaries containing parameters are
-        returned instead of data arrays
-
-        """
-        if self._data is None:
-            self._check_dependencies()
-            
-            self._data = [self._get_data(i)
-                          for i in range(self.ensemble_size)]
-
-        return self._data
-
-    def _check_dependencies(self):
+    def _update_dependencies(self, dependencies):
         for dep in self.dependencies_list:
-            if dep not in self.dependencies:
+            if dep not in dependencies:
                 raise KeyError('Missing field dependency {}'.format(dep))
+        self.dependencies = dependencies
         
     
     def _check_realisation(self, field):
@@ -155,7 +155,7 @@ class GeneralField(object):
             assert field.shape == self.data_shape
         except AssertionError:
             print('Incorrect shape, it should be:', self.data_shape)
-            print('It is instead:', self._data.shape)
+            print('It is instead:', field.shape)
             print('Description:', self.data_description)
             raise
 

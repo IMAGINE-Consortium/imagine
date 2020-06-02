@@ -19,7 +19,7 @@ class ConstantMagneticField(MagneticField):
     def field_checklist(self):
         return {'Bx': None, 'By': None, 'Bz': None}
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
         # Creates an empty array to store the result
         B = np.empty(self.data_shape) * self.parameters['Bx'].unit
         # For a magnetic field, the output must be of shape:
@@ -59,7 +59,7 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
                 'scale_radius' : None,
                 'scale_height' : None}
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
         R = self.grid.r_cylindrical
         z = self.grid.z
         Re = self.parameters['scale_radius']
@@ -91,7 +91,7 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     def field_checklist(self):
         return {'mean' : None, 'std' : None, 'min_ne': None}
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
         # Converts dimensional parameters into numerical values
         # in the correct units (stats norm does not like units)
         mu = self.parameters['mean'].to_value(self.field_units)

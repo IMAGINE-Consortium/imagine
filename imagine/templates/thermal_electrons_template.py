@@ -15,7 +15,7 @@ class ThermalElectronsDensityTemplate(ThermalElectronDensityField):
         # available parameters as keys
         return {'Parameter_A': None, 'Parameter_B': None, ...}
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
         # If this is an stochastic field, the integer `seed `must be
         # used to set the random seed for a single realisation.
         # Otherwise, `seed` should be ignored.
