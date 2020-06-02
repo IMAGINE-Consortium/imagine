@@ -77,15 +77,15 @@ the (spherical) radial dependence of the above defined :py:obj:`bar`
 can be easily plotted using::
 
     import matplotlib.pyplot as plt
-    plt.plot(bar.grid.r_spherical.ravel(),
-             bar.data[ensemble_index].ravel())
+    bar_data = bar.get_data(ensemble_index)
+    plt.plot(bar.grid.r_spherical.ravel(), bar_data.ravel())
 
 
 The design of any field is done writing a *subclass* of one of the classes in
 :py:mod:`imagine.fields.base_fields` or
 :py:class:`imagine.GeneralField <imagine.fields.field.GeneralField>`
 that overrides the method
-:py:meth:`get_field(seed) <imagine.fields.field.GeneralField.get_field>`,
+:py:meth:`compute_field(seed) <imagine.fields.field.GeneralField.compute_field>`,
 using it to computate the field on each spatial point.
 For this, the coordinate grid on which the field should
 be evaluated can be accessed from
@@ -163,7 +163,7 @@ according to the template below.
 
 .. literalinclude:: ../../imagine/templates/thermal_electrons_template.py
 
-Note that the return value of the method :py:meth:`get_field()  <imagine.fields.base_fields.ThermalElectronDensityField>` must be of type
+Note that the return value of the method :py:meth:`compute_field()  <imagine.fields.base_fields.ThermalElectronDensityField>` must be of type
 :py:class:`astropy.units.Quantity`, with shape consistent with the coordinate
 grid, and units of :math:`\rm cm^{-3}`.
 
@@ -187,7 +187,7 @@ bellow::
         def field_checklist(self):
             return {'central_density' : None, 'scale_radius' : None, 'scale_height' : None}
 
-        def get_field(self):
+        def compute_field(self):
             R = self.grid.r_cylindrical
             z = self.grid.z
             Re = self.parameters['scale_radius']
@@ -211,7 +211,7 @@ It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
 which, given a set of parameters and three 3-arrays containing coordinate values,
 computes the magnetic field vector at each point.
 
-The method :py:meth:`get_field() <imagine.fields.base_fields.MagneticField.get_field>`
+The method :py:meth:`compute_field() <imagine.fields.base_fields.MagneticField.compute_field>`
 must return an :py:class:`astropy.units.Quantity`,
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
 the last axis corresponds to the component (with x, y and z associated with
@@ -231,7 +231,7 @@ A simple example, comprising a constant magnetic field can be seen below::
         def field_checklist(self):
             return {'Bx': None, 'By': None, 'Bz': None}
 
-        def get_field(self):
+        def compute_field(self):
             # Creates an empty array to store the result
             B = np.empty(self.data_shape) * self.parameters['Bx'].unit
             # For a magnetic field, the output must be of shape:

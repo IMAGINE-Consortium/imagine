@@ -26,7 +26,7 @@ class CosThermalElectronDensity(ThermalElectronDensityField):
         return {'n0' : None, 'a' : None, 'alpha' : None,
                 'b' : None, 'beta' : None, 'c' : None, 'gamma' : None}
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
         x = self.grid.x
         y = self.grid.y
         z = self.grid.z
@@ -76,7 +76,7 @@ class NaiveGaussianMagneticField(MagneticField):
     def field_checklist(self):
         return {'a0' : None, 'b0' : None}
 
-    def get_field(self, seed):
+    def compute_field(self, seed):
 
         # Creates an empty array to store the result
         B = np.empty(self.data_shape) * self.field_units

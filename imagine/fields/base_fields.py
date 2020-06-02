@@ -16,10 +16,8 @@ See also :doc:`IMAGINE Components <components>` section of the docs.
 """
 import astropy.units as u
 from imagine.fields.field import GeneralField
-from imagine.tools.icy_decorator import icy
 
 
-@icy
 class MagneticField(GeneralField):
     """
     Base class for the inclusion of new models for magnetic fields.
@@ -60,7 +58,6 @@ class MagneticField(GeneralField):
         return tuple([i for i in self.grid.shape] + [3])
 
 
-@icy
 class ThermalElectronDensityField(GeneralField):
     """
     Base class for the inclusion of models for spatial distribution of thermal
@@ -101,7 +98,6 @@ class ThermalElectronDensityField(GeneralField):
         return tuple(self.grid.shape)
 
 
-@icy
 class CosmicRayElectronDensityField(GeneralField):
     """
     Not yet implemented
@@ -113,7 +109,6 @@ class CosmicRayElectronDensityField(GeneralField):
         raise NotImplementedError
 
 
-@icy
 class DummyField(GeneralField):
     """
     Base class for a dummy Field used for sending parameters and settings to
@@ -136,9 +131,27 @@ class DummyField(GeneralField):
         """
         return dict()
 
-    def _get_data(self, iseed):
-        # In the case of a dummy field, a dictionary is returned instead of
-        # of a data array, updated with the present value of the random seed
+    def get_data(self,  i_realization=0, dependencies={}):
+        """
+        Mock evaluation of the dummy field defined by this class.
+
+        Parameters
+        ----------
+        i_realization : int
+            Index of the current realization
+        dependencies : dict
+            If the :py:data:`dependencies_list` is non-empty, a dictionary containing 
+            the requested dependencies must be provided.
+            
+        Returns
+        -------
+        parameters : dict
+            Dictionary of containing a copy of the Field parameters including
+            an extra entry with the random seed that should be used with the 
+            present realization (under the key: 'random_seed')
+        """
+        self._update_dependencies(dependencies)
         parameters = self._parameters.copy()
-        parameters['random_seed'] = self.ensemble_seeds[iseed]
+        parameters['random_seed'] = self.ensemble_seeds[i_realization]
+        
         return parameters

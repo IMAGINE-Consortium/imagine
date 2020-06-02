@@ -98,9 +98,12 @@ class Simulator(object):
         """
         self.fields = {}; self.grid = None
 
-        for field in field_list:
+        sorted_field_list = self._sort_field_dependencies(field_list)
+        
+        for field in sorted_field_list:
             if field.field_type in (list(self.required_field_types)
                                     + list(self.optional_field_types)):
+                
                 # Checks whether the grid_type is correct
                 if ((field.grid is not None) and
                     (self.allowed_grid_types is not None)):
@@ -120,24 +123,41 @@ class Simulator(object):
                     else:
                         self.grids[field.field_type] = field.grid
 
+                        
+                # Organises dependencies
+                dependencies = {}
+                for dep in field.dependencies_list:
+                    if isinstance(dep, str):
+                        # If a string is used, dep is actually a field_type
+                        dependencies[dep] = self.fields[dep]
+                    else:
+                        # Otherwise, dep corresponds to a class
+                        for other_field in sorted_field_list:
+                            if other_field is field:
+                                continue
+                            # Stores the requested object in the dictionary
+                            if isinstance(other_field, dep):
+                                dependencies[dep] = other_field
+                                break
+                                
                 # Finally, stores the field
                 if field.field_type not in self.fields:
                     # Stores the data
-                    self.fields[field.field_type] = field._get_data(i)
+                    self.fields[field.field_type] = field.get_data(i, dependencies)
                     # Stores the checklist dictionary
                     self.field_checklist[field.field_type] = field.field_checklist
 
                 elif field.field_type != 'dummy':
                     # If multiple fields of the same type are present, sums them up
                     self.fields[field.field_type] = (self.fields[field.field_type]
-                                                     + field._get_data(i) )
+                                                     + field.get_data(i, dependencies) )
                     # NB the '+=' has *not* been used to changes in the original data
                     # due to its 'inplace' nature
                 else:
                     # For multiple dummies, parameters provided by _get_data are
                     # combined (taking care to avoid modifying the original object)
                     self.fields[field.field_type] = self.fields[field.field_type].copy()
-                    self.fields[field.field_type].update(field._get_data(i))
+                    self.fields[field.field_type].update(field.get_data(i, dependencies))
 
                     # The checklists are also combined
                     self.field_checklist[field.field_type] = self.field_checklist[field.field_type].copy()
@@ -148,6 +168,134 @@ class Simulator(object):
 
         # Makes sure all required fields were included
         assert set(self.required_field_types) <= set(self.fields.keys()), 'Missing required field'
+
+    def _sort_field_dependencies(self,fields):
+        """
+        Reorders a fields list so that dependencies are 
+        
+        Parameters
+        ----------
+        fields : list
+            List of Fields which may contain dependencies
+        
+        Returns
+        -------
+        sorted_fields : list
+            List of sorted Fields        
+        """
+        independent_fields, dependencies = self._find_dependencies(fields)
+        sorted_fields = self._solve_dependencies(independent_fields, dependencies)
+        return sorted_fields
+    
+    def _find_dependencies(self,fields):
+        """
+        Reads a list of Fields and constructs a list of independent fields and dictionary
+        containing all field depenencies. Dependencies on 'field_type' are converted to
+        dependencies on classes.
+        
+        Parameters
+        ----------
+        fields : list
+            Initial list of fields 
+        
+        Returns
+        -------
+        independent_fields_list : list
+            List containing fields with no dependencies
+        dependencies : dict
+            Dictionary containing field objects as keys and the classes they depend on
+            as values.
+        """
+        field_types = {}
+        dependencies = {}
+        independent_fields_list = []
+
+        # Prepares field_type and dependencies dictionaries
+        for field in fields:
+            ftype = field.field_type
+            fclass = type(field)
+            fdep = field.dependencies_list
+
+            if ftype not in field_types:
+                field_types[ftype] = {type(field)}
+            else:
+                field_types[ftype].add(type(field))
+
+            if len(fdep)==0:
+                independent_fields_list.append(field)
+            else:
+                if field not in dependencies:
+                    dependencies[field] = set(fdep)
+                else:
+                    dependencies[field].update(fdep)
+
+        # Subsititutes any field type string by field classes
+        for k, deps in dependencies.items():
+            for dep in tuple(deps):
+                if isinstance(dep,str):
+                    deps.remove(dep)
+                    deps.update(field_types[dep])
+
+        return independent_fields_list, dependencies
+    
+    def _solve_dependencies(self, independent_fields, dependencies, 
+                            max_iter=100, overwrite=True): 
+        """
+        Applied basic topological sorting to the field dependenceis
+
+        Parameters
+        ----------
+        independent_fields : list
+            List of field objects with no dependencies
+        dependencies : dict
+            Dictionary containing field objects as keys and the classes they depend on
+            as values.
+        max_iter : int, optional
+            Maximum number of iterations while trying to solve the dependencies
+        overwrite : bool
+            If True (default),`independent_fields` and `dependencies` will be modyfied
+            by this method
+
+        Returns
+        -------
+        L : list
+            Sorted list of field object
+        """
+        L = [] # Empty list that will contain the sorted elements
+        if overwrite:
+            S = independent_fields # Set of all nodes with no incoming edge
+            deps = dependencies
+        else:
+            from copy import deepcopy
+            S = independent_fields.copy()
+            deps = deepcopy(dependencies)
+        
+        counter = 0
+        while len(S)>0:
+            counter+=1
+            assert counter<max_iter, 'Error: too many iterations'
+
+            # Removes a node n from S
+            n = S.pop()
+
+            # Appends n to tail of L
+            L.append(n)
+
+            # Goes through all the nodes
+            for m in list(deps.keys()):
+                edges = deps[m]
+                # If n is in the edges, removes it
+                if type(n) in edges:
+                    edges.remove(type(n))
+                # If there are no edges, add it to the
+                # independent nodes list
+                if len(edges)==0:
+                    S.append(m)
+                    del deps[m]
+                    
+        assert len(deps)==0, 'There is a cyclical Field dependency!'
+    
+        return L
 
     @property
     def simulated_quantities(self):
