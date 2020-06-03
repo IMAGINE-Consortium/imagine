@@ -99,11 +99,11 @@ class Simulator(object):
         self.fields = {}; self.grid = None
 
         sorted_field_list = self._sort_field_dependencies(field_list)
-        
+
         for field in sorted_field_list:
             if field.field_type in (list(self.required_field_types)
                                     + list(self.optional_field_types)):
-                
+
                 # Checks whether the grid_type is correct
                 if ((field.grid is not None) and
                     (self.allowed_grid_types is not None)):
@@ -123,7 +123,7 @@ class Simulator(object):
                     else:
                         self.grids[field.field_type] = field.grid
 
-                        
+
                 # Organises dependencies
                 dependencies = {}
                 for dep in field.dependencies_list:
@@ -139,7 +139,7 @@ class Simulator(object):
                             if isinstance(other_field, dep):
                                 dependencies[dep] = other_field
                                 break
-                                
+
                 # Finally, stores the field
                 if field.field_type not in self.fields:
                     # Stores the data
@@ -171,33 +171,34 @@ class Simulator(object):
 
     def _sort_field_dependencies(self,fields):
         """
-        Reorders a fields list so that dependencies are 
-        
+        Reorders a fields list so that dependencies are evaluated before
+        the dependent fields.
+
         Parameters
         ----------
         fields : list
             List of Fields which may contain dependencies
-        
+
         Returns
         -------
         sorted_fields : list
-            List of sorted Fields        
+            List of sorted Fields
         """
         independent_fields, dependencies = self._find_dependencies(fields)
         sorted_fields = self._solve_dependencies(independent_fields, dependencies)
         return sorted_fields
-    
+
     def _find_dependencies(self,fields):
         """
         Reads a list of Fields and constructs a list of independent fields and dictionary
         containing all field depenencies. Dependencies on 'field_type' are converted to
         dependencies on classes.
-        
+
         Parameters
         ----------
         fields : list
-            Initial list of fields 
-        
+            Initial list of fields
+
         Returns
         -------
         independent_fields_list : list
@@ -237,9 +238,9 @@ class Simulator(object):
                     deps.update(field_types[dep])
 
         return independent_fields_list, dependencies
-    
-    def _solve_dependencies(self, independent_fields, dependencies, 
-                            max_iter=100, overwrite=True): 
+
+    def _solve_dependencies(self, independent_fields, dependencies,
+                            max_iter=100, overwrite=True):
         """
         Applied basic topological sorting to the field dependenceis
 
@@ -269,7 +270,7 @@ class Simulator(object):
             from copy import deepcopy
             S = independent_fields.copy()
             deps = deepcopy(dependencies)
-        
+
         counter = 0
         while len(S)>0:
             counter+=1
@@ -292,9 +293,9 @@ class Simulator(object):
                 if len(edges)==0:
                     S.append(m)
                     del deps[m]
-                    
+
         assert len(deps)==0, 'There is a cyclical Field dependency!'
-    
+
         return L
 
     @property
