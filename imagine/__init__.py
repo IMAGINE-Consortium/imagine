@@ -18,3 +18,7 @@ from .observables import dataset
 
 # customized modules
 from .simulators.hammurabi import Hammurabi
+
+# Environmental variables handling will be here
+import tempfile
+rc = {'temp_dir': tempfile.gettempdir()}

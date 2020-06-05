@@ -1,10 +1,11 @@
 import numpy as np
 import logging as log
+import imagine as img
 from imagine.simulators.simulator import Simulator
 from imagine.tools.icy_decorator import icy
 from hampyx import Hampyx
 import astropy.units as u
-
+import tempfile
 
 
 @icy
@@ -27,8 +28,7 @@ class Hammurabi(Simulator):
     xml_path : string
         Absolute hammurabi xml parameter file path.
     """
-    def __init__(self, measurements, xml_path, exe_path=None,
-                 ):
+    def __init__(self, measurements, xml_path, exe_path=None, verbose=False):
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
         self.exe_path = exe_path
@@ -38,17 +38,23 @@ class Hammurabi(Simulator):
         self._ham = Hampyx(self.xml_path, self.exe_path)
         # Makes the modifications required by measurements to the XML file
         self.initialize_ham_xml()
+        # List of files containing evaluations of fields
+        self._field_dump_files = []
+        self.verbose = verbose
 
     @property
     def simulated_quantities(self):
-        return {'fd','dm', 'sync'}
+        return {'fd', 'dm', 'sync'}
+
     @property
     def required_field_types(self):
-        return ['dummy']
+        return []
+
     @property
     def optional_field_types(self):
-        return ['magnetic_field', 'thermal_electron_density' ,
+        return ['dummy','magnetic_field', 'thermal_electron_density',
                 'cosmic_ray_electron_density']
+
     @property
     def allowed_grid_types(self):
         return {'cartesian'}
@@ -59,7 +65,7 @@ class Hammurabi(Simulator):
         """
         log.debug('@ hammurabi::initialize_ham_xml')
         # Cleans up previously defined entries
-        for t in ('sync','dm','faraday'):
+        for t in ('sync', 'dm', 'faraday'):
             try:
                 self._ham.del_par(['observable', t], 'all')
             except ValueError:  # in case no entry in template xml file
@@ -70,7 +76,7 @@ class Hammurabi(Simulator):
         for key in self.observables:
             name, freq, nside, flag = key
 
-            if nside=='tab':
+            if nside == 'tab':
                 raise NotImplementedError('Tabular datasets not yet supported!')
 
             if name == 'sync':
@@ -88,7 +94,7 @@ class Hammurabi(Simulator):
                 raise ValueError('unrecognised name %s' % name)
         self._ham.print_par(['observable'])
 
-    def update_hammurabi_settings(self):
+    def _update_hammurabi_settings(self):
         """
         Updates hamx XML tree using the provided controllist
 
@@ -96,7 +102,7 @@ class Hammurabi(Simulator):
         a given hamx module).
         """
         # This replaces the old `register_fields` method
-        log.debug('@ hammurabi::update_hammurabi_settings')
+        log.debug('@ hammurabi::_update_hammurabi_settings')
 
         for controllist in self.controllist.values():
             # The field names (the dictionary keys) are unimportant
@@ -104,7 +110,7 @@ class Hammurabi(Simulator):
                 # The keys in each hamx controllist are also unimportant
                 self._ham.mod_par(keychain, attrib)
 
-    def update_hammurabi_parameters(self):
+    def _update_hammurabi_parameters(self):
         """
         Updates hammurabi XML tree according to field checklists and parameter
         choices
@@ -112,7 +118,7 @@ class Hammurabi(Simulator):
         This is used to configure physical parameters
         """
         # This replaces the old `update_fields` method
-        log.debug('@ hammurabi::update_hammurabi_parameters')
+        log.debug('@ hammurabi::_update_hammurabi_parameters')
 
         checklist = self.field_checklist['dummy']
         parameters = self.fields['dummy']
@@ -128,9 +134,11 @@ class Hammurabi(Simulator):
         # If the realization_id is different from the self.current_realization
         # hammurabi needs to re-run to (re)generate the observables
         if (self.current_realization != realization_id):
-            self.update_hammurabi_settings()
-            # update parameters
-            self.update_hammurabi_parameters()
+            self._update_hammurabi_settings()
+            # Updates parameters
+            self._update_hammurabi_parameters()
+            # Saves the fields to disk
+            self._dump_fields()
             # Runs Hammurabi
             self._ham()
 
@@ -139,7 +147,7 @@ class Hammurabi(Simulator):
 
     def _units(self, key):
         if key[0] == 'sync':
-            if key[3] in ('I','Q','U','PI'):
+            if key[3] in ('I', 'Q', 'U', 'PI'):
                 return u.K
             elif key[3] == 'PA':
                 return u.rad
@@ -152,5 +160,64 @@ class Hammurabi(Simulator):
         else:
             raise ValueError
 
+    def _dump_fields(self, use_rnd=False):
+        # Removes any previously dumped files from disk
+        self._clean_up_fields_on_disk()
 
+        for field_type, field_data in self.fields.items():
+            if field_type == 'thermal_electron_density':
+                if use_rnd:
+                    hamx_key = 'ternd'
+                else:
+                    hamx_key = 'tereg'
+            elif field_type == 'magnetic_field':
+                if use_rnd:
+                    hamx_key = 'brnd'
+                else:
+                    hamx_key = 'breg'
+            elif field_type == 'cosmic_ray_electron_density':
+                hamx_key = 'cre'
+            else:
+                # For any other field_type: skip
+                continue
 
+            # Points to the correct grid
+            grid = self.grid if (self.grid is not None) else self.grids[field_type]
+
+            # Adjusts grid parameters
+            for coord, n, (cmin, cmax) in zip(['x', 'y', 'z'],
+                                              grid.resolution,
+                                              grid.box):
+                self._ham.mod_par(['grid', 'box_'+hamx_key, 'n'+coord],
+                                  {'value': str(n)})
+                self._ham.mod_par(['grid', 'box_'+hamx_key, coord+'_min'],
+                                  {'value': str(cmin.value)})
+                self._ham.mod_par(['grid', 'box_'+hamx_key, coord+'_max'],
+                                  {'value': str(cmax.value)})
+
+            # Generates temporary file
+            data_dump_file = tempfile.NamedTemporaryFile(prefix=hamx_key,
+                                                         suffix='.bin',
+                                                         dir=img.rc['temp_dir'])
+            # Dumps the data
+            (field_data.value).tofile(data_dump_file)
+
+            # Instructs Hammurabi to read the file
+            self._ham.mod_par(['fieldio', hamx_key],
+                              {'read': '1', 'filename': data_dump_file.name})
+            # Appends a reference to files list
+            self._field_dump_files.append(data_dump_file)
+
+        if self.verbose:
+            self._ham.print_par(['fieldio'])
+
+    def _clean_up_fields_on_disk(self):
+        """Removes any temporary field data dump files"""
+        while len(self._field_dump_files) > 0:
+            f = self._field_dump_files.pop()
+            f.close()
+
+    def __del__(self):
+        # Makes sure that if the simulator is removed,
+        # the files are also removed from the disk
+        self._clean_up_fields_on_disk()
