@@ -4,9 +4,9 @@ import imagine as img
 from imagine.simulators.simulator import Simulator
 from imagine.tools.icy_decorator import icy
 from hampyx import Hampyx
+import hampyx
 import astropy.units as u
-import tempfile
-
+import tempfile, os, os.path
 
 @icy
 class Hammurabi(Simulator):
@@ -17,30 +17,43 @@ class Hammurabi(Simulator):
     and its XML tree should be modified according to measurements
     without changing its base file.
 
+    If a `xml_path` is provided, it will be used as the base XML tree,
+    otherwise, hammurabiX's default 'params_template.xml' will be used.
+
+    :py:class:`Dummy` fields can be used to change the parameters of hammurabiX.
+    Other fields are temporarily saved to disk (using :py:data:`imagine.rc`
+    'temp_dir' directory) and loaded into hammurabi.
+
     Parameters
     ----------
     measurements : Measurements object
         IMAGINE defined dictionary of measured data.
-
     exe_path : string
         Absolute hammurabi executable path.
-
     xml_path : string
         Absolute hammurabi xml parameter file path.
     """
-    def __init__(self, measurements, xml_path, exe_path=None, verbose=False):
+    def __init__(self, measurements, xml_path=None, exe_path=None):
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
         self.exe_path = exe_path
-        self.xml_path = xml_path
+        if xml_path is not None:
+            self.xml_path = xml_path
+        else:
+            # Uses standard hammurabi template
+            hampydir = os.path.dirname(hampyx.__file__)
+            self.xml_path = os.path.join(hampydir, '../templates/params_template.xml')
+
+
         self.current_realization = -1
         # Initializes Hampyx
         self._ham = Hampyx(self.xml_path, self.exe_path)
+        # Sets Hampyx's working directory
+        self._ham.wk_dir = img.rc['temp_dir']
         # Makes the modifications required by measurements to the XML file
         self.initialize_ham_xml()
         # List of files containing evaluations of fields
         self._field_dump_files = []
-        self.verbose = verbose
 
     @property
     def simulated_quantities(self):
@@ -119,6 +132,8 @@ class Hammurabi(Simulator):
         """
         # This replaces the old `update_fields` method
         log.debug('@ hammurabi::_update_hammurabi_parameters')
+        if 'dummy' not in self.field_checklist:
+            return
 
         checklist = self.field_checklist['dummy']
         parameters = self.fields['dummy']
@@ -141,6 +156,8 @@ class Hammurabi(Simulator):
             self._dump_fields()
             # Runs Hammurabi
             self._ham()
+            # Cleans-up
+            self._clean_up_dumped_fields()
 
         # Adjusts the units (without copy) and returns
         return self._ham.sim_map[key] << self._units(key)
@@ -161,9 +178,7 @@ class Hammurabi(Simulator):
             raise ValueError
 
     def _dump_fields(self, use_rnd=False):
-        # Removes any previously dumped files from disk
-        self._clean_up_fields_on_disk()
-
+        """Dumps field data to disk as binnary files"""
         for field_type, field_data in self.fields.items():
             if field_type == 'thermal_electron_density':
                 if use_rnd:
@@ -208,16 +223,9 @@ class Hammurabi(Simulator):
             # Appends a reference to files list
             self._field_dump_files.append(data_dump_file)
 
-        if self.verbose:
-            self._ham.print_par(['fieldio'])
-
-    def _clean_up_fields_on_disk(self):
+    def _clean_up_dumped_fields(self):
         """Removes any temporary field data dump files"""
         while len(self._field_dump_files) > 0:
             f = self._field_dump_files.pop()
             f.close()
 
-    def __del__(self):
-        # Makes sure that if the simulator is removed,
-        # the files are also removed from the disk
-        self._clean_up_fields_on_disk()

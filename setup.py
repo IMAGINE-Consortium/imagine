@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name="imagine",
-      version="2.0.0",
+      version="2.0.0_alpha",
       description="Intestellar MAny field inference enGINE",
       license="GPLv3",
       url="https://github.com/IMAGINE-Consortium/imagine/",

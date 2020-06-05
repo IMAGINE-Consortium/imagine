@@ -21,4 +21,5 @@ from .simulators.hammurabi import Hammurabi
 
 # Environmental variables handling will be here
 import tempfile
-rc = {'temp_dir': tempfile.gettempdir()}
+rc = {'temp_dir_obj': tempfile.TemporaryDirectory(prefix='imagine_')}
+rc['temp_dir'] = rc['temp_dir_obj'].name
