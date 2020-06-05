@@ -99,6 +99,7 @@ class Simulator(object):
             Index of the realisation of the fields that is being registred
         """
         self.fields = {}; self.grid = None; self.grids = None
+        self.field_checklist = {}; self.controllist = {}
 
         sorted_field_list = self._sort_field_dependencies(field_list)
 

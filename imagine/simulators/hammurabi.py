@@ -211,7 +211,7 @@ class Hammurabi(Simulator):
                                   {'value': str(cmax.value)})
 
             # Generates temporary file
-            data_dump_file = tempfile.NamedTemporaryFile(prefix=hamx_key,
+            data_dump_file = tempfile.NamedTemporaryFile(prefix=hamx_key+'_',
                                                          suffix='.bin',
                                                          dir=img.rc['temp_dir'])
             # Dumps the data
