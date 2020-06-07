@@ -12,7 +12,7 @@ class ConstantMagneticField(MagneticField):
     'Bx', 'By', 'Bz', which correspond to the fixed components
     :math:`B_x`, :math:`B_x` and :math:`B_z`.
     """
-    field_name = 'constantB'
+    field_name = 'constant_B'
     stochastic_field = False
 
     @property
@@ -32,7 +32,24 @@ class ConstantMagneticField(MagneticField):
         B[:,:,:,2] = self.parameters['Bz']*np.ones(self.grid.shape)
         return B
 
+@icy
+class constantThermalElectrons(ThermalElectronDensityField):
+    """
+    Constant magnetic field
 
+    The field parameters are:
+    'ne', the number density of thermal electrons
+    """
+    field_name = 'constant_TE'
+    stochastic_field = False
+    
+    @property
+    def field_checklist(self):
+        return {'ne': None}
+    
+    def compute_field(self, seed):
+        return np.ones(self.data_shape)*self.parameters['ne']
+    
 @icy
 class ExponentialThermalElectrons(ThermalElectronDensityField):
     """

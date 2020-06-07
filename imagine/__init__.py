@@ -18,3 +18,8 @@ from .observables import dataset
 
 # customized modules
 from .simulators.hammurabi import Hammurabi
+
+# Environmental variables handling will be here
+import tempfile
+rc = {'temp_dir_obj': tempfile.TemporaryDirectory(prefix='imagine_')}
+rc['temp_dir'] = rc['temp_dir_obj'].name

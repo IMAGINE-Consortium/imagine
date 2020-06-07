@@ -1,6 +1,6 @@
-from imagine.tools.icy_decorator import icy
 from imagine import Measurements, Simulations
 import numpy as np
+
 
 class Simulator(object):
     """
@@ -22,8 +22,11 @@ class Simulator(object):
     grid : imagine.Basegrid
         Grid object where the fields were evaluated (NB if a common grid is not being
         used, this is set to None
-    fields : list
-        List of Fields
+    grids: imagine.Basegrid
+        Grid objects for each individual field None if common grid is being used)
+    fields : dict
+        Dictionary containing field types as keys and the sum of evaluated fields
+        as values
     observables : list
         List of Observable keys
     output_units : astropy.units.Unit
@@ -62,8 +65,7 @@ class Simulator(object):
                 self.observables.append(key)
                 self.output_coords[key] = measurements[key].coords
                 self.output_units[key] = measurements[key].unit
-        assert len(self.observables)>0, 'No valid observable was requested!'
-
+        assert len(self.observables) > 0, 'No valid observable was requested!'
 
     @property
     def ensemble_size(self):
@@ -74,7 +76,7 @@ class Simulator(object):
         Checks whether fields have consistent ensemble size and stores this information
         """
         set_of_field_sizes = {f.ensemble_size for f in field_list}
-        assert len(set_of_field_sizes)==1, 'All fields should have the same ensemble size'
+        assert len(set_of_field_sizes) == 1, 'All fields should have the same ensemble size'
         self._ensemble_size = set_of_field_sizes.pop()
 
     def prepare_fields(self, field_list, i):
@@ -96,7 +98,8 @@ class Simulator(object):
         i : int
             Index of the realisation of the fields that is being registred
         """
-        self.fields = {}; self.grid = None
+        self.fields = {}; self.grid = None; self.grids = None
+        self.field_checklist = {}; self.controllist = {}
 
         sorted_field_list = self._sort_field_dependencies(field_list)
 
@@ -106,7 +109,7 @@ class Simulator(object):
 
                 # Checks whether the grid_type is correct
                 if ((field.grid is not None) and
-                    (self.allowed_grid_types is not None)):
+                   (self.allowed_grid_types is not None)):
                     assert field.grid.grid_type in self.allowed_grid_types, 'Grid type not allowed'
 
                 # Checks whether the grids are consistent
@@ -122,7 +125,6 @@ class Simulator(object):
                         assert self.grids[field.field_type] is field.grid, 'Fields of the same type must have the same grid'
                     else:
                         self.grids[field.field_type] = field.grid
-
 
                 # Organises dependencies
                 dependencies = {}
@@ -150,7 +152,7 @@ class Simulator(object):
                 elif field.field_type != 'dummy':
                     # If multiple fields of the same type are present, sums them up
                     self.fields[field.field_type] = (self.fields[field.field_type]
-                                                     + field.get_data(i, dependencies) )
+                                                     + field.get_data(i, dependencies))
                     # NB the '+=' has *not* been used to changes in the original data
                     # due to its 'inplace' nature
                 else:
@@ -169,7 +171,7 @@ class Simulator(object):
         # Makes sure all required fields were included
         assert set(self.required_field_types) <= set(self.fields.keys()), 'Missing required field'
 
-    def _sort_field_dependencies(self,fields):
+    def _sort_field_dependencies(self, fields):
         """
         Reorders a fields list so that dependencies are evaluated before
         the dependent fields.
@@ -188,7 +190,7 @@ class Simulator(object):
         sorted_fields = self._solve_dependencies(independent_fields, dependencies)
         return sorted_fields
 
-    def _find_dependencies(self,fields):
+    def _find_dependencies(self, fields):
         """
         Reads a list of Fields and constructs a list of independent fields and dictionary
         containing all field depenencies. Dependencies on 'field_type' are converted to
@@ -218,11 +220,11 @@ class Simulator(object):
             fdep = field.dependencies_list
 
             if ftype not in field_types:
-                field_types[ftype] = {type(field)}
+                field_types[ftype] = {fclass}
             else:
-                field_types[ftype].add(type(field))
+                field_types[ftype].add(fclass)
 
-            if len(fdep)==0:
+            if len(fdep) == 0:
                 independent_fields_list.append(field)
             else:
                 if field not in dependencies:
@@ -233,7 +235,7 @@ class Simulator(object):
         # Subsititutes any field type string by field classes
         for k, deps in dependencies.items():
             for dep in tuple(deps):
-                if isinstance(dep,str):
+                if isinstance(dep, str):
                     deps.remove(dep)
                     deps.update(field_types[dep])
 
@@ -262,9 +264,9 @@ class Simulator(object):
         L : list
             Sorted list of field object
         """
-        L = [] # Empty list that will contain the sorted elements
+        L = []  # Empty list that will contain the sorted elements
         if overwrite:
-            S = independent_fields # Set of all nodes with no incoming edge
+            S = independent_fields  # Set of all nodes with no incoming edge
             deps = dependencies
         else:
             from copy import deepcopy
@@ -272,9 +274,9 @@ class Simulator(object):
             deps = deepcopy(dependencies)
 
         counter = 0
-        while len(S)>0:
-            counter+=1
-            assert counter<max_iter, 'Error: too many iterations'
+        while len(S) > 0:
+            counter += 1
+            assert counter < max_iter, 'Error: too many iterations'
 
             # Removes a node n from S
             n = S.pop()
@@ -290,11 +292,11 @@ class Simulator(object):
                     edges.remove(type(n))
                 # If there are no edges, add it to the
                 # independent nodes list
-                if len(edges)==0:
+                if len(edges) == 0:
                     S.append(m)
                     del deps[m]
 
-        assert len(deps)==0, 'There is a cyclical Field dependency!'
+        assert len(deps) == 0, 'There is a cyclical Field dependency!'
 
         return L
 
@@ -379,5 +381,5 @@ class Simulator(object):
                 sim = self.simulate(key=key, coords_dict=self.output_coords[key],
                                     realization_id=i,
                                     output_units=self.output_units[key])
-                sims.append(key, sim[np.newaxis,:].to(self.output_units[key]))
+                sims.append(key, sim[np.newaxis, :].to(self.output_units[key]))
         return sims

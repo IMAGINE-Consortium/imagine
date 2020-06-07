@@ -10,6 +10,25 @@ class BrndES(DummyField):
     """
     field_name = 'breg_wmap'
 
+    def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
+                 ensemble_seeds=None, dependencies={}):
+        super().__init__(grid, parameters, ensemble_size, ensemble_seeds, dependencies)
+        # Default controllist
+        self._controllist = {'cue': (['magneticfield', 'random'], {'cue': '1'}),
+                             'type': (['magneticfield', 'random'], {'type': 'global'}),
+                             'method': (['magneticfield', 'random', 'global'], {'type': 'es'})}
+        
+    def set_grid_size(self, nx=None, ny=None, nz=None):
+        """
+        Changes the size of the grid used for the evaluation of the random field
+        """
+        if nx is not None:
+            self._controllist['box_brnd_nx'] = (['grid', 'box_brnd', 'nx'],{'value': str(nx)})
+        if ny is not None:
+            self._controllist['box_brnd_ny'] = (['grid', 'box_brnd', 'ny'],{'value': str(ny)})
+        if nz is not None:
+            self._controllist['box_brnd_nz'] = (['grid', 'box_brnd', 'nz'],{'value': str(nz)})        
+        
     @property
     def field_checklist(self):
         """
@@ -32,10 +51,7 @@ class BrndES(DummyField):
         """
         Hammurabi XML locations of logical parameters
         """
-        controllist = {'cue': (['magneticfield', 'random'], {'cue': '1'}),
-                       'type': (['magneticfield', 'random'], {'type': 'global'}),
-                       'method': (['magneticfield', 'random', 'global'], {'type': 'es'})}
-        return controllist
+        return self._controllist
 
 
 @icy
