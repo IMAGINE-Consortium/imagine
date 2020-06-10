@@ -1,11 +1,11 @@
 import logging as log
-import os
+import os, os.path
 import pymultinest
 from imagine.pipelines.pipeline import Pipeline
 from imagine.tools.icy_decorator import icy
+import imagine as img
+import tempfile
 
-
-@icy
 class MultinestPipeline(Pipeline):
     """
     Initialises Bayesian analysis pipeline with pyMultinest
@@ -21,6 +21,22 @@ class MultinestPipeline(Pipeline):
     def sampler_supports_mpi(self):
         return True
 
+    def __init__(self, simulator, factory_list, likelihood, ensemble_size=1,
+                 chains_directory=None):
+        super().__init__(simulator, factory_list, likelihood, ensemble_size)
+        
+        if chains_directory is not None:
+            self._chains_dir_path = chains_directory
+
+        else:
+            # Creates a safe temporary directory in the current working directory
+            self._chains_dir_obj = tempfile.TemporaryDirectory(prefix='imagine_chains_', 
+                                                               dir=os.getcwd())
+            # Note: this dir is automatically deleted together with the simulator object 
+            self._chains_dir_path = self._chains_dir_obj.name
+        
+        self._chains_prefix = os.path.join(self._chains_dir_path,'')
+            
     def __call__(self, **kwargs):
         """
         Returns
@@ -31,16 +47,11 @@ class MultinestPipeline(Pipeline):
             samples (equal weighted posterior)
         """
         log.debug('@ multinest_pipeline::__call__')
-
+        
         # Checks whether a base name for multinest output files was specified
         if 'outputfiles_basename' not in self._sampling_controllers:
             # If not, uses default location
-            self._sampling_controllers['outputfiles_basename'] = 'chains/imagine_'
-            os.makedirs('chains', exist_ok=True)
-
-        # Makes sure that the chains directory exists
-        basedir = os.path.split(self._sampling_controllers['outputfiles_basename'])[0]
-        assert os.path.isdir(basedir)
+            self._sampling_controllers['outputfiles_basename'] = self._chains_prefix
 
         # Runs pyMultinest
         self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
