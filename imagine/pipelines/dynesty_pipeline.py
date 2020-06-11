@@ -17,6 +17,8 @@ class DynestyPipeline(Pipeline):
 
     def __call__(self, dynamic=True, **kwargs):
         """
+        Runs the IMAGINE pipeline using the Dynesty sampler
+        
         Parameters
         ----------
         dynamic : bool

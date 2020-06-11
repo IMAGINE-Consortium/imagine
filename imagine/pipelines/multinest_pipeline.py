@@ -15,7 +15,6 @@ class MultinestPipeline(Pipeline):
     Note
     ----
     Instances of this class are callable
-
     """
     @property
     def sampler_supports_mpi(self):
@@ -39,6 +38,8 @@ class MultinestPipeline(Pipeline):
 
     def __call__(self, **kwargs):
         """
+        Runs the IMAGINE pipeline using the MultiNest sampler
+        
         Returns
         -------
         results : dict

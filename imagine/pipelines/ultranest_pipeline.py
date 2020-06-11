@@ -15,7 +15,6 @@ class UltranestPipeline(Pipeline):
     Note
     ----
     Instances of this class are callable
-
     """
     @property
     def sampler_supports_mpi(self):
@@ -23,6 +22,8 @@ class UltranestPipeline(Pipeline):
 
     def __call__(self, **kwargs):
         """
+        Runs the IMAGINE pipeline using the UltraNest sampler
+        
         Returns
         -------
         results : dict

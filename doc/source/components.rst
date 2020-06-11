@@ -556,6 +556,8 @@ Pipeline
 --------
 
 
+.. literalinclude:: ../../imagine/templates/pipeline_template.py
+
 
 
 .. _Disclaimer:
