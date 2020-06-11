@@ -14,7 +14,6 @@ comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-@icy
 class Pipeline(object):
     """
     Base class used for for initialing Bayesian analysis pipeline
@@ -29,12 +28,16 @@ class Pipeline(object):
     likelihood_rescaler : double
         Rescale log-likelihood value
     random_type : str
-        'free',
-            by default thread-time dependent seed;
-        'controllable',
-            each simulator run use seed generated from higher level seed;
-        'fixed',
-            take a list of fixed integers as seed for all simulator runs
+        If set to 'fixed', the exact same set of ensemble seeds will be used for
+        the evaluation of all fields, generated using the `master_seed`.
+        If set to 'controllable', each individual field will get their own set of
+        ensemble fields, but multiple runs will lead to the same results, as
+        they are based on the same `master_seed`.
+        If set to 'free', every time the pipeline is run, the `master_seed` is
+        reset to a different value, and the ensemble seeds for each individual
+        field are drawn based on this.
+    master_seed : int
+        Master seed used by the random number generators
 
 
     Parameters
@@ -60,20 +63,24 @@ class Pipeline(object):
         self.ensemble_size = ensemble_size
         self.sampling_controllers = dict()
         self.sample_callback = False
+
+        self.distribute_ensemble = True
+
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
-        self.distribute_ensemble = True
-        # default ensemble seeds, corresponding to 'free' random type
-        self.ensemble_seeds = None
-        # tracer used in 'controllable' random type
-        self.seed_tracer = int(0)
-        # random type
-        self.random_type = 'free'
-        # checking likelihood threshold
+        # Checking likelihood threshold
         self.check_threshold = False
         self.likelihood_threshold = 0.
-        # Place holder
-        self.dynesty_parameter_dict = None
+
+        # This changes on every execution is random_type=='free'
+        self.master_seed = 1
+        self.random_type = 'controllable'
+        # The ensemble_seeds are fixed in the case of the 'fixed' random_type;
+        # or are regenerated on each Field evaluation, in the 'free' and
+        # 'controllable' cases
+        self.ensemble_seeds = None
+
+        # Place holders
         self.sampler = None
         self.results = None
         self._evidence = None
@@ -81,6 +88,7 @@ class Pipeline(object):
         self._posterior_summary = None
         self._samples_array = None
         self._samples = None
+
 
     @property
     def active_parameters(self):
@@ -335,7 +343,7 @@ class Pipeline(object):
     @property
     def distribute_ensemble(self):
         """
-        If True (default), whenever the sampler requires a likelihood evaluation,
+        If True, whenever the sampler requires a likelihood evaluation,
         the ensemble of stochastic fields realizations is distributed among
         all the nodes.
 
@@ -374,16 +382,19 @@ class Pipeline(object):
         except AttributeError:
             self._sampling_controllers = pp_dict
 
-    @property
-    def seed_tracer(self):
-        """Used in 'controllable' random_type"""
-        return self._seed_tracer
+    def tidy_up(self):
+        """
+        Resets internal state before a new run
+        """
+        self.results = None
+        self._evidence = None
+        self._evidence_err = None
+        self._posterior_summary = None
+        self._samples_array = None
+        self._samples = None
+        self._randomness()
 
-    @seed_tracer.setter
-    def seed_tracer(self, seed_tracer):
-        assert isinstance(seed_tracer, int)
-        self._seed_tracer = seed_tracer
-        np.random.seed(self._seed_tracer)
+
 
     def _randomness(self):
         """
@@ -391,17 +402,20 @@ class Pipeline(object):
         isolating this process for convenience of testing
         """
         log.debug('@ pipeline::_randomness')
-        # prepare ensemble seeds
+
+        assert self.random_type in ('free', 'controllable', 'fixed')
+
         if self.random_type == 'free':
-            assert(self.ensemble_seeds is None)
-        elif self.random_type == 'controllable':
-            assert isinstance(self._seed_tracer, int)
-            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
-        elif self.random_type == 'fixed':
-            np.random.seed(self._seed_tracer)
+            # Refreshes the master seed
+            self.master_seed = np.random.randint(0, 2**32)
+
+        # Updates numpy random accordingly
+        np.random.seed(self.master_seed)
+
+        if self.random_type == 'fixed':
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
         else:
-            raise ValueError('unsupport random type')
+            self.ensemble_seeds = None
 
 
     def _core_likelihood(self, cube):
@@ -425,11 +439,10 @@ class Pipeline(object):
             return np.nan_to_num(-np.inf)
         # return active variables from pymultinest cube to factories
         # and then generate new field objects
-        head_idx = int(0)
-        tail_idx = int(0)
+        head_idx = 0
+        tail_idx = 0
         field_list = tuple()
-        # random seeds manipulation
-        self._randomness()
+
         # the ordering in factory list and variable list is vital
         for factory in self._factory_list:
             variable_dict = dict()
@@ -443,6 +456,7 @@ class Pipeline(object):
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
         assert(head_idx == len(self._active_parameters))
+
         observables = self._simulator(field_list)
         # apply mask
         observables.apply_mask(self.likelihood.mask_dict)

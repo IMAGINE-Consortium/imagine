@@ -44,20 +44,21 @@ class TestSimulator(Simulator):
 
         Bpara = self.fields['magnetic_field'][:,:,:,self.B_axis]
         ne = self.fields['thermal_electron_density']
-        x = self.grid.x.to_value(u.kpc)
-        y = self.grid.y.to_value(u.kpc)
-        z = self.grid.z.to_value(u.kpc)
+        x = self.grid.x[:,0,0].to_value(u.kpc)
+        y = self.grid.y[0,:,0].to_value(u.kpc)
+        z = self.grid.z[0,0,:].to_value(u.kpc)
 
         fd = (Bpara*ne).to_value(output_units)
-
+        
         # Converts the grids to a format compatible with the interpolator
         # (comment: this is a bit silly, but what is the native numpy alternative?)
-        fd_interp = RegularGridInterpolator(points=(x[:,0,0],y[0,:,0],z[0,0,:]),
+        fd_interp = RegularGridInterpolator(points=(x, y, z),
                                             values=fd, method='nearest')
 
         interp_points = np.array([coords_dict[c].to_value(u.kpc)
                                   for c in ('x','y','z')]).T
 
-        results = fd_interp(interp_points)*output_units
+        with np.errstate(invalid='ignore', divide='ignore'):
+            results = fd_interp(interp_points)*output_units
 
         return results

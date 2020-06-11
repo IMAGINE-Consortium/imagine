@@ -34,24 +34,25 @@ class DynestyPipeline(Pipeline):
         """
         log.debug('@ dynesty_pipeline::__call__')
 
-        if self.sampler is None:
-            # init dynesty
-            if dynamic:
-                dynesty_sampler = dynesty.DynamicNestedSampler
-            else:
-                dynesty_sampler = dynesty.NestedSampler
+        # Resets internal state
+        self.tidy_up()
 
-            self.sampler = dynesty_sampler(self._likelihood_function,
-                                           self.prior_transform,
-                                           len(self._active_parameters),
-                                           **self._sampling_controllers)
+        if dynamic:
+            dynesty_sampler = dynesty.DynamicNestedSampler
+        else:
+            dynesty_sampler = dynesty.NestedSampler
+
+        self.sampler = dynesty_sampler(self._likelihood_function,
+                                       self.prior_transform,
+                                       len(self._active_parameters),
+                                       **self._sampling_controllers)
 
         self.sampler.run_nested(**kwargs)
 
-        results = self.sampler.results
+        self.results = self.sampler.results
 
-        self._samples_array = results['samples']
-        self._evidence = results['logz']
-        self._evidence_err = results['logzerr']
+        self._samples_array = self.results['samples']
+        self._evidence = self.results['logz']
+        self._evidence_err = self.results['logzerr']
 
         return results
