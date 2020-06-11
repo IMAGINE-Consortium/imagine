@@ -32,25 +32,27 @@ class UltranestPipeline(Pipeline):
         """
         log.debug('@ ultranest_pipeline::__call__')
 
-        with np.errstate(invalid='ignore', divide='ignore'):
-            # Runs pyMultinest
-            self.sampler = ultranest.ReactiveNestedSampler(
-                param_names=list(self.active_parameters),
-                loglike=self._likelihood_function,
-                transform=self.prior_transform,
-                #resume='subfolder',
-                #run_num=None,
-                #log_dir=None,
-                #num_test_samples=2,
-                #draw_multiple=True,
-                #num_bootstraps=30,
-                vectorized=False
-                )
+        # Resets internal state
+        self.tidy_up()
 
-            kwargs_actual = self.sampling_controllers.copy()
-            kwargs_actual.update(kwargs)
+        # Runs pyMultinest
+        self.sampler = ultranest.ReactiveNestedSampler(
+            param_names=list(self.active_parameters),
+            loglike=self._likelihood_function,
+            transform=self.prior_transform,
+            #resume='subfolder',
+            #run_num=None,
+            #log_dir=None,
+            #num_test_samples=2,
+            #draw_multiple=True,
+            #num_bootstraps=30,
+            vectorized=False)
 
-            self.results = self.sampler.run(**kwargs_actual)
+        kwargs_actual = {'viz_callback': False}
+        kwargs_actual.update(self.sampling_controllers)
+        kwargs_actual.update(kwargs)
+
+        self.results = self.sampler.run(**kwargs_actual)
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logz']
