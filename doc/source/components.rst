@@ -37,8 +37,8 @@ parameter ranges and default values, they translate the dimensionless parameters
 used by the sampler (always in the interval :math:`[0,1]`) to physical
 parameters, they store `Priors`_ associated with each parameter of that *field*.
 
-To convert ones own model into a IMAGINE-compatible field, one must create
-subclass one of the base classes available the
+To convert ones own model into a IMAGINE-compatible field, one must create a
+subclass of one of the base classes available the
 :py:mod:`imagine.fields.base_fields`, most likely using one of the available
 templates to write a *wrapper* to the original code which are discussed in the
 sections below.
@@ -86,7 +86,7 @@ The design of any field is done writing a *subclass* of one of the classes in
 :py:class:`imagine.GeneralField <imagine.fields.field.GeneralField>`
 that overrides the method
 :py:meth:`compute_field(seed) <imagine.fields.field.GeneralField.compute_field>`,
-using it to computate the field on each spatial point.
+using it to compute the field on each spatial point.
 For this, the coordinate grid on which the field should
 be evaluated can be accessed from
 :py:data:`self.grid <imagine.fields.field.GeneralField.grid>`
@@ -266,8 +266,9 @@ system which affects the observations (for instance, some global property of
 the ISM or, if modelling an external galaxy, the position of the galaxy).
 
 Another common use of dummy fields is when a field is generated at runtime
-*by the simulator*. One example is the range built-in fields available in
-Hammurabi: instead of requesting IMAGINE to produce these fields and hand it to
+*by the simulator*. One example are the built-in fields available in
+Hammurabi: instead of requesting IMAGINE to produce one of these fields and
+hand it to
 Hammurabi to compute the associated synchrotron observables, one can use dummy
 fields to request Hammurabi to generate these fields internally for a given
 choice of parameters.
@@ -279,8 +280,7 @@ Simulator *breaks the modularity of IMAGINE*, and it becomes impossible to
 check the validity of the results plugging the same field on a different
 Simulator. Thus, use this with care!
 
-
-A dummy field can be implemented subclassing
+A dummy field can be implemented by subclassing
 :py:class:`imagine.fields.base_fields.DummyField` as shown bellow.
 
 .. literalinclude:: ../../imagine/templates/dummy_field_template.py
@@ -488,9 +488,9 @@ There are two pre-implemented subclasses within IMAGINE:
  * :py:class:`imagine.likelihoods.simple_likelihood.SimpleLikelihood`:
    this is the traditional method, which is like a :math:`\chi^2` based on the
    covariance matrix of the measurements (i.e., noise).
- * :py:class:`imagine.likelihoods.simple_likelihood.EnsembleLikelihood`:
-    combines covariance matrices from measurements with the expected galactic
-    variance from models that include a stochastic component.
+ * :py:class:`imagine.likelihoods.ensemble_likelihood.EnsembleLikelihood`:
+   combines covariance matrices from measurements with the expected galactic
+   variance from models that include a stochastic component.
 
 Likelihoods need to be initialized before running the pipeline, and require measurements (at the front end).  In most cases, data sets will not have covariance matrices but only noise values, in which case the covariance matrix is only the diagonal.
 
@@ -498,7 +498,7 @@ Likelihoods need to be initialized before running the pipeline, and require meas
 
   likelihood = EnsembleLikelihood(data, covariancematrix)
 
-The optional input argument covariancematrix does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
+The optional input argument `covariancematri`x does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
 
 If the EnsembleLikelihood is used, then the sampler will be run multiple times at each point in likelihood space to create an ensemble of simulated observables.  The covariance of these observables can then be included in the likelihood quantitatively so that the comparison of the measured observables
 
