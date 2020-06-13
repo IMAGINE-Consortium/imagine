@@ -312,7 +312,7 @@ class Pipeline(object):
             The modified cube
         """
         cube_rtn = np.empty_like(cube)
-        for i, parameter in enumerate(self.priors):
+        for i, parameter in enumerate(self.active_parameters):
             cube_rtn[i] = self.priors[parameter].pdf(cube_rtn[i])
         return cube_rtn
 
@@ -336,7 +336,7 @@ class Pipeline(object):
         cube
             The modified cube
         """
-        for i, parameter in enumerate(self.priors):
+        for i, parameter in enumerate(self.active_parameters):
             cube[i] = self.priors[parameter](cube[i])
         return cube
 
