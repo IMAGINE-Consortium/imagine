@@ -1,3 +1,6 @@
+# Global configuration and settings
+from .tools.config import rc
+
 # pipeline building blocks
 from .likelihoods.likelihood import Likelihood
 from .likelihoods.ensemble_likelihood import EnsembleLikelihood
@@ -19,7 +22,3 @@ from .observables import dataset
 # customized modules
 from .simulators.hammurabi import Hammurabi
 
-# Environmental variables handling will be here
-import tempfile
-rc = {'temp_dir_obj': tempfile.TemporaryDirectory(prefix='imagine_')}
-rc['temp_dir'] = rc['temp_dir_obj'].name
