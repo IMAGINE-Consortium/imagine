@@ -26,7 +26,7 @@ we have to collect pieces from all the computing nodes.
 import numpy as np
 from copy import deepcopy
 import logging as log
-from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor, mpi_global
+from imagine.tools.parallel_ops import pmean, pshape, prosecutor, pglobal
 from imagine.tools.icy_decorator import icy
 import astropy.units as u
 
@@ -71,7 +71,7 @@ class Observable(object):
         Shape of the GLOBAL array, i.e. considering all processors
         (`numpy.ndarray`, read-only).
         """
-        return mpi_shape(self._data)  # estimate shape from all nodes
+        return pshape(self._data)  # estimate shape from all nodes
 
     @property
     def global_data(self):
@@ -80,7 +80,7 @@ class Observable(object):
         Note that only master node hosts the global data,
         while slave nodes hosts None.
         """
-        return mpi_global(self.data)
+        return pglobal(self.data)
 
     @property
     def size(self):
@@ -98,7 +98,7 @@ class Observable(object):
             assert (self._data.shape[0] == 1)  # single realization
             return self._data  # since each node has a full copy
         elif (self._dtype == 'simulated'):
-            return mpi_mean(self._data)  # calculate mean from all nodes
+            return pmean(self._data)  # calculate mean from all nodes
         else:
             raise TypeError('unsupported data type')
 
@@ -166,7 +166,7 @@ class Observable(object):
             new_data = new_data.value
 
         if isinstance(new_data, np.ndarray):
-            mpi_prosecutor(new_data)
+            prosecutor(new_data)
             if (self._rw_flag):  # rewriting
                 self._data = np.copy(new_data)
                 self._rw_flag = False

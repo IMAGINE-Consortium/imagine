@@ -20,7 +20,6 @@ def mpi_arrange(size):
 
     Parameters
     ----------
-
     size : integer (positive)
         The total size of target to be distributed.
         It can be a row size or a column size.
