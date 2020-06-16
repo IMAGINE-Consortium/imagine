@@ -7,6 +7,7 @@ from imagine.simulators.simulator import Simulator
 from imagine.tools.random_seed import ensemble_seed_generator
 from imagine.tools.icy_decorator import icy
 import imagine.tools.misc as misc
+from imagine import rc
 from astropy.table import QTable
 
 from mpi4py import MPI
@@ -64,7 +65,7 @@ class Pipeline(object):
         self.sampling_controllers = dict()
         self.sample_callback = False
 
-        self.distribute_ensemble = True
+        self.distribute_ensemble = rc['pipeline_distribute_ensemble']
 
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
@@ -73,7 +74,7 @@ class Pipeline(object):
         self.likelihood_threshold = 0.
 
         # This changes on every execution is random_type=='free'
-        self.master_seed = 1
+        self.master_seed = rc['pipeline_default_seed']
         self.random_type = 'controllable'
         # The ensemble_seeds are fixed in the case of the 'fixed' random_type;
         # or are regenerated on each Field evaluation, in the 'free' and
