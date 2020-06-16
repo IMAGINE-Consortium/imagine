@@ -20,6 +20,7 @@ import imagine as img
 import imagine.fields.test_field as testFields
 from imagine.simulators.test_simulator import TestSimulator
 
+from mpi4py import MPI
 
 def prepare_mock_dataset(a0=3., b0=6., size=10,
                          error=0.1, seed=233):
@@ -117,9 +118,13 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
 
 if __name__ == '__main__':
 
+
+    comm = MPI.COMM_WORLD
+    mpirank = comm.Get_rank()
+    mpisize = comm.Get_size()
+
     output_file_plot = 'basic_pipeline_corner.pdf'
     output_text = 'basic_pipeline_results.txt'
-
 
     # True values of the parameters
     a0=3.; b0=6
@@ -136,7 +141,7 @@ if __name__ == '__main__':
     one_d_grid = img.UniformGrid(box=[[0,2*np.pi]*u.kpc,
                                       [0,0]*u.kpc,
                                       [0,0]*u.kpc],
-                                resolution=[30,1,1])
+                                resolution=[100,1,1])
 
     # Prepares the thermal electron field factory
     ne_factory = testFields.CosThermalElectronDensity_Factory(grid=one_d_grid)
@@ -160,22 +165,34 @@ if __name__ == '__main__':
     likelihood = img.EnsembleLikelihood(measurements, covariances)
 
     # Defines the pipeline using the UltraNest sampler, giving it the required elements
-    pipeline = img.UltranestPipeline(simer, factory_list, likelihood, ensemble_size=200)
+    pipeline = img.UltranestPipeline(simer, factory_list, likelihood, ensemble_size=256)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 250,
-                                    'Lepsilon': 0.1,
-                                    'dlogz': 0.5,
-                                    'min_num_live_points': 100}
+    #pipeline.sampling_controllers = {'max_ncalls': 100,}
+                                    #'Lepsilon': 0.1,
+                                    #'dlogz': 0.5,
+                                    #'min_num_live_points': 100}
 
     # RUNS THE PIPELINE
     results = pipeline()
 
-    # Reports the evidence
-    with open(output_text,'w+') as f:
-        f.write('log evidence: {}'.format( pipeline.log_evidence))
-        f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
+    if mpirank == 0:
+        # Reports the evidence (to file)
+        with open(output_text,'w+') as f:
+            f.write('log evidence: {}'.format( pipeline.log_evidence))
+            f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
-    # Reports the posterior
-    plot_results(pipeline, [a0,b0], output_file=output_file_plot)
+        # Reports the posterior
+        plot_results(pipeline, [a0,b0], output_file=output_file_plot)
 
+        # Prints setup
+        print('\nRC used:', img.rc)
+        print('Seed used:', pipeline.master_seed)
+        # Prints some results
+        print('\nEvidence found:', pipeline.log_evidence, '±', pipeline.log_evidence_err)
+        print('\nParameters summary:')
+        for parameter in pipeline.active_parameters:
+            print(parameter)
+            constraints = pipeline.posterior_summary[parameter]
+            for k in ['median','errup','errlo']:
+                print('\t', k, constraints[k])

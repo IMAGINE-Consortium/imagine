@@ -12,7 +12,7 @@ import os
 rc = {'temp_dir': None,
       'distributed_arrays': False,
       'pipeline_default_seed': 1,
-      'pipeline_distribute_ensemble': True}
+      'pipeline_distribute_ensemble': False}
 
 
 def _str_to_python(v):
