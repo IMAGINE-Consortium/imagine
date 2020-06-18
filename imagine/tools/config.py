@@ -3,7 +3,7 @@ This module is responsible for setting the `rc` configuration variables.
 
 These can be accessed and modified using the
 :py:data:`imagine.rc <imagine.config.rc>` dictionary or setting the
-corresponding environment variables (named 'IMAGINE_'+RC_VAR_NAME).
+corresponding environment variables (named 'IMAGINE\_'+RC_VAR_NAME).
 """
 import tempfile
 import os
