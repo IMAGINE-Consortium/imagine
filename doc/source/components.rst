@@ -456,7 +456,6 @@ Measurements, Simulations and Covariances
 
 .. _ObservableDictionaries:
 
---
 
 
 
@@ -498,7 +497,7 @@ Likelihoods need to be initialized before running the pipeline, and require meas
 
   likelihood = EnsembleLikelihood(data, covariancematrix)
 
-The optional input argument `covariancematri`x does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
+The optional input argument `covariancematrix` does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
 
 If the EnsembleLikelihood is used, then the sampler will be run multiple times at each point in likelihood space to create an ensemble of simulated observables.  The covariance of these observables can then be included in the likelihood quantitatively so that the comparison of the measured observables
 
@@ -555,6 +554,57 @@ requirements can be achieved using::
 Pipeline
 --------
 
+The final building block of an IMAGINE pipeline is the **Pipline** object.
+When working on a problem with IMAGINE one will always go through the following
+steps:
+
+  1. preparing a list of the :ref:`field factories <Field Factory>` which
+  define  the theoretical models one wishes to constrain and specifying any
+  :ref:`priors <Priors>`;
+
+  2. preparing a :ref:`measurements <ObservableDictionaries>` dictionary, with the
+  observational data to be used for the inference; and
+
+  3. initializing a :ref:`likelihood <Likelihood>` object, which defines how the likelihood
+  function should be estimated;
+
+once this is done, one can *supply all these* to a **Pipeline** object, which
+will sample the :ref:`posterior distribution <posterior>` and estimate the
+:ref:`evidence <evidence>`.  This can be done in the following way::
+
+    # Initialises the pipeline
+    pipeline = img.UltranestPipeline(simulator=my_simulator,
+                                     factory_list=my_factory_list,
+                                     likelihood=my_likelihood,
+                                     ensemble_size=my_ensemble_size_choice)
+    # Runs the pipeline
+    _ = pipeline()
+
+
+After running, the results can be accessed through the attributes of the
+:py:obj:`Pipeline <imagine.pipelines.pipeline.Pipeline>` object (e.g.
+:py:data:`pipeline.samples <imagine.pipelines.pipeline.Pipeline.samples>`,
+which contains the parameters values of the samples produced in the run).
+
+But what exactly is the Pipeline? The
+:py:class:`Pipeline <imagine.pipelines.pipeline.Pipeline>` base class takes
+care of interfacing between all the different IMAGINE components and sets the
+scene so that a Monte Carlo **sampler** can explore the parameter space and compute the
+results (i.e. posterior and evidence).
+
+Different samplers are implemented as sub-classes of the Pipeline
+There are 3 samplers included in IMAGINE standard distribution (alternatives
+can be found in some of the
+`IMAGINE Consortium <https://github.com/IMAGINE-Consortium>`_ repositories),
+these are:
+
+ * :py:class:`UltranestPipeline`
+ * :py:class:`MultinestPipeline`
+ * :py:class:`DynestyPipeline`
+
+One can include a new *sampler* in IMAGINE by creating a sub-class of
+:py:class:`imagine.Pipeline <imagine.pipelines.pipeline.Pipeline>`.
+The following template illustrates this procedure:
 
 .. literalinclude:: ../../imagine/templates/pipeline_template.py
 
