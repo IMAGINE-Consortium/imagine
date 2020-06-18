@@ -598,9 +598,9 @@ can be found in some of the
 `IMAGINE Consortium <https://github.com/IMAGINE-Consortium>`_ repositories),
 these are:
 
- * :py:class:`UltranestPipeline`
- * :py:class:`MultinestPipeline`
- * :py:class:`DynestyPipeline`
+ * :py:class:`UltranestPipeline <imagine.pipelines.ultranest_pipeline.UltranestPipeline>`
+ * :py:class:`MultinestPipeline <imagine.pipelines.multinest_pipeline.MultinestPipeline>`
+ * :py:class:`DynestyPipeline <imagine.pipelines.dynesty_pipeline.DynestyPipeline>`
 
 One can include a new *sampler* in IMAGINE by creating a sub-class of
 :py:class:`imagine.Pipeline <imagine.pipelines.pipeline.Pipeline>`.
