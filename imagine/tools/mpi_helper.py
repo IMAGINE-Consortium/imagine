@@ -9,7 +9,6 @@ from mpi4py import MPI
 from copy import deepcopy
 import logging as log
 
-
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
@@ -21,7 +20,6 @@ def mpi_arrange(size):
 
     Parameters
     ----------
-
     size : integer (positive)
         The total size of target to be distributed.
         It can be a row size or a column size.
@@ -40,13 +38,13 @@ def mpi_arrange(size):
     return np.uint64(res + mpirank*ave), np.uint64(res + (mpirank+1)*ave +
                                                np.uint64(mpirank < size%mpisize))
 
+
 def mpi_shape(data):
     """
     Returns the global number of rows and columns of given distributed data.
 
     Parameters
     ----------
-
     data : numpy.ndarray
         The distributed data.
 
@@ -60,6 +58,7 @@ def mpi_shape(data):
     global_column = np.array(data.shape[1], dtype=np.uint64)
     return global_row, global_column
 
+
 def mpi_prosecutor(data):
     """
     Check if the data is distributed in the correct way
@@ -68,7 +67,6 @@ def mpi_prosecutor(data):
 
     Parameters
     ----------
-
     data : numpy.ndarray
         The distributed data to be examined.
     """
@@ -85,6 +83,7 @@ def mpi_prosecutor(data):
     if np.any((local_cols-local_cols[0]).astype(bool)):
         raise ValueError('incorrect data allocation')
 
+
 def mpi_mean(data):
     """
     calculate the mean of distributed array
@@ -95,7 +94,6 @@ def mpi_mean(data):
 
     Parameters
     ----------
-
     data : numpy.ndarray
         Distributed data.
 
@@ -120,6 +118,7 @@ def mpi_mean(data):
     avg = (total_sum / np.sum(local_rows)).reshape((1, data.shape[1]))
     return avg
 
+
 def mpi_trans(data):
     """
     Transpose distributed data,
@@ -127,7 +126,6 @@ def mpi_trans(data):
 
     Parameters
     ----------
-
     data : numpy.ndarray
         Distributed data.
 
@@ -172,6 +170,7 @@ def mpi_trans(data):
             new_data[:, np.sum(local_rows[0:source]):np.sum(local_rows[0:source+1])] = local_recv_buf
     return new_data
 
+
 def mpi_mult(left, right):
     """
     Calculate matrix multiplication of two distributed data,
@@ -181,7 +180,6 @@ def mpi_mult(left, right):
 
     Parameters
     ----------
-
     left : numpy.ndarray
         Distributed left side data.
 
@@ -231,6 +229,7 @@ def mpi_mult(left, right):
         result += np.dot(left_block, local_recv_buf)
     return result
 
+
 def mpi_trace(data):
     """
     Computes the trace of the given distributed data.
@@ -257,6 +256,7 @@ def mpi_trace(data):
     comm.Allreduce([local_acc, MPI.DOUBLE], [result, MPI.DOUBLE], op=MPI.SUM)
     return result
 
+
 def mpi_eye(size):
     """
     Produces an eye matrix according of shape (size,size)
@@ -277,8 +277,9 @@ def mpi_eye(size):
     local_matrix = np.zeros((local_row_end - local_row_begin, size), dtype=np.float64)
     for i in range(local_row_end - local_row_begin):
         eye_pos = local_row_begin + np.uint64(i)
-        local_matrix[i, eye_pos] =  1.0
+        local_matrix[i, eye_pos] = 1.0
     return local_matrix
+
 
 def mpi_distribute_matrix(full_matrix):
     """
@@ -380,6 +381,7 @@ def mpi_lu_solve(operator, source):
         comm.Bcast([x, MPI.DOUBLE], root=op_rank)
     return x
 
+
 def mpi_slogdet(data):
     """
     Computes log determinant according to
@@ -447,6 +449,7 @@ def mpi_slogdet(data):
     comm.Allreduce([local_sign, MPI.DOUBLE], [sign, MPI.DOUBLE], op=MPI.PROD)
     assert (logdet != 0 and sign != 0)
     return sign, logdet
+
 
 def mpi_global(data):
     """

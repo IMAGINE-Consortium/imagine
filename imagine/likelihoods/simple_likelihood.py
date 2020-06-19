@@ -3,7 +3,7 @@ import logging as log
 from copy import deepcopy
 from imagine.observables.observable_dict import Simulations
 from imagine.likelihoods.likelihood import Likelihood
-from imagine.tools.mpi_helper import mpi_slogdet, mpi_lu_solve
+from imagine.tools.parallel_ops import pslogdet, plu_solve
 from imagine.tools.icy_decorator import icy
 
 
@@ -57,8 +57,8 @@ class SimpleLikelihood(Likelihood):
                 diff = np.nan_to_num(data - obs_mean)
                 if name in self._covariance_dict.keys():  # not all measreuments have cov
                     cov = deepcopy(self._covariance_dict[name].data)  # to distributed data
-                    (sign, logdet) = mpi_slogdet(cov*2.*np.pi)
-                    likelicache += -0.5*(np.vdot(diff, mpi_lu_solve(cov, diff))+sign*logdet)
+                    (sign, logdet) = pslogdet(cov*2.*np.pi)
+                    likelicache += -0.5*(np.vdot(diff, plu_solve(cov, diff))+sign*logdet)
                 else:
                     likelicache += -0.5*np.vdot(diff, diff)
         return likelicache

@@ -4,15 +4,9 @@ covariance matrix based on a finite number of samples.
 
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
-
 import numpy as np
-from mpi4py import MPI
 import logging as log
-from imagine.tools.mpi_helper import mpi_mean, mpi_trans, mpi_mult, mpi_eye, mpi_trace
-
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
+from imagine.tools.parallel_ops import pmean, ptrans, pmult, peye, ptrace, pshape
 
 def empirical_cov(data):
     r"""
@@ -57,8 +51,8 @@ def empirical_cov(data):
                     MPI.LONG], [ensemble_size, MPI.LONG],
                    op=MPI.SUM)
     # Calculates covariance
-    u = data - mpi_mean(data)
-    cov = mpi_mult(mpi_trans(u), u) / ensemble_size
+    u = data - pmean(data)
+    cov = pmult(ptrans(u), u) / ensemble_size
     return cov
 
 def oas_cov(data):
@@ -128,16 +122,14 @@ def oas_mcov(data):
 
     # Finds ensemble size and data size
     data_size = data.shape[1]
-    ensemble_size = np.array(0, dtype=np.uint64)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64), MPI.LONG],
-                   [ensemble_size, MPI.LONG], op=MPI.SUM)
+    ensemble_size, _ = pshape(data)
 
     # Calculates OAS covariance extimator from empirical covariance estimator
-    mean = mpi_mean(data)
+    mean = pmean(data)
     u = data - mean
-    s = mpi_mult(mpi_trans(u), u) / ensemble_size
-    trs = mpi_trace(s)
-    trs2 = mpi_trace(mpi_mult(s, s))
+    s = pmult(ptrans(u), u) / ensemble_size
+    trs = ptrace(s)
+    trs2 = ptrace(pmult(s, s))
 
     numerator = (1.0 - 2.0/data_size)*trs2 + trs*trs
     denominator = (ensemble_size +1.0-2.0/data_size)*(trs2 - (trs*trs)/data_size)
@@ -146,6 +138,6 @@ def oas_mcov(data):
         rho = 1
     else:
         rho = np.min([1, numerator/denominator])
-    cov = (1.-rho)*s+mpi_eye(data_size)*rho*trs/data_size
+    cov = (1.-rho)*s+peye(data_size)*rho*trs/data_size
 
     return mean, cov

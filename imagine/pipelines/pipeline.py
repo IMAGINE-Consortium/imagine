@@ -5,14 +5,15 @@ from imagine.fields.field_factory import GeneralFieldFactory
 from imagine.priors.prior import GeneralPrior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.random_seed import ensemble_seed_generator
-from imagine.tools.icy_decorator import icy
 import imagine.tools.misc as misc
+from imagine import rc
 from astropy.table import QTable
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
+
 
 class Pipeline(object):
     """
@@ -64,7 +65,7 @@ class Pipeline(object):
         self.sampling_controllers = dict()
         self.sample_callback = False
 
-        self.distribute_ensemble = True
+        self.distribute_ensemble = rc['pipeline_distribute_ensemble']
 
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1.
@@ -73,7 +74,7 @@ class Pipeline(object):
         self.likelihood_threshold = 0.
 
         # This changes on every execution is random_type=='free'
-        self.master_seed = 1
+        self.master_seed = rc['pipeline_default_seed']
         self.random_type = 'controllable'
         # The ensemble_seeds are fixed in the case of the 'fixed' random_type;
         # or are regenerated on each Field evaluation, in the 'free' and
@@ -88,7 +89,6 @@ class Pipeline(object):
         self._posterior_summary = None
         self._samples_array = None
         self._samples = None
-
 
     @property
     def active_parameters(self):
@@ -130,7 +130,7 @@ class Pipeline(object):
             for column in samp.columns:
                 percentiles = np.percentile(samp[column], [15.87, 50,  84.13])
                 column_dict = {s:  percentiles[i]
-                               for i,s in enumerate(('errlo', 'median', 'errup'))}
+                               for i, s in enumerate(('errlo', 'median', 'errup'))}
                 column_dict['mean'] = np.mean(samp[column])
                 column_dict['stdev'] = np.std(samp[column])
                 self._posterior_summary[column] = column_dict
@@ -161,10 +161,10 @@ class Pipeline(object):
             v, l, u = misc.adjust_error_intervals(med, low, up, digits=significant_digits)
             if misc.is_notebook():
                 # Extracts LaTeX representation from astropy unit object
-                unit_latex = pdict['median'].unit._repr_latex_().replace('$','')
+                unit_latex = pdict['median'].unit._repr_latex_().replace('$', '')
                 # Prepares LaTeX output string
                 out += r': }}\; {0}_{{ {1} }}^{{ +{2} }}\,'.format(v, l, u)
-                out += unit_latex +r'\\'
+                out += unit_latex + r'\\'
             else:
                 out += r': {0} ({1})/(+{2}) '.format(v, l, u)
                 out += str(pdict['median'].unit)+'\n'
@@ -295,7 +295,6 @@ class Pipeline(object):
         assert isinstance(likelihood, Likelihood)
         self._likelihood = likelihood
 
-
     def prior_pdf(self, cube):
         """
         Probability distribution associated with the all parameters being used by
@@ -315,7 +314,6 @@ class Pipeline(object):
         for i, parameter in enumerate(self.active_parameters):
             cube_rtn[i] = self.priors[parameter].pdf(cube_rtn[i])
         return cube_rtn
-
 
     def prior_transform(self, cube):
         """
@@ -354,11 +352,22 @@ class Pipeline(object):
 
     @distribute_ensemble.setter
     def distribute_ensemble(self, distr_ensemble):
-        if distr_ensemble:
-            self._likelihood_function = self._mpi_likelihood
-        else:
-            self._likelihood_function = self._core_likelihood
+        # Saves the choice
         self._distribute_ensemble = distr_ensemble
+
+        if distr_ensemble:
+            # Sets pointer to the correct likelihood function
+            self._likelihood_function = self._mpi_likelihood
+            # Sets effective ensemble size
+            if self.ensemble_size % mpisize != 0:
+                raise ValueError("In 'distribute_ensemble' mode, ensemble_size "
+                                 "must be a multiple of the number of MPI nodes")
+            self.ensemble_size_actual = self.ensemble_size // mpisize
+        else:
+            # Sets pointer to the correct likelihood function
+            self._likelihood_function = self._core_likelihood
+            # Sets effective ensemble size
+            self.ensemble_size_actual = self.ensemble_size
 
     @property
     def ensemble_size(self):
@@ -394,8 +403,6 @@ class Pipeline(object):
         self._samples = None
         self._randomness()
 
-
-
     def _randomness(self):
         """
         Manipulate random seed(s)
@@ -413,10 +420,9 @@ class Pipeline(object):
         np.random.seed(self.master_seed)
 
         if self.random_type == 'fixed':
-            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size)
+            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
         else:
             self.ensemble_seeds = None
-
 
     def _core_likelihood(self, cube):
         """
@@ -450,8 +456,9 @@ class Pipeline(object):
             factory_cube = cube[head_idx:tail_idx]
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
+
             field_list += (factory.generate(variables=variable_dict,
-                                            ensemble_size=self.ensemble_size,
+                                            ensemble_size=self.ensemble_size_actual,
                                             ensemble_seeds=self.ensemble_seeds),)
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
@@ -466,7 +473,6 @@ class Pipeline(object):
         if self.check_threshold and current_likelihood > self.likelihood_threshold:
             raise ValueError('log-likelihood beyond threshold')
         return current_likelihood * self.likelihood_rescaler
-
 
     def _mpi_likelihood(self, cube):
         """
@@ -508,7 +514,7 @@ class Pipeline(object):
             loglike_local = np.empty(1, dtype=np.float64)
             comm.Scatter([loglike_pool, MPI.DOUBLE], [loglike_local, MPI.DOUBLE], root=0)
 
-            return loglike_local[0] # Some samplers require a scalar value
+            return loglike_local[0]  # Some samplers require a scalar value
 
         else:
 

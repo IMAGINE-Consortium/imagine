@@ -25,11 +25,11 @@ class ConstantMagneticField(MagneticField):
         # For a magnetic field, the output must be of shape:
         # (Nx,Ny,Nz,Nc) where Nc is the index of the component.
         # Computes Bx
-        B[:,:,:,0] = self.parameters['Bx']*np.ones(self.grid.shape)
+        B[:,:,:,0] = self.parameters['Bx']
         # Computes By
-        B[:,:,:,1] = self.parameters['By']*np.ones(self.grid.shape)
+        B[:,:,:,1] = self.parameters['By']
         # Computes Bz
-        B[:,:,:,2] = self.parameters['Bz']*np.ones(self.grid.shape)
+        B[:,:,:,2] = self.parameters['Bz']
         return B
 
 @icy
@@ -42,14 +42,14 @@ class constantThermalElectrons(ThermalElectronDensityField):
     """
     field_name = 'constant_TE'
     stochastic_field = False
-    
+
     @property
     def field_checklist(self):
         return {'ne': None}
-    
+
     def compute_field(self, seed):
         return np.ones(self.data_shape)*self.parameters['ne']
-    
+
 @icy
 class ExponentialThermalElectrons(ThermalElectronDensityField):
     """
@@ -100,7 +100,6 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     aforementioned minimum density. To disable the minimum density requirement,
     it may be set to NaN.
     """
-
     field_name = 'random_thermal_electrons'
     stochastic_field = True
 

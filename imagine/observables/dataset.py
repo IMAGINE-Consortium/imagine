@@ -5,7 +5,7 @@ observational data in the IMAGINE pipeline"""
 from imagine.tools.icy_decorator import icy
 import numpy as np
 from astropy import units as u
-from imagine.tools.mpi_helper import mpi_eye, mpi_distribute_matrix
+from imagine.tools.parallel_ops import peye, distribute_matrix
 
 class Dataset:
     """
@@ -38,7 +38,7 @@ class Dataset:
     @property
     def cov(self):
         if self._cov is None:
-            self._cov = self._error * mpi_eye(self._data.size)
+            self._cov = self._error * peye(self._data.size)
         return self._cov
 
 
