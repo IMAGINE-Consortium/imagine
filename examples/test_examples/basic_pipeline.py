@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 The basic elements of an IMAGINE pipeline
 
@@ -165,13 +166,14 @@ if __name__ == '__main__':
     likelihood = img.EnsembleLikelihood(measurements, covariances)
 
     # Defines the pipeline using the UltraNest sampler, giving it the required elements
-    pipeline = img.UltranestPipeline(simer, factory_list, likelihood, ensemble_size=256)
+    pipeline = img.UltranestPipeline(simer, factory_list,
+                                     likelihood, ensemble_size=512)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    #pipeline.sampling_controllers = {'max_ncalls': 100,}
-                                    #'Lepsilon': 0.1,
-                                    #'dlogz': 0.5,
-                                    #'min_num_live_points': 100}
+    pipeline.sampling_controllers = {'max_ncalls': 500,
+                                    'Lepsilon': 0.1,
+                                    'dlogz': 0.5,
+                                    'min_num_live_points': 100}
 
     # RUNS THE PIPELINE
     results = pipeline()

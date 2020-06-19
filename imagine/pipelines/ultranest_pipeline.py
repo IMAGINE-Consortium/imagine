@@ -8,7 +8,8 @@ from imagine.tools.icy_decorator import icy
 @icy
 class UltranestPipeline(Pipeline):
     """
-    Initialises Bayesian analysis pipeline with pyMultinest
+    Initialises Bayesian analysis pipeline with
+    `UltraNest <https://johannesbuchner.github.io/UltraNest/>`_
 
     See base class for initialization details.
 
@@ -23,11 +24,11 @@ class UltranestPipeline(Pipeline):
     def __call__(self, **kwargs):
         """
         Runs the IMAGINE pipeline using the UltraNest sampler
-        
+
         Returns
         -------
         results : dict
-            pyMultinest sampling results in a dictionary containing the keys:
+            UltraNest sampling results in a dictionary containing the keys:
             logZ (the log-evidence), logZerror (the error in log-evidence) and
             samples (equal weighted posterior)
         """
@@ -36,7 +37,7 @@ class UltranestPipeline(Pipeline):
         # Resets internal state
         self.tidy_up()
 
-        # Runs pyMultinest
+        # Runs UltraNest
         self.sampler = ultranest.ReactiveNestedSampler(
             param_names=list(self.active_parameters),
             loglike=self._likelihood_function,
