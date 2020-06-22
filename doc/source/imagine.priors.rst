@@ -4,10 +4,10 @@ imagine.priors package
 Submodules
 ----------
 
-imagine.priors.flat\_prior module
----------------------------------
+imagine.priors.basic\_priors module
+-----------------------------------
 
-.. automodule:: imagine.priors.flat_prior
+.. automodule:: imagine.priors.basic_priors
    :members:
    :undoc-members:
    :show-inheritance:

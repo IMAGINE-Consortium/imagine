@@ -1,5 +1,5 @@
 """
-Timer class is designed for time recording
+Timer class is designed for time recording.
 """
 import time
 from imagine.tools.icy_decorator import icy
@@ -8,7 +8,7 @@ from imagine.tools.icy_decorator import icy
 @icy
 class Timer(object):
     """
-    Class designed for time recording
+    Class designed for time recording.
 
     Simply provide an event name to the `tick` method to start recording.
     The `tock` method stops the recording and the `record` property allow
@@ -20,7 +20,7 @@ class Timer(object):
     @property
     def record(self):
         """
-        Dictionary of recorded times using event name as keys
+        Dictionary of recorded times using event name as keys.
         """
         return self._record
 
@@ -30,24 +30,24 @@ class Timer(object):
 
     def tick(self, event):
         """
-        Starts timing of a given event
+        Starts timing with a given event name.
 
         Parameters
         ----------
         event : str
-            event name (will be key of the record attribute)
+            Event name (will be key of the record attribute).
         """
         assert isinstance(event, str)
         self._record[event] = time.perf_counter()
 
     def tock(self, event):
         """
-        Stops timing
+        Stops timing of the given event.
 
         Parameters
         ----------
         event : str
-            event name (will be key of the record attribute)
+            Event name (will be key of the record attribute).
         """
         assert isinstance(event, str)
         assert (event in self._record.keys())

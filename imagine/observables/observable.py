@@ -24,15 +24,11 @@ which means to have a full set of 'covariance' data,
 we have to collect pieces from all the computing nodes.
 """
 import numpy as np
-from mpi4py import MPI
 from copy import deepcopy
 import logging as log
-from imagine.tools.mpi_helper import mpi_mean, mpi_shape, mpi_prosecutor, mpi_global
+from imagine.tools.parallel_ops import pmean, pshape, prosecutor, pglobal
 from imagine.tools.icy_decorator import icy
-
-comm = MPI.COMM_WORLD
-mpisize = comm.Get_size()
-mpirank = comm.Get_rank()
+import astropy.units as u
 
 @icy
 class Observable(object):
@@ -47,9 +43,19 @@ class Observable(object):
     dtype : str
         Data type, must be either: 'measured', 'simulated' or 'covariance'
     """
-    def __init__(self, data=None, dtype=None):
+    def __init__(self, data=None, dtype=None, coords=None):
         self.dtype = dtype
-        self.data = data
+
+        if isinstance(data, u.Quantity):
+            self.data = data.value
+            self.unit = data.unit
+        elif isinstance(data, np.ndarray):
+            self.data = data
+            self.unit = None
+        else:
+            raise ValueError
+
+        self.coords = coords
         self.rw_flag = False
 
     @property
@@ -65,7 +71,7 @@ class Observable(object):
         Shape of the GLOBAL array, i.e. considering all processors
         (`numpy.ndarray`, read-only).
         """
-        return mpi_shape(self._data)  # estimate shape from all nodes
+        return pshape(self._data)  # estimate shape from all nodes
 
     @property
     def global_data(self):
@@ -74,7 +80,7 @@ class Observable(object):
         Note that only master node hosts the global data,
         while slave nodes hosts None.
         """
-        return mpi_global(self.data)
+        return pglobal(self.data)
 
     @property
     def size(self):
@@ -92,7 +98,7 @@ class Observable(object):
             assert (self._data.shape[0] == 1)  # single realization
             return self._data  # since each node has a full copy
         elif (self._dtype == 'simulated'):
-            return mpi_mean(self._data)  # calculate mean from all nodes
+            return pmean(self._data)  # calculate mean from all nodes
         else:
             raise TypeError('unsupported data type')
 
@@ -144,17 +150,23 @@ class Observable(object):
 
     def append(self, new_data):
         """
-        appending new data happends only to SIMULATED dtype
+        appending new data happens only to SIMULATED dtype
         the new data to be appended should also be distributed
         which makes the appending operation naturally in parallel
-        
+
         rewrite flag will be switched off once rewriten has been performed
         """
         log.debug('@ observable::append')
         assert isinstance(new_data, (np.ndarray, Observable))
         assert (self._dtype == 'simulated')
+
+
+        if isinstance(new_data, u.Quantity):
+            assert self.unit == new_data.unit
+            new_data = new_data.value
+
         if isinstance(new_data, np.ndarray):
-            mpi_prosecutor(new_data)
+            prosecutor(new_data)
             if (self._rw_flag):  # rewriting
                 self._data = np.copy(new_data)
                 self._rw_flag = False

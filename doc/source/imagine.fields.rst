@@ -5,15 +5,28 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-   imagine.fields.breg_lsa
-   imagine.fields.brnd_es
-   imagine.fields.cre_analytic
-   imagine.fields.tereg_ymw16
-   imagine.fields.test_field
+   imagine.fields.hamx
 
 Submodules
 ----------
+
+imagine.fields.base\_fields module
+----------------------------------
+
+.. automodule:: imagine.fields.base_fields
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+imagine.fields.basic\_fields module
+-----------------------------------
+
+.. automodule:: imagine.fields.basic_fields
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 imagine.fields.field module
 ---------------------------
@@ -35,6 +48,14 @@ imagine.fields.grid module
 --------------------------
 
 .. automodule:: imagine.fields.grid
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+imagine.fields.test\_field module
+---------------------------------
+
+.. automodule:: imagine.fields.test_field
    :members:
    :undoc-members:
    :show-inheritance:

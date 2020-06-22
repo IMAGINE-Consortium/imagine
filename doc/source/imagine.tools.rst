@@ -12,6 +12,14 @@ imagine.tools.carrier\_mapper module
    :undoc-members:
    :show-inheritance:
 
+imagine.tools.config module
+---------------------------
+
+.. automodule:: imagine.tools.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.tools.covariance\_estimator module
 ------------------------------------------
 
@@ -44,10 +52,26 @@ imagine.tools.masker module
    :undoc-members:
    :show-inheritance:
 
+imagine.tools.misc module
+-------------------------
+
+.. automodule:: imagine.tools.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.tools.mpi\_helper module
 --------------------------------
 
 .. automodule:: imagine.tools.mpi_helper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+imagine.tools.parallel\_ops module
+----------------------------------
+
+.. automodule:: imagine.tools.parallel_ops
    :members:
    :undoc-members:
    :show-inheritance:

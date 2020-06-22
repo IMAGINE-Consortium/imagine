@@ -20,9 +20,11 @@ MOCK_MODULES = [
   'mpi4py',
   'mpi4py.MPI',
   'pymultinest',
+  'ultranest',
   'dynesty',
   'healpy',
-  'h5py']
+  'h5py',
+  'hampyx']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
@@ -47,6 +49,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
+    'sphinx.ext.autosectionlabel',
+    'nbsphinx','nbsphinx_link',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -63,19 +67,35 @@ master_doc = 'index'
 #html_logo = 'logo.png'
 
 
+dd_function_parentheses = True
+add_module_names = True
+numfig = True
+
+# Reference formatting
+numfig_format = {'figure': "Fig. %s"}
+
+
 # ------------------------------------------------------------------
 # Autodoc configuration
 autodoc_default_options = {'members': None,
                            'special-members': '__call__'}
 
 autodoc_member_order = 'groupwise'
-autodoc_inherit_docstrings = False
+autodoc_inherit_docstrings = True
+autosectionlabel_prefix_document = True
 
 # Napoleon configuration
 napoleon_include_private_with_doc = True
 napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
 
+
+intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+                      'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+                      'astropy': ('https://docs.astropy.org/en/stable/', None),
+                      'python': ('https://docs.python.org/3', None),
+                      'pandas': ('https://pandas.pydata.org/pandas-docs/stable/',None)
+                      }
 
 # -- Options for HTML output -------------------------------------------------
 
