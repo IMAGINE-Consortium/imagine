@@ -6,6 +6,11 @@ from imagine.tools.icy_decorator import icy
 import imagine as img
 import tempfile
 
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+mpisize = comm.Get_size()
+mpirank = comm.Get_rank()
+
 class MultinestPipeline(Pipeline):
     """
     Initialises Bayesian analysis pipeline with pyMultinest
@@ -28,11 +33,17 @@ class MultinestPipeline(Pipeline):
             self._chains_dir_path = chains_directory
 
         else:
-            # Creates a safe temporary directory in the current working directory
-            self._chains_dir_obj = tempfile.TemporaryDirectory(prefix='imagine_chains_',
-                                                               dir=os.getcwd())
-            # Note: this dir is automatically deleted together with the simulator object
-            self._chains_dir_path = self._chains_dir_obj.name
+            if mpirank==0:
+                # Creates a safe temporary directory in the current working directory
+                self._chains_dir_obj = tempfile.TemporaryDirectory(prefix='imagine_chains_',
+                                                                   dir=os.getcwd())
+                # Note: this dir is automatically deleted together with the simulator object
+                dir_path = self._chains_dir_obj.name
+            else:
+                dir_path = None
+            
+            self._chains_dir_path = comm.bcast(dir_path, root=0)
+            
 
         self._chains_prefix = os.path.join(self._chains_dir_path,'')
 
