@@ -176,10 +176,14 @@ class GeneralFieldFactory:
             self._priors = {}
 
         parameter_ranges = {}
-
+        
+        # Uses previous information
+        prior_dict = self._priors.copy()
+        prior_dict.update(new_prior_dict)
+        
         for name in self.default_parameters:
-            assert (name in new_prior_dict), 'Missing Prior for '+name
-            prior = new_prior_dict[name]
+            assert (name in prior_dict), 'Missing Prior for '+name
+            prior = prior_dict[name]
             assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
             self._priors[name] = prior
             parameter_ranges[name] = prior.range
