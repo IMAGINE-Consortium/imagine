@@ -1,6 +1,7 @@
 from imagine import DummyField, GeneralFieldFactory, FlatPrior
 from imagine.tools.icy_decorator import icy
 
+
 @icy
 class BrndES(DummyField):
     """
@@ -11,13 +12,15 @@ class BrndES(DummyField):
     field_name = 'breg_wmap'
 
     def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
-                 ensemble_seeds=None, dependencies={}):
+                 ensemble_seeds=None, dependencies={}, 
+                 grid_nx=None, grid_ny=None, grid_nz=None):
         super().__init__(grid, parameters, ensemble_size, ensemble_seeds, dependencies)
         # Default controllist
         self._controllist = {'cue': (['magneticfield', 'random'], {'cue': '1'}),
                              'type': (['magneticfield', 'random'], {'type': 'global'}),
                              'method': (['magneticfield', 'random', 'global'], {'type': 'es'})}
-        
+        self.set_grid_size(nx=grid_nx, ny=grid_ny, nz=grid_nz)
+
     def set_grid_size(self, nx=None, ny=None, nz=None):
         """
         Changes the size of the grid used for the evaluation of the random field
@@ -28,7 +31,7 @@ class BrndES(DummyField):
             self._controllist['box_brnd_ny'] = (['grid', 'box_brnd', 'ny'],{'value': str(ny)})
         if nz is not None:
             self._controllist['box_brnd_nz'] = (['grid', 'box_brnd', 'nz'],{'value': str(nz)})        
-        
+
     @property
     def field_checklist(self):
         """
@@ -42,8 +45,7 @@ class BrndES(DummyField):
                      'rho': (['magneticfield', 'random', 'global', 'es', 'rho'], 'value'),
                      'r0': (['magneticfield', 'random', 'global', 'es', 'r0'], 'value'),
                      'z0': (['magneticfield', 'random', 'global', 'es', 'z0'], 'value'),
-                     'random_seed': (['magneticfield', 'random'], 'seed'),
-                    }
+                     'random_seed': (['magneticfield', 'random'], 'seed')}
         return checklist
 
     @property
@@ -60,8 +62,11 @@ class BrndESFactory(GeneralFieldFactory):
     Field factory that produces the dummy field :py:class:`BrndES`
     (see its docs for details).
     """
-    def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
-        super().__init__(boxsize, resolution)
+    def __init__(self, boxsize=None, resolution=None, active_parameters=tuple(),
+                 grid_nx=None, grid_ny=None, grid_nz=None):
+        super().__init__(boxsize, resolution, field_kwargs={'grid_nx': grid_nx,
+                                                            'grid_ny': grid_ny,
+                                                            'grid_nz': grid_nz})
         self.field_class = BrndES
         self.default_parameters = {'rms': 2.,
                                    'k0': 10.0,
@@ -70,7 +75,7 @@ class BrndESFactory(GeneralFieldFactory):
                                    'a1': 0.0,
                                    'rho': 0.5,
                                    'r0': 8.,
-                                   'z0': 1. }
+                                   'z0': 1.}
         self.priors = {'rms': FlatPrior([0, 4.]),
                        'k0': FlatPrior([0.1, 1.]),
                        'a0': FlatPrior([1., 3.]),

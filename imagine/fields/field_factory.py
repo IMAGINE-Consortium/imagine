@@ -46,13 +46,16 @@ class GeneralFieldFactory:
     grid : imagine.fields.BaseGrid or None
         If present, the supplied instance of `imagine.fields.BaseGrid` is
         used and the arguments `boxsize` and `resolution` are ignored
+    field_kwargs : dict
+        Any extra keyword arguments that should be used in the field instantiation
 
     Attributes
     ----------
     field_class : class
         Python class whose instances are produces by the present factory
     """
-    def __init__(self, grid=None, boxsize=None, resolution=None):
+    def __init__(self, grid=None, boxsize=None, resolution=None, 
+                 field_kwargs={}):
         log.debug('@ field_factory::__init__')
 
         self.field_class = GeneralField
@@ -73,6 +76,8 @@ class GeneralFieldFactory:
                 self._grid = None
                 self._box = boxsize
                 self._resolution = resolution
+        self.field_kwargs = field_kwargs
+
         # Placeholders
         self._default_parameters = {}
         self._parameter_ranges = {}
@@ -295,7 +300,8 @@ class GeneralFieldFactory:
         result_field = self.field_class(grid=self.grid,
                                         parameters=work_parameters,
                                         ensemble_size=ensemble_size,
-                                        ensemble_seeds=ensemble_seeds)
+                                        ensemble_seeds=ensemble_seeds,
+                                        **self.field_kwargs)
         log.debug('generated field with work-parameters %s' % work_parameters)
         return result_field
 
