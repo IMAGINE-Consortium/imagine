@@ -47,5 +47,5 @@ class BregLSAFactory(GeneralFieldFactory):
         self.priors = {'b0':   FlatPrior([0., 10.]),
                        'psi0': FlatPrior([0., 50.]),
                        'psi1': FlatPrior([0., 5.]),
-                       'chi0': FlatPrior([-25., 50.])},
+                       'chi0': FlatPrior([-25., 50.])}
         self.active_parameters = active_parameters

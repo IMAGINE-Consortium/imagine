@@ -41,7 +41,7 @@ class CREAnaFactory(GeneralFieldFactory):
     (see its docs for details).
     """
     def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
-        super(CREAnaFactory, self).__init__(boxsize, resolution)
+        super().__init__(boxsize, resolution)
         self.field_class = CREAna
         self.default_parameters = {'alpha': 3.0,
                                    'beta': 0.0,
