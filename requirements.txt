@@ -6,5 +6,5 @@ healpy==1.*
 mpi4py==3.*
 numpy==1.18.*
 pymultinest==2.9
-ultranest==2.2.*
+ultranest==2.2.1
 hampyx
