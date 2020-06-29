@@ -4,7 +4,7 @@ dynesty==1.0.*
 h5py==2.10.*
 healpy==1.*
 mpi4py==3.*
-numpy>=1.19.0
+numpy==1.18.*
 pymultinest==2.9
 ultranest==2.2.*
 hampyx
