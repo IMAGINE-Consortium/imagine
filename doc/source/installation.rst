@@ -3,50 +3,51 @@ Installation and dependencies
 *****************************
 
 Here you can find basic instructions for the installation of IMAGINE.
+
+`Let us know <https://github.com/IMAGINE-Consortium/imagine/issues/new>`_
+if you face major difficulties.
+
+Download
+--------
+
 A copy of IMAGINE source can be downloaded from its main
 `GitHub repository <https://github.com/IMAGINE-Consortium/imagine/>`_.
-Alternatively, one can opt for using a `Docker`_ image (see below).
+If one does not intend to contribute to the development, one should download
+and unpack the
+`latest release <https://github.com/IMAGINE-Consortium/imagine/releases/latest>`_:
 
-`Let us know <https://github.com/IMAGINE-Consortium/imagine/issues/new>`_ if you face major difficulties.
+.. code-block:: console
 
+    wget https://github.com/IMAGINE-Consortium/imagine/archive/v2.0.0-alpha.tar.gz
+    tar -xvvzf v2.0.0-alpha.tar.gz
 
-Setting up the environment
-==========================
+Alternatively, if one is interested in getting involved with the development,
+we recommend cloning the git repository
 
-Before installing IMAGINE, one needs to prepare the environment installing
-the `Hammurabi`_ code and the following packages:
+.. code-block:: console
 
- * `Python3 <https://python.org>`_
- * `NumPy <https://numpy.org/>`_
- * `mpi4py <https://mpi4py.readthedocs.io/>`_
- * `PyMultiNest <https://johannesbuchner.github.io/PyMultiNest/>`_
- * `Dynesty <https://dynesty.readthedocs.io/en/latest/>`_
- * `healpy <https://healpy.readthedocs.io/>`_
- * `h5py <https://docs.h5py.org/>`_
-
-The procedure is *significantly* simplified setting up an `Conda`_ environment.
-
-
-Hammurabi
----------
-
-A key dependency of IMAGINE is the
-`Hammurabi code <https://bitbucket.org/hammurabicode/hamx/>`_,
-a `HEALPix <https://healpix.jpl.nasa.gov/>`_-based
-numeric simulator for Galactic polarized emission
-(`arXiv:1907.00207 <https://arxiv.org/abs/1907.00207>`_).
-Instructions for its installation can be found on its project
-`wiki <https://bitbucket.org/hammurabicode/hamx/wiki/>`_.
+    git clone git@github.com:IMAGINE-Consortium/imagine.git
 
 
 
-Conda
------
+Setting up the environment with conda
+-------------------------------------
 
-Users of `Anaconda <https://www.anaconda.com/>`_ or
-`Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_
-can automatically setup a dedicated environment with all the
-dependencies (except for hammurabi) using the YAML file provided:
+IMAGINE depends on a number of different python packages. The easiest way of
+setting up your environment is using the *conda* package manager. This allows
+one to setup a dedicated, contained, python environment in the user area.
+
+Conda is the package manager of the `Anaconda <https://www.anaconda.com/>`_
+Python distribution, which by default comes with a large number of packages frequently used in data science and scientific computing, as well as a GUI
+installer and other tools.
+
+A lighter, recommended, alternative is the
+`Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ distribution,
+which allows one to use the conda commands to install only what is actually
+needed.
+
+Once one has installed (mini)conda, one can download and install the IMAGINE
+environment in the following way:
 
 .. code-block:: console
 
@@ -56,21 +57,48 @@ dependencies (except for hammurabi) using the YAML file provided:
 
 The (optional) last line creates a Jupyter kernel linked to the new conda
 environment (which is required, for example, for executing the tutorial
-notebooks).
+Jupyter notebooks).
+
+Whenever one wants to run an IMAGINE script, one has to first activate the
+associated environment with the command `conda activate imagine`.
+To leave this environment one can simply run `conda deactivate`
 
 
-Installing
-==========
+Hammurabi X
+-----------
 
-After downloading IMAGINE and extracting/cloning it to IMAGINE_PATH, simply
-do
+A key dependency of IMAGINE is the
+`Hammurabi code <https://bitbucket.org/hammurabicode/hamx/>`_,
+a `HEALPix <https://healpix.jpl.nasa.gov/>`_-based
+numeric simulator for Galactic polarized emission
+(`arXiv:1907.00207 <https://arxiv.org/abs/1907.00207>`_).
+
+Before proceeding with the IMAGINE installation, it is necessary to install
+Hammurabi X following the instructions on its project
+`wiki <https://bitbucket.org/hammurabicode/hamx/wiki/>`_.
+Then, one needs to install the `hampyx` python wrapper:
 
 .. code-block:: console
 
+    conda activate imagine # if using conda
+    cd PATH_TO_HAMMURABI
+    pip install -e .
+
+
+Installing
+----------
+
+After downloading, setting up the environment and installing Hammurabi X,
+imagine can finnaly be installed through:
+
+.. code-block:: console
+
+    conda activate imagine # if using conda
     cd IMAGINE_PATH
     pip install .
 
-If you do not have admistrator/root privileges/permissions, you may instead want to use
+If one does not have admistrator/root privileges/permissions, one may instead
+want to use
 
 .. code-block:: console
 
@@ -83,11 +111,10 @@ Also, if you are working on further developing or modifying IMAGINE for your own
     pip install -e .
 
 
-
 Docker
-======
+------
 
 A docker image is a convenient, light-weight and fast way of deploying IMAGINE.
 One can either build the image directly with the Dockerfile provided in the
 `source repository <https://github.com/IMAGINE-Consortium/imagine/tree/master/docker>`_ or pull our
-`pre-built docker image <https://cloud.docker.com/u/ricphy/repository/docker/ricphy/imagine>`_.
+`pre-built docker image <still_unavailable>`_.

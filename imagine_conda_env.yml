@@ -13,6 +13,7 @@ dependencies:
   - h5py=2.10.*=mpi*
   - ipyparallel=6.2.*
   - numpy=1.18.*
+  - pip
   - python=3.7.*
   - pymultinest=2.9
   - ultranest=2.2.1
