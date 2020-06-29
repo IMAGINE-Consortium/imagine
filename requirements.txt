@@ -1,4 +1,10 @@
-numpy
-h5py
-astropy
-scipy
+astropy==4.0.*
+corner==2.0.*
+dynesty==1.0.*
+h5py==2.10.*
+healpy==1.*
+mpi4py==3.*
+numpy>=1.19.0
+pymultinest==2.9
+ultranest==2.2.*
+hampyx
