@@ -17,10 +17,10 @@ and unpack the
 `latest release <https://github.com/IMAGINE-Consortium/imagine/releases/latest>`_:
 
 .. code-block:: console
-
-    wget https://github.com/IMAGINE-Consortium/imagine/tarball/master -O imagine_latest.tar.gz
-    tar -xvvzf imagine_latest.tar.gz
-
+    wget https://github.com/IMAGINE-Consortium/imagine/archive/v2.0.0-alpha.tar.gz
+    tar -xvvzf v2.0.0-alpha.tar.gz
+    
+    
 Alternatively, if one is interested in getting involved with the development,
 we recommend cloning the git repository
 
