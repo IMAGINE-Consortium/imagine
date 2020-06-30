@@ -18,8 +18,8 @@ and unpack the
 
 .. code-block:: console
 
-    wget https://github.com/IMAGINE-Consortium/imagine/archive/v2.0.0-alpha.tar.gz
-    tar -xvvzf v2.0.0-alpha.tar.gz
+    wget https://github.com/IMAGINE-Consortium/imagine/tarball/master -O imagine_latest.tar.gz
+    tar -xvvzf imagine_latest.tar.gz
 
 Alternatively, if one is interested in getting involved with the development,
 we recommend cloning the git repository
@@ -89,7 +89,7 @@ Installing
 ----------
 
 After downloading, setting up the environment and installing Hammurabi X,
-imagine can finnaly be installed through:
+IMAGINE can finally be installed through:
 
 .. code-block:: console
 
