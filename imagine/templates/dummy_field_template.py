@@ -11,5 +11,5 @@ class DummyFieldTemplate(DummyField):
         return {'Parameter_A': 'parameter_A_settings',
                 'Parameter_B': None, ... }
     @property
-    def def simulator_controllist(self):
+    def simulator_controllist(self):
         return {'simulator_property_A': 'some_setting', ... }
