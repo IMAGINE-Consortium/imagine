@@ -18,7 +18,7 @@ version = re.search(r"^_*version_* = ['\"]([^'\"]*)['\"]", vf, re.M).group(1)
 
 setup(name="imagine",
       version=version,
-      description="Interstellar MAny field inference enGINE",
+      description="Interstellar MAGnetic field INference Engine",
       license="GPLv3",
       url="https://github.com/IMAGINE-Consortium/imagine",
       author="IMAGINE Consortium",
