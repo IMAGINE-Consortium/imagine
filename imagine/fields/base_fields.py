@@ -41,17 +41,9 @@ class MagneticField(GeneralField):
     """
     field_name = 'magnetic_field_base'
 
-    @property
-    def field_type(self):
-        return 'magnetic_field'
-
-    @property
-    def field_units(self):
-        return u.microgauss
-
-    @property
-    def data_description(self):
-        return ['grid_x', 'grid_y', 'grid_z', 'component (x,y,z)']
+    field_type = 'magnetic_field'
+    field_units = u.microgauss
+    data_description = ['grid_x', 'grid_y', 'grid_z', 'component (x,y,z)']
 
     @property
     def data_shape(self):
@@ -81,17 +73,9 @@ class ThermalElectronDensityField(GeneralField):
     """
     field_name = 'thermal_electrons_base'
 
-    @property
-    def field_type(self):
-        return 'thermal_electron_density'
-
-    @property
-    def field_units(self):
-        return u.cm**(-3)
-
-    @property
-    def data_description(self):
-        return ['grid_x', 'grid_y', 'grid_z']
+    field_type = 'thermal_electron_density'
+    field_units = u.cm**(-3)
+    data_description = ['grid_x', 'grid_y', 'grid_z']
 
     @property
     def data_shape(self):
@@ -102,8 +86,9 @@ class CosmicRayElectronDensityField(GeneralField):
     """
     Not yet implemented
     """
-    def field_type(self):
-        return 'cosmic_ray_electron_density'
+    field_name = 'cosmic_ray_electrons_base'
+
+    field_type = 'cosmic_ray_electron_density'
 
     def __init__():
         raise NotImplementedError
@@ -116,13 +101,8 @@ class DummyField(GeneralField):
     """
     field_name = 'dummy_base'
 
-    @property
-    def field_type(self):
-        return 'dummy'
-
-    @property
-    def field_units(self):
-        return None
+    field_type = 'dummy'
+    field_units = None
 
     @property
     def simulator_controllist(self):

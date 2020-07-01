@@ -18,6 +18,8 @@ setup(name="imagine",
       platforms="any",
       python_requires='>=3.5',
       install_requires=requirements,
+      #dependency_links=[
+        #'git+https://bitbucket.org/hammurabicode/hamx.git#egg=hampyx'],
       zip_safe=False,
       classifiers=["Development Status :: 3 - Alpha",
                    "Intended Audience :: Science/Research",

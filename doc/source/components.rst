@@ -25,7 +25,7 @@ the thermal electron distribution, or the Cosmic Ray (CR) distribution.
 Generally, a field object will have a set of parameters — e.g. a GMF field
 object may have a pitch angle, scale radius, amplitude, etc.
 *Field* objects are used as inputs by the `Simulators`_, which *simulate*
-those physical models, i.e. they allow constructing construct *observables*
+those physical models, i.e. they allow constructing *observables*
 based on a set models.
 
 During the sampling, the `Pipeline`_ does not handle fields directly  but
@@ -35,17 +35,19 @@ given a set of physical parameters and a coordinate grid,
 the *field factory objects* take care of book-keeping tasks: they hold the
 parameter ranges and default values, they translate the dimensionless parameters
 used by the sampler (always in the interval :math:`[0,1]`) to physical
-parameters, they store `Priors`_ associated with each parameter of that *field*.
+parameters, they also store the `Priors`_ associated with each parameter of
+that *field*.
 
 To convert ones own model into a IMAGINE-compatible field, one must create a
 subclass of one of the base classes available the
 :py:mod:`imagine.fields.base_fields`, most likely using one of the available
-templates to write a *wrapper* to the original code which are discussed in the
-sections below.
-If basic field type one is interested is *not* available as a basic field, one
+templates (discussed in the
+sections below) to write a *wrapper* to the original code.
+If the basic field type one is interested in
+is *not* available as a basic field, one
 can create it directly subclassing
 :py:class:`imagine.fields.field.GeneralField` —
-and if you think this could benefit the wider community, please consider
+and this could benefit the wider community, please consider
 submitting a
 `pull request <https://github.com/IMAGINE-Consortium/imagine/pulls>`_ or
 openning an `issue <https://github.com/IMAGINE-Consortium/imagine/issues>`_
@@ -54,10 +56,10 @@ requesting the inclusion of the new field type!
 It is assumed that **Field** objects can be expressed as a parametrised *mapping of
 a coordinate grid into a physical field*. The grid is represented by a IMAGINE
 :ref:`Grid` object, discussed in detail in the next section.
-If the field of random or **stochastic** nature (e.g. the density field of
-a turbulent medium), IMAGINE will compute a *fnite ensemble* of different
-realisations which are later used in the inference to deteremine the likelihood
-of the actual observation given accounting for the model's expected variability.
+If the field is of random or **stochastic** nature (e.g. the density field of
+a turbulent medium), IMAGINE will compute a *finite ensemble* of different
+realisations which will later be used in the inference to determine the likelihood
+of the actual observation, accounting for the model's expected variability.
 
 To test a Field class, :py:class:`FieldFoo`, one can
 instantiate the field object::
@@ -293,13 +295,13 @@ associated with specific parameters, while the dictionary
 :py:data:`simulator_controllist` can be used to tell how the presence of the
 the current dummy field should modify the Simulator's global settings.
 
-For example, in the case of Hammurabi a dummy field can be used
+For example, in the case of Hammurabi, a dummy field can be used
 to request one of its built-in fields, which has to be set up by modifying
 Hammurabi's XML parameter files.
 In this particular case, :py:data:`field_checklist` is used to supply the
 position of a parameter in the XML file, while :py:data:`simulator_controllist`
 indicates how to modify the switch in the XML file that enables this specific
-built-in field.
+built-in field (see the :doc:`tutorial_hammurabi` tutorial for details).
 
 
 .. _Field Factory:
@@ -322,10 +324,11 @@ the default values (which are used for inactive parameters) and the prior
 distribution associated with each parameter.
 
 At each step the
-`Pipeline`_ it asks the field factory for the next point in parameter space,
-and the factory gives it one in the form of a Field object that can be handed
-to the simulator, which in turn provides simulated observables for comparison
-with the measured observables in the likelihood module.
+`Pipeline`_ request the Field Factory for the next point in parameter space,
+and the Factory supplies it the form of a Field object constructed with that
+particular choice of parameters. This can then be handed by the Pipeline to
+the Simulator, which computes simulated Observables for comparison
+with the measured observables in the Likelihood module.
 
 Given a Field `YourFieldClass` (which must be an instance of a class derived
 from :py:class:`GeneralField <imagine.fields.field.GeneralField>`)
@@ -361,7 +364,7 @@ can be later handed to an
 There are two main types of datasets: `Tabular datasets`_ and
 `HEALPix datasets`_.
 
-A (growing) number of ready-to-use datasets are available at the community
+A (soon growing) number of ready-to-use datasets are available at the community
 maintained `imagine-datasets <https://github.com/IMAGINE-Consortium/imagine-datasets>`_
 repository. Below the usage of an imported dataset is illustrated::
 
@@ -413,6 +416,7 @@ To construct a tabular dataset, one needs to instantiate
 
 **HEALPix datasets** will generally comprise maps of the full-sky, where
 `HEALPix <https://healpix.sourceforge.io/>`_ pixelation is employed.
+
 :py:class:`imagine.observables.dataset.HEALPixDataset`
 :py:class:`imagine.observables.dataset.SynchrotronHEALPixDataset`
 :py:class:`imagine.observables.dataset.FaradayDepthHEALPixDataset`

@@ -13,7 +13,7 @@ their new data by seeing the impact on different models and toy models.
 In order to be able to do this systematically and rigorously, the basic
 design of IMAGINE first breaks the problem into two abstractions:
 :ref:`Fields`, which represent models of physical fields, and
-:ref:`Observables`, which represent
+:ref:`Observables <Observables>`, which represent
 both observational and mock data.
 
 New observational data are included in IMAGINE using the :ref:`Datasets`,
@@ -29,16 +29,16 @@ include `Hammurabi <https://bitbucket.org/hammurabicode/hamx/wiki/Home>`_,
 which can compute Faraday rotation measure and diffuse synchrotron and thermal
 dust emission.
 
-Each of these :ref:`IMAGINE Components` (:ref:`Fields`, :ref:`Observables`,
-:ref:`Datasets`, :ref:`Simulators`)
+Each of these :ref:`IMAGINE Components` (:ref:`Fields`,
+:ref:`Observables <Observables>`, :ref:`Datasets`, :ref:`Simulators`)
 are represented by a Python class in IMAGINE.
-Therefore, in order to use extend IMAGINE with a specific new field or
+Therefore, in order to extend IMAGINE with a specific new field or
 including a new observational dataset, one needs to create a *subclass* of
 one of IMAGINE's base classes. This subclass will, very often, be
 a `wrapper <https://en.wikipedia.org/wiki/Wrapper_function>`_ around
 already existing code or scripts. To preserve the modularity and
 flexibility of IMAGINE, one should try to use
-(as far as possible, but see :ref:`Disclaimer`) only the provided base classes.
+(:ref:`as far as possible <Disclaimer>`) only the provided base classes.
 
 
 .. figure:: imagine_design.png
@@ -50,7 +50,7 @@ flexibility of IMAGINE, one should try to use
     The structure of the IMAGINE pipeline.
 
 :numref:`IMAGINE` describes the typical workflow of IMAGINE and introduces other key base classes.
-Mock and measured data, in the form of :ref:`Observables`, are used
+Mock and measured data, in the form of :ref:`Observables <Observables>`, are used
 to compute a likelihood through a :ref:`Likelihood` class. This, supplemented by
 :ref:`Priors`, allows a :ref:`Pipeline` object to sample the parameter space and compute
 posterior distributions and  Bayesian evidences for the models. The generation
