@@ -46,10 +46,7 @@ def empirical_cov(data):
     assert isinstance(data, np.ndarray)
     assert (len(data.shape) == 2)
     # Get ensemble size (i.e. the number of rows)
-    ensemble_size = np.array(0, dtype=np.uint64)
-    comm.Allreduce([np.array(data.shape[0], dtype=np.uint64),
-                    MPI.LONG], [ensemble_size, MPI.LONG],
-                   op=MPI.SUM)
+    ensemble_size, _ = pshape(data)
     # Calculates covariance
     u = data - pmean(data)
     cov = pmult(ptrans(u), u) / ensemble_size
