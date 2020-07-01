@@ -17,10 +17,11 @@ and unpack the
 `latest release <https://github.com/IMAGINE-Consortium/imagine/releases/latest>`_:
 
 .. code-block:: console
+
     wget https://github.com/IMAGINE-Consortium/imagine/archive/v2.0.0-alpha.tar.gz
     tar -xvvzf v2.0.0-alpha.tar.gz
-    
-    
+
+
 Alternatively, if one is interested in getting involved with the development,
 we recommend cloning the git repository
 
@@ -68,14 +69,14 @@ Hammurabi X
 -----------
 
 A key dependency of IMAGINE is the
-`Hammurabi code <https://bitbucket.org/hammurabicode/hamx/>`_,
+`Hammurabi X <https://github.com/hammurabi-dev/hammurabiX>`_ code,
 a `HEALPix <https://healpix.jpl.nasa.gov/>`_-based
 numeric simulator for Galactic polarized emission
 (`arXiv:1907.00207 <https://arxiv.org/abs/1907.00207>`_).
 
 Before proceeding with the IMAGINE installation, it is necessary to install
 Hammurabi X following the instructions on its project
-`wiki <https://bitbucket.org/hammurabicode/hamx/wiki/>`_.
+`wiki <https://github.com/hammurabi-dev/hammurabiX/wiki>`_.
 Then, one needs to install the `hampyx` python wrapper:
 
 .. code-block:: console
