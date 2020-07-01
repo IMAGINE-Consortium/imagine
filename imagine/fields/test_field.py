@@ -42,8 +42,8 @@ class CosThermalElectronDensity_Factory(GeneralFieldFactory):
     Field factory associated with the :py:class:`CosThermalElectronDensityw`
     class
     """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.field_class = CosThermalElectronDensity
         self.default_parameters = {'n0': 1*u.cm**-3,
                                    'a': 0.0/u.kpc*u.rad,
@@ -97,8 +97,8 @@ class NaiveGaussianMagneticField_Factory(GeneralFieldFactory):
     Field factory associated with the :py:class:`NaiveGaussianMagneticField`
     class
     """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.field_class = NaiveGaussianMagneticField
         self.default_parameters = {'a0': 1*u.microgauss,
                                    'b0': 0.1*u.microgauss}
