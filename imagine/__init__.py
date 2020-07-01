@@ -1,3 +1,6 @@
+# Version import
+from .__version__ import __version__
+
 # Global configuration and settings
 from .tools.config import rc
 
@@ -21,4 +24,3 @@ from .observables import dataset
 
 # customized modules
 from .simulators.hammurabi import Hammurabi
-

@@ -1,25 +1,35 @@
-from setuptools import setup, find_packages
+# Built-in imports
+from codecs import open
+import re
+
+# Package imports
+from setuptools import find_packages, setup
 
 # Get the requirements list
 with open('requirements.txt', 'r') as f:
     requirements = f.read().splitlines()
 
+# Read the __version__.py file
+with open('imagine/__version__.py', 'r') as f:
+    vf = f.read()
+
+# Obtain version from read-in __version__.py file
+version = re.search(r"^_*version_* = ['\"]([^'\"]*)['\"]", vf, re.M).group(1)
+
 setup(name="imagine",
-      version="2.0.0-alpha",
-      description="Intestellar MAny field inference enGINE",
+      version=version,
+      description="Interstellar MAny field inference enGINE",
       license="GPLv3",
-      url="https://github.com/IMAGINE-Consortium/imagine/",
+      url="https://github.com/IMAGINE-Consortium/imagine",
       author="IMAGINE Consortium",
       author_email="jiaxin.wang@sjtu.edu.cn, luizfelippesr@gmail.com",
       maintainer="Jiaxin Wang, Luiz Felippe S. Rodrigues",
       maintainer_email="jiaxin.wang@sjtu.edu.cn, luizfelippesr@gmail.com",
       packages=find_packages(),
       include_package_data=True,
-      platforms="any",
+      platforms="UNIX",
       python_requires='>=3.5',
       install_requires=requirements,
-      #dependency_links=[
-        #'git+https://bitbucket.org/hammurabicode/hamx.git#egg=hampyx'],
       zip_safe=False,
       classifiers=["Development Status :: 3 - Alpha",
                    "Intended Audience :: Science/Research",
