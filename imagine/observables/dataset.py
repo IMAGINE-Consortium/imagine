@@ -249,9 +249,10 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     # Class attributes
     NAME = 'sync'
 
-    def __init__(self, data, frequency, type, Nside=None):
-        super().__init__(data, Nside=Nside)
-
+    def __init__(self, data, frequency, type, 
+                 error=None, cov=None, Nside=None):
+        super().__init__(data, error=error, cov=cov, Nside=Nside)
+    
         self.frequency = str(frequency)
         # Checks whether the type is valid
         assert type in ['I', 'Q', 'U', 'PI', 'PA']
