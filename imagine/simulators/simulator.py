@@ -104,7 +104,7 @@ class Simulator(object):
         sorted_field_list = self._sort_field_dependencies(field_list)
 
         for field in sorted_field_list:
-            if field.field_type in (list(self.required_field_types)
+            if field.type in (list(self.required_field_types)
                                     + list(self.optional_field_types)):
 
                 # Checks whether the grid_type is correct
@@ -114,17 +114,17 @@ class Simulator(object):
 
                 # Checks whether the grids are consistent
                 # (if fields were evaluated on the same grid)
-                if self.use_common_grid and (field.field_type != 'dummy'):
+                if self.use_common_grid and (field.type != 'dummy'):
                     if self.grid is None:
                         self.grid = field.grid
                     assert self.grid is field.grid, 'Multiple grids when a common grid is required'
                 else:
                     if self.grids is None:
                         self.grids = {}
-                    elif field.field_type in self.grids:
-                        assert self.grids[field.field_type] is field.grid, 'Fields of the same type must have the same grid'
+                    elif field.type in self.grids:
+                        assert self.grids[field.type] is field.grid, 'Fields of the same type must have the same grid'
                     else:
-                        self.grids[field.field_type] = field.grid
+                        self.grids[field.type] = field.grid
 
                 # Organises dependencies
                 dependencies = {}
@@ -143,30 +143,30 @@ class Simulator(object):
                                 break
 
                 # Finally, stores the field
-                if field.field_type not in self.fields:
+                if field.type not in self.fields:
                     # Stores the data
-                    self.fields[field.field_type] = field.get_data(i, dependencies)
+                    self.fields[field.type] = field.get_data(i, dependencies)
                     # Stores the checklist dictionary
-                    self.field_checklist[field.field_type] = field.field_checklist
+                    self.field_checklist[field.type] = field.field_checklist
 
-                elif field.field_type != 'dummy':
+                elif field.type != 'dummy':
                     # If multiple fields of the same type are present, sums them up
-                    self.fields[field.field_type] = (self.fields[field.field_type]
+                    self.fields[field.type] = (self.fields[field.type]
                                                      + field.get_data(i, dependencies))
                     # NB the '+=' has *not* been used to changes in the original data
                     # due to its 'inplace' nature
                 else:
                     # For multiple dummies, parameters provided by _get_data are
                     # combined (taking care to avoid modifying the original object)
-                    self.fields[field.field_type] = self.fields[field.field_type].copy()
-                    self.fields[field.field_type].update(field.get_data(i, dependencies))
+                    self.fields[field.type] = self.fields[field.type].copy()
+                    self.fields[field.type].update(field.get_data(i, dependencies))
 
                     # The checklists are also combined
-                    self.field_checklist[field.field_type] = self.field_checklist[field.field_type].copy()
-                    self.field_checklist[field.field_type].update(field.field_checklist)
+                    self.field_checklist[field.type] = self.field_checklist[field.type].copy()
+                    self.field_checklist[field.type].update(field.field_checklist)
 
-                if field.field_type == 'dummy':
-                    self.controllist[field.field_name] = field.simulator_controllist
+                if field.type == 'dummy':
+                    self.controllist[field.name] = field.simulator_controllist
 
         # Makes sure all required fields were included
         assert set(self.required_field_types) <= set(self.fields.keys()), 'Missing required field'
@@ -215,7 +215,7 @@ class Simulator(object):
 
         # Prepares field_type and dependencies dictionaries
         for field in fields:
-            ftype = field.field_type
+            ftype = field.type
             fclass = type(field)
             fdep = field.dependencies_list
 

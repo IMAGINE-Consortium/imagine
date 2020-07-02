@@ -9,7 +9,7 @@ from .likelihoods.likelihood import Likelihood
 from .likelihoods.ensemble_likelihood import EnsembleLikelihood
 from .likelihoods.simple_likelihood import SimpleLikelihood
 from .fields.field_factory import GeneralFieldFactory
-from .fields.field import GeneralField
+from .fields.field import *
 from .fields.grid import *
 from .fields.base_fields import *
 

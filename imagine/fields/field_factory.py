@@ -1,7 +1,7 @@
 from copy import deepcopy
 import logging as log
 import astropy.units as u
-from imagine.fields import GeneralField
+from imagine.fields import Field
 from imagine.tools.carrier_mapper import unity_mapper
 from imagine.tools.icy_decorator import icy
 from imagine.fields.grid import UniformGrid
@@ -54,7 +54,7 @@ class GeneralFieldFactory:
     field_class : class
         Python class whose instances are produces by the present factory
     """
-    def __init__(self, grid=None, boxsize=None, resolution=None, 
+    def __init__(self, grid=None, boxsize=None, resolution=None,
                  field_kwargs={}):
         log.debug('@ field_factory::__init__')
 
@@ -181,11 +181,11 @@ class GeneralFieldFactory:
             self._priors = {}
 
         parameter_ranges = {}
-        
+
         # Uses previous information
         prior_dict = self._priors.copy()
         prior_dict.update(new_prior_dict)
-        
+
         for name in self.default_parameters:
             assert (name in prior_dict), 'Missing Prior for '+name
             prior = prior_dict[name]

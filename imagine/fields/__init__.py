@@ -1,4 +1,4 @@
-from .field import GeneralField
-from .field_factory import GeneralFieldFactory
-from .grid import UniformGrid
+from .field import *
+from .field_factory import *
+from .grid import *
 from .base_fields import *

@@ -1,9 +1,8 @@
 from imagine import MagneticField, ThermalElectronDensityField
-from imagine.tools.icy_decorator import icy
 import numpy as np
 import scipy.stats as stats
 
-@icy
+
 class ConstantMagneticField(MagneticField):
     """
     Constant magnetic field
@@ -12,8 +11,9 @@ class ConstantMagneticField(MagneticField):
     'Bx', 'By', 'Bz', which correspond to the fixed components
     :math:`B_x`, :math:`B_x` and :math:`B_z`.
     """
-    field_name = 'constant_B'
-    stochastic_field = False
+
+    # Class attributes
+    NAME = 'constant_B'
 
     @property
     def field_checklist(self):
@@ -25,14 +25,14 @@ class ConstantMagneticField(MagneticField):
         # For a magnetic field, the output must be of shape:
         # (Nx,Ny,Nz,Nc) where Nc is the index of the component.
         # Computes Bx
-        B[:,:,:,0] = self.parameters['Bx']
+        B[:, :, :, 0] = self.parameters['Bx']
         # Computes By
-        B[:,:,:,1] = self.parameters['By']
+        B[:, :, :, 1] = self.parameters['By']
         # Computes Bz
-        B[:,:,:,2] = self.parameters['Bz']
+        B[:, :, :, 2] = self.parameters['Bz']
         return B
 
-@icy
+
 class constantThermalElectrons(ThermalElectronDensityField):
     """
     Constant magnetic field
@@ -40,8 +40,9 @@ class constantThermalElectrons(ThermalElectronDensityField):
     The field parameters are:
     'ne', the number density of thermal electrons
     """
-    field_name = 'constant_TE'
-    stochastic_field = False
+
+    # Class attributes
+    NAME = 'constant_TE'
 
     @property
     def field_checklist(self):
@@ -50,7 +51,7 @@ class constantThermalElectrons(ThermalElectronDensityField):
     def compute_field(self, seed):
         return np.ones(self.data_shape)*self.parameters['ne']
 
-@icy
+
 class ExponentialThermalElectrons(ThermalElectronDensityField):
     """
     Thermal electron distribution in a double exponential disc
@@ -67,8 +68,8 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
     'scale_radius`, :math:`R_e`; and 'scale_height', :math:`h_e`.
     """
 
-    field_name = 'exponential_disc_thermal_electrons'
-    stochastic_field = False
+    # Class attributes
+    NAME = 'exponential_disc_thermal_electrons'
 
     @property
     def field_checklist(self):
@@ -85,7 +86,7 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
 
         return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
 
-@icy
+
 class RandomThermalElectrons(ThermalElectronDensityField):
     """
     Thermal electron densities drawn from a Gaussian distribution
@@ -100,12 +101,14 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     aforementioned minimum density. To disable the minimum density requirement,
     it may be set to NaN.
     """
-    field_name = 'random_thermal_electrons'
-    stochastic_field = True
+
+    # Class attributes
+    NAME = 'random_thermal_electrons'
+    STOCHASTIC_FIELD = True
 
     @property
     def field_checklist(self):
-        return {'mean' : None, 'std' : None, 'min_ne': None}
+        return {'mean': None, 'std': None, 'min_ne': None}
 
     def compute_field(self, seed):
         # Converts dimensional parameters into numerical values

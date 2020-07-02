@@ -10,31 +10,32 @@ import astropy.units as u
 # E -> electron density (A,B) - magnetic field
 # F - independent - magnetic field
 
+
 class A(img.ThermalElectronDensityField):
     """Independent electron density"""
-    field_name = 'A'
-    stochastic_field = False
+
+    NAME = 'A'
 
     def compute_field(self, seed):
-        return np.ones(self.data_shape)*self.field_units
+        return np.ones(self.data_shape)*self.units
+
 
 class B(img.ThermalElectronDensityField):
     """Independent electron density"""
-    field_name = 'B'
-    stochastic_field = False
+
+    NAME = 'B'
 
     def compute_field(self, seed):
         self.secret = 9 # Example of shared information
-        return np.ones(self.data_shape)*self.field_units/2.
+        return np.ones(self.data_shape)*self.units/2.
+
 
 class C(img.DummyField):
     """Dummy field dependent on B"""
-    field_name = 'C'
-    stochastic_field = False
 
-    @property
-    def dependencies_list(self):
-        return [B]
+    NAME = 'C'
+    DEPENDENCIES_LIST = [B]
+
 
 class D(img.MagneticField):
     """
@@ -42,16 +43,15 @@ class D(img.MagneticField):
 
     Each component takes the secret number saved during the evaluation of B
     """
-    field_name = 'D'
-    stochastic_field = False
 
-    @property
-    def dependencies_list(self):
-        return [C,B]
+    NAME = 'D'
+    DEPENDENCIES_LIST = [B, C]
+
     def compute_field(self, seed):
-        result = np.ones(self.data_shape)*self.field_units
+        result = np.ones(self.data_shape)*self.units
 
         return self.dependencies[B].secret * result
+
 
 class E(img.MagneticField):
     """
@@ -59,12 +59,9 @@ class E(img.MagneticField):
 
     Each component takes the numerical value of the electron density
     """
-    field_name = 'E'
-    stochastic_field = False
 
-    @property
-    def dependencies_list(self):
-        return ['thermal_electron_density']
+    NAME = 'E'
+    DEPENDENCIES_LIST = ['thermal_electron_density']
 
     def compute_field(self, seed):
         te_density = self.dependencies['thermal_electron_density']
@@ -73,16 +70,19 @@ class E(img.MagneticField):
             B[...,i] = te_density.value
         return B*u.microgauss
 
+
 class F(img.MagneticField):
     """Independent magnetic field"""
-    field_name = 'F'
-    stochastic_field = False
+
+    NAME = 'F'
 
     def compute_field(self, seed):
         return np.ones(self.data_shape)*0.1*u.microgauss
 
+
 # We initalize a common grid for all the tests
 grid = img.UniformGrid([[0,1]]*3*u.kpc,resolution=[1]*3)
+
 
 class DummySimulator(img.Simulator):
 
@@ -144,7 +144,7 @@ def test_Simulator_dependency_resolution():
 
     sim = DummySimulator(mea)
 
-    fields_list = [field(grid) for field in (F,E,D,C,B,A)]
+    fields_list = list(map(lambda x: x(grid), (F, E, D, C, B, A)))
     obs = sim(fields_list)
 
     assert obs[('nothing', 'nan', 'tab', 'nan')].global_data[0][0] == 33.3

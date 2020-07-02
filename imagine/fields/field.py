@@ -1,7 +1,37 @@
+# %% IMPORTS
+# Built-in imports
+import abc
+from inspect import currentframe
 import logging as log
+
+# Package imports
 import numpy as np
 
-class GeneralField(object):
+# All declaration
+__all__ = ['Field']
+
+
+# %% HELPER FUNCTIONS
+def req_attr(meth):
+    # Obtain the REQ_ATTRS attribute of the class of given 'meth'
+    frame = currentframe().f_back
+    req_attrs = frame.f_locals.get('REQ_ATTRS')
+
+    # If req_attrs is None, add it to the class first
+    if req_attrs is None:
+        req_attrs = []
+        frame.f_locals['REQ_ATTRS'] = req_attrs
+
+    # Add capitalized version of method name to req_attrs
+    req_attrs.append(meth.__name__.upper())
+
+    # Return method
+    return(meth)
+
+
+# %% CLASS DEFINITIONS
+# Define abstract base class for creating fields in IMAGINE
+class Field(object, metaclass=abc.ABCMeta):
     """
     This is the base class which can be used to include a completely new field
     in the IMAGINE pipeline. Base classes for specific physical quantites
@@ -15,7 +45,7 @@ class GeneralField(object):
 
     Parameters
     ----------
-    grid : imagine.fields.grid.BaseGrid or None
+    grid : imagine.fields.grid.BaseGrid
         Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a
         3D grid where the field is evaluated
     parameters : dict
@@ -25,71 +55,92 @@ class GeneralField(object):
     ensemble_seeds : list
         Random seeds for generating random field realisations
     """
-    def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
+
+    def __init__(self, grid, *, parameters={}, ensemble_size=None,
                  ensemble_seeds=None, dependencies={}):
         log.debug('@ field::__init__')
-        
+
         self.grid = grid
+        self._parameters = {}
         self.parameters = parameters
         # For convenience, when ensemble info is not available,
         # assumes an ensemble of 1
-        if (ensemble_size is None) and (ensemble_seeds is None):
+        if ensemble_size is None and ensemble_seeds is None:
             ensemble_size = 1
         self.ensemble_size = ensemble_size
         self.ensemble_seeds = ensemble_seeds
         # Placeholders
         self._deterministic_data = None
         self.dependencies = dependencies
-        
-        assert self.field_type not in self.dependencies_list, 'Field cannot depend on its own field type'
+
+        assert self.type not in self.dependencies_list, 'Field cannot depend on its own field type'
+
+        # Check if all required class attributes are defined
+        self._check_class_attrs()
+
+    # This function checks if all required class attributes are available
+    def _check_class_attrs(self):
+        # Loop over all required attributes in REQ_ATTRS and check if it exists
+        for attr in self.REQ_ATTRS:
+            if not hasattr(self, attr):
+                # Raise error if attribute is not found
+                raise AttributeError("Required class attribute %r is not "
+                                     "defined!" % (attr))
 
     @property
-    def field_type(self):
-        """Description the field"""
-        raise NotImplementedError
+    @req_attr
+    def type(self):
+        """Type of the field"""
+        return(self.TYPE)
 
     @property
     def dependencies_list(self):
         """Dependencies on other fields"""
-        return []
-        
+        return(getattr(self, 'DEPENDENCIES_LIST', []))
+
     @property
-    def field_name(self):
+    @req_attr
+    def name(self):
         """
-        Should be overriden with the name of the field
+        Name of the field
         """
-        raise NotImplementedError
+        return(self.NAME)
 
     @property
     def stochastic_field(self):
         """
-        Should be overriden with value True if the field is stochastic
-        or False if the field is deterministic (i.e. the output depends only
-        on the parameter values and not on the seed value).
+        *True* if the field is stochastic or *False* if the field is
+        deterministic (i.e. the output depends only on the parameter values and
+        not on the seed value).
+        Default value is *False* if subclass does not override
+        :attr:`~STOCHASTIC_FIELD`.
+
         """
-        raise NotImplementedError
+        return(getattr(self, 'STOCHASTIC_FIELD', False))
 
     @property
-    def field_units(self):
+    @req_attr
+    def units(self):
         """Physical units of the field"""
-        raise NotImplementedError
+        return(self.UNITS)
 
-    @property
+    @abc.abstractproperty
     def data_description(self):
         """Summary of what is in each axis of the data array"""
         raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def data_shape(self):
         """Shape of the field data array"""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def compute_field(self, seed):
         """
         This should be overridden with a derived class. It must return an array
         with dimensions compatible with the associated `field_type`.
         See :doc:`documentation <components>`.
-        
+
         Should not be used directly (use :py:meth:`get_data` instead).
 
         Parameters
@@ -110,13 +161,13 @@ class GeneralField(object):
             If the field is stochastic, this indexes the realization generated.
             Default value: 0 (i.e. the first realization).
         dependencies : dict
-            If the :py:data:`dependencies_list` is non-empty, a dictionary containing 
+            If the :py:data:`dependencies_list` is non-empty, a dictionary containing
             the requested dependencies must be provided.
-            
+
         Returns
         -------
         field : astropy.units.quantity.Quantity
-            Array of shape :py:data:`data_shape` whose contents are described by 
+            Array of shape :py:data:`data_shape` whose contents are described by
             :py:data:`data_description` in units :py:data:`field_units`.
         """
         if self.stochastic_field:
@@ -145,11 +196,10 @@ class GeneralField(object):
             if dep not in dependencies:
                 raise KeyError('Missing field dependency {}'.format(dep))
         self.dependencies = dependencies
-        
-    
+
     def _check_realisation(self, field):
         # Checks the units
-        assert self.field_units.is_equivalent(field.unit), 'Field units should be '+self.field_units
+        assert self.units.is_equivalent(field.unit), 'Field units should be '+self.units
         # Checks the shape
         try:
             assert field.shape == self.data_shape
@@ -162,7 +212,7 @@ class GeneralField(object):
     @property
     def field_checklist(self):
         """Dictionary with all parameter names as keys"""
-        return dict()
+        return(getattr(self, 'FIELD_CHECKLIST', {}))
 
     @property
     def ensemble_seeds(self):
@@ -171,7 +221,7 @@ class GeneralField(object):
     @ensemble_seeds.setter
     def ensemble_seeds(self, ensemble_seeds):
         if ensemble_seeds is None:  # in case no seeds given, choose something
-            self._ensemble_seeds = np.random.randint(0, 2**32,
+            self._ensemble_seeds = np.random.randint(0, 2**31-1,
                                                      self.ensemble_size)
         else:
             if self.ensemble_size is None:
@@ -188,10 +238,6 @@ class GeneralField(object):
     @parameters.setter
     def parameters(self, parameters):
         for k in parameters:
-            assert (k in self.field_checklist.keys())
-        try:
-            self._parameters.update(parameters)
-            log.debug('update full-set parameters %s' % str(parameters))
-        except AttributeError:
-            self._parameters = parameters
-            log.debug('set full-set parameters %s' % str(parameters))
+            assert (k in self.field_checklist)
+        self._parameters.update(parameters)
+        log.debug('update full-set parameters %s' % (parameters))

@@ -15,10 +15,10 @@ A brief summary of the module:
 See also :doc:`IMAGINE Components <components>` section of the docs.
 """
 import astropy.units as u
-from imagine.fields.field import GeneralField
+from imagine.fields.field import Field
 
 
-class MagneticField(GeneralField):
+class MagneticField(Field):
     """
     Base class for the inclusion of new models for magnetic fields.
     It should be subclassed following the template provided.
@@ -29,7 +29,7 @@ class MagneticField(GeneralField):
     Parameters
     ----------
 
-    grid : imagine.fields.grid.BaseGrid or None
+    grid : imagine.fields.grid.BaseGrid
         Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D
         grid where the field is evaluated
     parameters : dict
@@ -39,18 +39,22 @@ class MagneticField(GeneralField):
     ensemble_seeds
         Random seed(s) for generating random field realisations
     """
-    field_name = 'magnetic_field_base'
 
-    field_type = 'magnetic_field'
-    field_units = u.microgauss
-    data_description = ['grid_x', 'grid_y', 'grid_z', 'component (x,y,z)']
+    # Class attributes
+    NAME = 'magnetic_field_base'
+    TYPE = 'magnetic_field'
+    UNITS = u.microgauss
+
+    @property
+    def data_description(self):
+        return(['grid_x', 'grid_y', 'grid_z', 'component (x,y,z)'])
 
     @property
     def data_shape(self):
-        return tuple([i for i in self.grid.shape] + [3])
+        return(*self.grid.shape, 3)
 
 
-class ThermalElectronDensityField(GeneralField):
+class ThermalElectronDensityField(Field):
     """
     Base class for the inclusion of models for spatial distribution of thermal
     electrons. It should be subclassed following the template provided.
@@ -60,7 +64,7 @@ class ThermalElectronDensityField(GeneralField):
 
     Parameters
     ----------
-    grid : imagine.fields.grid.BaseGrid or None
+    grid : imagine.fields.grid.BaseGrid
         Instance of :py:class:`imagine.fields.grid.BaseGrid` containing a 3D
         grid where the field is evaluated
     parameters : dict
@@ -71,10 +75,11 @@ class ThermalElectronDensityField(GeneralField):
         Random seed(s) for generating random field realisations
 
     """
-    field_name = 'thermal_electrons_base'
 
-    field_type = 'thermal_electron_density'
-    field_units = u.cm**(-3)
+    # Class attributes
+    NAME = 'thermal_electrons_base'
+    TYPE = 'thermal_electron_density'
+    UNITS = u.cm**(-3)
     data_description = ['grid_x', 'grid_y', 'grid_z']
 
     @property
@@ -82,27 +87,37 @@ class ThermalElectronDensityField(GeneralField):
         return tuple(self.grid.shape)
 
 
-class CosmicRayElectronDensityField(GeneralField):
+class CosmicRayElectronDensityField(Field):
     """
     Not yet implemented
     """
-    field_name = 'cosmic_ray_electrons_base'
 
-    field_type = 'cosmic_ray_electron_density'
+    # Class attributes
+    NAME = 'cosmic_ray_electrons_base'
+    TYPE = 'cosmic_ray_electron_density'
 
     def __init__():
         raise NotImplementedError
 
 
-class DummyField(GeneralField):
+class DummyField(Field):
     """
     Base class for a dummy Field used for sending parameters and settings to
     specific Simulators rather than computing and storing a physical field.
     """
-    field_name = 'dummy_base'
 
-    field_type = 'dummy'
-    field_units = None
+    # Class attributes
+    NAME = 'dummy_base'
+    TYPE = 'dummy'
+    UNITS = None
+
+    @property
+    def data_description(self):
+        return([])
+
+    @property
+    def data_shape(self):
+        return(self.grid.shape)
 
     @property
     def simulator_controllist(self):
@@ -110,6 +125,9 @@ class DummyField(GeneralField):
         Dictionary containing fixed Simulator settings
         """
         return dict()
+
+    def compute_field(self, *args, **kwargs):
+        pass
 
     def get_data(self,  i_realization=0, dependencies={}):
         """
@@ -120,18 +138,18 @@ class DummyField(GeneralField):
         i_realization : int
             Index of the current realization
         dependencies : dict
-            If the :py:data:`dependencies_list` is non-empty, a dictionary containing 
+            If the :py:data:`dependencies_list` is non-empty, a dictionary containing
             the requested dependencies must be provided.
-            
+
         Returns
         -------
         parameters : dict
             Dictionary of containing a copy of the Field parameters including
-            an extra entry with the random seed that should be used with the 
+            an extra entry with the random seed that should be used with the
             present realization (under the key: 'random_seed')
         """
         self._update_dependencies(dependencies)
         parameters = self._parameters.copy()
         parameters['random_seed'] = self.ensemble_seeds[i_realization]
-        
+
         return parameters
