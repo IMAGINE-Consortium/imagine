@@ -3,18 +3,26 @@ ensemble likelihood, described in IMAGINE techincal report
 in principle
 it combines covariance matrices from both observations and simulations
 """
-import numpy as np
-import logging as log
+
+# %% IMPORTS
+# Built-in imports
 from copy import deepcopy
+import logging as log
+
+# Package imports
+import numpy as np
+
+# IMAGINE imports
+from imagine.likelihoods import Likelihood
 from imagine.observables.observable_dict import Simulations
-from imagine.likelihoods.likelihood import Likelihood
 from imagine.tools.covariance_estimator import oas_mcov
 from imagine.tools.parallel_ops import pslogdet, plu_solve, ptrace
-from imagine.tools.icy_decorator import icy
-import scipy
+
+# All declaration
+__all__ = ['EnsembleLikelihood']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class EnsembleLikelihood(Likelihood):
     """
     EnsembleLikelihood class initialization function
@@ -28,11 +36,8 @@ class EnsembleLikelihood(Likelihood):
     mask_dict : imagine.observables.observable_dict.Masks
         Masks
     """
-    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
-        log.debug('@ ensemble_likelihood::__init__')
-        super(EnsembleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
 
-    def __call__(self, simulations_dict):
+    def call(self, simulations_dict):
         """
         EnsembleLikelihood class call function
 

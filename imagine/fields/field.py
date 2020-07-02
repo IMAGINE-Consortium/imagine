@@ -184,10 +184,10 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
             print('Description:', self.data_description)
             raise
 
-    @property
+    @abc.abstractproperty
     def field_checklist(self):
         """Dictionary with all parameter names as keys"""
-        return(getattr(self, 'FIELD_CHECKLIST', {}))
+        raise NotImplementedError
 
     @property
     def ensemble_seeds(self):

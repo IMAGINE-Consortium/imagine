@@ -11,18 +11,27 @@ __init__
     Covariances object (optional)
     Masks object (optional)
 
-__call__
+call
 
     running LOG-likelihood calculation requires
     ObservableDict object
 """
 
-from imagine.observables.observable_dict import Measurements, Covariances, Masks
-from imagine.tools.icy_decorator import icy
+# %% IMPORTS
+# Built-in imports
+import abc
+
+# IMAGINE imports
+from imagine.observables.observable_dict import (
+    Measurements, Covariances, Masks)
+from imagine.tools import BaseClass
+
+# All declaration
+__all__ = ['Likelihood']
 
 
-@icy
-class Likelihood(object):
+# %% CLASS DEFINITIONS
+class Likelihood(BaseClass, metaclass=abc.ABCMeta):
     """
     Base class that defines likelihood posterior function
     to be used in Bayesian analysis
@@ -36,10 +45,14 @@ class Likelihood(object):
     mask_dict : imagine.observables.observable_dict.Masks
         Masks
     """
+
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
         self.mask_dict = mask_dict
         self.measurement_dict = measurement_dict
         self.covariance_dict = covariance_dict
+
+    def __call__(self, *args, **kwargs):
+        return(self.call(*args, **kwargs))
 
     @property
     def mask_dict(self):
@@ -74,7 +87,8 @@ class Likelihood(object):
         if self._mask_dict is not None:  # apply mask
             self._covariance_dict.apply_mask(self._mask_dict)
 
-    def __call__(self, observable_dict, variables):
+    @abc.abstractmethod
+    def call(self, observable_dict):
         """
         Parameters
         ----------
