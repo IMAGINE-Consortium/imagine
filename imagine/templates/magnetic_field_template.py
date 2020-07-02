@@ -1,14 +1,17 @@
-from imagine import MagneticField
+from imagine.fields import MagneticField
 import astropy.units as u
 import numpy as np
 import MY_GMF_MODEL # Substitute this by your own code
 
-@icy
+
 class MagneticFieldTemplate(MagneticField):
     """ Here comes the description of the magnetic field model """
-    field_name = 'name_of_the_magnetic_field'
 
-    stochastic_field = False # Must be True if it is stochastic
+    # Class attributes
+    NAME = 'name_of_the_magnetic_field'
+
+    # Is this field stochastic or not. Only necessary if True
+    STOCHASTIC_FIELD = False
 
     @property
     def field_checklist(self):

@@ -1,6 +1,10 @@
-import imagine as img
 import numpy as np
 import astropy.units as u
+
+from imagine.fields import (
+    DummyField, MagneticField, ThermalElectronDensityField, UniformGrid)
+from imagine.observables import Measurements, TabularDataset
+from imagine.simulators import Simulator
 
 # First, we create some fields with the structure:
 # A - independent - electron density
@@ -11,7 +15,7 @@ import astropy.units as u
 # F - independent - magnetic field
 
 
-class A(img.ThermalElectronDensityField):
+class A(ThermalElectronDensityField):
     """Independent electron density"""
 
     NAME = 'A'
@@ -24,7 +28,7 @@ class A(img.ThermalElectronDensityField):
         return np.ones(self.data_shape)*self.units
 
 
-class B(img.ThermalElectronDensityField):
+class B(ThermalElectronDensityField):
     """Independent electron density"""
 
     NAME = 'B'
@@ -38,14 +42,14 @@ class B(img.ThermalElectronDensityField):
         return np.ones(self.data_shape)*self.units/2.
 
 
-class C(img.DummyField):
+class C(DummyField):
     """Dummy field dependent on B"""
 
     NAME = 'C'
     DEPENDENCIES_LIST = [B]
 
 
-class D(img.MagneticField):
+class D(MagneticField):
     """
     Magnetic field, dependent on B and C
 
@@ -65,7 +69,7 @@ class D(img.MagneticField):
         return self.dependencies[B].secret * result
 
 
-class E(img.MagneticField):
+class E(MagneticField):
     """
     Magnetic field, dependent total thermal electron density
 
@@ -87,7 +91,7 @@ class E(img.MagneticField):
         return B*u.microgauss
 
 
-class F(img.MagneticField):
+class F(MagneticField):
     """Independent magnetic field"""
 
     NAME = 'F'
@@ -101,10 +105,10 @@ class F(img.MagneticField):
 
 
 # We initalize a common grid for all the tests
-grid = img.UniformGrid([[0,1]]*3*u.kpc,resolution=[1]*3)
+grid = UniformGrid([[0,1]]*3*u.kpc,resolution=[1]*3)
 
 
-class DummySimulator(img.Simulator):
+class DummySimulator(Simulator):
     # Class attributes
     SIMULATED_QUANTITIES = ['nothing']
     REQUIRED_FIELD_TYPES = ['dummy','magnetic_field',
@@ -147,14 +151,14 @@ def test_Field_dependency():
 
 
 def test_Simulator_dependency_resolution():
-    dat = img.observables.TabularDataset({'x':[0],'lat':0,'lon':0,'err':0.1},
-                                         name='nothing',
-                                         units=u.rad,
-                                         data_column='x',
-                                         error_column='err',
-                                         lat_column='lat',
-                                         lon_column='lon')
-    mea = img.Measurements()
+    dat = TabularDataset({'x':[0],'lat':0,'lon':0,'err':0.1},
+                          name='nothing',
+                          units=u.rad,
+                          data_column='x',
+                          error_column='err',
+                          lat_column='lat',
+                          lon_column='lon')
+    mea = Measurements()
     mea.append(dataset=dat)
 
     sim = DummySimulator(mea)

@@ -11,7 +11,6 @@ import pymultinest
 
 # IMAGINE imports
 from imagine.pipelines import Pipeline
-import imagine as img
 
 # GLOBALS
 comm = MPI.COMM_WORLD

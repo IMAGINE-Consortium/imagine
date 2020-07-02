@@ -21,6 +21,7 @@ rc = {'temp_dir': None,
       'pipeline_distribute_ensemble': False}
 
 
+# %% FUNCTION DEFINITIONS
 def _str_to_python(v):
     """
     Attempts to convert a string to a python basic type

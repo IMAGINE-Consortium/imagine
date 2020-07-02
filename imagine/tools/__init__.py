@@ -7,19 +7,30 @@ from .config import *
 
 # Import base modules
 from . import (
-    carrier_mapper, class_tools, masker, mpi_helper, parallel_ops)
+    carrier_mapper, class_tools, covariance_estimator, io_handler, masker,
+    misc, mpi_helper, parallel_ops, random_seed, timer)
 from .carrier_mapper import *
 from .class_tools import *
+from .covariance_estimator import *
+from .io_handler import *
 from .masker import *
+from .misc import *
 from .mpi_helper import *
 from .parallel_ops import *
+from .random_seed import *
+from .timer import *
 
 # All declaration
-__all__ = ['carrier_mapper', 'class_tools', 'config', 'masker', 'mpi_helper',
-           'parallel_ops']
+__all__ = ['carrier_mapper', 'class_tools', 'config', 'covariance_estimator',
+           'io_handler', 'masker', 'misc', 'mpi_helper', 'parallel_ops',
+           'random_seed', 'timer']
 __all__.extend(carrier_mapper.__all__)
 __all__.extend(class_tools.__all__)
 __all__.extend(config.__all__)
+__all__.extend(covariance_estimator.__all__)
+__all__.extend(io_handler.__all__)
 __all__.extend(masker.__all__)
 __all__.extend(mpi_helper.__all__)
 __all__.extend(parallel_ops.__all__)
+__all__.extend(random_seed.__all__)
+__all__.extend(timer.__all__)

@@ -1,10 +1,12 @@
-from imagine import DummyField
+from imagine.fields import DummyField
 
 class DummyFieldTemplate(DummyField):
     """
     Description of the dummy field
     """
-    field_name = 'name_of_the_dummy_field'
+
+    # Class attributes
+    NAME = 'name_of_the_dummy_field'
 
     @property
     def field_checklist(self):

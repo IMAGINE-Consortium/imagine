@@ -1,4 +1,4 @@
-from imagine import Simulator
+from imagine.simulators import Simulator
 import numpy as np
 import MY_SIMULATOR
 
@@ -6,27 +6,23 @@ class SimulatorTemplate(Simulator):
     """
     Detailed description of the simulator
     """
+
+    # Class attributes
+    SIMULATED_QUANITIES = ['my_observable_quantity']
+
+    # A list or set of what is required for the simulator to work
+    REQUIRED_FIELD_TYPES = ['field_type_1', 'field_type_2']
+
+    # Fields which may be used if available
+    OPTIONAL_FIELD_TYPES = ['optional_field_type_1']
+    ALLOWED_GRID_TYPES = ['grid_type']
+
     def __init__(self, measurements, extra_args):
         # Send the measurements to parent class
         super().__init__(measurements)
 
         # Any initialization task involving extra_args
         ...
-
-    @property
-    def simulated_quantities(self):
-        return {'my_observable_quantity'}
-    @property
-    def required_field_types(self):
-        # A list or set of what is required for the simulator to work
-        return {'field_type_1', 'field_type_2'}
-    @property
-    def optional_field_types(self):
-        # Fields which may be used if available
-        return {'optional_field_type_1', ... }
-    @property
-    def allowed_grid_types(self):
-        return {'grid_type'}
 
     def simulate(self, key, coords_dict, realization_id, output_units):
         """

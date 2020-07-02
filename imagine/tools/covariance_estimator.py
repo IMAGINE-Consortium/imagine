@@ -4,10 +4,23 @@ covariance matrix based on a finite number of samples.
 
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
-import numpy as np
-import logging as log
-from imagine.tools.parallel_ops import pmean, ptrans, pmult, peye, ptrace, pshape
 
+# %% IMPORTS
+# Built-in imports
+import logging as log
+
+# Package imports
+import numpy as np
+
+# IMAGINE imports
+from imagine.tools.parallel_ops import (
+    pmean, ptrans, pmult, peye, ptrace, pshape)
+
+# All declaration
+__all__ = ['empirical_cov', 'oas_cov', 'oas_mcov']
+
+
+# %% FUNCTION DEFINITIONS
 def empirical_cov(data):
     r"""
     Empirical covariance estimator

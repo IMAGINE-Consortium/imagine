@@ -3,11 +3,21 @@ This module provides a time-thread dependent seed value.
 
 For the testing suites, please turn to "imagine/tests/tools_tests.py".
 """
-import numpy as np
-import time
-import threading
-import logging as log
 
+# %% IMPORTS
+# Built-in imports
+import logging as log
+import threading
+import time
+
+# Package imports
+import numpy as np
+
+# All declaration
+__all__ = ['ensemble_seed_generator', 'seed_generator']
+
+
+# %% FUNCTION DEFINITIONS
 def seed_generator(trigger):
     """
     Sets trigger as 0 will generate time-thread dependent method

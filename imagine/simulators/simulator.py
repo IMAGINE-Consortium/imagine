@@ -6,7 +6,7 @@ import abc
 import numpy as np
 
 # IMAGINE imports
-from imagine import Measurements, Simulations
+from imagine.observables import Measurements, Simulations
 from imagine.tools import BaseClass, req_attr
 
 # All declaration

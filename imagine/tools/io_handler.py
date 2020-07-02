@@ -19,19 +19,31 @@ i.e., 'write_copy' and 'write_dist'.
 
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
-import numpy as np
-from mpi4py import MPI
-import h5py
-import os
+
+# %% IMPORTS
+# Built-in imports
 import logging as log
+import os
+
+# Package imports
+import h5py
+from mpi4py import MPI
+import numpy as np
+
+# IMAGINE imports
 from imagine.tools.mpi_helper import mpi_arrange
 
-
+# Globals
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-class io_handler(object):
+# All declaration
+__all__ = ['IOHandler']
+
+
+# %% CLASS DEFINITIONS
+class IOHandler(object):
     """
     Handles the I/O.
 
@@ -74,13 +86,13 @@ class io_handler(object):
         else:
             assert isinstance(file_path, str)
             self._file_path = file_path
-            
+
     def write_copy(self, data, file, key):
         """
         Writes a copied data-set into a HDF5 file.
         In practice, it writes out the data stored in the master node,
         by defaut taking all nodes have the same copies.
-        
+
         Parameters
         ----------
         data : numpy.ndarray
@@ -176,7 +188,7 @@ class io_handler(object):
         Reads from a HDF5 file identically to all nodes,
         by doing so, each node contains an identical copy of the data stored
         in the file.
-        
+
         Parameters
         ----------
         data : numpy.ndarray
@@ -202,7 +214,7 @@ class io_handler(object):
             data = fh[key][:,:]
         comm.Barrier()
         return data
-        
+
     def read_dist(self, file, key):
         """
         Reads from a HDF5 file and returns a distributed data-set.

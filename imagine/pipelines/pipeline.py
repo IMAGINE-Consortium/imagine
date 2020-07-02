@@ -9,14 +9,12 @@ from astropy.table import QTable
 import numpy as np
 
 # IMAGINE imports
+from imagine import rc
 from imagine.likelihoods import Likelihood
 from imagine.fields import FieldFactory
 from imagine.priors import GeneralPrior
 from imagine.simulators import Simulator
-from imagine.tools import BaseClass, req_attr
-from imagine.tools.random_seed import ensemble_seed_generator
-import imagine.tools.misc as misc
-from imagine import rc
+from imagine.tools import BaseClass, ensemble_seed_generator, misc
 
 # GLOBALS
 comm = MPI.COMM_WORLD
