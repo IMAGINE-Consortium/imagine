@@ -77,7 +77,7 @@ class TestFields():
                 {'a': 0.5,
                  'b': 0})
 
-        field = factory.generate({'a': 0.1}, 4, [23]*4)  # seed list by hand
+        field = factory({'a': 0.1}, 4, [23]*4)  # seed list by hand
 
         assert (field.report_parameters() ==
                 {'a': 1.2,
@@ -100,7 +100,7 @@ class TestFields():
                 {'a': 0.5,
                  'b': 0})
 
-        field = factory.generate({'a': 0.1}, 4)  # no seeds given, fully time-thread dependent random
+        field = factory({'a': 0.1}, 4)  # no seeds given, fully time-thread dependent random
 
         assert (field.parameters ==
                 {'a': 1.2,

@@ -2,10 +2,18 @@
 The mapper module is designed for implementing distribution mapping functions.
 """
 
-import numpy as np
+# %% IMPORTS
+# Built-in imports
 import logging as log
 
+# Package imports
+import numpy as np
 
+# All declaration
+__all__ = ['exp_mapper', 'unity_mapper']
+
+
+# %% FUNCTION DEFINITIONS
 def unity_mapper(x, a=0., b=1.):
     """
     Maps x from [0, 1] into the interval [a, b].

@@ -347,7 +347,7 @@ corresponding Field will be evaluated::
       myFactory = YourField_Factory(grid=cartesian_grid)
 
 The factory object :py:obj:`myFactory` can now be handled to the `Pipeline`_,
-which will generate new fields through the method :py:meth:`generate <imagine.fields.field_factory.GeneralFieldFactory.generate>`.
+which will generate new fields by calling the :py:meth:`~imagine.fields.field_factory.FieldFactory`.
 
 
 .. _Datasets:

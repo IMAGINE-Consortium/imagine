@@ -1,37 +1,21 @@
 # %% IMPORTS
 # Built-in imports
 import abc
-from inspect import currentframe
 import logging as log
 
 # Package imports
 import numpy as np
 
+# IMAGINE imports
+from imagine.tools import BaseClass, req_attr
+
 # All declaration
 __all__ = ['Field']
 
 
-# %% HELPER FUNCTIONS
-def req_attr(meth):
-    # Obtain the REQ_ATTRS attribute of the class of given 'meth'
-    frame = currentframe().f_back
-    req_attrs = frame.f_locals.get('REQ_ATTRS')
-
-    # If req_attrs is None, add it to the class first
-    if req_attrs is None:
-        req_attrs = []
-        frame.f_locals['REQ_ATTRS'] = req_attrs
-
-    # Add capitalized version of method name to req_attrs
-    req_attrs.append(meth.__name__.upper())
-
-    # Return method
-    return(meth)
-
-
 # %% CLASS DEFINITIONS
 # Define abstract base class for creating fields in IMAGINE
-class Field(object, metaclass=abc.ABCMeta):
+class Field(BaseClass, metaclass=abc.ABCMeta):
     """
     This is the base class which can be used to include a completely new field
     in the IMAGINE pipeline. Base classes for specific physical quantites
@@ -60,6 +44,9 @@ class Field(object, metaclass=abc.ABCMeta):
                  ensemble_seeds=None, dependencies={}):
         log.debug('@ field::__init__')
 
+        # Call super constructor
+        super().__init__()
+
         self.grid = grid
         self._parameters = {}
         self.parameters = parameters
@@ -74,18 +61,6 @@ class Field(object, metaclass=abc.ABCMeta):
         self.dependencies = dependencies
 
         assert self.type not in self.dependencies_list, 'Field cannot depend on its own field type'
-
-        # Check if all required class attributes are defined
-        self._check_class_attrs()
-
-    # This function checks if all required class attributes are available
-    def _check_class_attrs(self):
-        # Loop over all required attributes in REQ_ATTRS and check if it exists
-        for attr in self.REQ_ATTRS:
-            if not hasattr(self, attr):
-                # Raise error if attribute is not found
-                raise AttributeError("Required class attribute %r is not "
-                                     "defined!" % (attr))
 
     @property
     @req_attr

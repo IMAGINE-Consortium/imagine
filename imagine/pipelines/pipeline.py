@@ -1,7 +1,7 @@
 import numpy as np
 import logging as log
 from imagine.likelihoods.likelihood import Likelihood
-from imagine.fields.field_factory import GeneralFieldFactory
+from imagine.fields import FieldFactory
 from imagine.priors.prior import GeneralPrior
 from imagine.simulators.simulator import Simulator
 from imagine.tools.random_seed import ensemble_seed_generator
@@ -253,7 +253,7 @@ class Pipeline(object):
         self._priors = dict()
 
         for factory in factory_list:
-            assert isinstance(factory, GeneralFieldFactory)
+            assert isinstance(factory, FieldFactory)
             for ap_name in factory.active_parameters:
                 assert isinstance(ap_name, str)
                 # Sets the parameters and ranges
@@ -457,9 +457,9 @@ class Pipeline(object):
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
 
-            field_list += (factory.generate(variables=variable_dict,
-                                            ensemble_size=self.ensemble_size_actual,
-                                            ensemble_seeds=self.ensemble_seeds),)
+            field_list += (factory(variables=variable_dict,
+                                   ensemble_size=self.ensemble_size_actual,
+                                   ensemble_seeds=self.ensemble_seeds),)
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
         assert(head_idx == len(self._active_parameters))

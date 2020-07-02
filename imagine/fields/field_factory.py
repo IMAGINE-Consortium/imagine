@@ -1,22 +1,29 @@
-from copy import deepcopy
+# %% IMPORTS
+# Built-in imports
+import abc
 import logging as log
+
+# Package imports
 import astropy.units as u
+
+# IMAGINE imports
 from imagine.fields import Field
-from imagine.tools.carrier_mapper import unity_mapper
-from imagine.tools.icy_decorator import icy
-from imagine.fields.grid import UniformGrid
+from imagine.fields.grid import BaseGrid, UniformGrid
 from imagine.priors import GeneralPrior
-import imagine
+from imagine.tools import BaseClass, unity_mapper, req_attr
+
+# All declaration
+__all__ = ['FieldFactory']
 
 
-@icy
-class GeneralFieldFactory:
+# %% CLASS DEFINITIONS
+class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     """
-    GeneralFieldFactory is designed for generating
+    FieldFactory is designed for generating
     ensemble of field configuration DIRECTLY and/or
     handle of field to be conducted by simulators
 
-    Through the method :py:meth:`generate`, the factory object takes
+    Through calling the factory, the factory object takes
     a given set of variable values
     (can be at any chain point in bayesian analysis)
     and translates it into physical parameter values,
@@ -54,40 +61,90 @@ class GeneralFieldFactory:
     field_class : class
         Python class whose instances are produces by the present factory
     """
-    def __init__(self, grid=None, boxsize=None, resolution=None,
+
+    def __init__(self, *, grid=None, boxsize=None, resolution=None,
                  field_kwargs={}):
         log.debug('@ field_factory::__init__')
 
-        self.field_class = GeneralField
+        # Call super constructor
+        super().__init__()
 
         if self.field_type == 'dummy':
             # In dummy fields, we do not use a grid
             self._grid = None
-            self._box = None
+            self._boxsize = None
             self._resolution = None
         else:
             # Uses user defined grid if `grid` is present
             if grid is not None:
-                assert isinstance(grid, imagine.fields.grid.BaseGrid)
+                assert isinstance(grid, BaseGrid)
                 self._grid = grid
             # Otherwise, assumes a regular Cartesian grid
             # Which is generated when the property is first called
             else:
                 self._grid = None
-                self._box = boxsize
+                self._boxsize = boxsize
                 self._resolution = resolution
         self.field_kwargs = field_kwargs
 
         # Placeholders
-        self._default_parameters = {}
-        self._parameter_ranges = {}
-        self._active_parameters = ()
-        self._priors = None
+        self.default_parameters = self.DEFAULT_PARAMETERS
+        self.parameter_ranges = {}
+        self.active_parameters = ()
+        self.priors = self.PRIORS
+
+    def __call__(self, *, variables={}, ensemble_size=None,
+                 ensemble_seeds=None):
+        """
+        Takes an active variable dictionary, an ensemble size and a random
+        seed value, translates the active variables to parameter values
+        (updating the default parameter dictionary accordingly) and send this
+        to an instance of the field class.
+
+        Parameters
+        ----------
+        variables : dict
+            Dictionary of variables with name and value
+        ensemble_size : int
+            Number of instances in a field ensemble
+        ensemble_seeds
+            seeds for generating random numbers
+            in realising instances in field ensemble
+            if ensemble_seeds is None,
+            field_class initialization will take all seed as 0
+
+        Returns
+        -------
+        result_field : imagine.fields.field.Field
+            a Field object
+        """
+        log.debug('@ field_factory::generate')
+        # map variable value to parameter value
+        # in mapping, variable name will be checked in default_parameters
+        mapped_variables = self._map_variables_to_parameters(variables)
+        # copy default parameters and update wrt argument
+        work_parameters = dict(self.default_parameters)
+        # update is safe
+        work_parameters.update(mapped_variables)
+        # generate fields
+        result_field = self.field_class(grid=self.grid,
+                                        parameters=work_parameters,
+                                        ensemble_size=ensemble_size,
+                                        ensemble_seeds=ensemble_seeds,
+                                        **self.field_kwargs)
+        log.debug('generated field with work-parameters %s' % work_parameters)
+        return result_field
+
+    @property
+    @req_attr
+    def field_class(self):
+        """Field of this field factory"""
+        return(self.FIELD_CLASS)
 
     @property
     def field_name(self):
         """Name of the physical field"""
-        return self.field_class.field_name
+        return self.field_class.NAME
 
     @property
     def name(self):
@@ -97,12 +154,12 @@ class GeneralFieldFactory:
     @property
     def field_type(self):
         """Type of physical field."""
-        return self.field_class.field_type
+        return self.field_class.TYPE
 
     @property
     def field_units(self):
         """Units of physical field."""
-        return self.field_class.field_units
+        return self.field_class.UNITS
 
     @property
     def grid(self):
@@ -111,8 +168,8 @@ class GeneralFieldFactory:
         field is/was evaluated
         """
         if self._grid is None:
-            if (self._box is not None) and (self._resolution is not None):
-                self._grid = UniformGrid(box=self._box,
+            if (self._boxsize is not None) and (self._resolution is not None):
+                self._grid = UniformGrid(box=self._boxsize,
                                          resolution=self._resolution)
             elif self.field_type != 'dummy':
                 raise ValueError('Non-dummy fields must be initialized with'
@@ -128,6 +185,7 @@ class GeneralFieldFactory:
         return self._resolution
 
     @property
+    @req_attr
     def default_parameters(self):
         """
         Dictionary storing parameter name as entry, default parameter value
@@ -163,6 +221,7 @@ class GeneralFieldFactory:
         log.debug('set active parameters %s' % str(active_parameters))
 
     @property
+    @req_attr
     def priors(self):
         """
         A dictionary containing the priors associated with each parameter.
@@ -177,7 +236,7 @@ class GeneralFieldFactory:
 
     @priors.setter
     def priors(self, new_prior_dict):
-        if self._priors is None:
+        if not hasattr(self, '_priors'):
             self._priors = {}
 
         parameter_ranges = {}
@@ -246,7 +305,7 @@ class GeneralFieldFactory:
         """
         log.debug('@ field_factory::_map_variables_to_parameters')
         assert isinstance(variables, dict)
-        parameter_dict = dict()
+        parameter_dict = {}
         for variable_name in variables:
             # variable_name must have been registered in .default_parameters
             # and, also being active
@@ -255,7 +314,8 @@ class GeneralFieldFactory:
             low, high = self.parameter_ranges[variable_name]
             # Ensures consistent physical units, if needed
             if isinstance(low, u.Quantity):
-                units = low.unit; low = low.value
+                units = low.unit;
+                low = low.value
                 high = high.to(units).value
             else:
                 units = 1
@@ -264,51 +324,10 @@ class GeneralFieldFactory:
             parameter_dict[variable_name] = mapped_variable * units
         return parameter_dict
 
-    def generate(self, variables=dict(), ensemble_size=None, ensemble_seeds=None):
-        """
-        Takes an active variable dictionary, an ensemble size and a random
-        seed value, translates the active variables to parameter values
-        (updating the default parameter dictionary accordingly) and send this
-        to an instance of the field class.
-
-        Parameters
-        ----------
-        variables : dict
-            Dictionary of variables with name and value
-        ensemble_size : int
-            Number of instances in a field ensemble
-        ensemble_seeds
-            seeds for generating random numbers
-            in realising instances in field ensemble
-            if ensemble_seeds is None,
-            field_class initialization will take all seed as 0
-
-        Returns
-        -------
-        result_field : imagine.fields.field.GeneralField
-            a GeneralField object
-        """
-        log.debug('@ field_factory::generate')
-        # map variable value to parameter value
-        # in mapping, variable name will be checked in default_parameters
-        mapped_variables = self._map_variables_to_parameters(variables)
-        # copy default parameters and update wrt argument
-        work_parameters = deepcopy(self.default_parameters)
-        # update is safe
-        work_parameters.update(mapped_variables)
-        # generate fields
-        result_field = self.field_class(grid=self.grid,
-                                        parameters=work_parameters,
-                                        ensemble_size=ensemble_size,
-                                        ensemble_seeds=ensemble_seeds,
-                                        **self.field_kwargs)
-        log.debug('generated field with work-parameters %s' % work_parameters)
-        return result_field
-
     @staticmethod
     def _interval(mean, sigma, n):
-        return float(mean - n * sigma), float(mean + n * sigma)
+        return(mean-n*sigma, mean+n*sigma)
 
     @staticmethod
     def _positive_interval(mean, sigma, n):
-        return max(float(0), float(mean - n * sigma)), float(mean + n * sigma)
+        return(max(0, mean-n*sigma), mean+n*sigma)
