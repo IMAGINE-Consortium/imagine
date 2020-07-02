@@ -12,6 +12,14 @@ imagine.tools.carrier\_mapper module
    :undoc-members:
    :show-inheritance:
 
+imagine.tools.class\_tools module
+---------------------------------
+
+.. automodule:: imagine.tools.class_tools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.tools.config module
 ---------------------------
 
@@ -24,14 +32,6 @@ imagine.tools.covariance\_estimator module
 ------------------------------------------
 
 .. automodule:: imagine.tools.covariance_estimator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-imagine.tools.icy\_decorator module
------------------------------------
-
-.. automodule:: imagine.tools.icy_decorator
    :members:
    :undoc-members:
    :show-inheritance:

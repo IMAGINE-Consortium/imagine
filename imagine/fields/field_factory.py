@@ -54,13 +54,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         used and the arguments `boxsize` and `resolution` are ignored
     field_kwargs : dict
         Any extra keyword arguments that should be used in the field instantiation
-
-    Attributes
-    ----------
-    field_class : class
-        Python class whose instances are produces by the present factory
     """
-
     def __init__(self, *, grid=None, boxsize=None, resolution=None,
                  active_parameters=(), field_kwargs={}):
         log.debug('@ field_factory::__init__')
@@ -137,7 +131,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     @property
     @req_attr
     def field_class(self):
-        """Field of this field factory"""
+        """Python class whose instances are produced by the present factory"""
         return(self.FIELD_CLASS)
 
     @property
