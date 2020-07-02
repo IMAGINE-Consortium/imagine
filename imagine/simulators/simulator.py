@@ -1,8 +1,20 @@
-from imagine import Measurements, Simulations
+# %% IMPORTS
+# Built-in imports
+import abc
+
+# Package imports
 import numpy as np
 
+# IMAGINE imports
+from imagine import Measurements, Simulations
+from imagine.tools import BaseClass, req_attr
 
-class Simulator(object):
+# All declaration
+__all__ = ['Simulator']
+
+
+# %% CLASS DEFINITIONS
+class Simulator(BaseClass, metaclass=abc.ABCMeta):
     """
     Simulator base class
 
@@ -33,6 +45,9 @@ class Simulator(object):
         Output units used in the simulator
     """
     def __init__(self, measurements):
+        # Call super constructor
+        super().__init__()
+
         self.grid = None
         self.grids = None
         self.use_common_grid = True
@@ -98,14 +113,17 @@ class Simulator(object):
         i : int
             Index of the realisation of the fields that is being registred
         """
-        self.fields = {}; self.grid = None; self.grids = None
-        self.field_checklist = {}; self.controllist = {}
+        self.fields = {}
+        self.grid = None
+        self.grids = None
+        self.field_checklist = {}
+        self.controllist = {}
 
         sorted_field_list = self._sort_field_dependencies(field_list)
 
         for field in sorted_field_list:
-            if field.type in (list(self.required_field_types)
-                                    + list(self.optional_field_types)):
+            if field.type in (*self.required_field_types,
+                              *self.optional_field_types):
 
                 # Checks whether the grid_type is correct
                 if ((field.grid is not None) and
@@ -301,21 +319,23 @@ class Simulator(object):
         return L
 
     @property
+    @req_attr
     def simulated_quantities(self):
         """
         Must be overriden with a list or set of simulated quantities this Simulator produces.
         Example: ['fd', 'sync']
         """
-        raise NotImplementedError
+        return(self.SIMULATED_QUANTITIES)
 
     @property
+    @req_attr
     def required_field_types(self):
         """
         Must be overriden with a list or set of required field types that
         the Simulator needs.
         Example: ['magnetic_field', 'cosmic_ray_electron_density']
         """
-        raise NotImplementedError
+        return(self.REQUIRED_FIELD_TYPES)
 
     @property
     def optional_field_types(self):
@@ -324,17 +344,19 @@ class Simulator(object):
         if available.
         Example: ['magnetic_field', 'cosmic_ray_electron_density']
         """
-        return []
+        return(getattr(self, 'OPTIONAL_FIELD_TYPES', []))
 
     @property
+    @req_attr
     def allowed_grid_types(self):
         """
         Must be overriden with a list or set of allowed grid types that work with this Simulator.
         Example: ['cartesian']
         """
-        raise NotImplementedError
+        return(self.ALLOWED_GRID_TYPES)
 
-    def simulate(self, key, coords_dict, Nside, output_units):
+    @abc.abstractmethod
+    def simulate(self, key, coords_dict, realization_id, output_units):
         """
         Must be overriden with a function that returns the observable described by `key` using
         the fields in self.fields, in units `output_units`.

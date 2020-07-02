@@ -33,7 +33,7 @@ class ConstantMagneticField(MagneticField):
         return B
 
 
-class constantThermalElectrons(ThermalElectronDensityField):
+class ConstantThermalElectrons(ThermalElectronDensityField):
     """
     Constant magnetic field
 

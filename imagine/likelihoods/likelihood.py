@@ -47,6 +47,9 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
+        # Call super constructor
+        super().__init__()
+
         self.mask_dict = mask_dict
         self.measurement_dict = measurement_dict
         self.covariance_dict = covariance_dict

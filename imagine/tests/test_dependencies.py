@@ -16,6 +16,10 @@ class A(img.ThermalElectronDensityField):
 
     NAME = 'A'
 
+    @property
+    def field_checklist(self):
+        return({})
+
     def compute_field(self, seed):
         return np.ones(self.data_shape)*self.units
 
@@ -24,6 +28,10 @@ class B(img.ThermalElectronDensityField):
     """Independent electron density"""
 
     NAME = 'B'
+
+    @property
+    def field_checklist(self):
+        return({})
 
     def compute_field(self, seed):
         self.secret = 9 # Example of shared information
@@ -47,6 +55,10 @@ class D(img.MagneticField):
     NAME = 'D'
     DEPENDENCIES_LIST = [B, C]
 
+    @property
+    def field_checklist(self):
+        return({})
+
     def compute_field(self, seed):
         result = np.ones(self.data_shape)*self.units
 
@@ -63,6 +75,10 @@ class E(img.MagneticField):
     NAME = 'E'
     DEPENDENCIES_LIST = ['thermal_electron_density']
 
+    @property
+    def field_checklist(self):
+        return({})
+
     def compute_field(self, seed):
         te_density = self.dependencies['thermal_electron_density']
         B = np.empty(self.data_shape)
@@ -75,6 +91,10 @@ class F(img.MagneticField):
     """Independent magnetic field"""
 
     NAME = 'F'
+
+    @property
+    def field_checklist(self):
+        return({})
 
     def compute_field(self, seed):
         return np.ones(self.data_shape)*0.1*u.microgauss

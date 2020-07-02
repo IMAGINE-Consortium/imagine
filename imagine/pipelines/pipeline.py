@@ -1,21 +1,34 @@
-import numpy as np
+# %% IMPORTS
+# Built-in imports
+import abc
 import logging as log
-from imagine.likelihoods.likelihood import Likelihood
+
+# Package imports
+from mpi4py import MPI
+from astropy.table import QTable
+import numpy as np
+
+# IMAGINE imports
+from imagine.likelihoods import Likelihood
 from imagine.fields import FieldFactory
-from imagine.priors.prior import GeneralPrior
-from imagine.simulators.simulator import Simulator
+from imagine.priors import GeneralPrior
+from imagine.simulators import Simulator
+from imagine.tools import BaseClass, req_attr
 from imagine.tools.random_seed import ensemble_seed_generator
 import imagine.tools.misc as misc
 from imagine import rc
-from astropy.table import QTable
 
-from mpi4py import MPI
+# GLOBALS
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
+# All declaration
+__all__ = ['Pipeline']
 
-class Pipeline(object):
+
+# %% CLASS DEFINITIONS
+class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     """
     Base class used for for initialing Bayesian analysis pipeline
 
@@ -54,7 +67,11 @@ class Pipeline(object):
     ensemble_size : int
         Number of observable realizations PER COMPUTING NODE to be generated in simulator
     """
-    def __init__(self, simulator, factory_list, likelihood, ensemble_size=1):
+
+    def __init__(self, *, simulator, factory_list, likelihood,
+                 ensemble_size=1):
+        # Call super constructor
+        super().__init__()
 
         self.factory_list = factory_list
         # NB setting the factory list automatically sets: the active parameters,
@@ -62,16 +79,16 @@ class Pipeline(object):
         self.simulator = simulator
         self.likelihood = likelihood
         self.ensemble_size = ensemble_size
-        self.sampling_controllers = dict()
+        self.sampling_controllers = {}
         self.sample_callback = False
 
         self.distribute_ensemble = rc['pipeline_distribute_ensemble']
 
         # rescaling total likelihood in _core_likelihood
-        self.likelihood_rescaler = 1.
+        self.likelihood_rescaler = 1
         # Checking likelihood threshold
         self.check_threshold = False
-        self.likelihood_threshold = 0.
+        self.likelihood_threshold = 0
 
         # This changes on every execution is random_type=='free'
         self.master_seed = rc['pipeline_default_seed']
@@ -89,6 +106,9 @@ class Pipeline(object):
         self._posterior_summary = None
         self._samples_array = None
         self._samples = None
+
+    def __call__(self, *args, **kwargs):
+        return(self.call(*args, **kwargs))
 
     @property
     def active_parameters(self):
@@ -267,7 +287,7 @@ class Pipeline(object):
 
     @property
     def sampler_supports_mpi(self):
-        raise NotImplementedError('Value of property must be set in sub-class!')
+        return(getattr(self, 'SUPPORTS_MPI', False))
 
     @property
     def simulator(self):
@@ -526,3 +546,7 @@ class Pipeline(object):
             # check if all nodes are at the same parameter-space position
             assert ((cube_pool == np.tile(cube_pool[:cube_local_size], mpisize)).all())
             return self._core_likelihood(cube)
+
+    @abc.abstractmethod
+    def call(self, **kwargs):
+        raise NotImplementedError

@@ -41,7 +41,6 @@ class MagneticField(Field):
     """
 
     # Class attributes
-    NAME = 'magnetic_field_base'
     TYPE = 'magnetic_field'
     UNITS = u.microgauss
 
@@ -77,10 +76,12 @@ class ThermalElectronDensityField(Field):
     """
 
     # Class attributes
-    NAME = 'thermal_electrons_base'
     TYPE = 'thermal_electron_density'
     UNITS = u.cm**(-3)
-    data_description = ['grid_x', 'grid_y', 'grid_z']
+
+    @property
+    def data_description(self):
+        return(['grid_x', 'grid_y', 'grid_z'])
 
     @property
     def data_shape(self):
@@ -93,7 +94,6 @@ class CosmicRayElectronDensityField(Field):
     """
 
     # Class attributes
-    NAME = 'cosmic_ray_electrons_base'
     TYPE = 'cosmic_ray_electron_density'
 
     def __init__():
@@ -107,9 +107,11 @@ class DummyField(Field):
     """
 
     # Class attributes
-    NAME = 'dummy_base'
     TYPE = 'dummy'
     UNITS = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(None, **kwargs)
 
     @property
     def data_description(self):
@@ -117,14 +119,18 @@ class DummyField(Field):
 
     @property
     def data_shape(self):
-        return(self.grid.shape)
+        return(None)
+
+    @property
+    def field_checklist(self):
+        return({})
 
     @property
     def simulator_controllist(self):
         """
         Dictionary containing fixed Simulator settings
         """
-        return dict()
+        return({})
 
     def compute_field(self, *args, **kwargs):
         pass

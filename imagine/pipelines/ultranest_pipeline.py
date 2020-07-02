@@ -1,11 +1,18 @@
-import numpy as np
+# %% IMPORTS
+# Built-in imports
 import logging as log
+
+# Package imports
 import ultranest
-from imagine.pipelines.pipeline import Pipeline
-from imagine.tools.icy_decorator import icy
+
+# IMAGINE imports
+from imagine.pipelines import Pipeline
+
+# All declaration
+__all__ = ['UltranestPipeline']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class UltranestPipeline(Pipeline):
     """
     Initialises Bayesian analysis pipeline with
@@ -17,11 +24,11 @@ class UltranestPipeline(Pipeline):
     ----
     Instances of this class are callable
     """
-    @property
-    def sampler_supports_mpi(self):
-        return True
 
-    def __call__(self, **kwargs):
+    # Class attributes
+    SUPPORTS_MPI = True
+
+    def call(self, **kwargs):
         """
         Runs the IMAGINE pipeline using the UltraNest sampler
 
