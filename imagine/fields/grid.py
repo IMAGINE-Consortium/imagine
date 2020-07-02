@@ -5,12 +5,24 @@ application: a basic uniform grid.
 This was strongly based on GalMag's Grid class,
 initially developed by Theo Steininger
 """
-import numpy as np
-import astropy.units as u
-from imagine.tools.icy_decorator import icy
 
-@icy
-class BaseGrid:
+# %% IMPORTS
+# Built-in imports
+import abc
+
+# Package imports
+import astropy.units as u
+import numpy as np
+
+# IMAGINE imports
+from imagine.tools import BaseClass
+
+# All declaration
+__all__ = ['BaseGrid', 'UniformGrid']
+
+
+# %% CLASS DEFINITIONS
+class BaseGrid(BaseClass, metaclass=abc.ABCMeta):
     """
     Defines a 3D grid object for a given choice of box dimensions
     and resolution.
@@ -39,8 +51,11 @@ class BaseGrid:
          Containing the resolution along each axis (the *shape* of the grid).
     """
     def __init__(self, box, resolution):
+        # Call super constructor
+        super().__init__()
+
         self.box = box
-        
+
         self.resolution = np.empty((3,), dtype=np.int)
         self.resolution[:] = resolution
 
@@ -61,7 +76,7 @@ class BaseGrid:
                 elif k in ('theta','phi'):
                     assert self._coordinates[k].unit.is_equivalent(u.rad,
                         equivalencies=u.dimensionless_angles()), k+' must be an angle or dimensionless'
-            
+
         return self._coordinates
 
     @property
@@ -158,6 +173,7 @@ class BaseGrid:
         """The same as :py:attr:`resolution`"""
         return self.resolution
 
+    @abc.abstractmethod
     def generate_coordinates(self):
         """
         Placeholder for method which uses the information in the attributes
@@ -193,9 +209,9 @@ class UniformGrid(BaseGrid):
     Parameters
     ----------
     box : 3x2-array_like
-         Box limits. Each row corresponds to a different coordinate and should 
+         Box limits. Each row corresponds to a different coordinate and should
          contain units. For 'cartesian' grid_type, the rows should contain
-         (in order)'x','y' and 'z'. 
+         (in order)'x','y' and 'z'.
          For 'cylindrical' they should have  'r_cylindrical', 'phi' and 'z'.
          for 'spherical', 'r_spherical','theta' and 'phi'.
     resolution : 3-array_like
@@ -206,9 +222,9 @@ class UniformGrid(BaseGrid):
     """
     def __init__(self, box, resolution, grid_type='cartesian'):
         # Base class initialization
-        super(UniformGrid, self).__init__(box, resolution)
+        super().__init__(box, resolution)
         # Subclass specific attributes
-        self.grid_type=grid_type
+        self.grid_type = grid_type
 
     def generate_coordinates(self):
         """
@@ -229,14 +245,14 @@ class UniformGrid(BaseGrid):
 
         # Creates array with starting and endpoints as specified in self.box
         # and with self.resolution
-        
+
         # Stores the dimensions (the begin of the interval is taken as reference)
         ubox = [row[0].unit for row in self.box]
         # Constructs a dimensionless version (to enforce consistent dimensions
         # in the intervals and avoid problems in mgrid)
-        box_vals = [ [b.to_value(unit) for b in row] 
+        box_vals = [ [b.to_value(unit) for b in row]
                      for row, unit in zip(self.box, ubox) ]
-        
+
         local_slice = (slice(box_vals[0][0], box_vals[0][1], self.resolution[0]*1j),
                        slice(box_vals[1][0], box_vals[1][1], self.resolution[1]*1j),
                        slice(box_vals[2][0], box_vals[2][1], self.resolution[2]*1j))

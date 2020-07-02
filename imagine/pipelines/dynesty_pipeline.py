@@ -1,24 +1,29 @@
+# %% IMPORTS
+# Built-in imports
 import logging as log
+
+# Package imports
 import dynesty
-from imagine.pipelines.pipeline import Pipeline
-from imagine.tools.icy_decorator import icy
+
+# IMAGINE imports
+from imagine.pipelines import Pipeline
+
+# All declaration
+__all__ = ['DynestyPipeline']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class DynestyPipeline(Pipeline):
     """
     Initialises Bayesian analysis pipeline with Dynesty
 
     See base class for initialization details.
     """
-    @property
-    def sampler_supports_mpi(self):
-        return False
 
-    def __call__(self, dynamic=True, **kwargs):
+    def call(self, dynamic=True, **kwargs):
         """
         Runs the IMAGINE pipeline using the Dynesty sampler
-        
+
         Parameters
         ----------
         dynamic : bool
@@ -57,4 +62,4 @@ class DynestyPipeline(Pipeline):
         self._evidence = self.results['logz']
         self._evidence_err = self.results['logzerr']
 
-        return results
+        return self.results

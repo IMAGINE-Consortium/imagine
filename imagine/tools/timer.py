@@ -1,11 +1,16 @@
 """
 Timer class is designed for time recording.
 """
+
+# %% IMPORTS
+# Built-in imports
 import time
-from imagine.tools.icy_decorator import icy
+
+# All declaration
+__all__ = ['Timer']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class Timer(object):
     """
     Class designed for time recording.

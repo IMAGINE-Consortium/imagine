@@ -1,13 +1,22 @@
 """
 For testing purposes only
 """
-import numpy as np
+
+
+# %% IMPORTS
+# Package imports
 import astropy.units as u
-from imagine import Simulator
-from imagine.tools.icy_decorator import icy
+import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-@icy
+# IMAGINE imports
+from imagine.simulators import Simulator
+
+# All declaration
+__all__ = ['TestSimulator']
+
+
+# %% CLASS DEFINITIONS
 class TestSimulator(Simulator):
     r"""
     Example simulator for illustration and testing
@@ -19,6 +28,12 @@ class TestSimulator(Simulator):
         $t(x,y,z) = B_y\,n_e\,$
 
     """
+
+    # Class attributes
+    SIMULATED_QUANTITIES = ['test']
+    REQUIRED_FIELD_TYPES = ['magnetic_field', 'thermal_electron_density']
+    ALLOWED_GRID_TYPES = ['cartesian']
+
     def __init__(self, measurements, LoS_axis='y'):
         # Send the measurenents to parent class
         super().__init__(measurements)
@@ -28,16 +43,6 @@ class TestSimulator(Simulator):
             self.B_axis = 2
         else:
             raise ValueError
-
-    @property
-    def simulated_quantities(self):
-        return {'test'}
-    @property
-    def required_field_types(self):
-        return {'magnetic_field', 'thermal_electron_density'}
-    @property
-    def allowed_grid_types(self):
-        return {'cartesian'}
 
     def simulate(self, key, coords_dict, realization_id, output_units):
         # Accesses fields and grid
@@ -49,7 +54,7 @@ class TestSimulator(Simulator):
         z = self.grid.z[0,0,:].to_value(u.kpc)
 
         fd = (Bpara*ne).to_value(output_units)
-        
+
         # Converts the grids to a format compatible with the interpolator
         # (comment: this is a bit silly, but what is the native numpy alternative?)
         fd_interp = RegularGridInterpolator(points=(x, y, z),

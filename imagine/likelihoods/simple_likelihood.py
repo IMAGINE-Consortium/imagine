@@ -1,13 +1,21 @@
-import numpy as np
-import logging as log
+# %% IMPORTS
+# Built-in imports
 from copy import deepcopy
+import logging as log
+
+# Package imports
+import numpy as np
+
+# IMAGINE imports
+from imagine.likelihoods import Likelihood
 from imagine.observables.observable_dict import Simulations
-from imagine.likelihoods.likelihood import Likelihood
 from imagine.tools.parallel_ops import pslogdet, plu_solve
-from imagine.tools.icy_decorator import icy
+
+# All declaration
+__all__ = ['SimpleLikelihood']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class SimpleLikelihood(Likelihood):
     """
     A simple Likelihood class
@@ -21,11 +29,8 @@ class SimpleLikelihood(Likelihood):
     mask_dict : imagine.observables.observable_dict.Masks
         Masks
     """
-    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
-        log.debug('@ simple_likelihood::__init__')
-        super(SimpleLikelihood, self).__init__(measurement_dict, covariance_dict, mask_dict)
 
-    def __call__(self, observable_dict):
+    def call(self, observable_dict):
         """
         SimpleLikelihood object call function
 

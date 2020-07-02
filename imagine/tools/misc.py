@@ -1,5 +1,12 @@
+# %% IMPORTS
+# Built-in imports
 from math import floor, log10
 
+# All declaration
+__all__ = ['adjust_error_intervals', 'is_notebook']
+
+
+# %% FUNCTION DEFINITIONS
 def is_notebook():
     """
     Finds out whether python is running in a Jupyter notebook
@@ -44,5 +51,3 @@ def adjust_error_intervals(value, low, up, digits=2):
     value, errlow, errup = (round(x,n) for x in (value, errlow, errup))
 
     return value, errlow, errup
-
-

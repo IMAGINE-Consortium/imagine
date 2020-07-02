@@ -5,12 +5,23 @@ For the testing suits, please turn to "imagine/tests/tools_tests.py".
 
 Implemented with numpy.ndarray raw data.
 """
-import numpy as np
+
+# %% IMPORTS
+# Built-in imports
 from copy import deepcopy
 import logging as log
+
+# Package imports
+import numpy as np
+
+# IMAGINE imports
 from imagine.tools.mpi_helper import mpi_arrange
 
+# All declaration
+__all__ = ['mask_cov', 'mask_obs']
 
+
+# %% FUNCTION DEFINITIONS
 def mask_obs(obs, mask):
     """
     Applies a mask to an observable.
@@ -47,6 +58,7 @@ def mask_obs(obs, mask):
     assert (new_obs.shape[1] == idx)
     return new_obs
 
+
 def mask_cov(cov, mask):
     """
     Applies mask to the observable covariance.
@@ -82,7 +94,7 @@ def mask_cov(cov, mask):
     # masking rows
     row_idx = int(0)
     row_min, row_max = mpi_arrange(raw_mask.shape[1])
-    for ptr in raw_mask[0, row_min : row_max]:
+    for ptr in raw_mask[0, row_min:row_max]:
         if ptr == 0:
             new_cov = np.delete(new_cov, row_idx, 0)
         else:

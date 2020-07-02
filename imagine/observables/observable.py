@@ -23,14 +23,24 @@ but at least a full version of one single realization.
 which means to have a full set of 'covariance' data,
 we have to collect pieces from all the computing nodes.
 """
-import numpy as np
+
+# %% IMPORTS
+# Built-in imports
 from copy import deepcopy
 import logging as log
-from imagine.tools.parallel_ops import pmean, pshape, prosecutor, pglobal
-from imagine.tools.icy_decorator import icy
-import astropy.units as u
 
-@icy
+# Package imports
+import astropy.units as u
+import numpy as np
+
+# IMAGINE imports
+from imagine.tools import pmean, pshape, prosecutor, pglobal
+
+# All declaration
+__all__ = ['Observable']
+
+
+# %% CLASS DEFINITIONS
 class Observable(object):
     """
     Observable class is designed for storing/manipulating distributed information.

@@ -1,0 +1,8 @@
+-e .
+check-manifest
+pytest>=4.6.0
+pytest-cov
+readme_renderer[md]
+setuptools>=38.6.0
+twine>=1.13.0
+wheel>=0.31.0

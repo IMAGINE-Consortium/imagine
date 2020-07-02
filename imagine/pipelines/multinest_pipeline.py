@@ -1,16 +1,27 @@
+# %% IMPORTS
+# Built-in imports
 import logging as log
-import os, os.path
-import pymultinest
-from imagine.pipelines.pipeline import Pipeline
-from imagine.tools.icy_decorator import icy
-import imagine as img
+import os
+from os import path
 import tempfile
 
+# Package imports
 from mpi4py import MPI
+import pymultinest
+
+# IMAGINE imports
+from imagine.pipelines import Pipeline
+
+# GLOBALS
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
+# All declaration
+__all__ = ['MultinestPipeline']
+
+
+# %% CLASS DEFINITIONS
 class MultinestPipeline(Pipeline):
     """
     Initialises Bayesian analysis pipeline with pyMultinest
@@ -21,13 +32,17 @@ class MultinestPipeline(Pipeline):
     ----
     Instances of this class are callable
     """
-    @property
-    def sampler_supports_mpi(self):
-        return True
+
+    # Class attributes
+    SUPPORTS_MPI = True
 
     def __init__(self, simulator, factory_list, likelihood, ensemble_size=1,
                  chains_directory=None):
-        super().__init__(simulator, factory_list, likelihood, ensemble_size)
+        super().__init__(
+            simulator=simulator,
+            factory_list=factory_list,
+            likelihood=likelihood,
+            ensemble_size=ensemble_size)
 
         if chains_directory is not None:
             self._chains_dir_path = chains_directory
@@ -41,16 +56,16 @@ class MultinestPipeline(Pipeline):
                 dir_path = self._chains_dir_obj.name
             else:
                 dir_path = None
-            
+
             self._chains_dir_path = comm.bcast(dir_path, root=0)
-            
 
-        self._chains_prefix = os.path.join(self._chains_dir_path,'')
 
-    def __call__(self, **kwargs):
+        self._chains_prefix = path.join(self._chains_dir_path,'')
+
+    def call(self, **kwargs):
         """
         Runs the IMAGINE pipeline using the MultiNest sampler
-        
+
         Returns
         -------
         results : dict

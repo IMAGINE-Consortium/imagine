@@ -1,13 +1,16 @@
-from imagine import ThermalElectronDensityField
+from imagine.fields import ThermalElectronDensityField
 import numpy as np
 import MY_GALAXY_MODEL # Substitute this by your own code
 
-@icy
+
 class ThermalElectronsDensityTemplate(ThermalElectronDensityField):
     """ Here comes the description of the electron density model """
-    field_name = 'name_of_the_thermal_electrons_field'
 
-    stochastic_field = False # Must be True if it is stochastic
+    # Class attributes
+    NAME = 'name_of_the_thermal_electrons_field'
+
+    # Is this field stochastic or not. Only necessary if True
+    STOCHASTIC_FIELD = False
 
     @property
     def field_checklist(self):

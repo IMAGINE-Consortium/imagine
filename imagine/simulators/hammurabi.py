@@ -1,14 +1,24 @@
-import numpy as np
+# %% IMPORTS
+# Built-in imports
 import logging as log
-import imagine as img
-from imagine.simulators.simulator import Simulator
-from imagine.tools.icy_decorator import icy
-from hampyx import Hampyx
-import hampyx
-import astropy.units as u
-import tempfile, os, os.path
+from os import path
+import tempfile
 
-@icy
+# Package imports
+import astropy.units as u
+import hampyx
+from hampyx import Hampyx
+import numpy as np
+
+# IMAGINE imports
+import imagine as img
+from imagine.simulators import Simulator
+
+# All declaration
+__all__ = ['Hammurabi']
+
+
+# %% CLASS DEFINITIONS
 class Hammurabi(Simulator):
     """
     This is an interface to hammurabi X Python wrapper.
@@ -33,6 +43,16 @@ class Hammurabi(Simulator):
     xml_path : string
         Absolute hammurabi xml parameter file path.
     """
+
+    # Class attributes
+    SIMULATED_QUANTITIES = ['fd', 'dm', 'sync']
+    REQUIRED_FIELD_TYPES = []
+    OPTIONAL_FIELD_TYPES = ['dummy','magnetic_field',
+                            'thermal_electron_density',
+                            'cosmic_ray_electron_density']
+    ALLOWED_GRID_TYPES = ['cartesian']
+
+
     def __init__(self, measurements, xml_path=None, exe_path=None):
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
@@ -41,8 +61,8 @@ class Hammurabi(Simulator):
             self.xml_path = xml_path
         else:
             # Uses standard hammurabi template
-            hampydir = os.path.dirname(hampyx.__file__)
-            self.xml_path = os.path.join(hampydir, '../templates/params_template.xml')
+            hampydir = path.dirname(hampyx.__file__)
+            self.xml_path = path.join(hampydir, '../templates/params_template.xml')
 
 
         self.current_realization = -1
@@ -54,23 +74,6 @@ class Hammurabi(Simulator):
         self.initialize_ham_xml()
         # List of files containing evaluations of fields
         self._field_dump_files = []
-
-    @property
-    def simulated_quantities(self):
-        return {'fd', 'dm', 'sync'}
-
-    @property
-    def required_field_types(self):
-        return []
-
-    @property
-    def optional_field_types(self):
-        return ['dummy','magnetic_field', 'thermal_electron_density',
-                'cosmic_ray_electron_density']
-
-    @property
-    def allowed_grid_types(self):
-        return {'cartesian'}
 
     def initialize_ham_xml(self):
         """

@@ -1,11 +1,15 @@
-import scipy.stats as stats
-from imagine.tools.icy_decorator import icy
-from scipy.interpolate import CubicSpline
-import numpy as np
+# %% IMPORTS
+# Package imports
 import astropy.units as u
+import numpy as np
+import scipy.stats as stats
+from scipy.interpolate import CubicSpline
+
+# All declaration
+__all__ = ['GeneralPrior', 'ScipyPrior']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class GeneralPrior:
     """
     Allows constructing a prior from a pre-existing sampling of the parameter
@@ -166,8 +170,7 @@ class GeneralPrior:
         return self.inv_cdf(x)
 
 
-@icy
-class scipyPrior(GeneralPrior):
+class ScipyPrior(GeneralPrior):
     """
     Constructs a prior from a continuous distribution defined in
     `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions>`_.

@@ -52,16 +52,27 @@ Masking method
       (data_size//mpisize, data_size) "around" means to distribute matrix
       correctly as described in "imagine/tools/mpi_helper.py"
 """
-import numpy as np
+
+# %% IMPORTS
+# Built-in imports
+import abc
 import logging as log
 
-from imagine.observables.observable import Observable
-from imagine.tools.masker import mask_obs, mask_cov
-from imagine.tools.icy_decorator import icy
-from imagine.observables.dataset import Dataset, HEALPixDataset
+# Package imports
+import numpy as np
 
-@icy
-class ObservableDict(object):
+# IMAGINE imports
+from imagine.observables.dataset import Dataset, HEALPixDataset
+from imagine.observables.observable import Observable
+from imagine.tools import BaseClass, mask_cov, mask_obs, req_attr
+
+# All declaration
+__all__ = ['ObservableDict', 'Masks', 'Measurements', 'Simulations',
+           'Covariances']
+
+
+# %% CLASS DEFINITIONS
+class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
     """
     Base class from which `imagine.observables.observable_dict.Measurements`,
     `imagine.observables.observable_dict.Covariances`, `imagine.observables.observable_dict.Simulations`
@@ -71,7 +82,10 @@ class ObservableDict(object):
     further details.
     """
     def __init__(self):
-        self._archive = dict()
+        # Call super constructor
+        super().__init__()
+
+        self._archive = {}
 
     @property
     def archive(self):
@@ -83,6 +97,7 @@ class ObservableDict(object):
     def __getitem__(self, key):
         return self._archive[key]
 
+    @abc.abstractmethod
     def append(self, name, new_data, plain=False):
         """
         Adds/updates name and data
@@ -100,8 +115,9 @@ class ObservableDict(object):
             If True, means unstructured data.
             If False (default case), means HEALPix-like sky map.
         """
-        pass
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def apply_mask(self, mask_dict):
         """
         Parameters
@@ -109,10 +125,9 @@ class ObservableDict(object):
         mask_dict : imagine.observables.observable_dict.Masks
             Masks object
         """
-        pass
+        raise NotImplementedError
 
 
-@icy
 class Masks(ObservableDict):
     """
     Stores HEALPix mask maps
@@ -120,8 +135,6 @@ class Masks(ObservableDict):
     See `imagine.observables.observable_dict` module documentation for
     further details.
     """
-    def __init__(self):
-        super(Masks, self).__init__()
 
     def append(self, name, new_data, plain=False):
         """
@@ -155,8 +168,10 @@ class Masks(ObservableDict):
         else:
             raise TypeError('unsupported data type')
 
+    def apply_mask(self, *args, **kwargs):
+        pass
 
-@icy
+
 class Measurements(ObservableDict):
     """
     Stores observational data sets
@@ -164,8 +179,6 @@ class Measurements(ObservableDict):
     See `imagine.observables.observable_dict` module documentation for
     further details.
     """
-    def __init__(self):
-        super(Measurements, self).__init__()
 
     def append(self, name=None, new_data=None, plain=False, dataset=None):
         """
@@ -230,7 +243,6 @@ class Measurements(ObservableDict):
                     self.append(new_name, masked, plain=True)  # append new as plain data
 
 
-@icy
 class Simulations(ObservableDict):
     """
     Stores simulated ensemble sets
@@ -238,8 +250,6 @@ class Simulations(ObservableDict):
     See `imagine.observables.observable_dict` module documentation for
     further details.
     """
-    def __init__(self):
-        super(Simulations, self).__init__()
 
     def append(self, name, new_data, plain=False):
         """
@@ -288,7 +298,6 @@ class Simulations(ObservableDict):
                     self.append(new_name, masked, plain=True)  # append new as plain data
 
 
-@icy
 class Covariances(ObservableDict):
     """
     Stores observational covariances
@@ -296,8 +305,6 @@ class Covariances(ObservableDict):
     See `imagine.observables.observable_dict` module documentation for
     further details.
     """
-    def __init__(self):
-        super(Covariances, self).__init__()
 
     def append(self, name=None, new_data=None, plain=False, dataset=None):
         """
