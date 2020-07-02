@@ -7,7 +7,6 @@ import logging as log
 import astropy.units as u
 
 # IMAGINE imports
-from imagine.fields import Field
 from imagine.fields.grid import BaseGrid, UniformGrid
 from imagine.priors import GeneralPrior
 from imagine.tools import BaseClass, unity_mapper, req_attr
@@ -63,7 +62,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, *, grid=None, boxsize=None, resolution=None,
-                 field_kwargs={}):
+                 active_parameters=(), field_kwargs={}):
         log.debug('@ field_factory::__init__')
 
         # Call super constructor
@@ -90,7 +89,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         # Placeholders
         self.default_parameters = self.DEFAULT_PARAMETERS
         self.parameter_ranges = {}
-        self.active_parameters = ()
+        self.active_parameters = active_parameters
         self.priors = self.PRIORS
 
     def __call__(self, *, variables={}, ensemble_size=None,

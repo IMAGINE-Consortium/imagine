@@ -1,10 +1,21 @@
-from imagine.fields import MagneticField, FieldFactory, ThermalElectronDensityField
-from imagine.priors import FlatPrior
-import numpy as np
+# %% IMPORTS
+# Package imports
 import astropy.units as u
+import numpy as np
 import scipy.stats as stats
 
+# IMAGINE imports
+from imagine.fields import FieldFactory
+from imagine.fields.base_fields import (
+    MagneticField, ThermalElectronDensityField)
+from imagine.priors import FlatPrior
 
+# All declaration
+__all__ = ['CosThermalElectronDensity', 'CosThermalElectronDensityFactory',
+           'NaiveGaussianMagneticField', 'NaiveGaussianMagneticFieldFactory']
+
+
+# %% CLASS DEFINITIONS
 class CosThermalElectronDensity(ThermalElectronDensityField):
     r"""
     Toy model for naively oscilating thermal electron distribution following:
@@ -37,7 +48,7 @@ class CosThermalElectronDensity(ThermalElectronDensityField):
                         *(1 + np.cos(p['c']*z + p['gamma'])) )
 
 
-class CosThermalElectronDensity_Factory(FieldFactory):
+class CosThermalElectronDensityFactory(FieldFactory):
     """
     Field factory associated with the :py:class:`CosThermalElectronDensityw`
     class
@@ -94,7 +105,7 @@ class NaiveGaussianMagneticField(MagneticField):
         return B*self.units
 
 
-class NaiveGaussianMagneticField_Factory(FieldFactory):
+class NaiveGaussianMagneticFieldFactory(FieldFactory):
     """
     Field factory associated with the :py:class:`NaiveGaussianMagneticField`
     class

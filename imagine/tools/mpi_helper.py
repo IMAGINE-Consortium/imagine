@@ -4,15 +4,27 @@ This MPI helper module is designed for parallel computing and data handling.
 For the testing suits, please turn to "imagine/tests/tools_tests.py".
 """
 
-import numpy as np
-from mpi4py import MPI
+# %% IMPORTS
+# Built-in imports
 from copy import deepcopy
 import logging as log
 
+# Package imports
+from e13tools import add_to_all
+from mpi4py import MPI
+import numpy as np
+
+# GLOBALS
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
+# All declaration
+__all__ = []
+
+
+# %% FUNCTION DEFINITIONS
+@add_to_all
 def mpi_arrange(size):
     """
     With known global size, number of mpi nodes, and current rank,
@@ -39,6 +51,7 @@ def mpi_arrange(size):
                                                np.uint64(mpirank < size%mpisize))
 
 
+@add_to_all
 def mpi_shape(data):
     """
     Returns the global number of rows and columns of given distributed data.
@@ -59,6 +72,7 @@ def mpi_shape(data):
     return global_row, global_column
 
 
+@add_to_all
 def mpi_prosecutor(data):
     """
     Check if the data is distributed in the correct way
@@ -84,6 +98,7 @@ def mpi_prosecutor(data):
         raise ValueError('incorrect data allocation')
 
 
+@add_to_all
 def mpi_mean(data):
     """
     calculate the mean of distributed array
@@ -119,6 +134,7 @@ def mpi_mean(data):
     return avg
 
 
+@add_to_all
 def mpi_trans(data):
     """
     Transpose distributed data,
@@ -171,6 +187,7 @@ def mpi_trans(data):
     return new_data
 
 
+@add_to_all
 def mpi_mult(left, right):
     """
     Calculate matrix multiplication of two distributed data,
@@ -230,6 +247,7 @@ def mpi_mult(left, right):
     return result
 
 
+@add_to_all
 def mpi_trace(data):
     """
     Computes the trace of the given distributed data.
@@ -257,6 +275,7 @@ def mpi_trace(data):
     return result
 
 
+@add_to_all
 def mpi_eye(size):
     """
     Produces an eye matrix according of shape (size,size)
@@ -281,6 +300,7 @@ def mpi_eye(size):
     return local_matrix
 
 
+@add_to_all
 def mpi_distribute_matrix(full_matrix):
     """
 
@@ -305,6 +325,7 @@ def mpi_distribute_matrix(full_matrix):
     return local_matrix
 
 
+@add_to_all
 def mpi_lu_solve(operator, source):
     """
     Simple LU Gauss method WITHOUT pivot permutation.
@@ -382,6 +403,7 @@ def mpi_lu_solve(operator, source):
     return x
 
 
+@add_to_all
 def mpi_slogdet(data):
     """
     Computes log determinant according to
@@ -451,6 +473,7 @@ def mpi_slogdet(data):
     return sign, logdet
 
 
+@add_to_all
 def mpi_global(data):
     """
     Gathers data spread accross different processes.
@@ -496,6 +519,8 @@ def mpi_global(data):
     return global_array
     """
 
+
+@add_to_all
 def mpi_local(data):
     """
     Distributes data over available processes

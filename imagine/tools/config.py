@@ -5,8 +5,14 @@ These can be accessed and modified using the
 :py:data:`imagine.rc <imagine.config.rc>` dictionary or setting the
 corresponding environment variables (named 'IMAGINE\_'+RC_VAR_NAME).
 """
-import tempfile
+
+# %% IMPORTS
+# Built-in imports
 import os
+import tempfile
+
+# All declaration
+__all__ = ['rc']
 
 # Sets default values of configuration parameters
 rc = {'temp_dir': None,

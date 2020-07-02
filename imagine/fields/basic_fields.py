@@ -1,8 +1,18 @@
-from imagine import MagneticField, ThermalElectronDensityField
+# %% IMPORTS
+# Package imports
 import numpy as np
 import scipy.stats as stats
 
+# IMAGINE imports
+from imagine.fields.base_fields import (
+    MagneticField, ThermalElectronDensityField)
 
+# All declaration
+__all__ = ['ConstantMagneticField', 'ConstantThermalElectrons',
+           'ExponentialThermalElectrons', 'RandomThermalElectrons']
+
+
+# %% CLASS DEFINITIONS
 class ConstantMagneticField(MagneticField):
     """
     Constant magnetic field
@@ -113,9 +123,9 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     def compute_field(self, seed):
         # Converts dimensional parameters into numerical values
         # in the correct units (stats norm does not like units)
-        mu = self.parameters['mean'].to_value(self.field_units)
-        sigma = self.parameters['std'].to_value(self.field_units)
-        minimum_density = self.parameters['min_ne'].to_value(self.field_units)
+        mu = self.parameters['mean'].to_value(self.units)
+        sigma = self.parameters['std'].to_value(self.units)
+        minimum_density = self.parameters['min_ne'].to_value(self.units)
 
         # Draws values from a normal distribution with these parameters
         # using the seed provided in the argument
@@ -126,4 +136,4 @@ class RandomThermalElectrons(ThermalElectronDensityField):
         if np.isfinite(minimum_density):
             result[result<minimum_density] = minimum_density
 
-        return result << self.field_units # Restores units
+        return result << self.units # Restores units

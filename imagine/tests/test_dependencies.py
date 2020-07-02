@@ -105,16 +105,11 @@ grid = img.UniformGrid([[0,1]]*3*u.kpc,resolution=[1]*3)
 
 
 class DummySimulator(img.Simulator):
-
-    @property
-    def simulated_quantities(self):
-        return {'nothing'}
-    @property
-    def required_field_types(self):
-        return {'dummy','magnetic_field', 'thermal_electron_density'}
-    @property
-    def allowed_grid_types(self):
-        return {'cartesian'}
+    # Class attributes
+    SIMULATED_QUANTITIES = ['nothing']
+    REQUIRED_FIELD_TYPES = ['dummy','magnetic_field',
+                            'thermal_electron_density']
+    ALLOWED_GRID_TYPES = ['cartesian']
 
     def simulate(self, key, coords_dict, realization_id, output_units):
 

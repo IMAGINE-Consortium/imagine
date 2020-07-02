@@ -2,17 +2,30 @@
 Datasets are auxiliary classes used to facilitate the reading and inclusion of
 observational data in the IMAGINE pipeline"""
 
-from imagine.tools.icy_decorator import icy
-import numpy as np
+# %% IMPORTS
+# Package imports
 from astropy import units as u
-from imagine.tools.parallel_ops import peye, distribute_matrix
+import numpy as np
 
-class Dataset:
+# IMAGINE imports
+from imagine.tools import BaseClass, distribute_matrix, peye, req_attr
+
+# All declaration
+__all__ = ['Dataset', 'TabularDataset', 'HEALPixDataset',
+           'FaradayDepthHEALPixDataset', 'SynchrotronHEALPixDataset',
+           'DispersionMeasureHEALPixDataset']
+
+
+# %% CLASS DEFINITIONS
+class Dataset(BaseClass):
     """
     Base class for writing helpers to convert arbitrary
     observational datasets into  IMAGINE's standardized format
     """
     def __init__(self):
+        # Call super constructor
+        super().__init__()
+
         self.coords = None
         self.Nside = None
         self.frequency = 'nan'
@@ -22,8 +35,9 @@ class Dataset:
         self._data = None
 
     @property
+    @req_attr
     def name(self):
-        return None
+        return(self.NAME)
 
     @property
     def data(self):
@@ -42,7 +56,6 @@ class Dataset:
         return self._cov
 
 
-@icy
 class TabularDataset(Dataset):
     """
     Base class for tabular datasets, where the data is input in either
@@ -91,11 +104,12 @@ class TabularDataset(Dataset):
                  coordinates_type='galactic', lon_column='lon', lat_column='lat',
                  x_column='x', y_column='y', z_column='z',
                  error_column=None, frequency='nan', tag='nan'):
+        self.NAME = name
         super().__init__()
         if data_column is None:
             data_column=name
 
-        self._name = name
+
         self._data = u.Quantity(data[data_column], units, copy=False)
         if coordinates_type == 'galactic':
             self.coords = {'type': coordinates_type,
@@ -117,12 +131,8 @@ class TabularDataset(Dataset):
             self._error = u.Quantity(data[error_column], units, copy=False)
 
         self.Nside = "tab"
-    @property
-    def name(self):
-        return self._name
 
 
-@icy
 class HEALPixDataset(Dataset):
     """
     Base class for HEALPix datasets, which are input as
@@ -147,11 +157,11 @@ class HEALPixDataset(Dataset):
         if cov is not None:
             assert error is None
 
-            self._cov = mpi_distribute_matrix(cov)
+            self._cov = distribute_matrix(cov)
         else:
             self._error = error
 
-@icy
+
 class FaradayDepthHEALPixDataset(HEALPixDataset):
     r"""
     Stores a Faraday depth map into an IMAGINE-compatible
@@ -172,11 +182,11 @@ class FaradayDepthHEALPixDataset(HEALPixDataset):
     key
         Standard key associated with this observable
     """
-    @property
-    def name(self):
-        return 'fd'
 
-@icy
+    # Class attributes
+    NAME = 'fd'
+
+
 class DispersionMeasureHEALPixDataset(HEALPixDataset):
     r"""
     Stores a dispersion measure map into an IMAGINE-compatible
@@ -197,11 +207,11 @@ class DispersionMeasureHEALPixDataset(HEALPixDataset):
     key
         Standard key associated with this observable
     """
-    @property
-    def name(self):
-        return 'dm'
 
-@icy
+    # Class attributes
+    NAME = 'dm'
+
+
 class SynchrotronHEALPixDataset(HEALPixDataset):
     r"""
     Stores a synchrotron emission map into an IMAGINE-compatible
@@ -235,14 +245,14 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     key
       Standard key associated with this observable
     """
+
+    # Class attributes
+    NAME = 'sync'
+
     def __init__(self, data, frequency, type, Nside=None):
-        super().__init__(data, Nside)
+        super().__init__(data, Nside=Nside)
 
         self.frequency = str(frequency)
         # Checks whether the type is valid
-        assert type in ['I','Q','U','PI','PA']
+        assert type in ['I', 'Q', 'U', 'PI', 'PA']
         self.tag = type
-    @property
-    def name(self):
-        return 'sync'
-

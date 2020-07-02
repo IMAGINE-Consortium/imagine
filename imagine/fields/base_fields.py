@@ -14,10 +14,19 @@ A brief summary of the module:
 
 See also :doc:`IMAGINE Components <components>` section of the docs.
 """
+
+# %% IMPORTS
+# Package imports
 import astropy.units as u
-from imagine.fields.field import Field
+
+# IMAGINE imports
+from imagine.fields import Field
+
+# All declaration
+__all__ = ['MagneticField', 'ThermalElectronDensityField', 'DummyField']
 
 
+# %% CLASS DEFINITIONS
 class MagneticField(Field):
     """
     Base class for the inclusion of new models for magnetic fields.

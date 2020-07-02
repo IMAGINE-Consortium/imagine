@@ -1,14 +1,22 @@
-from imagine import DummyField, GeneralFieldFactory, FlatPrior
-from imagine.tools.icy_decorator import icy
+# %% IMPORTS
+# IMAGINE imports
+from imagine.fields import DummyField, FieldFactory
+from imagine.priors import FlatPrior
 
-@icy
+# All declaration
+__all__ = ['BregLSA', 'BregLSAFactory']
+
+
+# %% CLASS DEFINITIONS
 class BregLSA(DummyField):
     """
     This dummy field instructs the :py:class:`Hammurabi <imagine.simulators.hammurabi.Hammurabi>`
     simulator class to use the HammurabiX's builtin regular magnetic field
     WMAP-3yr LSA.
     """
-    field_name = 'breg_lsa'
+
+    # Class attributes
+    NAME = 'breg_lsa'
 
     @property
     def field_checklist(self):
@@ -31,21 +39,19 @@ class BregLSA(DummyField):
         return controllist
 
 
-@icy
-class BregLSAFactory(GeneralFieldFactory):
+class BregLSAFactory(FieldFactory):
     """
     Field factory that produces the dummy field :py:class:`BregLSA`
     (see its docs for details).
     """
-    def __init__(self, boxsize=None, resolution=None, active_parameters=tuple()):
-        super().__init__(boxsize, resolution)
-        self.field_class = BregLSA
-        self.default_parameters = {'b0': 6.0,
-                                   'psi0': 27.0,
-                                   'psi1': 0.9,
-                                   'chi0': 25.0}
-        self.priors = {'b0':   FlatPrior([0., 10.]),
-                       'psi0': FlatPrior([0., 50.]),
-                       'psi1': FlatPrior([0., 5.]),
-                       'chi0': FlatPrior([-25., 50.])}
-        self.active_parameters = active_parameters
+
+    # Class attributes
+    FIELD_CLASS = BregLSA
+    DEFAULT_PARAMETERS = {'b0': 6.0,
+                          'psi0': 27.0,
+                          'psi1': 0.9,
+                          'chi0': 25.0}
+    PRIORS = {'b0': FlatPrior([0., 10.]),
+              'psi0': FlatPrior([0., 50.]),
+              'psi1': FlatPrior([0., 5.]),
+              'chi0': FlatPrior([-25., 50.])}

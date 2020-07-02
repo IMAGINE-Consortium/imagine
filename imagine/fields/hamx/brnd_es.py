@@ -1,20 +1,26 @@
-from imagine import DummyField, GeneralFieldFactory, FlatPrior
-from imagine.tools.icy_decorator import icy
+# %% IMPORTS
+# IMAGINE imports
+from imagine.fields import DummyField, FieldFactory
+from imagine.priors import FlatPrior
+
+# All declaration
+__all__ = ['BrndES', 'BrndESFactory']
 
 
-@icy
+# %% CLASS DEFINITIONS
 class BrndES(DummyField):
     """
     This dummy field instructs the :py:class:`Hammurabi <imagine.simulators.hammurabi.Hammurabi>`
     simulator class to use the HammurabiX's builtin random magnetic field
     ES random GMF
     """
-    field_name = 'breg_wmap'
 
-    def __init__(self, grid=None, parameters=dict(), ensemble_size=None,
-                 ensemble_seeds=None, dependencies={}, 
-                 grid_nx=None, grid_ny=None, grid_nz=None):
-        super().__init__(grid, parameters, ensemble_size, ensemble_seeds, dependencies)
+    # Class attributes
+    NAME = 'breg_wmap'
+
+    def __init__(self, *args, grid_nx=None, grid_ny=None, grid_nz=None,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
         # Default controllist
         self._controllist = {'cue': (['magneticfield', 'random'], {'cue': '1'}),
                              'type': (['magneticfield', 'random'], {'type': 'global'}),
@@ -30,7 +36,7 @@ class BrndES(DummyField):
         if ny is not None:
             self._controllist['box_brnd_ny'] = (['grid', 'box_brnd', 'ny'],{'value': str(ny)})
         if nz is not None:
-            self._controllist['box_brnd_nz'] = (['grid', 'box_brnd', 'nz'],{'value': str(nz)})        
+            self._controllist['box_brnd_nz'] = (['grid', 'box_brnd', 'nz'],{'value': str(nz)})
 
     @property
     def field_checklist(self):
@@ -56,32 +62,34 @@ class BrndES(DummyField):
         return self._controllist
 
 
-@icy
-class BrndESFactory(GeneralFieldFactory):
+class BrndESFactory(FieldFactory):
     """
     Field factory that produces the dummy field :py:class:`BrndES`
     (see its docs for details).
     """
-    def __init__(self, boxsize=None, resolution=None, active_parameters=tuple(),
-                 grid_nx=None, grid_ny=None, grid_nz=None):
-        super().__init__(boxsize, resolution, field_kwargs={'grid_nx': grid_nx,
-                                                            'grid_ny': grid_ny,
-                                                            'grid_nz': grid_nz})
-        self.field_class = BrndES
-        self.default_parameters = {'rms': 2.,
-                                   'k0': 10.0,
-                                   'a0': 1.7,
-                                   'k1': 0.1,
-                                   'a1': 0.0,
-                                   'rho': 0.5,
-                                   'r0': 8.,
-                                   'z0': 1.}
-        self.priors = {'rms': FlatPrior([0, 4.]),
-                       'k0': FlatPrior([0.1, 1.]),
-                       'a0': FlatPrior([1., 3.]),
-                       'k1': FlatPrior([0.01, 1.]),
-                       'a1': FlatPrior([0., 3.]),
-                       'rho': FlatPrior([0., 1.]),
-                       'r0': FlatPrior([2., 10.]),
-                       'z0': FlatPrior([0.1, 3.])}
-        self.active_parameters = active_parameters
+
+    # Class attributes
+    FIELD_CLASS = BrndES
+    DEFAULT_PARAMETERS = {'rms': 2,
+                          'k0': 10,
+                          'a0': 1.7,
+                          'k1': 0.1,
+                          'a1': 0,
+                          'rho': 0.5,
+                          'r0': 8,
+                          'z0': 1}
+    PRIORS = {'rms': FlatPrior([0, 4]),
+              'k0': FlatPrior([0.1, 1]),
+              'a0': FlatPrior([1, 3]),
+              'k1': FlatPrior([0.01, 1]),
+              'a1': FlatPrior([0, 3]),
+              'rho': FlatPrior([0, 1]),
+              'r0': FlatPrior([2, 10]),
+              'z0': FlatPrior([0.1, 3])}
+
+    def __init__(self, *args, grid_nx=None,
+                 grid_ny=None, grid_nz=None, **kwargs):
+        super().__init__(*args, **kwargs,
+                         field_kwargs={'grid_nx': grid_nx,
+                                       'grid_ny': grid_ny,
+                                       'grid_nz': grid_nz})
