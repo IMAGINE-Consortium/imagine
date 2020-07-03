@@ -1,10 +1,16 @@
-import numpy as np
+# %% IMPORTS
+# Package imports
 import astropy.units as u
+import numpy as np
 
+# IMAGINE imports
 from imagine.fields import (
     DummyField, MagneticField, ThermalElectronDensityField, UniformGrid)
 from imagine.observables import Measurements, TabularDataset
 from imagine.simulators import Simulator
+
+
+# %% HELPER DEFINITIONS
 
 # First, we create some fields with the structure:
 # A - independent - electron density
@@ -130,6 +136,7 @@ class DummySimulator(Simulator):
         return results*output_units
 
 
+# %% PYTEST DEFINITIONS
 def test_Field_dependency():
     # Initializes the fields
     a = A(grid)

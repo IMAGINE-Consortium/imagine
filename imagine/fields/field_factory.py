@@ -120,7 +120,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         # update is safe
         work_parameters.update(mapped_variables)
         # generate fields
-        result_field = self.field_class(self.grid,
+        result_field = self.field_class(grid=self.grid,
                                         parameters=work_parameters,
                                         ensemble_size=ensemble_size,
                                         ensemble_seeds=ensemble_seeds,

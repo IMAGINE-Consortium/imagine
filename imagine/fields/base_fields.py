@@ -120,7 +120,8 @@ class DummyField(Field):
     UNITS = None
 
     def __init__(self, *args, **kwargs):
-        super().__init__(None, **kwargs)
+        kwargs['grid'] = None
+        super().__init__(**kwargs)
 
     @property
     def data_description(self):

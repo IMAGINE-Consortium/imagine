@@ -2,6 +2,7 @@
 check-manifest
 pytest>=4.6.0
 pytest-cov
+pytest-mpl
 readme_renderer[md]
 setuptools>=38.6.0
 twine>=1.13.0

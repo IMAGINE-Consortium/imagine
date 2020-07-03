@@ -7,18 +7,18 @@ or pure Python equivalents, depending on the contents of
 
 # %% IMPORTS
 # Package imports
+from e13tools import add_to_all
 import numpy as np
 
 # IMAGINE imports
 from imagine.tools import mpi_helper as m, rc
 
 # All declaration
-__all__ = ['pshape', 'prosecutor', 'pmean', 'ptrans', 'pmult',
-           'ptrace', 'peye', 'distribute_matrix', 'plu_solve',
-           'pslogdet', 'pglobal', 'plocal']
+__all__ = []
 
 
 # %% FUNCTION DEFINITIONS
+@add_to_all
 def pshape(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_shape` or
@@ -31,6 +31,7 @@ def pshape(data):
         return data.shape
 
 
+@add_to_all
 def prosecutor(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_prosecutor` or *nothing*
@@ -40,6 +41,7 @@ def prosecutor(data):
         m.mpi_prosecutor(data)
 
 
+@add_to_all
 def pmean(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_mean` or :py:func:`numpy.mean`
@@ -51,6 +53,7 @@ def pmean(data):
         return (np.mean(data, axis=0)).reshape(1, -1)
 
 
+@add_to_all
 def ptrans(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_mean` or :py:meth:`numpy.ndarray.T`
@@ -62,6 +65,7 @@ def ptrans(data):
         return data.T
 
 
+@add_to_all
 def pmult(left, right):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_mult` or :py:meth:`numpy.matmul`
@@ -73,6 +77,7 @@ def pmult(left, right):
         return left @ right
 
 
+@add_to_all
 def ptrace(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_trace` or :py:func:`numpy.trace`
@@ -84,6 +89,7 @@ def ptrace(data):
         return np.trace(data)
 
 
+@add_to_all
 def peye(size):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_eye` or :py:func:`numpy.eye`
@@ -95,6 +101,7 @@ def peye(size):
         return np.eye(size)
 
 
+@add_to_all
 def distribute_matrix(full_matrix):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_distribute_matrix` or *nothing*
@@ -106,6 +113,7 @@ def distribute_matrix(full_matrix):
         return full_matrix
 
 
+@add_to_all
 def plu_solve(operator, source):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_lu_solve` or :py:func:`numpy.linalg.solve`
@@ -121,6 +129,7 @@ def plu_solve(operator, source):
         return np.linalg.solve(operator, source.T)
 
 
+@add_to_all
 def pslogdet(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_slogdet` or :py:func:`numpy.linalg.slogdet`
@@ -132,6 +141,7 @@ def pslogdet(data):
         return np.linalg.slogdet(data)
 
 
+@add_to_all
 def pglobal(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_global` or *nothing*
@@ -143,6 +153,7 @@ def pglobal(data):
         return data
 
 
+@add_to_all
 def plocal(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_local` or *nothing*

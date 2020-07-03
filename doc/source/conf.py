@@ -10,30 +10,40 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from codecs import open
 import os
 import sys
-import mock
+from unittest import mock
+from pkg_resources import parse_requirements
 sys.path.insert(0, os.path.abspath('../../'))
 
 
-MOCK_MODULES = [
-  'mpi4py',
-  'mpi4py.MPI',
-  'pymultinest',
-  'ultranest',
-  'dynesty',
-  'healpy',
-  'h5py',
-  'e13tools',
-  'hampyx']
-for mod_name in MOCK_MODULES:
+# Read in the IMAGINE requirements
+with open('../../requirements.txt', 'r') as file:
+    requirements = file.read().splitlines()
+with open('../requirements_RTD.txt', 'r') as file:
+    docs_requirements = file.read().splitlines()
+
+# Parse the requirements
+parsed_reqs = parse_requirements(requirements)
+parsed_docs_reqs = parse_requirements(docs_requirements)
+
+# Determine the names of all requirements
+req_names = set(map(lambda x: x.name, parsed_reqs))
+docs_req_names = set(map(lambda x: x.name, parsed_docs_reqs))
+
+# Take the difference between req_names and docs_req_names
+names = req_names.difference(docs_req_names)
+
+# Create mock modules for all modules IMAGINE needs but the docs do not
+for mod_name in names:
     sys.modules[mod_name] = mock.Mock()
 
 # -- Project information -----------------------------------------------------
 
 project = 'IMAGINE'
-copyright = '2019, Imagine Consortium'
-author = 'Imagine Consortium'
+copyright = '2019-2020, IMAGINE Consortium'
+author = 'IMAGINE Consortium'
 
 
 # -- General configuration ---------------------------------------------------
@@ -51,7 +61,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx.ext.autosectionlabel',
-    'nbsphinx','nbsphinx_link',
+    'nbsphinx',
+    'nbsphinx_link',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -103,15 +114,12 @@ intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import sphinx_rtd_theme
-#html_theme = 'classic'
+
+
 html_theme = 'sphinx_rtd_theme'
-#html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
-

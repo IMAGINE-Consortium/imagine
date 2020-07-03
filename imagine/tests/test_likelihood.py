@@ -1,18 +1,21 @@
-import unittest
-import numpy as np
+# %% IMPORTS
+# Package imports
 from mpi4py import MPI
-from imagine.observables.observable import Observable
-from imagine.observables.observable_dict import Simulations, Measurements, Covariances
-from imagine.likelihoods.simple_likelihood import SimpleLikelihood
-from imagine.likelihoods.ensemble_likelihood import EnsembleLikelihood
+import numpy as np
 
+# IMAGINE imports
+from imagine.observables import (
+    Observable, Simulations, Measurements, Covariances)
+from imagine.likelihoods import SimpleLikelihood, EnsembleLikelihood
 
+# Globals
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-class TestSimpleLikeli(unittest.TestCase):
 
+# %% PYTEST DEFINITIONS
+class TestSimpleLikeli(object):
     def test_without_cov(self):
         simdict = Simulations()
         meadict = Measurements()
@@ -34,8 +37,8 @@ class TestSimpleLikeli(unittest.TestCase):
         diff = (np.mean(full_b, axis=0) - arr_a)
         baseline = -float(0.5)*float(np.vdot(diff, diff))
         # comapre
-        self.assertAlmostEqual(rslt, baseline)
-    
+        assert np.allclose(rslt, baseline)
+
     def test_with_cov(self):
         simdict = Simulations()
         meadict = Measurements()
@@ -62,12 +65,11 @@ class TestSimpleLikeli(unittest.TestCase):
         diff = (np.mean(full_b, axis=0) - arr_a)
         full_cov = np.vstack(comm.allgather(arr_c))  # global covariance
         (sign, logdet) = np.linalg.slogdet(full_cov*2.*np.pi)
-        baseline = -float(0.5)*float(np.vdot(diff, np.linalg.solve(full_cov, diff.T))+sign*logdet)
-        self.assertAlmostEqual(rslt, baseline)
-    
+        baseline = -0.5*(np.vdot(diff, np.linalg.solve(full_cov, diff.T))+sign*logdet)
+        assert np.allclose(rslt, baseline)
 
-class TestEnsembleLikeli(unittest.TestCase):
-    
+
+class TestEnsembleLikeli(object):
     def test_without_simcov(self):
         simdict = Simulations()
         meadict = Measurements()
@@ -95,8 +97,8 @@ class TestEnsembleLikeli(unittest.TestCase):
         # ensemblelikelihood
         lh_ensemble = EnsembleLikelihood(meadict, covdict)
         rslt_ensemble = lh_ensemble(simdict)
-        self.assertEqual(rslt_ensemble, rslt_simple)
-    
+        assert rslt_ensemble == rslt_simple
+
     def test_without_cov(self):
         simdict = Simulations()
         meadict = Measurements()
@@ -122,8 +124,4 @@ class TestEnsembleLikeli(unittest.TestCase):
         # ensemblelikelihood
         lh_ensemble = EnsembleLikelihood(meadict)
         rslt_ensemble = lh_ensemble(simdict)
-        self.assertEqual(rslt_ensemble, rslt_simple)
-        
-
-if __name__ == '__main__':
-    unittest.main()
+        assert rslt_ensemble == rslt_simple
