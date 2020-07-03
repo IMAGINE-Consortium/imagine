@@ -1,16 +1,19 @@
-import unittest
-import os
-import numpy as np
+# %% IMPORTS
+# Package imports
 from mpi4py import MPI
-from imagine.tools.io_handler import IOHandler
+import numpy as np
 
+# IMAGINE imports
+from imagine.tools import IOHandler
 
+# Globals
 comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
-class TestIO(unittest.TestCase):
 
+# %% PYTEST DEFINITIONS
+class TestIO(object):
     def test_io_copy(self):
         arr = np.random.rand(1,128)
         comm.Bcast(arr, root=0)
@@ -19,11 +22,7 @@ class TestIO(unittest.TestCase):
         # read back
         arr_check = test_io.read_copy(test_io.file_path, 'test_group/test_dataset')
         # consistency check
-        for i in range(arr.shape[0]):
-            self.assertListEqual(list(arr[i]), list(arr_check[i]))
-        # clean up
-        if not mpirank:
-            os.remove(test_io.file_path)
+        assert np.allclose(arr, arr_check)
 
     def test_io_dist(self):
         if not mpirank:
@@ -35,11 +34,4 @@ class TestIO(unittest.TestCase):
         # read back
         arr_check = test_io.read_dist(test_io.file_path, 'test_group/test_dataset')
         # consistency check
-        for i in range(arr.shape[0]):
-            self.assertListEqual(list(arr[i]), list(arr_check[i]))
-        # clean up
-        if not mpirank:
-            os.remove(test_io.file_path)
-
-if __name__ == '__main__':
-    unittest.main()
+        assert np.allclose(arr, arr_check)
