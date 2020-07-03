@@ -14,7 +14,7 @@ class TestIO(unittest.TestCase):
     def test_io_copy(self):
         arr = np.random.rand(1,128)
         comm.Bcast(arr, root=0)
-        test_io = io_handler()
+        test_io = IOHandler()
         test_io.write_copy(arr, 'test_io_matrix.hdf5', 'test_group/test_dataset')
         # read back
         arr_check = test_io.read_copy(test_io.file_path, 'test_group/test_dataset')
