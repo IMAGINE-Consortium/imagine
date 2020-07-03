@@ -138,6 +138,3 @@ class TestObservableDicts(object):
         covdict.apply_mask(mskdict)
         pix_num = msk.sum()
         assert ('test', 'nan', str(pix_num), 'nan') in covdict.keys()
-
-if __name__ == '__main__':
-    unittest.main()
