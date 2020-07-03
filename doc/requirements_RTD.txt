@@ -1,8 +1,9 @@
-mock
-numpy
-h5py
-astropy
-scipy
+astropy>=4.0.0
+e13tools>=0.9.0
+ipython
 nbsphinx
 nbsphinx-link
-IPython
+numpy>=1.18.0
+scipy>=1.1.0
+sphinx_rtd_theme
+sphinx>=1.8
