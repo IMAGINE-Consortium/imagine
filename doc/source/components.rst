@@ -356,7 +356,7 @@ which will generate new fields by calling the :py:meth:`~imagine.fields.field_fa
 Datasets
 --------
 
-:py:class:`imagine.observables.dataset.Dataset` objects are helpers
+:py:class:`Dataset <imagine.observables.dataset.Dataset>` objects are helpers
 used for the inclusion of observational data in IMAGINE.
 They convert the measured data and uncertainties to a standard format which
 can be later handed to an
@@ -372,7 +372,7 @@ repository. Below the usage of an imported dataset is illustrated::
     import imagine_datasets as img_datasets
 
     # Loads the dataset (usually involves downloading the data)
-    my_data = img_datasets.AuthorYear()
+    my_data = img_datasets.observable_type.AuthorYear()
 
     # Initialises ObservableDict objects
     measurement = img.Measurements()
@@ -383,7 +383,26 @@ repository. Below the usage of an imported dataset is illustrated::
     covariances.append(dataset=my_data)
 
 
+Each observable type should has an agreed/conventional name.
+The presently available observable names are:
+
+* 'fd' - Faraday depth
+* 'sync' - Synchrotron emission
+
+    * with tag 'I' - Total intensity
+    * with tag 'Q' - Stokes Q
+    * with tag 'U' - Stokes U
+    * with tag 'PI' - polarisation intensity
+    * with tag 'PA' - polarisation angle
+
+* 'dm' - Dispersion measure
+
+
 .. _Tabular datasets:
+
+^^^^^^^^^^^^^^^^
+Tabular datasets
+^^^^^^^^^^^^^^^^
 
 As the name indicates, in **tabular datasets** the observational data was
 originally
@@ -391,65 +410,75 @@ in tabular format, i.e. a table where each row corresponds to a different
 *position in the sky* and columns contain (at least) the sky coordinates,
 the measurement and the associated error. A final requirement is that the
 dataset is stored in a *dictionary-like* object i.e. the columns can be
-selected by column name.
+selected by column name (for example, a Python dictionary, a Pandas DataFrame,
+or an astropy Table).
 
-To construct a tabular dataset, one needs to instantiate
-:py:class:`imagine.observables.dataset.TabularDataset`.
-
-.. To exemplify this, we
-
-::
+To construct a tabular dataset, one needs to initialize
+:py:class:`imagine.observables.TabularDataset <imagine.observables.dataset.TabularDataset>`.
+Below, a simple example of this, which fetches (using the package astroquery)
+a catalog from ViZieR and stores in in an IMAGINE tabular dataset object::
 
     from astroquery.vizier import Vizier
-    from imagine.observables.dataset import TabularDataset
+    from imagine.observables import TabularDataset
 
-    class FaradayRotationMao2010(TabularDataset):
-        def __init__(self):
-            # Fetches the catalogue
-            catalog = Vizier.get_catalogs('J/ApJ/714/1170')[0]
-            # Reads it to the TabularDataset (the catalogue obj actually contains units)
-            super().__init__(catalog, name='fd', units=catalog['RM'].unit, tab=None,
-                             data_column='RM', error_column='e_RM',
-                             lat_column='GLAT', lon_column='GLON')
+    # Fetches the catalogue
+    catalog = Vizier.get_catalogs('J/ApJ/714/1170')[0]
+
+    # Loads it to the TabularDataset (the catalogue obj actually contains units)
+    RM_Mao2010 = TabularDataset(catalog, name='fd', units=catalog['RM'].unit,
+                                data_column='RM', error_column='e_RM', tag=None,
+                                lat_column='GLAT', lon_column='GLON')
+
+From this point the object :py:obj:`RM_Mao2010` can be appended to a
+:py:obj:`Measurements <imagine.observables.observable_dict.Measurements>`.
+We refer the reader to the
+the :doc:`tutorial_datasets` tutorial
+and the
+:py:class:`TabularDataset <imagine.observables.dataset.TabularDataset>` api
+documentation and for further details.
+
 
 .. _HEALPix datasets:
 
+^^^^^^^^^^^^^^^^
+HEALPix datasets
+^^^^^^^^^^^^^^^^
+
 **HEALPix datasets** will generally comprise maps of the full-sky, where
 `HEALPix <https://healpix.sourceforge.io/>`_ pixelation is employed.
+For standard observables, the datasets can be initialized by simply supplying
+a :py:obj:`Quantity <astropy.units.Quantity>` array containing the data to the
+corresponding class. Below some examples, employing
+the classes
+:py:class:`FaradayDepthHEALPixDataset <imagine.observables.dataset.FaradayDepthHEALPixDataset>`,
+:py:class:`DispersionMeasureHEALPixDataset <imagine.observables.dataset.DispersionMeasureHEALPixDataset>` and
+:py:class:`SynchrotronHEALPixDataset <imagine.observables.dataset.SynchrotronHEALPixDataset>`,
+respectively::
 
-:py:class:`imagine.observables.dataset.HEALPixDataset`
-:py:class:`imagine.observables.dataset.SynchrotronHEALPixDataset`
-:py:class:`imagine.observables.dataset.FaradayDepthHEALPixDataset`
-:py:class:`imagine.observables.dataset.DispersionMeasureHEALPixDataset`
+    from imagine.observables import FaradayDepthHEALPixDataset
+    from imagine.observables import DispersionMeasureHEALPixDataset
+    from imagine.observables import SynchrotronHEALPixDataset
+
+    my_FD_dset = FaradayDepthHEALPixDataset(data=fd_data_array,
+                                            error=fd_data_array_error)
+    my_DM_dset = DispersionMeasureHEALPixDataset(data=fd_data_array,
+                                                 cov=fd_data_array_covariance)
+    sync_dset = SynchrotronHEALPixDataset(data=stoke_Q_data,
+                                          error=stoke_Q_data_error
+                                          frequency=23*u.GHz, type='Q')
 
 
-::
+In the first example, it was assumed that the
+*covariance was diagonal*,
+and therefore can be described by an error associated with each pixel, which
+is specified with the keyword argument `error`. In the second example,
+the covariance associated with the data is instead specified supplying a
+two-dimensional array using the the `cov` keyword argument. The final example
+requires the user to supply the frequency of the observation and the subtype
+(in this case, 'Q').
 
-    import requests, io
-    import numpy as np
-    from astropy.io import fits
-    from astropy import units as u
-    from imagine.observables.dataset import FaradayDepthHEALPixDataset
-
-    class FaradayDepthOppermann2012(FaradayDepthHEALPixDataset):
-        def __init__(self, skip=None):
-            # Fetches and reads the
-            download = requests.get('https://wwwmpa.mpa-garching.mpg.de/ift/faraday/2012/faraday.fits')
-            raw_dataset = fits.open(io.BytesIO(download.content))
-            # Adjusts the data to the right format
-            fd_raw = raw_dataset[3].data.astype(np.float)
-            sigma_fd_raw = raw_dataset[4].data.astype(np.float)
-            # Includes units in the data
-            fd_raw *= u.rad/u.m/u.m
-            sigma_fd_raw *= u.rad/u.m/u.m
-
-            # If requested, makes it small, to save memory in this example
-            if skip is not None:
-                fd_raw = fd_raw[::skip]
-                sigma_fd_raw = sigma_fd_raw[::skip]
-            # Loads into the Dataset
-            super().__init__(data=fd_raw, error=sigma_fd_raw)
-
+.. Finally,
+.. :py:class:`imagine.observables.dataset.HEALPixDataset`
 
 
 .. _Observables:
