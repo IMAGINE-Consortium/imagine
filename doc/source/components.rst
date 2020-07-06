@@ -514,13 +514,14 @@ Likelihoods
 
 Likelihoods define how to quantitatively compare the simulated and measured
 observables.  They are represented within IMAGINE by an instance of class
-derived from :py:class:`imagine.likelihoods.likelihood.Likelihood`.
+derived from
+:py:class:`imagine.likelihoods.Likelihood <imagine.likelihoods.likelihood.Likelihood>`.
 There are two pre-implemented subclasses within IMAGINE:
 
- * :py:class:`imagine.likelihoods.simple_likelihood.SimpleLikelihood`:
+ * :py:class:`imagine.likelihoods.SimpleLikelihood <imagine.likelihoods.simple_likelihood.SimpleLikelihood>`:
    this is the traditional method, which is like a :math:`\chi^2` based on the
    covariance matrix of the measurements (i.e., noise).
- * :py:class:`imagine.likelihoods.ensemble_likelihood.EnsembleLikelihood`:
+ * :py:class:`imagine.likelihoods.EnsembleLikelihood <imagine.likelihoods.ensemble_likelihood.EnsembleLikelihood>`:
    combines covariance matrices from measurements with the expected galactic
    variance from models that include a stochastic component.
 
@@ -528,12 +529,18 @@ Likelihoods need to be initialized before running the pipeline, and require meas
 
 ::
 
-  likelihood = EnsembleLikelihood(data, covariancematrix)
+  from imagine.likelihoods import EnsembleLikelihood
+  likelihood = EnsembleLikelihood(data, covariance_matrix)
 
-The optional input argument `covariancematrix` does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
+The optional input argument :py:obj:`covariance_matrix` does not have to contain covariance matrices corresponding to all entries in input data.  The Likelihood automatically defines the proper way for the various cases.
 
-If the EnsembleLikelihood is used, then the sampler will be run multiple times at each point in likelihood space to create an ensemble of simulated observables.  The covariance of these observables can then be included in the likelihood quantitatively so that the comparison of the measured observables
+If the
+:py:class:`EnsembleLikelihood <imagine.likelihoods.ensemble_likelihood.EnsembleLikelihood>`
+is used, then the sampler will be run multiple times at each point in likelihood space to create an ensemble of simulated observables.
 
+.. .. math::
+..
+.. 	\mathcal{L}(d|{c}) = -\frac{1}{2} (d-\bar{c})^\dagger (A+C)^{-1} (d-\bar{c}) - \frac{1}{2}\ln\left(\left|A+C\right|\right)
 
 
 
@@ -553,9 +560,9 @@ To use a prior, one has to initialize it and include it in the associated
 (i.e. any parameter within the range are equally likely before the looking at
 the observational data), which can be initialized in the following way::
 
-  import imagine as img
+  from imagine.priors import FlatPrior
   import astropy.units as u
-  myFlatPrior = img.FlatPrior(interval=[-2*u.pc,10*u.pc])
+  myFlatPrior = FlatPrior(interval=[-2,10]*u.pc)
 
 where the range for this parameter was chosen to be between :math:`-2` and
 :math:`10\rm pc`.
@@ -571,10 +578,10 @@ deviation :math:`5\mu\rm G`. Moreover, let us assumed that the model only works
 within the range :math:`[-30\mu \rm G, 30\mu G]`. A prior consistent with these
 requirements can be achieved using::
 
-  import imagine as img
+  from imagine.priors import GaussianPrior
   import astropy.units as u
-  myGaussianPrior = img.GaussianPrior(mu=1*u.microgauss, sigma=5*u.microgauss,
-                                      interval=[-30*u.microgauss,30*u.microgauss])
+  myGaussianPrior = GaussianPrior(mu=1*u.microgauss, sigma=5*u.microgauss,
+                                  interval=[-30*u.microgauss,30*u.microgauss])
 
 
 
@@ -605,13 +612,14 @@ once this is done, one can *supply all these* to a **Pipeline** object, which
 will sample the :ref:`posterior distribution <posterior>` and estimate the
 :ref:`evidence <evidence>`.  This can be done in the following way::
 
+    from imagine.pipelines import UltranestPipeline
     # Initialises the pipeline
-    pipeline = img.UltranestPipeline(simulator=my_simulator,
+    pipeline = UltranestPipeline(simulator=my_simulator,
                                      factory_list=my_factory_list,
                                      likelihood=my_likelihood,
                                      ensemble_size=my_ensemble_size_choice)
     # Runs the pipeline
-    _ = pipeline()
+    pipeline()
 
 
 After running, the results can be accessed through the attributes of the
@@ -622,18 +630,15 @@ which contains the parameters values of the samples produced in the run).
 But what exactly is the Pipeline? The
 :py:class:`Pipeline <imagine.pipelines.pipeline.Pipeline>` base class takes
 care of interfacing between all the different IMAGINE components and sets the
-scene so that a Monte Carlo **sampler** can explore the parameter space and compute the
-results (i.e. posterior and evidence).
+scene so that a Monte Carlo **sampler** can explore the parameter space and
+compute the results (i.e. posterior and evidence).
 
 Different samplers are implemented as sub-classes of the Pipeline
 There are 3 samplers included in IMAGINE standard distribution (alternatives
 can be found in some of the
 `IMAGINE Consortium <https://github.com/IMAGINE-Consortium>`_ repositories),
-these are:
-
- * :py:class:`UltranestPipeline <imagine.pipelines.ultranest_pipeline.UltranestPipeline>`
- * :py:class:`MultinestPipeline <imagine.pipelines.multinest_pipeline.MultinestPipeline>`
- * :py:class:`DynestyPipeline <imagine.pipelines.dynesty_pipeline.DynestyPipeline>`
+these are: the :py:class:`MultinestPipeline <imagine.pipelines.multinest_pipeline.MultinestPipeline>`,
+the :py:class:`UltranestPipeline <imagine.pipelines.ultranest_pipeline.UltranestPipeline>` and the :py:class:`DynestyPipeline <imagine.pipelines.dynesty_pipeline.DynestyPipeline>`.
 
 One can include a new *sampler* in IMAGINE by creating a sub-class of
 :py:class:`imagine.Pipeline <imagine.pipelines.pipeline.Pipeline>`.
