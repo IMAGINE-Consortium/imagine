@@ -39,6 +39,21 @@ class Dataset(BaseClass):
     def name(self):
         return(self.NAME)
 
+
+    @property
+    def frequency(self):
+        return self._frequency
+
+    @frequency.setter
+    def frequency(self, frequency):
+        # Converts the frequency to a string in GHz
+        if hasattr(frequency, 'unit'):
+            frequency = frequency.to_value(u.GHz, equivalencies=u.spectral())
+            if frequency.is_integer():
+                frequency = int(frequency)
+
+        self._frequency = str(frequency)
+
     @property
     def data(self):
         """ Array in the shape (1, N) """
@@ -90,8 +105,8 @@ class TabularDataset(Dataset):
     x_column, y_column, z_column : str
         Keys used to access the coordinates (in kpc) from
         `data`.
-    frequency : str
-        String with the frequency of the measurement in GHz (if relevant)
+    frequency : astropy.units.Quantity
+        Frequency of the measurement (if relevant)
     tag : str
         Extra information associated with the observable.
           * 'I' - total intensity (in unit K-cmb)
@@ -125,7 +140,7 @@ class TabularDataset(Dataset):
         else:
             raise ValueError('Unknown coordinates_type!')
 
-        self.frequency = str(frequency)
+        self.frequency = frequency
         self.tag = tag
         if error_column is not None:
             self._error = u.Quantity(data[error_column], units, copy=False)
@@ -230,8 +245,8 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     ----------
     data : numpy.ndarray
       1D-array containing the HEALPix map
-    frequency : float
-      Frequency of the radio observation in $\rm GHz$
+    frequency : astropy.units.Quantity
+        Frequency of the measurement (if relevant)
     Nside : int, optional
       For extra internal consistency checking. If `Nside` is present,
       it will be checked whether :math:`12\times N_{side}^2` matches data.size
@@ -249,11 +264,12 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     # Class attributes
     NAME = 'sync'
 
-    def __init__(self, data, frequency, type, 
+    def __init__(self, data, frequency, type,
                  error=None, cov=None, Nside=None):
         super().__init__(data, error=error, cov=cov, Nside=Nside)
-    
-        self.frequency = str(frequency)
+
+        self.frequency = frequency
+
         # Checks whether the type is valid
         assert type in ['I', 'Q', 'U', 'PI', 'PA']
         self.tag = type
