@@ -1,3 +1,5 @@
+#!/usr/env python
+
 # External packages 
 import numpy as np
 import healpy as hp
@@ -13,11 +15,7 @@ from imagine.fields.hamx import TEregYMW16, TEregYMW16Factory
 from imagine.fields.hamx import CREAna, CREAnaFactory
 from imagine.fields.hamx import BrndES, BrndESFactory
 
-# Uses a RAM disk
-img.rc['temp_dir'] = '/run/shm/test'
-
-
-def prepare_mock_obs_data(b0=3, psi0=27, err=0.01):
+def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     """
     Prepares fake total intensity and Faraday depth data
     
@@ -39,7 +37,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, err=0.01):
 
     # Generates the fake datasets 
     sync_dset = img_obs.SynchrotronHEALPixDataset(data=np.empty(size)*u.K, 
-                                                  frequency=23, type='I')
+                                                  frequency=23*u.GHz, type='I')
     fd_dset = img_obs.FaradayDepthHEALPixDataset(data=np.empty(size)*u.rad/u.m**2)
 
     # Appends them to an Observables Dictionary
@@ -51,7 +49,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, err=0.01):
     mock_generator = img.simulators.Hammurabi(measurements=trigger)
     
     # BregLSA field
-    breg_lsa = BregLSA(parameters={'b0':3, 'psi0': 27.0, 'psi1': 0.9, 'chi0': 25.0})
+    breg_lsa = BregLSA(parameters={'b0': b0, 'psi0': psi0, 'psi1': 0.9, 'chi0': 25.0})
     # CREAna field
     cre_ana = CREAna(parameters={'alpha': 3.0, 'beta': 0.0, 'theta': 0.0,
                                  'r0': 5.0, 'z0': 1.0,
@@ -59,7 +57,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, err=0.01):
     # TEregYMW16 field
     tereg_ymw16 = TEregYMW16(parameters={})
     ## Random field
-    brnd_es = BrndES(parameters={'rms': 3., 'k0': 0.5, 'a0': 1.7,
+    brnd_es = BrndES(parameters={'rms': rms, 'k0': 0.5, 'a0': 1.7,
                                  'k1': 0.5, 'a1': 0.0,
                                  'rho': 0.5, 'r0': 8., 'z0': 1.},
                      grid_nx=25, grid_ny=25, grid_nz=15)
@@ -77,7 +75,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, err=0.01):
     dataI = (mockedI + np.random.normal(loc=0, scale=err*dm, size=size)) << u.K
     errorI = ((err*dm)**2) << u.K
     sync_dset = img_obs.SynchrotronHEALPixDataset(data=dataI, error=errorI,
-                                                  frequency=23, type='I')
+                                                  frequency=23*u.GHz, type='I')
     ## Just 0.01*50 rad/m^2 of error for noise.  
     dataRM = (mockedRM + np.random.normal(loc=0, scale=err*50, 
                                           size=12*nside**2))*u.rad/u.m/u.m
@@ -94,10 +92,43 @@ def prepare_mock_obs_data(b0=3, psi0=27, err=0.01):
     
     return mock_data, mock_cov
 
+def plot_results(pipe, true_vals, output_file='test.pdf'):
+    """
+    Makes a cornerplot of the results and saves them to disk
+    """
+    samp = pipe.samples
+    # Sets the levels to show 1, 2 and 3 sigma
+    sigmas=np.array([1.,2.,3.])
+    levels=1-np.exp(-0.5*sigmas*sigmas)
 
-# Creates the mock dataset
-mock_data, mock_cov = prepare_mock_obs_data()
+    # Visualize with a corner plot
+    figure = corner.corner(np.vstack([samp.columns[0].value, samp.columns[1].value]).T,
+                           range=[0.99]*len(pipe.active_parameters),
+                           quantiles=[0.02, 0.5, 0.98],
+                           labels=pipe.active_parameters,
+                           show_titles=True,
+                           title_kwargs={"fontsize": 12},
+                           color='steelblue',
+                           truths=true_vals,
+                           truth_color='firebrick',
+                           plot_contours=True,
+                           hist_kwargs={'linewidth': 2},
+                           label_kwargs={'fontsize': 10},
+                           levels=levels)
+    figure.savefig(output_file)
 
+
+# Choose "true" parameter values for the test
+b0=3
+psi0=27
+rms=3
+err=0.01
+
+# Creates the mock dataset based on them
+mock_data, mock_cov = prepare_mock_obs_data(b0=b0, psi0=psi0, 
+                                            rms=rms, err=0.01)
+
+# Setting up of the pipeline
 ## Use an ensemble to estimate the galactic variance
 likelihood = img.likelihoods.EnsembleLikelihood(mock_data, mock_cov)
 
@@ -119,14 +150,18 @@ fereg_factory = TEregYMW16Factory()
 factory_list = [breg_factory, brnd_factory, cre_factory,
                 fereg_factory]
 
+# Prepares simulator
 simulator = img.simulators.Hammurabi(measurements=mock_data)
 
+# Prepares pipeline
 pipeline = img.pipelines.MultinestPipeline(simulator=simulator, 
                                        factory_list=factory_list, 
                                        likelihood=likelihood, 
-                                       ensemble_size=20)
-pipeline.sampling_controllers = {'n_live_points': 100, 'verbose': True}
+                                       ensemble_size=20,
+                                       chains_directory='pipeline_example_chains')
+pipeline.sampling_controllers = {'n_live_points': 500, 'verbose': True}
 
+# Runs!
 results=pipeline()
 
 if mpirank == 0:
@@ -136,7 +171,8 @@ if mpirank == 0:
         f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
     # Reports the posterior
-    plot_results(pipeline, [a0,b0], output_file=output_file_plot)
+    plot_results(pipeline, [b0, psi0, err], 
+                 output_file='example_pipeline.pdf')
 
     # Prints setup
     print('\nRC used:', img.rc)
