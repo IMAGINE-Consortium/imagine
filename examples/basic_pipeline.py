@@ -84,10 +84,11 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
 
     fd_units = u.microgauss*u.cm**-3
 
-    dataset = img.dataset.TabularDataset(data_dict, name='test', data_column='meas',
-                                         coordinates_type='cartesian',
-                                         x_column='x', y_column='y', z_column='z',
-                                         error_column='err', units=fd_units)
+    dataset = img.observables.TabularDataset(data_dict, name='test', 
+                                             data_column='meas',
+                                             coordinates_type='cartesian',
+                                             x_column='x', y_column='y', z_column='z',
+                                             error_column='err', units=fd_units)
     return dataset
 
 
@@ -133,28 +134,28 @@ if __name__ == '__main__':
     mockDataset = prepare_mock_dataset(a0, b0)
 
     # Prepares Measurements and Covariances objects
-    measurements = img.Measurements()
+    measurements = img.observables.Measurements()
     measurements.append(dataset=mockDataset)
-    covariances = img.Covariances()
+    covariances = img.observables.Covariances()
     covariances.append(dataset=mockDataset)
 
     # Generates the grid
-    one_d_grid = img.UniformGrid(box=[[0,2*np.pi]*u.kpc,
+    one_d_grid = img.fields.UniformGrid(box=[[0,2*np.pi]*u.kpc,
                                       [0,0]*u.kpc,
                                       [0,0]*u.kpc],
                                 resolution=[100,1,1])
 
     # Prepares the thermal electron field factory
-    ne_factory = testFields.CosThermalElectronDensity_Factory(grid=one_d_grid)
+    ne_factory = testFields.CosThermalElectronDensityFactory(grid=one_d_grid)
     ne_factory.default_parameters= {'a': 1*u.rad/u.kpc,
                                     'beta':  np.pi/2*u.rad,
                                     'gamma': np.pi/2*u.rad}
 
     # Prepares the random magnetic field factory
-    B_factory = testFields.NaiveGaussianMagneticField_Factory(grid=one_d_grid)
+    B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0','b0')
-    B_factory.priors ={'a0': img.FlatPrior(interval=[-5,5]*u.microgauss),
-                      'b0': img.FlatPrior(interval=[0,10]*u.microgauss)}
+    B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5,5]*u.microgauss),
+                      'b0': img.priors.FlatPrior(interval=[0,10]*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
@@ -163,14 +164,16 @@ if __name__ == '__main__':
     simer = TestSimulator(measurements)
 
     # Initializes the likelihood
-    likelihood = img.EnsembleLikelihood(measurements, covariances)
+    likelihood = img.likelihoods.EnsembleLikelihood(measurements, covariances)
 
     # Defines the pipeline using the UltraNest sampler, giving it the required elements
-    pipeline = img.UltranestPipeline(simer, factory_list,
-                                     likelihood, ensemble_size=512)
+    pipeline = img.pipelines.UltranestPipeline(simulator=simer,
+                                               factory_list=factory_list,
+                                               likelihood=likelihood,
+                                               ensemble_size=512)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 500,
+    pipeline.sampling_controllers = {'max_ncalls': 1000,
                                     'Lepsilon': 0.1,
                                     'dlogz': 0.5,
                                     'min_num_live_points': 100}
