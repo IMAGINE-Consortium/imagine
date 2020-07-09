@@ -6,7 +6,7 @@ import logging as log
 # Package imports
 from astropy.table import QTable
 import astropy.units as apu
-from e13tools import apu2tex
+from e13tools import q2tex
 from mpi4py import MPI
 import numpy as np
 
@@ -176,19 +176,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             if misc.is_notebook():
                 out += r'\\ \text{ '
             out += param
-            med, low, up = (pdict[a].value for a in ['median', 'errlo', 'errup'])
-
-            v, l, u = misc.adjust_error_intervals(med, low, up, sdigits=significant_digits)
             if misc.is_notebook():
                 # Extracts LaTeX representation from astropy unit object
-                if isinstance(pdict['median'], apu.Quantity):
-                    unit_latex = apu2tex(pdict['median'].unit)
-                else:
-                    unit_latex = ''
-                # Prepares LaTeX output string
-                out += r': }}\; {0}_{{ {1} }}^{{ +{2} }}\,'.format(v, l, u)
-                out += unit_latex + r'\\'
+                out += r": }\; "
+                out += q2tex(*[pdict[a] for a in ['median', 'errup', 'errlo']],
+                             sdigits=significant_digits)
+                out += r"\\"
             else:
+                med, low, up = (pdict[a].value for a in ['median', 'errlo', 'errup'])
+                v, l, u = misc.adjust_error_intervals(med, low, up, sdigits=significant_digits)
                 out += r': {0} ({1})/(+{2}) '.format(v, l, u)
                 if isinstance(pdict['median'], apu.Quantity):
                     out += str(pdict['median'].unit)
