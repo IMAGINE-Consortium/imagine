@@ -24,7 +24,7 @@ def is_notebook():
         return False      # Probably standard Python interpreter
 
 
-def adjust_error_intervals(value, low, up, digits=2):
+def adjust_error_intervals(value, low, up, sdigits=2):
     r"""
     Takes values of a quantity at -1sigma (low), median (value) and +1sigma (up)
     and prepares them to be reported as :math:`v^{+err\,up}_{-err\,down}`.
@@ -44,7 +44,7 @@ def adjust_error_intervals(value, low, up, digits=2):
     errlow = low-value
     errup = up-value
 
-    get_rounding = lambda x: -int(floor(log10(abs(x)))) + (digits - 1)
+    get_rounding = lambda x: -int(floor(log10(abs(x)))) + (sdigits - 1)
 
     n = max(get_rounding(errlow), get_rounding(errup))
 

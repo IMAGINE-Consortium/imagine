@@ -4,8 +4,10 @@ import abc
 import logging as log
 
 # Package imports
-from mpi4py import MPI
 from astropy.table import QTable
+import astropy.units as apu
+from e13tools import apu2tex
+from mpi4py import MPI
 import numpy as np
 
 # IMAGINE imports
@@ -145,13 +147,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
             self._posterior_summary = {}
 
-            for column in samp.columns:
-                percentiles = np.percentile(samp[column], [15.87, 50,  84.13])
-                column_dict = {s:  percentiles[i]
+            for name, column in zip(samp.columns, samp.itercols()):
+                percentiles = np.percentile(column, [15.87, 50, 84.13])
+                column_dict = {s: percentiles[i]
                                for i, s in enumerate(('errlo', 'median', 'errup'))}
-                column_dict['mean'] = np.mean(samp[column])
-                column_dict['stdev'] = np.std(samp[column])
-                self._posterior_summary[column] = column_dict
+                column_dict['mean'] = np.mean(column)
+                column_dict['stdev'] = np.std(column)
+                self._posterior_summary[name] = column_dict
 
         return self._posterior_summary
 
@@ -176,16 +178,21 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             out += param
             med, low, up = (pdict[a].value for a in ['median', 'errlo', 'errup'])
 
-            v, l, u = misc.adjust_error_intervals(med, low, up, digits=significant_digits)
+            v, l, u = misc.adjust_error_intervals(med, low, up, sdigits=significant_digits)
             if misc.is_notebook():
                 # Extracts LaTeX representation from astropy unit object
-                unit_latex = pdict['median'].unit._repr_latex_().replace('$', '')
+                if isinstance(pdict['median'], apu.Quantity):
+                    unit_latex = apu2tex(pdict['median'].unit)
+                else:
+                    unit_latex = ''
                 # Prepares LaTeX output string
                 out += r': }}\; {0}_{{ {1} }}^{{ +{2} }}\,'.format(v, l, u)
                 out += unit_latex + r'\\'
             else:
                 out += r': {0} ({1})/(+{2}) '.format(v, l, u)
-                out += str(pdict['median'].unit)+'\n'
+                if isinstance(pdict['median'], apu.Quantity):
+                    out += str(pdict['median'].unit)
+                out += '\n'
 
         if misc.is_notebook():
             display(Math(out))
