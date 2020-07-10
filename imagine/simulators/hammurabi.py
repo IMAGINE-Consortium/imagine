@@ -88,7 +88,7 @@ class Hammurabi(Simulator):
                 pass
 
         # Includes the new data
-        sync_name_cache = list()
+        sync_name_cache = []
         for key in self.observables:
             name, freq, nside, flag = key
 
@@ -98,14 +98,14 @@ class Hammurabi(Simulator):
             if name == 'sync':
                 if (freq, nside) not in sync_name_cache:  # Avoids duplication
                     self._ham.add_par(['observable'], 'sync',
-                                      {'cue': str(1), 'freq': freq, 'nside': nside})
+                                      {'cue': '1', 'freq': freq, 'nside': nside})
                     sync_name_cache.append((freq, nside))
             elif name == 'fd':
                 self._ham.add_par(['observable'], 'faraday',
-                                  {'cue': str(1), 'nside': nside})
+                                  {'cue': '1', 'nside': nside})
             elif name == 'dm':
                 self._ham.add_par(['observable'], 'dm',
-                                  {'cue': str(1), 'nside': nside})
+                                  {'cue': '1', 'nside': nside})
             else:
                 raise ValueError('unrecognised name %s' % name)
         self._ham.print_par(['observable'])
@@ -228,7 +228,6 @@ class Hammurabi(Simulator):
 
     def _clean_up_dumped_fields(self):
         """Removes any temporary field data dump files"""
-        while len(self._field_dump_files) > 0:
-            f = self._field_dump_files.pop()
+        for f in self._field_dump_files:
             f.close()
-
+        self._field_dump_files.clear()

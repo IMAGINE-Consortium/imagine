@@ -24,30 +24,32 @@ def is_notebook():
         return False      # Probably standard Python interpreter
 
 
-def adjust_error_intervals(value, low, up, sdigits=2):
+def adjust_error_intervals(value, errlo, errup, sdigits=2):
     r"""
-    Takes values of a quantity at -1sigma (low), median (value) and +1sigma (up)
-    and prepares them to be reported as :math:`v^{+err\,up}_{-err\,down}`.
+    Takes the value of a quantity `value` with associated errors `errlo` and
+    `errup`; and prepares them to be reported as
+    :math:`v^{+err\,up}_{-err\,down}`.
 
     Parameters
     ----------
-    value, low, up : float or int
-        Value of the number
+    value : int or float
+        Value of quantity.
+    errlo, errup : int or float
+        Associated lower and upper errors of `value`.
 
     Returns
     -------
     value : float
         Rounded value
-    errlow, errup : float
+    errlo, errup : float
         Assimetric error values
+
     """
-    errlow = low-value
-    errup = up-value
 
     get_rounding = lambda x: -int(floor(log10(abs(x)))) + (sdigits - 1)
 
-    n = max(get_rounding(errlow), get_rounding(errup))
+    n = max(get_rounding(errlo), get_rounding(errup))
 
-    value, errlow, errup = (round(x,n) for x in (value, errlow, errup))
+    value, errlo, errup = (round(x,n) for x in (value, errlo, errup))
 
-    return value, errlow, errup
+    return(value, errlo, errup)

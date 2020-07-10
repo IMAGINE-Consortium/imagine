@@ -142,8 +142,7 @@ class Observable(object):
                 assert (data.shape[0] == 1)
             self._data = np.copy(data)
             if (self._dtype == 'covariance'):
-                g_rows, g_cols = self.shape
-                assert (g_rows == g_cols)
+                assert np.equal(*self.shape)
 
     @dtype.setter
     def dtype(self, dtype):

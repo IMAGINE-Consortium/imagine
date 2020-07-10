@@ -56,7 +56,7 @@ class EnsembleLikelihood(Likelihood):
         # check dict entries
         assert  set(simulations_dict.keys()).issubset(self._measurement_dict.keys())
 
-        likelicache = 0.0
+        likelicache = 0
 
         if self._covariance_dict is None:
             for name in simulations_dict.keys():
@@ -64,10 +64,10 @@ class EnsembleLikelihood(Likelihood):
                 data = deepcopy(self._measurement_dict[name].data)  # to distributed data
                 diff = np.nan_to_num(data - obs_mean)
                 if (ptrace(obs_cov) < 1E-28):  # zero will not be reached, at most E-32
-                    likelicache += -0.5*np.vdot(diff, diff)
+                    likelicache += -0.5*diff @ diff
                 else:
-                    sign, logdet = pslogdet(obs_cov*2.*np.pi)
-                    likelicache += -0.5*(np.vdot(diff, plu_solve(obs_cov, diff))+sign*logdet)
+                    sign, logdet = pslogdet(obs_cov*2*np.pi)
+                    likelicache += -0.5*(diff @ plu_solve(obs_cov, diff)+sign*logdet)
         else:
             for name in simulations_dict.keys():
                 obs_mean, obs_cov = oas_mcov(simulations_dict[name].data)  # to distributed data
@@ -76,14 +76,14 @@ class EnsembleLikelihood(Likelihood):
                 if name in self._covariance_dict.keys():  # not all measurements have cov
                     full_cov = deepcopy(self._covariance_dict[name].data) + obs_cov
                     if (ptrace(full_cov) < 1E-28):  # zero will not be reached, at most E-32
-                        likelicache += -0.5*np.vdot(diff, diff)
+                        likelicache += -0.5*diff @ diff
                     else:
                         sign, logdet = pslogdet(full_cov*2.*np.pi)
-                        likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff))+sign*logdet)
+                        likelicache += -0.5*(diff @ plu_solve(full_cov, diff)+sign*logdet)
                 else:
                     if (ptrace(obs_cov) < 1E-28):  # zero will not be reached, at most E-32
-                        likelicache += -0.5*np.vdot(diff, diff)
+                        likelicache += -0.5*diff @ diff
                     else:
                         sign, logdet = pslogdet(obs_cov*2.*np.pi)
-                        likelicache += -0.5*(np.vdot(diff, plu_solve(obs_cov, diff))+sign*logdet)
+                        likelicache += -0.5*(diff @ plu_solve(obs_cov, diff)+sign*logdet)
         return likelicache
