@@ -252,7 +252,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
 
         # Subsititutes any field type string by field classes
         for deps in dependencies.values():
-            for dep in deps:
+            for dep in set(deps):
                 if isinstance(dep, str):
                     deps.remove(dep)
                     deps.update(field_types[dep])
