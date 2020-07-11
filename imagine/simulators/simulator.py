@@ -303,7 +303,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
             L.append(n)
 
             # Goes through all the nodes
-            for m in deps.keys():
+            for m in list(deps.keys()):
                 edges = deps[m]
                 # If n is in the edges, removes it
                 if type(n) in edges:
