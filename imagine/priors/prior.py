@@ -79,7 +79,7 @@ class GeneralPrior:
         if (pdf_x is None) and (pdf_y is None):
             # PDF from samples mode -------------------
             if samples is not None:
-                assert (pdf_fun is None), 'Either provide the samples or the PDF, not both.'
+                assert pdf_fun is None, 'Either provide the samples or the PDF, not both.'
                 if interval is not None:
                     ok = (samples > interval[0]) * (samples < interval[1])
                     samples = samples[ok]
@@ -87,10 +87,7 @@ class GeneralPrior:
                 xmin, xmax = samples.min(), samples.max()
             # PDF from function mode -------------------
             elif pdf_fun is not None:
-                assert (pdf_x is None) and (pdf_y is None), 'Either provide the pdf datapoints or function, not both.'
                 xmin, xmax = interval
-
-            if pdf_fun is not None:
                 # Evaluates the PDF
                 pdf_x = np.linspace(xmin, xmax, pdf_npoints)
                 pdf_y = pdf_fun(pdf_x)

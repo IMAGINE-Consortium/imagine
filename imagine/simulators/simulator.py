@@ -251,8 +251,8 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                     dependencies[field].update(fdep)
 
         # Subsititutes any field type string by field classes
-        for k, deps in dependencies.items():
-            for dep in tuple(deps):
+        for deps in dependencies.values():
+            for dep in set(deps):
                 if isinstance(dep, str):
                     deps.remove(dep)
                     deps.update(field_types[dep])
@@ -292,7 +292,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
             deps = deepcopy(dependencies)
 
         counter = 0
-        while len(S) > 0:
+        while S:
             counter += 1
             assert counter < max_iter, 'Error: too many iterations'
 
@@ -310,11 +310,11 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                     edges.remove(type(n))
                 # If there are no edges, add it to the
                 # independent nodes list
-                if len(edges) == 0:
+                if not edges:
                     S.append(m)
                     del deps[m]
 
-        assert len(deps) == 0, 'There is a cyclical Field dependency!'
+        assert not deps, 'There is a cyclical Field dependency!'
 
         return L
 

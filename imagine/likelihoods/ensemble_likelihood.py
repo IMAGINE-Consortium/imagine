@@ -56,7 +56,7 @@ class EnsembleLikelihood(Likelihood):
         # check dict entries
         assert  set(simulations_dict.keys()).issubset(self._measurement_dict.keys())
 
-        likelicache = 0.0
+        likelicache = 0
 
         if self._covariance_dict is None:
             for name in simulations_dict.keys():
@@ -66,7 +66,7 @@ class EnsembleLikelihood(Likelihood):
                 if (ptrace(obs_cov) < 1E-28):  # zero will not be reached, at most E-32
                     likelicache += -0.5*np.vdot(diff, diff)
                 else:
-                    sign, logdet = pslogdet(obs_cov*2.*np.pi)
+                    sign, logdet = pslogdet(obs_cov*2*np.pi)
                     likelicache += -0.5*(np.vdot(diff, plu_solve(obs_cov, diff))+sign*logdet)
         else:
             for name in simulations_dict.keys():

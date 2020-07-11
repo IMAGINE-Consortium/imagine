@@ -61,7 +61,7 @@ class TestSimulator(Simulator):
                                             values=fd, method='nearest')
 
         interp_points = np.array([coords_dict[c].to_value(u.kpc)
-                                  for c in ('x','y','z')]).T
+                                  for c in ('x', 'y', 'z')]).T
 
         with np.errstate(invalid='ignore', divide='ignore'):
             results = fd_interp(interp_points)*output_units

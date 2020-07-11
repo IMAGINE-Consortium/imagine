@@ -148,16 +148,19 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self._posterior_summary = {}
 
             for name, column in zip(samp.columns, samp.itercols()):
-                percentiles = np.percentile(column, [15.87, 50, 84.13])
-                column_dict = {s: percentiles[i]
-                               for i, s in enumerate(('errlo', 'median', 'errup'))}
-                column_dict['mean'] = np.mean(column)
-                column_dict['stdev'] = np.std(column)
-                self._posterior_summary[name] = column_dict
+                lo, median, up = np.percentile(column, [15.865, 50, 84.135])
+                errlo = abs(median-lo)
+                errup = abs(up-median)
+                self._posterior_summary[name] = {
+                    'median': median,
+                    'errlo': errlo,
+                    'errup': errup,
+                    'mean': np.mean(column),
+                    'stdev': np.std(column)}
 
         return self._posterior_summary
 
-    def posterior_report(self, significant_digits=2):
+    def posterior_report(self, sdigits=2):
         """
         Displays the best fit values and 1-sigma errors for each active parameter.
 
@@ -165,29 +168,27 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        significant_digits : int
+        sdigits : int
             The number of significant digits to be used
         """
         from IPython.display import display, Math
-        """Reports the """
         out = ''
 
         for param, pdict in self.posterior_summary.items():
             if misc.is_notebook():
-                out += r'\\ \text{ '
-            out += param
-            if misc.is_notebook():
                 # Extracts LaTeX representation from astropy unit object
-                out += r": }\; "
-                out += q2tex(*[pdict[a] for a in ['median', 'errup', 'errlo']],
-                             sdigits=significant_digits)
+                out += r"\\ \text{{ {0}: }}\; ".format(param)
+                out += q2tex(*map(pdict.get, ['median', 'errup', 'errlo']),
+                             sdigits=sdigits)
                 out += r"\\"
             else:
-                med, low, up = (pdict[a].value for a in ['median', 'errlo', 'errup'])
-                v, l, u = misc.adjust_error_intervals(med, low, up, sdigits=significant_digits)
-                out += r': {0} ({1})/(+{2}) '.format(v, l, u)
-                if isinstance(pdict['median'], apu.Quantity):
-                    out += str(pdict['median'].unit)
+                out += r"{0}: ".format(param)
+                md, errlo, errup = map(pdict.get, ['median', 'errlo', 'errup'])
+                v, l, u = misc.adjust_error_intervals(
+                    md, errlo, errup, sdigits=sdigits)
+                out += r'{0} (-{1})/(+{2}) '.format(v, l, u)
+                if isinstance(md, apu.Quantity):
+                    out += str(md.unit)
                 out += '\n'
 
         if misc.is_notebook():
@@ -269,21 +270,21 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # factory ordering. This is useful for recovering variable logic value
         # for each factory and necessary to construct the common prior function.
         assert isinstance(factory_list, (list, tuple)), 'Factory list must be a tuple or list'
-        self._active_parameters = tuple()
-        self._active_ranges = dict()
-        self._priors = dict()
+        self._active_parameters = ()
+        self._active_ranges = {}
+        self._priors = {}
 
         for factory in factory_list:
             assert isinstance(factory, FieldFactory)
             for ap_name in factory.active_parameters:
                 assert isinstance(ap_name, str)
                 # Sets the parameters and ranges
-                self._active_parameters += (str(factory.name+'_'+ap_name),)
-                self._active_ranges[str(factory.name+'_'+ap_name)] = factory.parameter_ranges[ap_name]
+                self._active_parameters += (factory.name+'_'+ap_name,)
+                self._active_ranges[factory.name+'_'+ap_name] = factory.parameter_ranges[ap_name]
                 # Sets the Prior
                 prior = factory.priors[ap_name]
                 assert isinstance(prior, GeneralPrior)
-                self._priors[str(factory.name+'_'+ap_name)] = prior
+                self._priors[factory.name+'_'+ap_name] = prior
         self._factory_list = factory_list
 
     @property
