@@ -68,49 +68,17 @@ class GeneralPrior:
         Number of points used to evaluate the CDF for the calculation of its
         inverse.
     """
-    def __init__(self, samples=None, pdf_fun=None,
-                 pdf_x=None, pdf_y=None, interval=None,
-                 bw_method=None, pdf_npoints=1500, inv_cdf_npoints=1500):
+    def __init__(self,  interval=None):
 
         # Ensures interval is quantity with consistent units
         interval = u.Quantity(interval)
         self.range = interval
 
-        if (pdf_x is None) and (pdf_y is None):
-            # PDF from samples mode -------------------
-            if samples is not None:
-                assert (pdf_fun is None), 'Either provide the samples or the PDF, not both.'
-                if interval is not None:
-                    ok = (samples > interval[0]) * (samples < interval[1])
-                    samples = samples[ok]
-                pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
-                xmin, xmax = samples.min(), samples.max()
-            # PDF from function mode -------------------
-            elif pdf_fun is not None:
-                assert (pdf_x is None) and (pdf_y is None), 'Either provide the pdf datapoints or function, not both.'
-                xmin, xmax = interval
-
-            if pdf_fun is not None:
-                # Evaluates the PDF
-                pdf_x = np.linspace(xmin, xmax, pdf_npoints)
-                pdf_y = pdf_fun(pdf_x)
-                # Normalizes and removes units
-                inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
-                pdf_y = (pdf_y/inv_norm).value
-                pdf_x = ((pdf_x - pdf_x.min())/(pdf_x.max() - pdf_x.min())).value
-                # Recovers units
-                self.range = (xmin, xmax)*self.range.unit
-
         # Placeholders
-        self.inv_cdf_npoints = inv_cdf_npoints
         self._cdf = None
         self._inv_cdf = None
         self.distr = None
-
-        if (pdf_x is not None) and (pdf_y is not None):
-            self._pdf = CubicSpline(pdf_x, pdf_y)
-        else:
-            self._pdf = None
+        self._pdf = None
 
     @property
     def pdf(self):
@@ -141,25 +109,6 @@ class GeneralPrior:
 
     @property
     def inv_cdf(self):
-        """
-        Inverse of the CDF associated with this prior,
-        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
-        """
-        if (self._inv_cdf is None) and (self.cdf is not None):
-            t = np.linspace(0, 1, self.inv_cdf_npoints)
-            y = self.cdf(t)
-            # Rescales the image of the function to [0,1]
-            y = (y-y.min())/(y.max()-y.min())
-            # For some distributions, there will be multiple
-            # values of y=0 for the same t. The following corrects this
-            # by simply removing this part of the cdf
-            select_zeros = (y == 0)
-            if len(select_zeros) > 1:
-                y = y[~select_zeros]
-                t = t[~select_zeros]
-            # Creates interpolated spline
-            self._inv_cdf = CubicSpline(y, t)
-
         return self._inv_cdf
 
     def __call__(self, x):
@@ -168,6 +117,71 @@ class GeneralPrior:
         inverse of the CDF at point(s) `x`.
         """
         return self.inv_cdf(x)
+
+
+class GridPrior(GeneralPrior):
+    def __init__(self, interval, inv_cdf_npoints):
+        super().__init__(interval)
+        self.inv_cdf_npoints = inv_cdf_npoints
+        self._initialize_inv_cdf()
+
+    def _initialize_inv_cdf(self):
+        """
+        Inverse of the CDF associated with this prior,
+        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
+        """
+        assert self.cdf is not None
+        t = np.linspace(0, 1, self.inv_cdf_npoints)
+        y = self.cdf(t)
+        # Rescales the image of the function to [0,1]
+        y = (y-y.min())/(y.max()-y.min())
+        # For some distributions, there will be multiple
+        # values of y=0 for the same t. The following corrects this
+        # by simply removing this part of the cdf
+        select_zeros = (y == 0)
+        if len(select_zeros) > 1:
+            y = y[~select_zeros]
+            t = t[~select_zeros]
+        # Creates interpolated spline
+        self._inv_cdf = CubicSpline(y, t)
+
+
+class AnalyticPrior(GridPrior):
+     def __init__(self, pdf_fun, interval, inv_cdf_npoints):
+         super().__init__(interval, inv_cdf_npoints)
+
+         self._pdf = CubicSpline(pdf_x, pdf_y)
+
+
+
+class NonAnalyticPrior(GridPrior):
+    def __init__(self, pdf_x, pdf_y, interval, inv_cdf_npoints):
+        super().__init__(interval, inv_cdf_npoints)
+        self._pdf = CubicSpline(pdf_x, pdf_y)
+        self.inv_cdf_npoints = inv_cdf_npoints
+
+
+class EmpiricalPrior(GridPrior):
+
+    def __init__(self, samples, interval, bw_method=None, pdf_npoints=1500, inv_cdf_npoints=1500):
+            super().__init__()
+    # PDF from samples mode -------------------
+            self.inv_cdf_npoints = inv_cdf_npoints
+            if interval is not None:
+                ok = (samples > interval[0]) * (samples < interval[1])
+                samples = samples[ok]
+            pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
+            xmin, xmax = samples.min(), samples.max()
+            if pdf_fun is not None:
+                # Evaluates the PDF
+                pdf_x = np.linspace(xmin, xmax, pdf_npoints)
+                pdf_y = pdf_fun(pdf_x)
+                # Normalizes and removes units
+                inv_norm = pdf_y.sum() * (xmax - xmin) / pdf_npoints
+                pdf_y = (pdf_y / inv_norm).value
+                pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min())).value
+                # Recovers units
+                self.range = (xmin, xmax) * self.range.unit
 
 
 class ScipyPrior(GeneralPrior):
@@ -197,15 +211,17 @@ class ScipyPrior(GeneralPrior):
         interval).
     """
     def __init__(self, distr, *args, loc=0.0, scale=1.0,
-                 interval=[-1.0,1.0], **kwargs):
+                 interval=None, **kwargs):
         super().__init__(interval=interval)
 
         assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
 
-        xmin, xmax = interval
+        if interval is not None:
+            xmin, xmax = interval
+            scale /= (xmax - xmin)
 
         loc = self._scale_parameter(loc)
-        self.distr = distr(*args, loc=loc, scale=scale/(xmax - xmin), **kwargs)
+        self.distr = distr(*args, loc=loc, scale=scale, **kwargs)
 
         self._pdf = self.distr.pdf
         self._cdf = self.distr.cdf
@@ -214,4 +230,4 @@ class ScipyPrior(GeneralPrior):
         # ppf for this (which is supposed to be accurate and fast),
         # but this has not yet being implemented as it requires
         # some extra rescaling to work with the truncation
-        # self._inv_cdf = self.distr.ppf
+        self._inv_cdf = self.distr.ppf

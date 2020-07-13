@@ -46,7 +46,7 @@ class FlatPrior(GeneralPrior):
 
 class GaussianPrior(ScipyPrior):
     """
-    Truncated normal prior distribution
+    (Truncated) normal prior distribution
 
 
 
@@ -57,9 +57,9 @@ class GaussianPrior(ScipyPrior):
         of the Gaussian
     sigma : float
         Width of the distribution (standard deviation, if there was no tuncation)
-    interval : tuple or list
-        A pair of points representing, respectively, the minimum and maximum
-        parameter values to be considered.
+    interval : None, tuple or list
+        If not none, a pair of points representing, respectively, the minimum and maximum
+        parameter values to be considered. If none, the Gaussian is not truncated.
     """
-    def __init__(self, mu=0.0, sigma=1.0, interval=[-1.0,1.0]):
+    def __init__(self, mu=0.0, sigma=1.0, interval=None):
         super().__init__(distr=norm, loc=mu, scale=sigma, interval=interval)
