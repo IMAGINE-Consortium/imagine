@@ -21,7 +21,7 @@ class FlatPrior(GeneralPrior):
 
     No initialization is required.
     """
-    def __init__(self, interval=[0,1]):
+    def __init__(self, interval):
         # Updates ranges
         super().__init__(interval=interval)
         # Constant pdf (for illustration)

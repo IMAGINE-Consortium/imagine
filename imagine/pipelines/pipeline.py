@@ -442,6 +442,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         else:
             self.ensemble_seeds = None
 
+    def _prior_correlator(self, prior_a, prior_b, corr_coefficient):
+        raise NotImplementedError
+
+
     def _core_likelihood(self, cube):
         """
         core log-likelihood calculator
