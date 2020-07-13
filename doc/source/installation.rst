@@ -18,8 +18,8 @@ and unpack the
 
 .. code-block:: console
 
-    wget https://github.com/IMAGINE-Consortium/imagine/archive/v2.0.0-alpha.tar.gz
-    tar -xvvzf v2.0.0-alpha.tar.gz
+    wget https://github.com/IMAGINE-Consortium/imagine/archive/v2.0.0-alpha.1.tar.gz
+    tar -xvvzf v2.0.0-alpha.1.tar.gz
 
 
 Alternatively, if one is interested in getting involved with the development,
