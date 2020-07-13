@@ -6,7 +6,6 @@ class PipelineTemplate(Pipeline):
     """
     Detailed description of sampler being adopted
     """
-
     # Class attributes
     # Does this sampler support MPI? Only necessary if True
     SUPPORTS_MPI = False
@@ -34,7 +33,10 @@ class PipelineTemplate(Pipeline):
             # Some samplers need a "prior transform function"
             prior_transform=self.prior_transform,
             # Other samplers need the prior PDF, which is
-            prior_pdf=self.prior_pdf)
+            prior_pdf=self.prior_pdf
+            # Sets the directory where the sampler writes the chains
+            chains_dir=self.chains_directory
+            )
 
         # Most samplers have a `run` method, which should be executed
         self.sampling_controllers.update(kwargs)
