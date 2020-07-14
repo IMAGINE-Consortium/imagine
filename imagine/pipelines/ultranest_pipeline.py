@@ -27,51 +27,52 @@ class UltranestPipeline(Pipeline):
     property. A description of these can be found below.
 
     Sampling controllers
-        resume : bool
-            If False the Pipeline the sampling starts from the beginning,
-            erasing any previous work in the `chains_directory`. Otherwise,
-            resume a previous run.
-        dlogz : float
-            Target evidence uncertainty. This is the std
-            between bootstrapped logz integrators.
-        dKL : float
-            Target posterior uncertainty. This is the Kullback-Leibler
-            divergence in nat between bootstrapped integrators.
-        frac_remain : float
-            Integrate until this fraction of the integral is left in the
-            remainder.
-            Set to a low number (1e-2 ... 1e-5) to make sure peaks are
-            discovered.
-            Set to a higher number (0.5) if you know the posterior is simple.
-        Lepsilon : float
-            Terminate when live point likelihoods are all the same,
-            within Lepsilon tolerance. Increase this when your likelihood
-            function is inaccurate, to avoid unnecessary search.
-        min_ess : int
-            Target number of effective posterior samples.
-        max_iters : int
-            maximum number of integration iterations.
-        max_ncalls : int
-            stop after this many likelihood evaluations.
-        max_num_improvement_loops : int
-            run() tries to assess iteratively where more samples are needed.
-            This number limits the number of improvement loops.
-        min_num_live_points : int
-            minimum number of live points throughout the run
-        cluster_num_live_points : int
-            require at least this many live points per detected cluster
-        num_test_samples : int
-            test transform and likelihood with this number of
-            random points for errors first. Useful to catch bugs.
-        draw_multiple : bool
-            draw more points if efficiency goes down.
-            If set to False, few points are sampled at once.
-        num_bootstraps : int
-            number of logZ estimators and MLFriends region
-            bootstrap rounds.
-        update_interval_iter_fraction : float
-            Update region after (update_interval_iter_fraction*nlive)
-            iterations.
+    --------------------
+    resume : bool
+        If False the Pipeline the sampling starts from the beginning,
+        erasing any previous work in the `chains_directory`. Otherwise,
+        resume a previous run.
+    dlogz : float
+        Target evidence uncertainty. This is the std
+        between bootstrapped logz integrators.
+    dKL : float
+        Target posterior uncertainty. This is the Kullback-Leibler
+        divergence in nat between bootstrapped integrators.
+    frac_remain : float
+        Integrate until this fraction of the integral is left in the
+        remainder.
+        Set to a low number (1e-2 ... 1e-5) to make sure peaks are
+        discovered.
+        Set to a higher number (0.5) if you know the posterior is simple.
+    Lepsilon : float
+        Terminate when live point likelihoods are all the same,
+        within Lepsilon tolerance. Increase this when your likelihood
+        function is inaccurate, to avoid unnecessary search.
+    min_ess : int
+        Target number of effective posterior samples.
+    max_iters : int
+        maximum number of integration iterations.
+    max_ncalls : int
+        stop after this many likelihood evaluations.
+    max_num_improvement_loops : int
+        run() tries to assess iteratively where more samples are needed.
+        This number limits the number of improvement loops.
+    min_num_live_points : int
+        minimum number of live points throughout the run
+    cluster_num_live_points : int
+        require at least this many live points per detected cluster
+    num_test_samples : int
+        test transform and likelihood with this number of
+        random points for errors first. Useful to catch bugs.
+    draw_multiple : bool
+        draw more points if efficiency goes down.
+        If set to False, few points are sampled at once.
+    num_bootstraps : int
+        number of logZ estimators and MLFriends region
+        bootstrap rounds.
+    update_interval_iter_fraction : float
+        Update region after (update_interval_iter_fraction*nlive)
+        iterations.
 
     Note
     ----
