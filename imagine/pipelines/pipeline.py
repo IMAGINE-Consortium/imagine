@@ -185,8 +185,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 out += r"{0}: ".format(param)
                 md, errlo, errup = map(pdict.get, ['median', 'errlo', 'errup'])
                 if isinstance(md, apu.Quantity):
-                    md, errlo, errup = map(lambda x: x.value, [md, errlo, errup])
                     unit = str(md.unit)
+                    md, errlo, errup = map(lambda x: x.value, [md, errlo, errup])
                 else:
                     unit = ""
                 v, l, u = misc.adjust_error_intervals(
