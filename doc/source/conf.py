@@ -100,7 +100,7 @@ autosectionlabel_prefix_document = True
 napoleon_include_private_with_doc = True
 napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
-
+napoleon_custom_sections = ['Sampling controllers']
 
 intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
