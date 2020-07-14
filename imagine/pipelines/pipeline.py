@@ -184,12 +184,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             else:
                 out += r"{0}: ".format(param)
                 md, errlo, errup = map(pdict.get, ['median', 'errlo', 'errup'])
+                if isinstance(md, apu.Quantity):
+                    md, errlo, errup = map(lambda x: x.value, [md, errlo, errup])
+                    unit = str(md.unit)
+                else:
+                    unit = ""
                 v, l, u = misc.adjust_error_intervals(
                     md, errlo, errup, sdigits=sdigits)
-                out += r'{0} (-{1})/(+{2}) '.format(v, l, u)
-                if isinstance(md, apu.Quantity):
-                    out += str(md.unit)
-                out += '\n'
+                out += r'{0} (-{1})/(+{2}) {3}\n'.format(v, l, u, unit)
 
         if misc.is_notebook():
             display(Math(out))
