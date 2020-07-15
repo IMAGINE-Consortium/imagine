@@ -4,6 +4,7 @@ import abc
 import logging as log
 import tempfile
 import os
+from os import path
 
 # Package imports
 from astropy.table import QTable
@@ -141,7 +142,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # Removes previous temporary directory, if exists
             if hasattr(self, '_chains_dir_obj'):
                 del self._chains_dir_obj
-            assert os.isdir(chains_directory)
+            assert path.isdir(chains_directory)
             self._chains_directory = chains_directory
 
     @property
