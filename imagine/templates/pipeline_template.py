@@ -33,9 +33,11 @@ class PipelineTemplate(Pipeline):
             # Some samplers need a "prior transform function"
             prior_transform=self.prior_transform,
             # Other samplers need the prior PDF, which is
-            prior_pdf=self.prior_pdf
+            prior_pdf=self.prior_pdf,
             # Sets the directory where the sampler writes the chains
-            chains_dir=self.chains_directory
+            chains_dir=self.chains_directory,
+            # Sets the seed used by the sampler
+            seed=self.master_seed
             )
 
         # Most samplers have a `run` method, which should be executed

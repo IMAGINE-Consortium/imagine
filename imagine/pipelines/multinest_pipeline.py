@@ -16,7 +16,8 @@ __all__ = ['MultinestPipeline']
 # %% CLASS DEFINITIONS
 class MultinestPipeline(Pipeline):
     """
-    Initialises Bayesian analysis pipeline with pyMultinest
+    Initialises Bayesian analysis pipeline with
+    `pyMultinest <https://github.com/JohannesBuchner/PyMultiNest>`_
 
     See base class for initialization details.
 
@@ -27,8 +28,8 @@ class MultinestPipeline(Pipeline):
     --------------------
     resume : bool
         If False the Pipeline the sampling starts from the beginning,
-        erasing any previous work in the `chains_directory`. Otherwise,
-        resume a previous run.
+        overwriting any previous work in the `chains_directory`. Otherwise,
+        tries to resume a previous run.
     n_live_points : int
         Number of live points to be used.
     evidence_tolerance : float
@@ -140,6 +141,7 @@ class MultinestPipeline(Pipeline):
                                          n_dims=len(self._active_parameters),
                                          wrapped_params=None,
                                          write_output=True,
+                                         seed=self.master_seed,
                                          **solve_params)
 
         self._samples_array = self.results['samples']
