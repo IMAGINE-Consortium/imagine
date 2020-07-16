@@ -439,6 +439,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     def sampling_controllers(self):
+        """
+        Settings used by the sampler (e.g. `'dlogz'`).
+        See the documentation of each specific pipeline subclass for details.
+
+        After the pipeline runs, this property is updated to reflect the
+        actual final choice of sampling controllers (including
+        default values).
+        """
         return self._sampling_controllers
 
     @sampling_controllers.setter

@@ -167,8 +167,7 @@ class UltranestPipeline(Pipeline):
             vectorized=False,
             **init_params)
 
-        self.results = self.sampler.run(seed=self.master_seed,
-                                        viz_callback=False, **run_params)
+        self.results = self.sampler.run(viz_callback=False, **run_params)
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logz']

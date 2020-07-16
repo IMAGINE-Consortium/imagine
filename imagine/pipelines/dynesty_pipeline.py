@@ -60,16 +60,6 @@ class DynestyPipeline(Pipeline):
         contribution from the remaining volume. If `add_live` is `True`,
         the default is `1e-3 * (nlive - 1) + 0.01`. Otherwise, the
         default is `0.01`.
-    dlogz_init : float
-        If `dynamic` is `True`,  the *baseline run* will stop when the
-        estimated contribution of the
-        remaining prior volume to the total evidence falls below
-        this threshold. Explicitly, the stopping criterion is
-        `ln(z + z_est) - ln(z) < dlogz`, where `z` is the current
-        evidence from all saved samples and `z_est` is the estimated
-        contribution from the remaining volume. If `add_live` is `True`,
-        the default is `1e-3 * (nlive - 1) + 0.01`. Otherwise, the
-        default is `0.01`.
     nlive : int
         If `dynamic` is `False`, this sets the number of live points used.
         Default is 400.
