@@ -16,7 +16,7 @@ __all__ = ['MultinestPipeline']
 # %% CLASS DEFINITIONS
 class MultinestPipeline(Pipeline):
     """
-    Initialises Bayesian analysis pipeline with
+    Bayesian analysis pipeline with
     `pyMultinest <https://github.com/JohannesBuchner/PyMultiNest>`_
 
     See base class for initialization details.

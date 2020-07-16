@@ -18,7 +18,7 @@ __all__ = ['UltranestPipeline']
 # %% CLASS DEFINITIONS
 class UltranestPipeline(Pipeline):
     """
-    Initializes Bayesian analysis pipeline with
+    Bayesian analysis pipeline with
     `UltraNest <https://johannesbuchner.github.io/UltraNest/>`_
 
     See base class for initialization details.
@@ -31,7 +31,7 @@ class UltranestPipeline(Pipeline):
     resume : bool
         If False the Pipeline the sampling starts from the beginning,
         erasing any previous work in the `chains_directory`. Otherwise,
-        resume a previous run.
+        tries to resume a previous run.
     dlogz : float
         Target evidence uncertainty. This is the std
         between bootstrapped logz integrators.
@@ -167,7 +167,8 @@ class UltranestPipeline(Pipeline):
             vectorized=False,
             **init_params)
 
-        self.results = self.sampler.run(viz_callback=False, **run_params)
+        self.results = self.sampler.run(seed=self.master_seed,
+                                        viz_callback=False, **run_params)
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logz']
