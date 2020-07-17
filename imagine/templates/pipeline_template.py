@@ -1,6 +1,6 @@
 from imagine.pipelines import Pipeline
 import numpy as np
-import MY_SAMPLER
+import MY_SAMPLER  # Substitute this by your own code
 
 class PipelineTemplate(Pipeline):
     """
@@ -25,7 +25,7 @@ class PipelineTemplate(Pipeline):
 
         # Initializes a sampler object
         # Here we provide a list of common options
-        self.sampler = MY_SAMPLER.sampler(
+        self.sampler = MY_SAMPLER.Sampler(
             # Active parameter names can be obtained from
             param_names=self.active_parameters,
             # The likelihood function is available in
