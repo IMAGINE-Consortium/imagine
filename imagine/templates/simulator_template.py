@@ -1,12 +1,11 @@
 from imagine.simulators import Simulator
 import numpy as np
-import MY_SIMULATOR
+import MY_SIMULATOR  # Substitute this by your own code
 
 class SimulatorTemplate(Simulator):
     """
     Detailed description of the simulator
     """
-
     # Class attributes
     SIMULATED_QUANITIES = ['my_observable_quantity']
 
@@ -44,25 +43,36 @@ class SimulatorTemplate(Simulator):
         """
         # The argument key provide extra information about the specific
         # measurement one is trying to simulate
-        obs_quantity, freq_Ghz , Nside , tag = key
+        obs_quantity, freq_Ghz, Nside, tag = key
 
         # If the simulator is working on tabular data, the observed
         # coordinates can be accesd from coords_dict, e.g.
         lat, lon = coords_dict['lat'], coords_dict['lon']
 
         # Fields can be accessed from a dictionary stored in self.fields
-        my_field = self.fields['field_type_1']
+        my_field_values = self.fields['field_type_1']
         # If a dummy field is being used, instead of an actual realisation,
         # the parameters can be accessed from self.fields['dummy']
         my_dummy_field_parameters = self.fields['dummy']
+        # Checklists can be used to send specific information to simulators
+        # about specific parameters. Usually, to keep the modularity, this is
+        # only done only for dummy fields
+        checklist_params = self.field_checklist['dummy']
+        # Controllists in dummy fields contain a dict of simulator settings
+        simulator_settings = self.controllist
+
         # If a common grid is used, it can be accessed from
         grid = self.grid
         # If fields are allowed to use different grids,
         # one can get the grid from
-        grid_my_field = my_field.grid
+        # grid_my_field = my_field.grid
 
-        # SIMULATE
-        results = MY_SIMULATOR.simulate(args)
+        # SIMULATE, using whichever information is needed
+        results = MY_SIMULATOR.simulate(simulator_settings,
+                                        grid.x, grid.y, grid.z,
+                                        lat, lon, freq_Ghz, my_field_values,
+                                        my_dummy_field_parameters,
+                                        checklist_params)
         # The results should be in a 1-D array of size compatible with
         # your dataset. I.e. for tabular data: results.size = lat.size
         # (or any other coordinate)
@@ -76,5 +86,6 @@ class SimulatorTemplate(Simulator):
         # call of `simulate` and accessed from this cache later.
         # To break the degeneracy between multiple realisations (which will
         # request the same key), the realisation_id can be used
+        # (see Hammurabi implementation for an example)
 
         return results

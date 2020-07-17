@@ -1,7 +1,8 @@
 from imagine.fields import MagneticField
 import astropy.units as u
 import numpy as np
-import MY_GMF_MODEL # Substitute this by your own code
+# Substitute this by your own code
+import MY_GMF_MODEL
 
 
 class MagneticFieldTemplate(MagneticField):

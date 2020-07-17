@@ -32,7 +32,8 @@ class ThermalElectronsDensityTemplate(ThermalElectronDensityField):
         # Alternatively, one can use cylindrical or spherical coordinates
         r_cyl_coord = self.grid.r_cylindrical
         r_sph_coord = self.grid.r_spherical
-        theta_coord = self.grid.theta; phi_coord = self.grid.phi
+        theta_coord = self.grid.theta
+        phi_coord = self.grid.phi
 
         # One can access the parameters supplied in the following way
         param_A = self.parameters['Parameter_A']
@@ -40,11 +41,11 @@ class ThermalElectronsDensityTemplate(ThermalElectronDensityField):
 
         # Now you can interface with previous code or implement here
         # your own model for the thermal electrons distribution.
-        # Returns the electron density at each grid point
+        # Returns the electron number density at each grid point
+        # in units of (or convertible to) cm**-3
         return MY_GALAXY_MODEL.compute_ne(param_A, param_B,
-                                          x_coord, y_coord, z_coord,
+                                          r_sph_coord, theta_coord, phi_coord,
                                           # If the field is stochastic
                                           # it can use the seed
                                           # to generate a realisation
                                           seed)
-
