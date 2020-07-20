@@ -56,6 +56,13 @@ class Hammurabi(Simulator):
     def __init__(self, measurements, xml_path=None, exe_path=None):
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
+
+        if exe_path is not None:
+            self.exe_path = exe_path
+        else:
+            # Uses standard hamx path
+            self.exe_path = img.rc['hammurabi_hamx_path']
+
         self.exe_path = exe_path
         if xml_path is not None:
             self.xml_path = xml_path
@@ -63,7 +70,6 @@ class Hammurabi(Simulator):
             # Uses standard hammurabi template
             hampydir = path.dirname(hampyx.__file__)
             self.xml_path = path.join(hampydir, '../templates/params_template.xml')
-
 
         self.current_realization = -1
         # Initializes Hampyx
