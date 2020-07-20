@@ -55,13 +55,15 @@ class MY_PACKAGE_MY_FIELD_CLASS(DummyField):
 
 MY_PACKAGE = type(sys)('MY_PACKAGE')
 MY_PACKAGE.MY_FIELD_CLASS = MY_PACKAGE_MY_FIELD_CLASS
-MY_PACKAGE.A_std_val = 1
-MY_PACKAGE.B_std_val = 1
-MY_PACKAGE.A_min = 0
-MY_PACKAGE.A_max = 2
-MY_PACKAGE.B_min = 0
-MY_PACKAGE.B_max = 2
-MY_PACKAGE.B_sig = 1
+
+MY_PACKAGE.A_std_val = 1*u.K
+MY_PACKAGE.A_min = 0*u.K
+MY_PACKAGE.A_max = 2*u.K
+
+MY_PACKAGE.B_std_val = 1*u.Msun
+MY_PACKAGE.B_sig = 1*u.Msun
+MY_PACKAGE.B_min = 0*u.Msun
+MY_PACKAGE.B_max = 2*u.Msun
 
 
 # --------------------------------------------------------------------------
