@@ -108,8 +108,8 @@ intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
                       'astropy': ('https://docs.astropy.org/en/stable/', None),
                       'python': ('https://docs.python.org/3', None),
-                      'pandas': ('https://pandas.pydata.org/pandas-docs/stable/',None)
-                      }
+                      'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+                      'ultranest': ('https://johannesbuchner.github.io/UltraNest/', None)}
 
 # -- Options for HTML output -------------------------------------------------
 
