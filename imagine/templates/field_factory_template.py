@@ -3,7 +3,7 @@ from imagine.priors import FlatPrior, GaussianPrior
 # Substitute this by your own code
 from MY_PACKAGE import MY_FIELD_CLASS
 
-class YourFieldFactory(FieldFactory):
+class FieldFactoryTemplate(FieldFactory):
     """Example: field factory for YourFieldClass"""
 
     # Class attributes
