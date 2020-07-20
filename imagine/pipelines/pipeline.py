@@ -2,6 +2,9 @@
 # Built-in imports
 import abc
 import logging as log
+import tempfile
+import os
+from os import path
 
 # Package imports
 from astropy.table import QTable
@@ -42,11 +45,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     likelihood_rescaler : double
         Rescale log-likelihood value
     random_type : str
-        If set to 'fixed', the exact same set of ensemble seeds will be used for
-        the evaluation of all fields, generated using the `master_seed`.
-        If set to 'controllable', each individual field will get their own set of
-        ensemble fields, but multiple runs will lead to the same results, as
-        they are based on the same `master_seed`.
+        If set to 'fixed', the exact same set of ensemble seeds will be used
+        for the evaluation of all fields, generated using the `master_seed`.
+        If set to 'controllable', each individual field will get their own set
+        of ensemble fields, but multiple runs will lead to the same results,
+        as they are based on the same `master_seed`.
         If set to 'free', every time the pipeline is run, the `master_seed` is
         reset to a different value, and the ensemble seeds for each individual
         field are drawn based on this.
@@ -65,11 +68,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     prior : imagine.priors.prior.Prior
         Prior object
     ensemble_size : int
-        Number of observable realizations PER COMPUTING NODE to be generated in simulator
+        Number of observable realizations PER COMPUTING NODE to be generated
+        in simulator
+    chains_directory : str
+        Path of the directory where the chains should be saved
     """
 
     def __init__(self, *, simulator, factory_list, likelihood,
-                 ensemble_size=1):
+                 ensemble_size=1, chains_directory=None):
         # Call super constructor
         super().__init__()
 
@@ -79,6 +85,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.simulator = simulator
         self.likelihood = likelihood
         self.ensemble_size = ensemble_size
+        self.chains_directory = chains_directory
         self.sampling_controllers = {}
         self.sample_callback = False
 
@@ -109,6 +116,34 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def __call__(self, *args, **kwargs):
         return(self.call(*args, **kwargs))
+
+    @property
+    def chains_directory(self):
+        """
+        Directory where the chains are stored
+        (NB details of what is stored are sampler-dependent)
+        """
+        return self._chains_directory
+
+    @chains_directory.setter
+    def chains_directory(self, chains_directory):
+        if chains_directory is None:
+            if mpirank == 0:
+                # Creates a safe temporary directory in the current working directory
+                self._chains_dir_obj = tempfile.TemporaryDirectory(prefix='imagine_chains_',
+                                            dir=os.getcwd())
+                # Note: this dir is automatically deleted together with the Pipeline object
+                dir_path = self._chains_dir_obj.name
+            else:
+                dir_path = None
+
+            self._chains_directory = comm.bcast(dir_path, root=0)
+        else:
+            # Removes previous temporary directory, if exists
+            if hasattr(self, '_chains_dir_obj'):
+                del self._chains_dir_obj
+            assert path.isdir(chains_directory)
+            self._chains_directory = chains_directory
 
     @property
     def active_parameters(self):
@@ -406,6 +441,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     def sampling_controllers(self):
+        """
+        Settings used by the sampler (e.g. `'dlogz'`).
+        See the documentation of each specific pipeline subclass for details.
+
+        After the pipeline runs, this property is updated to reflect the
+        actual final choice of sampling controllers (including
+        default values).
+        """
         return self._sampling_controllers
 
     @sampling_controllers.setter
@@ -554,3 +597,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def call(self, **kwargs):
         raise NotImplementedError
+
+    def __del__(self):
+        # This MPI barrier ensures that all the processes reached the
+        # same point before deleting the chains temporary directory
+        comm.Barrier()

@@ -97,10 +97,12 @@ autodoc_inherit_docstrings = True
 autosectionlabel_prefix_document = True
 
 # Napoleon configuration
-napoleon_include_private_with_doc = True
+napoleon_include_private_with_doc = False
 napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
 
+napoleon_use_param = False
+napoleon_custom_sections = [('Sampling controllers', 'Other Parameters')]
 
 intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
