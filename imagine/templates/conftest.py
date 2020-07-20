@@ -29,7 +29,7 @@ def MY_GALAXY_MODEL_compute_ne(param_A, param_B, r, theta, phi, seed):
     # Checks interface with dimensionless parameters
     B = param_B * 1*u.m**-3
     # Checks spherical coordinates
-    return A*B*(r.value*theta.value*phi.value)
+    return A*B*(r.value*theta.value*phi.value)*seed
 
 module = type(sys)('MY_GALAXY_MODEL')
 module.compute_ne = MY_GALAXY_MODEL_compute_ne
@@ -70,7 +70,3 @@ class MY_SAMPLER_Sampler:
 module = type(sys)('MY_SAMPLER')
 module.Sampler = MY_SAMPLER_Sampler
 sys.modules['MY_SAMPLER'] = module
-
-
-
-
