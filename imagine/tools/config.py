@@ -1,9 +1,43 @@
 """
-This module is responsible for setting the `rc` configuration variables.
+
+IMAGINE global configuration
+----------------------------
+
+The default behaviour of some aspects of IMAGINE can be set using
+global `rc` configuration variables.
 
 These can be accessed and modified using the
 :py:data:`imagine.rc <imagine.config.rc>` dictionary or setting the
 corresponding environment variables (named 'IMAGINE\_'+RC_VAR_NAME).
+
+For example to set the default path for the hamx executable,
+one can either do::
+
+    import imagine
+    imagine.rc.hammurabi_hamx_path = 'my_desired_path'
+
+or, alternatively, set this as an environment variable
+before the exectution of the script::
+
+    export IMAGINE_HAMMURABI_HAMX_PATH='my_desired_path'
+
+The following list describes all the available global settings variables.
+
+IMAGINE rc variables
+    temp_dir
+        Default temporary directory used by IMAGINE. If not set, a temporary
+        directory will be created at /tmp/ with a safe name.
+    distributed_arrays
+        If `True`, arrays containing covariances are distributed among
+        different MPI processes (and so are the corresponding array operations).
+    pipeline_default_seed
+        The default value for the master seed used by a Pipeline object
+        (see :py:data:`Pipeline.master_seed <imagine.pipelines.Pipeline.master_seed>`).
+    pipeline_distribute_ensemble
+        The default value of
+        (see :py:data:`Pipeline.distribute_ensemble <imagine.pipelines.Pipeline.distribute_ensemble>`).
+    hammurabi_hamx_path
+        Default location of the Hammurabi X executable file, `hamx`.
 """
 
 # %% IMPORTS
@@ -18,7 +52,8 @@ __all__ = ['rc']
 rc = {'temp_dir': None,
       'distributed_arrays': False,
       'pipeline_default_seed': 1,
-      'pipeline_distribute_ensemble': False}
+      'pipeline_distribute_ensemble': False,
+      'hammurabi_hamx_path': None}
 
 
 # %% FUNCTION DEFINITIONS
