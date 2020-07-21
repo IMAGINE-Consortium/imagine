@@ -1,21 +1,25 @@
-import imagine as img
+# %% IMPORTS
+# Package imports
 import astropy.units as u
 import numpy as np
 import pytest
 
+# IMAGINE imports
+import imagine.tests.mocks_for_templates as mock
+from imagine.fields import UniformGrid
 from imagine.templates.magnetic_field_template import MagneticFieldTemplate
 from imagine.templates.thermal_electrons_template import ThermalElectronsDensityTemplate
 from imagine.templates.field_factory_template import FieldFactoryTemplate
-import imagine.tests.mocks_for_templates as mock
 
 __all__ = []
 
+# %% PYTEST DEFINITIONS
 def test_magnetic_field_template():
     """
     Tests the MagneticFieldTemplate, including the handling of cartesian units
     and units by Fields.
     """
-    grid = img.fields.grid.UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
+    grid = UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
                                        resolution=[2]*3)
 
     magnetic_field = MagneticFieldTemplate(grid,
@@ -37,7 +41,7 @@ def test_thermal_electrons_template():
     Tests the ThermalElectronsDensityTemplate, including the handling of
     spherical coordinates and ensemble seeds.
     """
-    grid = img.fields.grid.UniformGrid(box=[[1,2]*u.kpc, [1,2]*u.rad, [1,2]*u.rad],
+    grid = UniformGrid(box=[[1,2]*u.kpc, [1,2]*u.rad, [1,2]*u.rad],
                                        resolution=[2]*3, grid_type='spherical')
 
     ne = ThermalElectronsDensityTemplate(grid, ensemble_seeds=[1,2],
@@ -53,8 +57,13 @@ def test_thermal_electrons_template():
 def test_field_factory_template():
     """
     Tests the FieldFactoryTemplate
+
+    Checks whether FieldFactory object is initialized,
+    providing one inactive/default parameter and one active parameter.
+
+    Asks the factory to produce a "sample" of the Field, using the Prior.
     """
-    grid = img.fields.grid.UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
+    grid = UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
                                        resolution=[2]*3)
     field_factory = FieldFactoryTemplate(grid=grid,
                                          active_parameters=['Parameter_B'])
@@ -64,3 +73,4 @@ def test_field_factory_template():
     assert isinstance(field, mock.MY_PACKAGE.MY_FIELD_CLASS)
     assert field.parameters['Parameter_A'] == 1*u.K
     assert np.isclose(field.parameters['Parameter_B'], 1.3*u.Msun)
+

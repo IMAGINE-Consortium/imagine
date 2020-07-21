@@ -2,12 +2,14 @@
 # Package imports
 from mpi4py import MPI
 import numpy as np
+import os
 
 # IMAGINE imports
+from imagine import rc
 from imagine.tools import (
     empirical_cov, oas_cov, oas_mcov, mpi_mean, mpi_arrange, mpi_trans,
     mpi_mult, mpi_eye, mpi_trace, mpi_shape, mpi_lu_solve, mpi_slogdet,
-    mpi_global, mpi_local, mask_obs, mask_cov, seed_generator)
+    mpi_global, mpi_local, mask_obs, mask_cov, seed_generator, config)
 
 # Globals
 comm = MPI.COMM_WORLD
@@ -209,3 +211,23 @@ class TestTools(object):
         test_sign, test_logdet = np.linalg.slogdet(full_arr)
         assert sign == test_sign
         assert np.allclose(logdet, test_logdet)
+
+    def test_read_rc_from_env(self):
+        # Tests whether the conversion of environment variables is working
+        os.environ['IMAGINE_TEST_FLOAT'] = '3.14159'
+        os.environ['IMAGINE_TEST_INT'] = '42'
+        os.environ['IMAGINE_TEST_BOOL'] = 'T'
+        os.environ['IMAGINE_TEST_BOOL2'] = 'False'
+
+        # Includes new variables in rc for the test
+        rc_test = {'test_float': 3.14159,
+                   'test_int': 42,
+                   'test_bool': True,
+                   'test_bool2': False}
+
+        rc.update({ k: None for k in rc_test.keys()})
+        config.read_rc_from_env()
+
+        for k, v in rc_test.items():
+            assert v == rc[k]
+            assert type(v) == type(rc[k])
