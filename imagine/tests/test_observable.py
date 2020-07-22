@@ -2,6 +2,7 @@
 # Package imports
 from mpi4py import MPI
 import numpy as np
+import pytest
 
 # IMAGINE imports
 from imagine.observables import Observable
@@ -11,6 +12,8 @@ comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
+# Marks tests in this module as quick
+pytestmark = pytest.mark.quick
 
 # %% PYTEST DEFINITIONS
 class TestObservalbes(object):

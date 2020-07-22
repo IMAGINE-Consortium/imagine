@@ -2,6 +2,7 @@
 # Package imports
 import astropy.units as u
 import numpy as np
+import pytest
 
 # IMAGINE imports
 from imagine.fields import (
@@ -9,6 +10,8 @@ from imagine.fields import (
 from imagine.observables import Measurements, TabularDataset
 from imagine.simulators import Simulator
 
+# Marks tests in this module as quick
+pytestmark = pytest.mark.quick
 
 # %% HELPER DEFINITIONS
 

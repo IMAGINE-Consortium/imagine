@@ -33,11 +33,40 @@ MY_GALAXY_MODEL.compute_ne = MY_GALAXY_MODEL_compute_ne
 
 # --------------------------------------------------------------------------
 # For testing the simulator_template
-def MY_SIMULATOR_simulate():
-    pass
+def MY_SIMULATOR_simulate(simulator_settings, x, y, z,
+                          lat, lon, freq_Ghz,
+                          B_field_values,
+                          my_dummy_field_parameters,
+                          checklist_params):
+    # Tests whether the shapes arrive here correctly
+    assert x.shape == y.shape == z.shape
+    # Tests checklists and the shape of the coordinate array
+    mock_sim = np.empty(lat.size)*checklist_params['value']
+    # Tests the controllist and the freq_Ghz arg (which is supposed to be a string)
+    assert type(freq_Ghz) == str
+    mock_sim[0] = simulator_settings['mock']['start_value']*float(freq_Ghz)
+    # Tests reading a Field
+    mock_sim[1] = B_field_values[0,0,0,0].to_value(u.microgauss)
+    # Tests working with a DummyField
+    return mock_sim * my_dummy_field_parameters['units']
+
+
 
 MY_SIMULATOR = type(sys)('MY_SIMULATOR')
 MY_SIMULATOR.simulate = MY_SIMULATOR_simulate
+
+class MockDummy(DummyField):
+    """
+    Used in the test_simulator_template function
+    """
+    NAME = 'mock'
+    @property
+    def field_checklist(self):
+        return {'value': 101010, 'units': None}
+    @property
+    def simulator_controllist(self):
+        return {'start_value': 17}
+
 
 
 
@@ -78,3 +107,4 @@ class MY_SAMPLER_Sampler:
 
 MY_SAMPLER = type(sys)('MY_SAMPLER')
 MY_SAMPLER.Sampler = MY_SAMPLER_Sampler
+

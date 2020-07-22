@@ -1,3 +1,8 @@
+"""
+This module contains a set of pytest-compatible test functions which check
+the interfaces exemplified in the templates, supplemented by the functions
+and classes defined in the mock_for_templates module
+"""
 # %% IMPORTS
 # Package imports
 import astropy.units as u
@@ -10,8 +15,15 @@ from imagine.fields import UniformGrid
 from imagine.templates.magnetic_field_template import MagneticFieldTemplate
 from imagine.templates.thermal_electrons_template import ThermalElectronsDensityTemplate
 from imagine.templates.field_factory_template import FieldFactoryTemplate
+from imagine.templates.simulator_template import SimulatorTemplate
+from imagine.fields import ConstantMagneticField, ConstantThermalElectrons
+from imagine.fields import DummyField
+from imagine.observables import TabularDataset, Measurements
 
 __all__ = []
+
+# Marks tests in this module as quick
+pytestmark = pytest.mark.quick
 
 # %% PYTEST DEFINITIONS
 def test_magnetic_field_template():
@@ -74,3 +86,29 @@ def test_field_factory_template():
     assert field.parameters['Parameter_A'] == 1*u.K
     assert np.isclose(field.parameters['Parameter_B'], 1.3*u.Msun)
 
+
+def test_simulator_template():
+    """
+    Tests the SimulatorTemplate
+    """
+    measurements = Measurements()
+    fake = {'dat': [0,1], 'err':[0,0],
+            'lat': [-1,0]*u.deg, 'lon': [2,3]*u.rad}
+    dset = TabularDataset(fake, name='my_observable_quantity',
+                          tag='I', frequency=20*u.cm, units=u.jansky,
+                          data_column='dat', error_column='err',
+                          lat_column='lat', lon_column='lon')
+    measurements.append(dataset=dset)
+
+    simulator = SimulatorTemplate(measurements)
+
+    grid = UniformGrid(box=[[0*u.kpc, 1*u.kpc]]*3, resolution=[2]*3)
+    B = ConstantMagneticField(grid, parameters={'Bx': 42*u.microgauss,
+                                                'By':  1*u.microgauss,
+                                                'Bz':  0*u.microgauss})
+    ne = ConstantThermalElectrons(grid, parameters={'ne': 1000*u.m**-3})
+    dummy = mock.MockDummy(parameters={'value': -100000, 'units': 1*u.jansky})
+
+    simulations = simulator([B, ne, dummy])
+    obs = simulations[dset.key]
+    assert np.allclose(obs.global_data, [[25.48235893, 42.]])

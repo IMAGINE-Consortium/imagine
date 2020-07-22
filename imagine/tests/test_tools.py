@@ -3,6 +3,7 @@
 from mpi4py import MPI
 import numpy as np
 import os
+import pytest
 
 # IMAGINE imports
 from imagine import rc
@@ -16,6 +17,8 @@ comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
+# Marks tests in this module as quick
+pytestmark = pytest.mark.quick
 
 # %% PYTEST DEFINITIONS
 class TestTools(object):
