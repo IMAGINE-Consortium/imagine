@@ -1,52 +1,40 @@
-FROM ubuntu:latest
+FROM continuumio/miniconda3
 
 MAINTAINER jiaxin.wang@sjtu.edu.cn
 
 RUN apt-get update
 RUN apt-get install -y --fix-missing build-essential autoconf automake cmake gfortran
-RUN apt-get install -y --fix-missing libblas-dev liblapack-dev gsl-bin libgsl-dev
-RUN apt-get install -y --fix-missing git wget unzip vim valgrind
-RUN apt-get install -y --fix-missing python3 python3-pip python3-dev
-RUN pip3 install jupyter numpy scipy astropy healpy matplotlib progressbar corner
+RUN apt-get install -y --fix-missing gsl-bin libgsl-dev
+RUN apt-get install -y --fix-missing git wget vim
+
+
+#   RUN apt-get update
+#   RUN apt-get install -y --fix-missing build-essential autoconf automake cmake gfortran
+#   RUN apt-get install -y --fix-missing libblas-dev liblapack-dev gsl-bin libgsl-dev
+#   RUN apt-get install -y --fix-missing git wget unzip vim
 
 RUN mkdir /home/lab
 WORKDIR /home/lab
 
-#mpi4py
-RUN apt-get install -y --fix-missing libopenmpi-dev openmpi-bin openmpi-doc
-RUN pip3 install mpi4py
+# IMAGINE download
+RUN git clone https://github.com/IMAGINE-Consortium/imagine.git imagine
 
-#MultiNest
-RUN apt-get install -y --fix-missing libblas3 libblas-dev liblapack3 liblapack-dev libatlas-base-dev libatlas3-base
-RUN git clone https://github.com/JohannesBuchner/MultiNest.git
-WORKDIR /home/lab/MultiNest/build
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install
-WORKDIR /home/lab
-
-# PyMultiNest
-RUN git clone https://github.com/JohannesBuchner/PyMultiNest.git
-WORKDIR /home/lab/PyMultiNest
-RUN python3 setup.py install
-WORKDIR /home/lab
-
-#Dynesty
-RUN pip3 install dynesty
-
-# h5py
-RUN pip3 install h5py
-
-#IMAGINE
-RUN git clone -b mpi https://github.com/IMAGINE-Consortium/imagine.git imagine
+# IMAGINE dependencies
 WORKDIR /home/lab/imagine
-RUN python3 setup.py install
+RUN conda env create --file=imagine_conda_env.yml
+# Make RUN commands use the 'imagine' environment by default:
+SHELL ["conda", "run", "-n", "imagine", "/bin/bash", "-c"]
+
+# Python extra dependencies (for installation, testing and tutorials)
+RUN echo $CONDA_DEFAULT_ENV
+RUN conda install -y -c conda-forge nomkl pytest-cov pip seaborn pytest-mpl
 WORKDIR /home/lab
 
-### for hammurabi X
-
+### ---- for hammurabi X -----
 # FFTW
 RUN mkdir /home/lab/fftw
-RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar xzf fftw-3.3.8.tar.gz -C fftw --strip-components 1
 WORKDIR fftw
+RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar -xzf fftw-3.3.8.tar.gz --strip-components 1
 RUN ./configure --enable-threads --enable-openmp --enable-shared --prefix=/tmp/local/ && make && make install
 WORKDIR /home/lab
 
@@ -55,7 +43,7 @@ RUN git clone https://github.com/google/googletest.git googletest
 WORKDIR /home/lab/googletest
 RUN mkdir /home/lab/googletest/build
 WORKDIR /home/lab/googletest/build
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install 
+RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install
 RUN mkdir /tmp/local/src && cp ../googletest/src/* /tmp/local/src
 WORKDIR /home/lab
 
@@ -66,18 +54,33 @@ RUN mkdir /home/lab/hamx/build
 WORKDIR /home/lab/hamx/build
 RUN cmake .. && make install
 WORKDIR /home/lab/hamx
-RUN python3 setup.py install
+RUN pip install -e .
+### ----- end of hammurabi X -----
+
+# INSTALL IMAGINE!
+WORKDIR /home/lab/imagine
+RUN pip install -e .
 WORKDIR /home/lab
 
-### end of hammurabi X
-
 # CLEAN PACKAGES
+RUN conda clean -afy \
+    && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 RUN rm -f *.tar.gz
+RUN rm -rf /home/lab/googletest
+RUN rm -rf /home/lab/fftw
+RUN apt-get autoremove && apt-get clean
+
 
 # SET PATH
 ENV PATH /tmp/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /tmp/local/lib:/tmp/local/hammurabi/lib:${LD_LIBRARY_PATH}
 
-# ALIAS
+# MISC
+# Activates imagine conda environment by default
+RUN sed -i 's/conda activate base/conda activate imagine/g' ~/.bashrc
+# Alias to make mpirun work
 RUN echo "alias mpirun='mpirun --mca btl ^vader --allow-run-as-root'" >> ~/.bashrc
-RUN echo "alias python='python3'" >> ~/.bashrc
+# Launching script to simplify starting jupyterlab
+RUN echo "source ~/.bashrc && conda install jupyterlab -y --quiet && python -m ipykernel install --user --name imagine --display-name 'Python (imagine)' && jupyter-lab --notebook-dir=/home/lab --ip='*' --port=8888 --no-browser --allow-root"   >> ~/jupyterlab.bash
+# Alias to simplify launching the jupyterlab in interactive mode
+RUN echo "alias jupyter-lab='~/jupyterlab.bash'"  >> ~/.bashrc
