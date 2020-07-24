@@ -7,12 +7,6 @@ RUN apt-get install -y --fix-missing build-essential autoconf automake cmake gfo
 RUN apt-get install -y --fix-missing gsl-bin libgsl-dev
 RUN apt-get install -y --fix-missing git wget vim
 
-
-#   RUN apt-get update
-#   RUN apt-get install -y --fix-missing build-essential autoconf automake cmake gfortran
-#   RUN apt-get install -y --fix-missing libblas-dev liblapack-dev gsl-bin libgsl-dev
-#   RUN apt-get install -y --fix-missing git wget unzip vim
-
 RUN mkdir /home/lab
 WORKDIR /home/lab
 
@@ -27,7 +21,7 @@ SHELL ["conda", "run", "-n", "imagine", "/bin/bash", "-c"]
 
 # Python extra dependencies (for installation, testing and tutorials)
 RUN echo $CONDA_DEFAULT_ENV
-RUN conda install -y -c conda-forge nomkl pytest-cov pip seaborn pytest-mpl
+RUN conda install -y -c conda-forge nomkl pytest-cov pip seaborn pytest-mpl nbval
 WORKDIR /home/lab
 
 ### ---- for hammurabi X -----
