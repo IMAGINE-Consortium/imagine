@@ -3,12 +3,57 @@ Installation and dependencies
 *****************************
 
 Here you can find basic instructions for the installation of IMAGINE.
+There are two main installation routes:
+
+  1. one can pull and run a :ref:`DockerInstallation` which allows
+     you to setup and run IMAGINE by typing only two lines.
+     IMAGINE will run in a container, i.e. separate from your system.
+  2. one can :ref:`download and install <StandardInstallation>` IMAGINE and all
+     the dependencies alongside your system.
+
+The first option is particularly useful when one is a newcomer, interested
+experimenting or when one is deploying IMAGINE in a cloud service or multiple
+machines.
+
+The second option is better if one wants to use ones pre-installed tools and
+packages, or if one is interested in running on a computing cluster (running
+docker images in some typical cluster settings may be difficult or impossible).
 
 `Let us know <https://github.com/IMAGINE-Consortium/imagine/issues/new>`_
 if you face major difficulties.
 
+.. _DockerInstallation:
+
+Docker installation
+-------------------
+
+This is a very convenient and fast way of deploying IMAGINE. You must first
+pull the image of one of IMAGINE's versions from `GitHub <https://github.com/IMAGINE-Consortium/imagine/packages>`_, for example, the latest (*development*) version can be pulled
+using:
+
+.. code-block:: console
+
+    sudo docker pull docker.pkg.github.com/imagine-consortium/imagine/imagine:latest
+
+If you would like to start working (or testing IMAGINE) immediately, a
+jupyter-lab session can be launched using:
+
+.. code-block:: console
+
+    sudo docker run -i -t -p 8888:8888 imagine:latest /bin/bash -c "source ~/jupyterlab.bash"
+
+After running this, you may copy and paste the link with a token to a browser,
+which will allow you to access the jupyter-lab session. From there you may,
+for instance, navigate to the `imagine/tutorials` directory.
+
+
+.. _StandardInstallation:
+
+Standard installation
+---------------------
+
 Download
---------
+^^^^^^^^
 
 A copy of IMAGINE source can be downloaded from its main
 `GitHub repository <https://github.com/IMAGINE-Consortium/imagine/>`_.
@@ -32,14 +77,15 @@ we recommend cloning the git repository
 
 
 Setting up the environment with conda
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 IMAGINE depends on a number of different python packages. The easiest way of
 setting up your environment is using the *conda* package manager. This allows
 one to setup a dedicated, contained, python environment in the user area.
 
 Conda is the package manager of the `Anaconda <https://www.anaconda.com/>`_
-Python distribution, which by default comes with a large number of packages frequently used in data science and scientific computing, as well as a GUI
+Python distribution, which by default comes with a large number of packages
+frequently used in data science and scientific computing, as well as a GUI
 installer and other tools.
 
 A lighter, recommended, alternative is the
@@ -66,7 +112,7 @@ To leave this environment one can simply run `conda deactivate`
 
 
 Hammurabi X
------------
+^^^^^^^^^^^
 
 A key dependency of IMAGINE is the
 `Hammurabi X <https://github.com/hammurabi-dev/hammurabiX>`_ code,
@@ -87,7 +133,7 @@ Then, one needs to install the `hampyx` python wrapper:
 
 
 Installing
-----------
+^^^^^^^^^^
 
 After downloading, setting up the environment and installing Hammurabi X,
 IMAGINE can finally be installed through:
@@ -112,10 +158,3 @@ Also, if you are working on further developing or modifying IMAGINE for your own
     pip install -e .
 
 
-Docker
-------
-
-A docker image is a convenient, light-weight and fast way of deploying IMAGINE.
-One can either build the image directly with the Dockerfile provided in the
-`source repository <https://github.com/IMAGINE-Consortium/imagine/tree/master/docker>`_ or pull our
-`pre-built docker image <still_unavailable>`_.
