@@ -154,8 +154,8 @@ if __name__ == '__main__':
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0','b0')
-    B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5,5]*u.microgauss),
-                      'b0': img.priors.FlatPrior(interval=[0,10]*u.microgauss)}
+    B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
+                      'b0': img.priors.FlatPrior(interval=[0, 10]*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]

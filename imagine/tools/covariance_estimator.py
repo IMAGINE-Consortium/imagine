@@ -65,6 +65,7 @@ def empirical_cov(data):
     cov = pmult(ptrans(u), u) / ensemble_size
     return cov
 
+
 def oas_cov(data):
     r"""
     Estimate covariance with the Oracle Approximating Shrinkage algorithm.

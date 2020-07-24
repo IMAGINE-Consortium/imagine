@@ -67,7 +67,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, *, simulator, factory_list, likelihood,
-                 ensemble_size=1):
+                 ensemble_size=1, prior_correlation_matrix=None):
         # Call super constructor
         super().__init__()
 
@@ -76,6 +76,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # parameter ranges and priors, based on the list
         self.simulator = simulator
         self.likelihood = likelihood
+        self.prior_correlation_matrix = prior_correlation_matrix
         self.ensemble_size = ensemble_size
         self.sampling_controllers = {}
         self.sample_callback = False
@@ -269,10 +270,16 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._active_parameters = tuple()
         self._active_ranges = dict()
         self._priors = dict()
+        self._prior_cube_mapping = {}
 
+        i = 0
         for factory in factory_list:
             assert isinstance(factory, FieldFactory)
             for ap_name in factory.active_parameters:
+                i += 1
+                if ap_name in self._prior_cube_mapping:
+                    raise KeyError('Ambiguous prior naming')
+                self._prior_cube_mapping.update({ap_name: i})
                 assert isinstance(ap_name, str)
                 # Sets the parameters and ranges
                 self._active_parameters += (str(factory.name+'_'+ap_name),)
@@ -343,7 +350,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        cube : array
+        cube : np.ndarray
             Each row of the array corresponds to a different parameter in the sampling.
             Warning: the function will modify `cube` inplace.
 
@@ -352,9 +359,42 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         cube
             The modified cube
         """
+
+        correlated_priors = []
+        from scipy.stats import norm, pearsonr
+        if self.prior_correlation_matrix is not None:
+            from ..priors.prior import EmpiricalPrior
+            ### check coefficient consistency
+            name_pairs = list(self.prior_correlation_matrix.keys())
+            for i in range(len(name_pairs)):
+                name_pairs[i] = tuple(sorted(name_pairs[i]))
+            if len(name_pairs) != len(list(set(name_pairs))):
+                raise ValueError('Inconsistent prior correlation matrix, '
+                                 'possibly multiple values for the same coefficient')
+            correlated_priors = list(set(list(n) for n in name_pairs))
+            corr_matrix = np.eye(len(self._active_parameters))
+
+            for n in name_pairs:
+                i, j = self._prior_cube_mapping[n[0]], self._prior_cube_mapping[n[1]]
+                c = self.prior_correlation_matrix[n]
+                if c is None:
+                    assert (isinstance(self.priors[n[0]], EmpiricalPrior)
+                            and isinstance(self.priors[n[1]], EmpiricalPrior))
+                    xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples))
+                    xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples))
+                    c = pearsonr(xi0, xi1)[0]
+                else:
+                    assert (0 < c < 1)
+                corr_matrix[i, j] = corr_matrix[j, i] = c
+            A = np.linalg.cholesky(corr_matrix)
+            cube = np.dot(A, cube)
         for i, parameter in enumerate(self.active_parameters):
-            cube[i] = self.priors[parameter](cube[i])
+            if parameter in correlated_priors:
+                cube[i] = self.priors[parameter](norm.cdf(cube[i]))
+            else:
+                cube[i] = self.priors[parameter](cube[i])
         return cube
+
 
     @property
     def distribute_ensemble(self):
@@ -441,9 +481,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
         else:
             self.ensemble_seeds = None
-
-    def _prior_correlator(self, prior_a, prior_b, corr_coefficient):
-        raise NotImplementedError
 
 
     def _core_likelihood(self, cube):

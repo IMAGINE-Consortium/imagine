@@ -68,7 +68,7 @@ class GeneralPrior:
         Number of points used to evaluate the CDF for the calculation of its
         inverse.
     """
-    def __init__(self,  interval=None):
+    def __init__(self, interval=None):
 
         # Ensures interval is quantity with consistent units
         interval = u.Quantity(interval)
@@ -119,13 +119,29 @@ class GeneralPrior:
         return self.inv_cdf(x)
 
 
-class GridPrior(GeneralPrior):
-    def __init__(self, interval, pdf_npoints, inv_cdf_npoints):
-        super().__init__(interval)
-        self.inv_cdf_npoints = inv_cdf_npoints
-        self.pdf_npoints = pdf_npoints
-        self._initialize_inv_cdf()
-        self._grid = np.linspace(interval[0], interval[1], pdf_npoints)
+class EmpiricalPrior(GeneralPrior):
+
+    def __init__(self, interval, pdf_npoints, inv_cdf_npoints, samples, bw_method=None):
+            super().__init__(interval)
+    # PDF from samples mode -------------------
+            self.samples = samples
+            self.inv_cdf_npoints = inv_cdf_npoints
+            self.pdf_npoints = pdf_npoints
+            if interval is not None:
+                ok = (samples > interval[0]) * (samples < interval[1])
+                samples = samples[ok]
+            pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
+            sigma = np.std(samples)
+            xmin, xmax = samples.min() - sigma, samples.max() + sigma
+            # Evaluates the PDF
+            pdf_x = np.linspace(xmin, xmax, pdf_npoints)
+            pdf_y = pdf_fun(pdf_x)
+            # Normalizes and removes units
+            inv_norm = pdf_y.sum() * (xmax - xmin) / pdf_npoints
+            pdf_y = (pdf_y / inv_norm).value
+            pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min())).value
+            # Recovers units
+            self.range = (xmin, xmax) * self.range.unit
 
     def _initialize_inv_cdf(self):
         """
@@ -146,44 +162,6 @@ class GridPrior(GeneralPrior):
             t = t[~select_zeros]
         # Creates interpolated spline
         self._inv_cdf = CubicSpline(y, t)
-
-
-class AnalyticPrior(GridPrior):
-     def __init__(self,interval, pdf_npoints, inv_cdf_npoints,  pdf_fun, ):
-         super().__init__(interval, pdf_npoints, inv_cdf_npoints)
-         self._pdf = np.__getattr__(pdf_fun)
-
-
-
-
-class NonAnalyticPrior(GridPrior):
-    def __init__(self, pdf_x, pdf_y, interval, inv_cdf_npoints):
-        super().__init__(interval, inv_cdf_npoints)
-        self._pdf = CubicSpline(pdf_x, pdf_y)
-        self.inv_cdf_npoints = inv_cdf_npoints
-
-
-class EmpiricalPrior(GridPrior):
-
-    def __init__(self, interval, pdf_npoints, inv_cdf_npoints, samples, bw_method=None):
-            super().__init__(interval, pdf_npoints, inv_cdf_npoints)
-    # PDF from samples mode -------------------
-            self.inv_cdf_npoints = inv_cdf_npoints
-            if interval is not None:
-                ok = (samples > interval[0]) * (samples < interval[1])
-                samples = samples[ok]
-            pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
-            sigma = np.std(samples)
-            xmin, xmax = samples.min() - sigma, samples.max() + sigma
-            # Evaluates the PDF
-            pdf_x = np.linspace(xmin, xmax, pdf_npoints)
-            pdf_y = pdf_fun(pdf_x)
-            # Normalizes and removes units
-            inv_norm = pdf_y.sum() * (xmax - xmin) / pdf_npoints
-            pdf_y = (pdf_y / inv_norm).value
-            pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min())).value
-            # Recovers units
-            self.range = (xmin, xmax) * self.range.unit
 
 
 class ScipyPrior(GeneralPrior):

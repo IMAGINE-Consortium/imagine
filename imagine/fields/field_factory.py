@@ -227,6 +227,9 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         """
         return self._priors
 
+    def _prior_correlator(self, prior_a, prior_b, corr_coefficient):
+        raise NotImplementedError
+
     @priors.setter
     def priors(self, new_prior_dict):
         if not hasattr(self, '_priors'):
