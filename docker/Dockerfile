@@ -21,7 +21,8 @@ SHELL ["conda", "run", "-n", "imagine", "/bin/bash", "-c"]
 
 # Python extra dependencies (for installation, testing and tutorials)
 RUN echo $CONDA_DEFAULT_ENV
-RUN conda install -y -c conda-forge nomkl pytest-cov pip seaborn pytest-mpl nbval
+RUN conda install -y -c conda-forge pip seaborn nomkl \
+    pytest-cov pytest-mpl nbval astroquery
 WORKDIR /home/lab
 
 ### ---- for hammurabi X -----
