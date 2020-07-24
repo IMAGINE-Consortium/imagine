@@ -13,6 +13,8 @@ comm = MPI.COMM_WORLD
 mpisize = comm.Get_size()
 mpirank = comm.Get_rank()
 
+# Marks tests in this module as quick
+pytestmark = pytest.mark.quick
 
 # %% PYTEST DEFINITIONS
 class TestObservableDicts(object):

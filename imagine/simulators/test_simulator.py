@@ -67,3 +67,5 @@ class TestSimulator(Simulator):
             results = fd_interp(interp_points)*output_units
 
         return results
+    # Prevents pytest from treating this class as a test
+    __test__ = False

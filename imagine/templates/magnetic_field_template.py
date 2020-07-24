@@ -1,7 +1,8 @@
 from imagine.fields import MagneticField
 import astropy.units as u
 import numpy as np
-import MY_GMF_MODEL # Substitute this by your own code
+# Substitute this by your own code
+import MY_GMF_MODEL
 
 
 class MagneticFieldTemplate(MagneticField):
@@ -11,13 +12,15 @@ class MagneticFieldTemplate(MagneticField):
     NAME = 'name_of_the_magnetic_field'
 
     # Is this field stochastic or not. Only necessary if True
-    STOCHASTIC_FIELD = False
+    STOCHASTIC_FIELD = True
+    # If there are any dependencies, they should be included in this list
+    DEPENDENCIES_LIST = []
 
     @property
     def field_checklist(self):
         # This property returns a dictionary with all the
         # available parameters as keys
-        return {'Parameter_A': None, 'Parameter_B': None, ...}
+        return {'Parameter_A': None, 'Parameter_B': None}
 
     def compute_field(self, seed):
         # If this is an stochastic field, the integer `seed `must be
@@ -40,7 +43,11 @@ class MagneticFieldTemplate(MagneticField):
         # Now one can interface with previous code, or implement a
         # particular magnetic field
         Bx, By, Bz = MY_GMF_MODEL.compute_B(param_A, param_B,
-                                            x_coord, y_coord, z_coord)
+                                            x_coord, y_coord, z_coord,
+                                            # If the field is stochastic
+                                            # it can use the seed
+                                            # to generate a realisation
+                                            seed)
 
         # Creates an empty output magnetic field Quantity with
         # the correct shape and units

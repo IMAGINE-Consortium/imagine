@@ -50,7 +50,6 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
 
         self.grid = None
         self.grids = None
-        self.use_common_grid = True
         self.fields = None
         self.field_checklist = {}
         self.controllist = {}
@@ -353,7 +352,15 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
         Must be overriden with a list or set of allowed grid types that work with this Simulator.
         Example: ['cartesian']
         """
-        return(self.ALLOWED_GRID_TYPES)
+        return self.ALLOWED_GRID_TYPES
+
+    @property
+    def use_common_grid(self):
+        """
+        Must be overriden with a list or set of allowed grid types that work with this Simulator.
+        Example: ['cartesian']
+        """
+        return getattr(self, 'USE_COMMON_GRID', True)
 
     @abc.abstractmethod
     def simulate(self, key, coords_dict, realization_id, output_units):
