@@ -1,0 +1,7 @@
+language: python
+services:
+  - docker
+install:
+  - docker build docker -t imagine
+script:
+  - docker run -i -t imagine /bin/bash -c "source ~/.bashrc && cd /home/lab/imagine && pytest"
