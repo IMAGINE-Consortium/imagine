@@ -11,14 +11,13 @@ import pytest
 
 # IMAGINE imports
 import imagine.tests.mocks_for_templates as mock
-from imagine.fields import UniformGrid
+import imagine.fields as img_fields
+import imagine.observables as img_obs
+from imagine.likelihoods import SimpleLikelihood
 from imagine.templates.magnetic_field_template import MagneticFieldTemplate
 from imagine.templates.thermal_electrons_template import ThermalElectronsDensityTemplate
 from imagine.templates.field_factory_template import FieldFactoryTemplate
 from imagine.templates.simulator_template import SimulatorTemplate
-from imagine.fields import ConstantMagneticField, ConstantThermalElectrons
-from imagine.fields import DummyField
-from imagine.observables import TabularDataset, Measurements
 
 __all__ = []
 
@@ -31,7 +30,7 @@ def test_magnetic_field_template():
     Tests the MagneticFieldTemplate, including the handling of cartesian units
     and units by Fields.
     """
-    grid = UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
+    grid = img_fields.UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
                                        resolution=[2]*3)
 
     magnetic_field = MagneticFieldTemplate(grid,
@@ -53,8 +52,8 @@ def test_thermal_electrons_template():
     Tests the ThermalElectronsDensityTemplate, including the handling of
     spherical coordinates and ensemble seeds.
     """
-    grid = UniformGrid(box=[[1,2]*u.kpc, [1,2]*u.rad, [1,2]*u.rad],
-                                       resolution=[2]*3, grid_type='spherical')
+    grid = img_fields.UniformGrid(box=[[1,2]*u.kpc, [1,2]*u.rad, [1,2]*u.rad],
+                                  resolution=[2]*3, grid_type='spherical')
 
     ne = ThermalElectronsDensityTemplate(grid, ensemble_seeds=[1,2],
                                          parameters={'Parameter_A': 2000*u.pc,
@@ -75,8 +74,8 @@ def test_field_factory_template():
 
     Asks the factory to produce a "sample" of the Field, using the Prior.
     """
-    grid = UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
-                                       resolution=[2]*3)
+    grid = img_fields.UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
+                                  resolution=[2]*3)
     field_factory = FieldFactoryTemplate(grid=grid,
                                          active_parameters=['Parameter_B'])
 
@@ -91,24 +90,40 @@ def test_simulator_template():
     """
     Tests the SimulatorTemplate
     """
-    measurements = Measurements()
+    measurements = img_obs.Measurements()
     fake = {'dat': [0,1], 'err':[0,0],
             'lat': [-1,0]*u.deg, 'lon': [2,3]*u.rad}
-    dset = TabularDataset(fake, name='my_observable_quantity',
-                          tag='I', frequency=20*u.cm, units=u.jansky,
-                          data_column='dat', error_column='err',
-                          lat_column='lat', lon_column='lon')
+    dset = img_obs.TabularDataset(fake, name='my_observable_quantity',
+                                  tag='I', frequency=20*u.cm, units=u.jansky,
+                                  data_column='dat', error_column='err',
+                                  lat_column='lat', lon_column='lon')
     measurements.append(dataset=dset)
 
     simulator = SimulatorTemplate(measurements)
 
-    grid = UniformGrid(box=[[0*u.kpc, 1*u.kpc]]*3, resolution=[2]*3)
-    B = ConstantMagneticField(grid, parameters={'Bx': 42*u.microgauss,
-                                                'By':  1*u.microgauss,
-                                                'Bz':  0*u.microgauss})
-    ne = ConstantThermalElectrons(grid, parameters={'ne': 1000*u.m**-3})
+    grid = img_fields.UniformGrid(box=[[0*u.kpc, 1*u.kpc]]*3, resolution=[2]*3)
+    B = img_fields.ConstantMagneticField(grid,
+                                         parameters={'Bx': 42*u.microgauss,
+                                         'By':  1*u.microgauss,
+                                         'Bz':  0*u.microgauss})
+    ne = img_fields.ConstantThermalElectrons(grid,
+                                             parameters={'ne': 1000*u.m**-3})
     dummy = mock.MockDummy(parameters={'value': -100000, 'units': 1*u.jansky})
 
     simulations = simulator([B, ne, dummy])
     obs = simulations[dset.key]
     assert np.allclose(obs.global_data, [[25.48235893, 42.]])
+
+def test_pipeline_template():
+    """
+    Tests the PipelineTemplate
+    """
+    # Likelihood (with fake measurements / covariances
+    measurements = img_obs.Measurements()
+    covariances = img_obs.Covariances()
+    dset = img_obs.SynchrotronHEALPixDataset(np.ones(12*2**2)*u.K, 1*u.GHz,
+                                             'Q', error=0.1*u.K)
+    measurements.append(dataset=dset)
+    covariances.append(dataset=dset)
+    likelihood = SimpleLikelihood(measurements, covariances)
+    # TODO this has to be finished!
