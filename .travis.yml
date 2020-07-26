@@ -2,6 +2,9 @@ language: python
 services:
   - docker
 install:
-  - docker build docker -t imagine
+  - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+  - export REPO=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_REPO_SLUG; else echo $TRAVIS_PULL_REQUEST_SLUG; fi)
+  - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH", REPO=$REPO
+  - docker build docker -t imagine --build-arg BRANCH=$BRANCH --build-arg REPO=$REPO
 script:
   - docker run -i -t imagine /bin/bash -c "source ~/.bashrc && cd /home/lab/imagine && pytest"
