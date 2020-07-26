@@ -20,9 +20,10 @@ RUN conda env create --file=imagine_conda_env.yml
 SHELL ["conda", "run", "-n", "imagine", "/bin/bash", "-c"]
 
 # Python extra dependencies (for installation, testing and tutorials)
-RUN echo $CONDA_DEFAULT_ENV
-RUN conda install -y -c conda-forge pip seaborn nomkl \
-    pytest-cov pytest-mpl nbval astroquery
+# nomkl slightly reduces the size of the image
+RUN echo asads $CONDA_DEFAULT_ENV
+RUN conda install -y -c conda-forge pip seaborn nomkl pytest-cov pytest-mpl nbval astroquery requests jupyterlab
+RUN python -m ipykernel install --user --name imagine --display-name 'Python (imagine)'
 WORKDIR /home/lab
 
 ### ---- for hammurabi X -----
@@ -58,8 +59,7 @@ RUN pip install -e .
 WORKDIR /home/lab
 
 # CLEAN PACKAGES
-RUN conda clean -afy \
-    && find /opt/conda/ -follow -type f -name '*.pyc' -delete
+RUN conda clean -afy && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 RUN rm -f *.tar.gz
 RUN rm -rf /home/lab/googletest
 RUN rm -rf /home/lab/fftw
@@ -74,8 +74,8 @@ ENV LD_LIBRARY_PATH /tmp/local/lib:/tmp/local/hammurabi/lib:${LD_LIBRARY_PATH}
 # Activates imagine conda environment by default
 RUN sed -i 's/conda activate base/conda activate imagine/g' ~/.bashrc
 # Alias to make mpirun work
-RUN echo "alias mpirun='mpirun --mca btl ^vader --allow-run-as-root'" >> ~/.bashrc
+RUN echo 'alias mpirun='\''mpirun --mca btl ^vader --allow-run-as-root'\''' >> ~/.bashrc
 # Launching script to simplify starting jupyterlab
-RUN echo "source ~/.bashrc && conda install jupyterlab -y --quiet && python -m ipykernel install --user --name imagine --display-name 'Python (imagine)' && jupyter-lab --notebook-dir=/home/lab --ip='*' --port=8888 --no-browser --allow-root"   >> ~/jupyterlab.bash
+RUN echo 'source ~/.bashrc && jupyter-lab --notebook-dir=/home/lab --ip='\''*'\'' --port=8888 --no-browser --allow-root'   >> ~/jupyterlab.bash
 # Alias to simplify launching the jupyterlab in interactive mode
 RUN echo "alias jupyter-lab='~/jupyterlab.bash'"  >> ~/.bashrc

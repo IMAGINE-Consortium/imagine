@@ -11,7 +11,6 @@ dependencies:
   - mpi4py=3.*
   - healpy=1.*
   - h5py=2.10.*=mpi*
-  - ipyparallel=6.2.*
   - numpy=1.18.*
   - python=3.7.*
   - pymultinest=2.9
