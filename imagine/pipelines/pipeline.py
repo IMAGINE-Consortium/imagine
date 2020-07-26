@@ -12,7 +12,7 @@ import numpy as np
 from imagine import rc
 from imagine.likelihoods import Likelihood
 from imagine.fields import FieldFactory
-from imagine.priors import GeneralPrior
+from imagine.priors import GeneralPrior, EmpiricalPrior
 from imagine.simulators import Simulator
 from imagine.tools import BaseClass, ensemble_seed_generator, misc
 
@@ -67,7 +67,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, *, simulator, factory_list, likelihood,
-                 ensemble_size=1, prior_correlation_matrix=None):
+                 ensemble_size=1, prior_correlations=None):
         # Call super constructor
         super().__init__()
 
@@ -76,7 +76,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # parameter ranges and priors, based on the list
         self.simulator = simulator
         self.likelihood = likelihood
-        self.prior_correlation_matrix = prior_correlation_matrix
+        self.prior_correlations = prior_correlations
         self.ensemble_size = ensemble_size
         self.sampling_controllers = {}
         self.sample_callback = False
@@ -276,7 +276,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         for factory in factory_list:
             assert isinstance(factory, FieldFactory)
             for ap_name in factory.active_parameters:
-                i += 1
                 if ap_name in self._prior_cube_mapping:
                     raise KeyError('Ambiguous prior naming')
                 self._prior_cube_mapping.update({ap_name: i})
@@ -288,7 +287,42 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 prior = factory.priors[ap_name]
                 assert isinstance(prior, GeneralPrior)
                 self._priors[str(factory.name+'_'+ap_name)] = prior
+                i += 1
         self._factory_list = factory_list
+
+    @property
+    def prior_correlations(self):
+        return self._prior_correlations
+
+    @prior_correlations.setter
+    def prior_correlations(self, prior_correlations):
+        from scipy.stats import norm, pearsonr
+        ### check coefficient consistency
+        name_pairs = list(prior_correlations.keys())
+        correlated_priors = []
+        for i in range(len(name_pairs)):
+            name_pairs[i] = tuple(sorted(name_pairs[i]))
+        if len(name_pairs) != len(list(set(name_pairs))):
+            raise ValueError('Inconsistent prior correlations, '
+                             'possibly multiple values for the same coefficient')
+        for n in name_pairs:
+            correlated_priors += [n[0], n[1]]
+        corr_matrix = np.eye(len(self._active_parameters))
+        for n in name_pairs:
+            i, j = self._prior_cube_mapping[n[0]], self._prior_cube_mapping[n[1]]
+            c = prior_correlations[n]
+            if c is None:
+                assert (isinstance(self.priors[n[0]], EmpiricalPrior)
+                        and isinstance(self.priors[n[1]], EmpiricalPrior))
+                xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples))
+                xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples))
+                c = pearsonr(xi0, xi1)[0]
+            else:
+                assert (-1 <= c <= 1)
+            corr_matrix[i, j] = corr_matrix[j, i] = c
+        self._A = np.linalg.cholesky(corr_matrix)
+        self.correlated_priors = list(set(correlated_priors))
+        self._prior_correlations = prior_correlations
 
     @property
     def sampler_supports_mpi(self):
@@ -359,40 +393,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         cube
             The modified cube
         """
-
-        correlated_priors = []
-        from scipy.stats import norm, pearsonr
-        if self.prior_correlation_matrix is not None:
-            from ..priors.prior import EmpiricalPrior
-            ### check coefficient consistency
-            name_pairs = list(self.prior_correlation_matrix.keys())
-            for i in range(len(name_pairs)):
-                name_pairs[i] = tuple(sorted(name_pairs[i]))
-            if len(name_pairs) != len(list(set(name_pairs))):
-                raise ValueError('Inconsistent prior correlation matrix, '
-                                 'possibly multiple values for the same coefficient')
-            correlated_priors = list(set(list(n) for n in name_pairs))
-            corr_matrix = np.eye(len(self._active_parameters))
-
-            for n in name_pairs:
-                i, j = self._prior_cube_mapping[n[0]], self._prior_cube_mapping[n[1]]
-                c = self.prior_correlation_matrix[n]
-                if c is None:
-                    assert (isinstance(self.priors[n[0]], EmpiricalPrior)
-                            and isinstance(self.priors[n[1]], EmpiricalPrior))
-                    xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples))
-                    xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples))
-                    c = pearsonr(xi0, xi1)[0]
-                else:
-                    assert (0 < c < 1)
-                corr_matrix[i, j] = corr_matrix[j, i] = c
-            A = np.linalg.cholesky(corr_matrix)
-            cube = np.dot(A, cube)
+        print('prior sampler at %s (before trafo)' % str(cube))
+        if self.prior_correlations is not None:
+            from scipy.stats import norm
+            print(self._A)
+            cube = norm.cdf(np.dot(self._A, norm.ppf(cube)))
         for i, parameter in enumerate(self.active_parameters):
-            if parameter in correlated_priors:
-                cube[i] = self.priors[parameter](norm.cdf(cube[i]))
-            else:
-                cube[i] = self.priors[parameter](cube[i])
+            cube[i] = self.priors[parameter](cube[i])
+        print('prior sampler at %s (after trafo)' % str(cube))
         return cube
 
 
@@ -498,6 +506,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ pipeline::_core_likelihood')
         log.debug('sampler at %s' % str(cube))
+        print('likelihood sampler at %s' % str(cube))
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
             log.debug('cube %s requested. returned most negative possible number' % str(cube))
@@ -516,6 +525,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
 
+            print('f  ',factory_cube)
+            print('v',  variable_dict)
             field_list += (factory(variables=variable_dict,
                                    ensemble_size=self.ensemble_size_actual,
                                    ensemble_seeds=self.ensemble_seeds),)

@@ -37,12 +37,13 @@ class MultinestPipeline(Pipeline):
     SUPPORTS_MPI = True
 
     def __init__(self, simulator, factory_list, likelihood, ensemble_size=1,
-                 chains_directory=None):
+                 chains_directory=None, prior_correlations=None):
         super().__init__(
             simulator=simulator,
             factory_list=factory_list,
             likelihood=likelihood,
-            ensemble_size=ensemble_size)
+            ensemble_size=ensemble_size,
+            prior_correlations=prior_correlations)
 
         if chains_directory is not None:
             self._chains_dir_path = chains_directory

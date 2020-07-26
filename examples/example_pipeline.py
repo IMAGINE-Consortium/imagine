@@ -46,7 +46,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     trigger.append(dataset=fd_dset)
 
     # Prepares the Hammurabi simmulator for the mock generation
-    mock_generator = img.simulators.Hammurabi(measurements=trigger)
+    mock_generator = img.simulators.Hammurabi(measurements=trigger, exe_path='../../lab/hamx/build/hamx')
     
     # BregLSA field
     breg_lsa = BregLSA(parameters={'b0': b0, 'psi0': psi0, 'psi1': 0.9, 'chi0': 25.0})
@@ -132,15 +132,21 @@ mock_data, mock_cov = prepare_mock_obs_data(b0=b0, psi0=psi0,
 ## Use an ensemble to estimate the galactic variance
 likelihood = img.likelihoods.EnsembleLikelihood(mock_data, mock_cov)
 
+
+s1 = np.random.lognormal(1, 2, 1000)
+s2 = np.random.normal(1, 2, 1000)
+
+
+
 ## WMAP B-field, vary only b0 and psi0
 breg_factory = BregLSAFactory()
 breg_factory.active_parameters = ('b0', 'psi0')
-breg_factory.priors = {'b0':  img.priors.FlatPrior(interval=[0., 10.]), 
+breg_factory.priors = {'b0':  img.priors.EmpiricalPrior(samples=s1, interval=[0, 10]),
                       'psi0': img.priors.FlatPrior(interval=[0., 50.])}
 ## Random B-field, vary only RMS amplitude
 brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
 brnd_factory.active_parameters = ('rms',)
-brnd_factory.priors = {'rms': img.priors.FlatPrior(interval=[0., 10.])}
+brnd_factory.priors = {'rms': img.priors.EmpiricalPrior(samples=s2, interval=[-4, 4])}
 ## Fixed CR model
 cre_factory = CREAnaFactory()
 ## Fixed FE model
@@ -151,18 +157,22 @@ factory_list = [breg_factory, brnd_factory, cre_factory,
                 fereg_factory]
 
 # Prepares simulator
-simulator = img.simulators.Hammurabi(measurements=mock_data)
+simulator = img.simulators.Hammurabi(measurements=mock_data, exe_path='../../lab/hamx/build/hamx')
+
+# correlator
+
+corr_dict = {('b0', 'rms'): -0.3}
 
 # Prepares pipeline
-pipeline = img.pipelines.MultinestPipeline(simulator=simulator, 
-                                       factory_list=factory_list, 
-                                       likelihood=likelihood, 
-                                       ensemble_size=20,
-                                       chains_directory='pipeline_example_chains')
-pipeline.sampling_controllers = {'n_live_points': 500, 'verbose': True}
-
+pipeline = img.pipelines.MultinestPipeline(simulator=simulator,
+                                           factory_list=factory_list,
+                                           likelihood=likelihood,
+                                           ensemble_size=1,
+                                           chains_directory='chains',
+                                           prior_correlations=corr_dict)
+pipeline.sampling_controllers = {'n_live_points': 10, 'verbose': True}
 # Runs!
-results=pipeline()
+results = pipeline()
 
 if mpirank == 0:
     # Reports the evidence (to file)

@@ -6,7 +6,7 @@ import scipy.stats as stats
 from scipy.interpolate import CubicSpline
 
 # All declaration
-__all__ = ['GeneralPrior', 'ScipyPrior']
+__all__ = ['GeneralPrior', 'ScipyPrior', 'EmpiricalPrior']
 
 
 # %% CLASS DEFINITIONS
@@ -102,9 +102,6 @@ class GeneralPrior:
         """
         Cumulative distribution function (CDF) associated with this prior.
         """
-        if self._cdf is None:
-            if self.pdf is not None:
-                self._cdf = self.pdf.antiderivative()
         return self._cdf
 
     @property
@@ -121,29 +118,40 @@ class GeneralPrior:
 
 class EmpiricalPrior(GeneralPrior):
 
-    def __init__(self, interval, pdf_npoints, inv_cdf_npoints, samples, bw_method=None):
+    def __init__(self, interval, samples, pdf_npoints=1500, inv_cdf_npoints=1500, bw_method=None):
             super().__init__(interval)
     # PDF from samples mode -------------------
-            self.samples = samples
-            self.inv_cdf_npoints = inv_cdf_npoints
-            self.pdf_npoints = pdf_npoints
             if interval is not None:
                 ok = (samples > interval[0]) * (samples < interval[1])
                 samples = samples[ok]
-            pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
-            sigma = np.std(samples)
-            xmin, xmax = samples.min() - sigma, samples.max() + sigma
-            # Evaluates the PDF
-            pdf_x = np.linspace(xmin, xmax, pdf_npoints)
-            pdf_y = pdf_fun(pdf_x)
-            # Normalizes and removes units
-            inv_norm = pdf_y.sum() * (xmax - xmin) / pdf_npoints
-            pdf_y = (pdf_y / inv_norm).value
-            pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min())).value
-            # Recovers units
-            self.range = (xmin, xmax) * self.range.unit
+            self.samples = samples
+            self.inv_cdf_npoints = inv_cdf_npoints
+            self.pdf_npoints = pdf_npoints
+            self.bw_method = bw_method
+            self._pdf = self.calc_pdf()
+            self._cdf = self.calc_cdf()
+            self._inv_cdf = self.calc_inv_cdf()
 
-    def _initialize_inv_cdf(self):
+    def calc_pdf(self):
+
+        pdf_fun = stats.gaussian_kde(self.samples, bw_method=self.bw_method)
+        sigma = np.std(self.samples)
+        xmin, xmax = self.samples.min() - sigma, self.samples.max() + sigma
+        # Evaluates the PDF
+        pdf_x = np.linspace(xmin, xmax, self.pdf_npoints)
+        pdf_y = pdf_fun(pdf_x)
+        # Normalizes and removes units
+        inv_norm = pdf_y.sum() * (xmax - xmin) / self.pdf_npoints
+        pdf_y = (pdf_y / inv_norm)
+        pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min()))
+        # Recovers units
+        self.range = (xmin, xmax) * self.range.unit
+        return CubicSpline(pdf_x, pdf_y)
+
+    def calc_cdf(self):
+        return self.pdf.antiderivative()
+
+    def calc_inv_cdf(self):
         """
         Inverse of the CDF associated with this prior,
         expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
@@ -161,7 +169,7 @@ class EmpiricalPrior(GeneralPrior):
             y = y[~select_zeros]
             t = t[~select_zeros]
         # Creates interpolated spline
-        self._inv_cdf = CubicSpline(y, t)
+        return CubicSpline(y, t)
 
 
 class ScipyPrior(GeneralPrior):
@@ -193,7 +201,7 @@ class ScipyPrior(GeneralPrior):
     def __init__(self, distr, *args, loc=0.0, scale=1.0,
                  interval=None, **kwargs):
         super().__init__(interval=interval)
-
+        print('ScipyPriorInit')
         assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
 
         loc = self._scale_parameter(loc)
