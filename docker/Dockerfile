@@ -21,7 +21,6 @@ SHELL ["conda", "run", "-n", "imagine", "/bin/bash", "-c"]
 
 # Python extra dependencies (for installation, testing and tutorials)
 # nomkl slightly reduces the size of the image
-RUN echo asads $CONDA_DEFAULT_ENV
 RUN conda install -y -c conda-forge pip seaborn nomkl pytest-cov pytest-mpl nbval astroquery requests jupyterlab
 RUN python -m ipykernel install --user --name imagine --display-name 'Python (imagine)'
 WORKDIR /home/lab
