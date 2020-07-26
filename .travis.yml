@@ -1,4 +1,5 @@
 language: python
+
 services:
   - docker
 install:
@@ -8,3 +9,7 @@ install:
   - docker build docker -t imagine --build-arg BRANCH=$BRANCH --build-arg REPO=$REPO
 script:
   - docker run -i -t imagine /bin/bash -c "source ~/.bashrc && cd /home/lab/imagine && pytest"
+
+deploy:
+  if: (branch = master)  OR (tag IS present)
+  - echo 'Does this work?'
