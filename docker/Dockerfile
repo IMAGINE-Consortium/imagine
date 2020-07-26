@@ -1,17 +1,21 @@
 FROM continuumio/miniconda3
+ARG BRANCH=master
+ARG REPO=IMAGINE-Consortium/imagine
 
 MAINTAINER jiaxin.wang@sjtu.edu.cn
 
+RUN echo REPO=$REPO  BRANCH=$BRANCH
+
+# Install build environment (for hamx)
 RUN apt-get update
+RUN apt-get install -y --fix-missing git wget vim
 RUN apt-get install -y --fix-missing build-essential autoconf automake cmake gfortran
 RUN apt-get install -y --fix-missing gsl-bin libgsl-dev
-RUN apt-get install -y --fix-missing git wget vim
-
-RUN mkdir /home/lab
-WORKDIR /home/lab
 
 # IMAGINE download
-RUN git clone https://github.com/IMAGINE-Consortium/imagine.git imagine
+RUN mkdir /home/lab
+WORKDIR /home/lab
+RUN git clone -b $BRANCH https://github.com/$REPO.git imagine
 
 # IMAGINE dependencies
 WORKDIR /home/lab/imagine
@@ -75,6 +79,8 @@ RUN sed -i 's/conda activate base/conda activate imagine/g' ~/.bashrc
 # Alias to make mpirun work
 RUN echo 'alias mpirun='\''mpirun --mca btl ^vader --allow-run-as-root'\''' >> ~/.bashrc
 # Launching script to simplify starting jupyterlab
+RUN echo '#!/bin/bash' >> ~/jupyterlab.bash
 RUN echo 'source ~/.bashrc && jupyter-lab --notebook-dir=/home/lab --ip='\''*'\'' --port=8888 --no-browser --allow-root'   >> ~/jupyterlab.bash
+RUN chmod +x ~/jupyterlab.bash
 # Alias to simplify launching the jupyterlab in interactive mode
 RUN echo "alias jupyter-lab='~/jupyterlab.bash'"  >> ~/.bashrc
