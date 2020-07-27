@@ -22,9 +22,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
+      
       - name: Build image
-        run: docker build docker --tag $IMAGE_NAME
+        run: |
+          # Strip git ref prefix from version
+          BRANCH=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          docker build docker --tag $IMAGE_NAME --build-arg BRANCH=$BRANCH --build-arg REPO=${{ github.repository }}
 
       - name: Test image
         run: docker run -t $IMAGE_NAME /bin/bash -c "source ~/.bashrc && cd /home/lab/imagine && pytest" 

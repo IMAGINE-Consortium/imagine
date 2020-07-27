@@ -15,6 +15,7 @@ RUN apt-get install -y --fix-missing gsl-bin libgsl-dev
 # IMAGINE download
 RUN mkdir /home/lab
 WORKDIR /home/lab
+RUN echo BRANCH: $BRANCH && echo REPO $REPO
 RUN git clone -b $BRANCH https://github.com/$REPO.git imagine
 
 # IMAGINE dependencies
