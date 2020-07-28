@@ -28,7 +28,7 @@ Docker installation
 -------------------
 
 This is a very convenient and fast way of deploying IMAGINE. You must first
-pull the image of one of IMAGINE's versions from `GitHub <https://github.com/IMAGINE-Consortium/imagine/packages>`_, for example, the latest (*development*) version can be pulled
+pull the image of `one of IMAGINE's versions from GitHub <https://github.com/IMAGINE-Consortium/imagine/packages/327300/versions>`_, for example, the latest (*development*) version can be pulled
 using:
 
 .. code-block:: console
