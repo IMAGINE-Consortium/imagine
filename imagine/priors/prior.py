@@ -3,10 +3,11 @@
 import astropy.units as u
 import numpy as np
 import scipy.stats as stats
-from scipy.interpolate import CubicSpline
+from numpy import cumsum, piecewise
+from scipy.interpolate import CubicSpline, interp1d, NearestNDInterpolator
 
 # All declaration
-__all__ = ['GeneralPrior', 'ScipyPrior', 'EmpiricalPrior']
+__all__ = ['GeneralPrior', 'ScipyPrior', 'PriorfromSamples']
 
 
 # %% CLASS DEFINITIONS
@@ -71,7 +72,8 @@ class GeneralPrior:
     def __init__(self, interval=None):
 
         # Ensures interval is quantity with consistent units
-        interval = u.Quantity(interval)
+        if interval is not None:
+            interval = u.Quantity(interval)
         self.range = interval
 
         # Placeholders
@@ -85,28 +87,27 @@ class GeneralPrior:
         """
         Probability density function (PDF) associated with this prior.
         """
-        return self._pdf
+        return self.distr.pdf
 
-    def pdf_unscaled(self, x):
-        """
-        Probability density function (PDF) associated with this prior.
-        """
+#    def pdf_unscaled(self, x):
+#        """
+#        Probability density function (PDF) associated with this prior.
+#        """
+#        return self.pdf(self._scale_parameter(x))
 
-        return self.pdf(self._scale_parameter(x))
-
-    def _scale_parameter(self, x):
-        return (x - self.range[0])/(self.range[1] - self.range[0])
+#    def _scale_parameter(self, x):
+#        return (x - self.range[0])/(self.range[1] - self.range[0])
 
     @property
     def cdf(self):
         """
         Cumulative distribution function (CDF) associated with this prior.
         """
-        return self._cdf
+        return self.distr.cdf
 
     @property
     def inv_cdf(self):
-        return self._inv_cdf
+        return self.distr.ppf
 
     def __call__(self, x):
         """
@@ -116,9 +117,9 @@ class GeneralPrior:
         return self.inv_cdf(x)
 
 
-class EmpiricalPrior(GeneralPrior):
+class PriorfromSamples(GeneralPrior):
 
-    def __init__(self, interval, samples, pdf_npoints=1500, inv_cdf_npoints=1500, bw_method=None):
+    def __init__(self, samples, interval=None, pdf_npoints=1500, inv_cdf_npoints=1500, bw_method=None):
             super().__init__(interval)
     # PDF from samples mode -------------------
             if interval is not None:
@@ -128,48 +129,50 @@ class EmpiricalPrior(GeneralPrior):
             self.inv_cdf_npoints = inv_cdf_npoints
             self.pdf_npoints = pdf_npoints
             self.bw_method = bw_method
-            self._pdf = self.calc_pdf()
-            self._cdf = self.calc_cdf()
-            self._inv_cdf = self.calc_inv_cdf()
+            self.distr = self.initialize_distr()
 
-    def calc_pdf(self):
-
+    def initialize_distr(self):
         pdf_fun = stats.gaussian_kde(self.samples, bw_method=self.bw_method)
         sigma = np.std(self.samples)
-        xmin, xmax = self.samples.min() - sigma, self.samples.max() + sigma
+        if self.range is None:
+            xmin, xmax = self.samples.min() - sigma, self.samples.max() + sigma
+            self.range = [xmin, xmax]
+        else:
+            xmin, xmax = self.range
         # Evaluates the PDF
         pdf_x = np.linspace(xmin, xmax, self.pdf_npoints)
         pdf_y = pdf_fun(pdf_x)
         # Normalizes and removes units
         inv_norm = pdf_y.sum() * (xmax - xmin) / self.pdf_npoints
         pdf_y = (pdf_y / inv_norm)
-        pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min()))
+        # pdf_x = ((pdf_x - pdf_x.min()) / (pdf_x.max() - pdf_x.min()))
         # Recovers units
-        self.range = (xmin, xmax) * self.range.unit
-        return CubicSpline(pdf_x, pdf_y)
+        # self.range = (xmin, xmax) * self.range.unit
+        dx = (xmax - xmin) / self.pdf_npoints
+        pdf_func = interp1d(x=pdf_x, y=pdf_y)
+        print( 'integrate', cumsum(pdf_y*(xmax - xmin)/self.pdf_npoints))
+        cdf_func = interp1d(np.append(xmin - 0.5*dx, pdf_x + 0.5*dx), np.append(0, cumsum(pdf_y*(xmax - xmin)/self.pdf_npoints)))
+        inv_cdf_func = interp1d(np.append(0, cumsum(pdf_y * (xmax - xmin) / self.pdf_npoints)),
+                                np.append(xmin - 0.5 * dx, pdf_x + 0.5 * dx))
 
-    def calc_cdf(self):
-        return self.pdf.antiderivative()
+        return self.distr_initilalizer(pdf_func, cdf_func, inv_cdf_func, [xmin - 0.5*dx, xmax + 0.5*dx])
+    @staticmethod
+    def distr_initilalizer(pdf=None, cdf=None, ppf=None, interval=None):
+        if all([pdf, cdf, ppf]) is None:
+            raise ValueError('At least a cdf, a pdf or a ppf must be specified!')
 
-    def calc_inv_cdf(self):
-        """
-        Inverse of the CDF associated with this prior,
-        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
-        """
-        assert self.cdf is not None
-        t = np.linspace(0, 1, self.inv_cdf_npoints)
-        y = self.cdf(t)
-        # Rescales the image of the function to [0,1]
-        y = (y-y.min())/(y.max()-y.min())
-        # For some distributions, there will be multiple
-        # values of y=0 for the same t. The following corrects this
-        # by simply removing this part of the cdf
-        select_zeros = (y == 0)
-        if len(select_zeros) > 1:
-            y = y[~select_zeros]
-            t = t[~select_zeros]
-        # Creates interpolated spline
-        return CubicSpline(y, t)
+        class Distr(stats.rv_continuous):
+
+            def _pdf(self, x):
+                return pdf(x)
+            def _cdf(self, x):
+                return cdf(x)
+            def _ppf(self, x):
+                return ppf(x)
+
+        if interval is None:
+            interval = [None, None]
+        return Distr(a=interval[0], b=interval[1])
 
 
 class ScipyPrior(GeneralPrior):
@@ -204,14 +207,9 @@ class ScipyPrior(GeneralPrior):
         print('ScipyPriorInit')
         assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
 
-        loc = self._scale_parameter(loc)
+        # loc = self._scale_parameter(loc)
         self.distr = distr(*args, loc=loc, scale=scale, **kwargs)
 
         self._pdf = self.distr.pdf
         self._cdf = self.distr.cdf
-
-        # In principle, it should be possible to use scipy's built-in
-        # ppf for this (which is supposed to be accurate and fast),
-        # but this has not yet being implemented as it requires
-        # some extra rescaling to work with the truncation
         self._inv_cdf = self.distr.ppf

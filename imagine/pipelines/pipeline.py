@@ -12,7 +12,7 @@ import numpy as np
 from imagine import rc
 from imagine.likelihoods import Likelihood
 from imagine.fields import FieldFactory
-from imagine.priors import GeneralPrior, EmpiricalPrior
+from imagine.priors import GeneralPrior, PriorfromSamples
 from imagine.simulators import Simulator
 from imagine.tools import BaseClass, ensemble_seed_generator, misc
 
@@ -117,13 +117,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # The user should not be able to set this attribute manually
         return self._active_parameters
 
-    @property
-    def active_ranges(self):
-        """
-        Ranges of all active parameters
-        """
-        # The user should not be able to set this attribute manually
-        return self._active_ranges
 
     @property
     def priors(self):
@@ -226,7 +219,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._evidence_err
 
     @property
-    def samples_scaled(self):
+    def samples(self):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values of the samples
         produced in the run, scaled to the interval [0,1].
@@ -234,20 +227,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
         return QTable(data=self._samples_array, names=self.active_parameters)
 
-    @property
-    def samples(self):
-        """
-        An :py:class:`astropy.table.QTable` object containing parameter values of the samples
-        produced in the run.
-        """
-        if self._samples is None:
-            self._samples = self.samples_scaled
-
-            for param in self.active_parameters:
-                pmin, pmax = self.active_ranges[param]
-                self._samples[param] = self._samples[param]*(pmax - pmin)+pmin
-
-        return self._samples
 
     @property
     def factory_list(self):
@@ -268,21 +247,20 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # for each factory and necessary to construct the common prior function.
         assert isinstance(factory_list, (list, tuple)), 'Factory list must be a tuple or list'
         self._active_parameters = tuple()
-        self._active_ranges = dict()
         self._priors = dict()
         self._prior_cube_mapping = {}
 
         i = 0
+
         for factory in factory_list:
             assert isinstance(factory, FieldFactory)
             for ap_name in factory.active_parameters:
                 if ap_name in self._prior_cube_mapping:
                     raise KeyError('Ambiguous prior naming')
-                self._prior_cube_mapping.update({ap_name: i})
+                self._prior_cube_mapping.update({factory.name+'_'+ap_name: i})
                 assert isinstance(ap_name, str)
                 # Sets the parameters and ranges
                 self._active_parameters += (str(factory.name+'_'+ap_name),)
-                self._active_ranges[str(factory.name+'_'+ap_name)] = factory.parameter_ranges[ap_name]
                 # Sets the Prior
                 prior = factory.priors[ap_name]
                 assert isinstance(prior, GeneralPrior)
@@ -298,31 +276,42 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     def prior_correlations(self, prior_correlations):
         from scipy.stats import norm, pearsonr
         ### check coefficient consistency
-        name_pairs = list(prior_correlations.keys())
         correlated_priors = []
+        new_prior_correlations = {}
+        for n in list(prior_correlations.keys()):
+            t = []
+            for m in range(2):
+                for f in self.factory_list:
+                    if list(n)[m] in f.active_parameters:
+                        newname = f.name + '_' + list(n)[m]
+                        correlated_priors.append(newname)
+                        t.append(newname)
+            print(t)
+            new_prior_correlations.update({tuple(t): prior_correlations[n]})
+        name_pairs = list(new_prior_correlations.keys())
+
         for i in range(len(name_pairs)):
             name_pairs[i] = tuple(sorted(name_pairs[i]))
         if len(name_pairs) != len(list(set(name_pairs))):
             raise ValueError('Inconsistent prior correlations, '
                              'possibly multiple values for the same coefficient')
-        for n in name_pairs:
-            correlated_priors += [n[0], n[1]]
         corr_matrix = np.eye(len(self._active_parameters))
         for n in name_pairs:
             i, j = self._prior_cube_mapping[n[0]], self._prior_cube_mapping[n[1]]
-            c = prior_correlations[n]
+            c = new_prior_correlations[n]
             if c is None:
-                assert (isinstance(self.priors[n[0]], EmpiricalPrior)
-                        and isinstance(self.priors[n[1]], EmpiricalPrior))
+                assert (isinstance(self.priors[n[0]], PriorfromSamples)
+                        and isinstance(self.priors[n[1]], PriorfromSamples))
                 xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples))
                 xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples))
+                print('in pipeline pearson ', pearsonr(xi0, xi1))
                 c = pearsonr(xi0, xi1)[0]
             else:
                 assert (-1 <= c <= 1)
             corr_matrix[i, j] = corr_matrix[j, i] = c
         self._A = np.linalg.cholesky(corr_matrix)
         self.correlated_priors = list(set(correlated_priors))
-        self._prior_correlations = prior_correlations
+        self._prior_correlations = new_prior_correlations
 
     @property
     def sampler_supports_mpi(self):
@@ -393,14 +382,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         cube
             The modified cube
         """
-        print('prior sampler at %s (before trafo)' % str(cube))
         if self.prior_correlations is not None:
             from scipy.stats import norm
-            print(self._A)
             cube = norm.cdf(np.dot(self._A, norm.ppf(cube)))
         for i, parameter in enumerate(self.active_parameters):
             cube[i] = self.priors[parameter](cube[i])
-        print('prior sampler at %s (after trafo)' % str(cube))
         return cube
 
 
@@ -506,11 +492,12 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ pipeline::_core_likelihood')
         log.debug('sampler at %s' % str(cube))
-        print('likelihood sampler at %s' % str(cube))
+
         # security boundary check
-        if np.any(cube > 1.) or np.any(cube < 0.):
+        if np.any(cube == np.inf):
             log.debug('cube %s requested. returned most negative possible number' % str(cube))
             return np.nan_to_num(-np.inf)
+        print('likelihood sampler at %s' % str(cube))
         # return active variables from pymultinest cube to factories
         # and then generate new field objects
         head_idx = 0
@@ -524,9 +511,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             factory_cube = cube[head_idx:tail_idx]
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
-
-            print('f  ',factory_cube)
-            print('v',  variable_dict)
             field_list += (factory(variables=variable_dict,
                                    ensemble_size=self.ensemble_size_actual,
                                    ensemble_seeds=self.ensemble_seeds),)

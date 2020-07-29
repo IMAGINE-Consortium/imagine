@@ -5,7 +5,7 @@ import numpy as np
 import healpy as hp
 import astropy.units as u
 import corner
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as pl
 # IMAGINE
 import imagine as img
 import imagine.observables as img_obs
@@ -133,20 +133,43 @@ mock_data, mock_cov = prepare_mock_obs_data(b0=b0, psi0=psi0,
 likelihood = img.likelihoods.EnsembleLikelihood(mock_data, mock_cov)
 
 
-s1 = np.random.lognormal(1, 2, 1000)
-s2 = np.random.normal(1, 2, 1000)
+s1 = np.random.normal(0, 1, 1000)
+s2 = np.random.normal(0, 1, 1000)
+c2 = -0.8
+
+corr = np.eye(2)
+corr[0, 1] = corr[1, 0] = c2
+
+A = np.linalg.cholesky(corr)
+
+s1, s2 = np.dot(A, np.asarray([s1, s2]))
+print(s1.shape)
+print(s2.shape)
 
 
 
+from scipy.stats import lognorm, norm, pearsonr
+
+
+print('gauss_pearson', pearsonr(s1, s2))
+s1 = norm(3, 2).ppf(norm(0, 1).cdf(s1))
+s2 = lognorm(1, 2).ppf(norm(0, 1).cdf(s2))
+print(s1.shape)
+print(s2.shape)
+print(s2)
+print('nl_pearson', pearsonr(s1, s2))
+rr = img.priors.PriorfromSamples(samples=s2).cdf(np.arange(0, 10))
+print(rr)
+print(img.priors.PriorfromSamples(samples=s2)(rr))
 ## WMAP B-field, vary only b0 and psi0
 breg_factory = BregLSAFactory()
 breg_factory.active_parameters = ('b0', 'psi0')
-breg_factory.priors = {'b0':  img.priors.EmpiricalPrior(samples=s1, interval=[0, 10]),
+breg_factory.priors = {'b0':  img.priors.PriorfromSamples(samples=s1),
                       'psi0': img.priors.FlatPrior(interval=[0., 50.])}
 ## Random B-field, vary only RMS amplitude
 brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
 brnd_factory.active_parameters = ('rms',)
-brnd_factory.priors = {'rms': img.priors.EmpiricalPrior(samples=s2, interval=[-4, 4])}
+brnd_factory.priors = {'rms': img.priors.PriorfromSamples(samples=s2)}
 ## Fixed CR model
 cre_factory = CREAnaFactory()
 ## Fixed FE model
@@ -161,7 +184,7 @@ simulator = img.simulators.Hammurabi(measurements=mock_data, exe_path='../../lab
 
 # correlator
 
-corr_dict = {('b0', 'rms'): -0.3}
+corr_dict = {('b0', 'psi0'): -0.3, ('b0', 'rms'): None}
 
 # Prepares pipeline
 pipeline = img.pipelines.MultinestPipeline(simulator=simulator,

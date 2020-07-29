@@ -82,7 +82,6 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
 
         # Placeholders
         self.default_parameters = self.DEFAULT_PARAMETERS
-        self.parameter_ranges = {}
         self.active_parameters = active_parameters
         self.priors = self.PRIORS
 
@@ -114,11 +113,10 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         log.debug('@ field_factory::generate')
         # map variable value to parameter value
         # in mapping, variable name will be checked in default_parameters
-        mapped_variables = self._map_variables_to_parameters(variables)
         # copy default parameters and update wrt argument
         work_parameters = dict(self.default_parameters)
         # update is safe
-        work_parameters.update(mapped_variables)
+        work_parameters.update(variables)
         # generate fields
         result_field = self.field_class(grid=self.grid,
                                         parameters=work_parameters,
@@ -227,15 +225,10 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         """
         return self._priors
 
-    def _prior_correlator(self, prior_a, prior_b, corr_coefficient):
-        raise NotImplementedError
-
     @priors.setter
     def priors(self, new_prior_dict):
         if not hasattr(self, '_priors'):
             self._priors = {}
-
-        parameter_ranges = {}
 
         # Uses previous information
         prior_dict = self._priors.copy()
@@ -244,81 +237,9 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         for name in self.default_parameters:
             assert (name in prior_dict), 'Missing Prior for '+name
             prior = prior_dict[name]
-            assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
+            assert isinstance(prior, GeneralPrior), \
+                'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
             self._priors[name] = prior
-            parameter_ranges[name] = prior.range
-        self.parameter_ranges = parameter_ranges
-
-    @property
-    def parameter_ranges(self):
-        """
-        Dictionary storing varying range of all default parameters in
-        the form {'parameter-name': (min, max)}
-        """
-        return self._parameter_ranges
-
-    @parameter_ranges.setter
-    def parameter_ranges(self, new_ranges):
-        assert isinstance(new_ranges, dict)
-        for k, v in new_ranges.items():
-            # check if k is inside default
-            assert (k in self.default_parameters.keys())
-            assert (len(v) == 2)
-        try:
-            self._parameter_ranges.update(new_ranges)
-            log.debug('update parameter ranges %s' % str(new_ranges))
-        except AttributeError:
-            self._parameter_ranges = new_ranges
-            log.debug('set parameter ranges %s' % str(new_ranges))
-
-    @property
-    def default_variables(self):
-        """
-        A dictionary containing default parameter values converted into
-        default normalized variables (i.e with values scaled to be in the
-        range [0,1]).
-        """
-        log.debug('@ field_factory::default_variables')
-        tmp = dict()
-        for par, def_val in self.default_parameters.items():
-            low, high = self.parameter_ranges[par]
-            tmp[par] = float(def_val - low)/float(high - low)
-        return tmp
-
-    def _map_variables_to_parameters(self, variables):
-        """
-        Converts Bayesian sampling variables into model parameters
-
-        Parameters
-        ----------
-        variables : dict
-            Python dictionary in form {'parameter-name', logic-value}
-
-        Returns
-        -------
-        parameter_dict : dict
-            Python dictionary in form {'parameter-name', physical-value}
-        """
-        log.debug('@ field_factory::_map_variables_to_parameters')
-        assert isinstance(variables, dict)
-        parameter_dict = {}
-        for variable_name in variables:
-            # variable_name must have been registered in .default_parameters
-            # and, also being active
-            assert (variable_name in self.default_parameters and
-                    variable_name in self.active_parameters)
-            low, high = self.parameter_ranges[variable_name]
-            # Ensures consistent physical units, if needed
-            if isinstance(low, u.Quantity):
-                units = low.unit;
-                low = low.value
-                high = high.to(units).value
-            else:
-                units = 1
-            # unity_mapper defined in imainge.tools.carrier_mapper
-            mapped_variable = unity_mapper(variables[variable_name], low, high)
-            parameter_dict[variable_name] = mapped_variable * units
-        return parameter_dict
 
     @staticmethod
     def _interval(mean, sigma, n):

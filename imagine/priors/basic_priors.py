@@ -25,7 +25,8 @@ class FlatPrior(GeneralPrior):
         # Updates ranges
         super().__init__(interval=interval)
         # Constant pdf (for illustration)
-        self._pdf = lambda x: np.ones_like(x)
+        self.vol = interval[1] - interval[0]
+        self._pdf = lambda x: np.ones_like(x)/self.vol
 
     def __call__(self, cube):
         """
@@ -41,12 +42,12 @@ class FlatPrior(GeneralPrior):
         List of variable values in range [0,1]
         """
         log.debug('@ flat_prior::__call__')
-        return cube
+        return cube*self.vol
 
 
 class GaussianPrior(ScipyPrior):
     """
-    (Truncated) normal prior distribution
+    Normal prior distribution
 
 
 
