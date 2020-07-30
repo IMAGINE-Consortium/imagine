@@ -75,7 +75,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, *, simulator, factory_list, likelihood,
-                 ensemble_size=1, chains_directory=None):
+                 ensemble_size=1, chains_directory=None, prior_correlations=None):
         # Call super constructor
         super().__init__()
 
@@ -84,6 +84,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # parameter ranges and priors, based on the list
         self.simulator = simulator
         self.likelihood = likelihood
+        self.prior_correlations = prior_correlations
         self.ensemble_size = ensemble_size
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
@@ -194,6 +195,50 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                     'stdev': np.std(column)}
 
         return self._posterior_summary
+
+    @property
+    def prior_correlations(self):
+        return self._prior_correlations
+
+    @prior_correlations.setter
+    def prior_correlations(self, prior_correlations):
+        from scipy.stats import norm, pearsonr
+        ### check coefficient consistency
+        correlated_priors = []
+        new_prior_correlations = {}
+        for n in list(prior_correlations.keys()):
+            t = []
+            for m in range(2):
+                for f in self.factory_list:
+                    if list(n)[m] in f.active_parameters:
+                        newname = f.name + '_' + list(n)[m]
+                        correlated_priors.append(newname)
+                        t.append(newname)
+            new_prior_correlations.update({tuple(t): prior_correlations[n]})
+        name_pairs = list(new_prior_correlations.keys())
+
+        for i in range(len(name_pairs)):
+            name_pairs[i] = tuple(sorted(name_pairs[i]))
+        if len(name_pairs) != len(list(set(name_pairs))):
+            raise ValueError('Inconsistent prior correlations, '
+                             'possibly multiple values for the same coefficient')
+        corr_matrix = np.eye(len(self._active_parameters))
+        for n in name_pairs:
+            i, j = self._prior_cube_mapping[n[0]], self._prior_cube_mapping[n[1]]
+            c = new_prior_correlations[n]
+            if c is None:
+                assert (hasattr(self.priors[n[0]], 'samples')
+                        and hasattr(self.priors[n[1]], 'samples'))
+                xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples))
+                xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples))
+                print('in pipeline pearson ', pearsonr(xi0, xi1))
+                c = pearsonr(xi0, xi1)[0]
+            else:
+                assert (-1 <= c <= 1)
+            corr_matrix[i, j] = corr_matrix[j, i] = c
+        self._A = np.linalg.cholesky(corr_matrix)
+        self.correlated_priors = list(set(correlated_priors))
+        self._prior_correlations = new_prior_correlations
 
     def posterior_report(self, sdigits=2):
         """
@@ -307,23 +352,27 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # factory ordering. This is useful for recovering variable logic value
         # for each factory and necessary to construct the common prior function.
         assert isinstance(factory_list, (list, tuple)), 'Factory list must be a tuple or list'
-        self._active_parameters = ()
-        self._active_ranges = {}
-        self._priors = {}
+        self._active_parameters = tuple()
+        self._priors = dict()
+        self._prior_cube_mapping = {}
+
+        i = 0
 
         for factory in factory_list:
             assert isinstance(factory, FieldFactory)
             for ap_name in factory.active_parameters:
+                if ap_name in self._prior_cube_mapping:
+                    raise KeyError('Ambiguous prior naming')
+                self._prior_cube_mapping.update({factory.name+'_'+ap_name: i})
                 assert isinstance(ap_name, str)
                 # Sets the parameters and ranges
-                self._active_parameters += (factory.name+'_'+ap_name,)
-                self._active_ranges[factory.name+'_'+ap_name] = factory.parameter_ranges[ap_name]
+                self._active_parameters += (str(factory.name+'_'+ap_name),)
                 # Sets the Prior
                 prior = factory.priors[ap_name]
                 assert isinstance(prior, GeneralPrior)
-                self._priors[factory.name+'_'+ap_name] = prior
+                self._priors[str(factory.name+'_'+ap_name)] = prior
+                i += 1
         self._factory_list = factory_list
-
     @property
     def sampler_supports_mpi(self):
         return(getattr(self, 'SUPPORTS_MPI', False))
@@ -393,6 +442,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         cube
             The modified cube
         """
+        if self.prior_correlations is not None:
+            from scipy.stats import norm
+            cube = norm.cdf(np.dot(self._A, norm.ppf(cube)))
         for i, parameter in enumerate(self.active_parameters):
             cube[i] = self.priors[parameter](cube[i])
         return cube
