@@ -89,7 +89,7 @@ class GeneralPrior:
                 xmin, xmax = interval
                 # Evaluates the PDF
                 pdf_x = np.linspace(xmin, xmax, pdf_npoints)
-                pdf_y = pdf_fun(pdf_x)
+                pdf_y = pdf_fun(pdf_x.value)
                 # Normalizes and removes units
                 inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
                 pdf_y = (pdf_y/inv_norm).value
@@ -100,6 +100,7 @@ class GeneralPrior:
         self._cdf = None
         self._inv_cdf = None
         self.distr = None
+        self.samples = samples
 
         if (pdf_x is not None) and (pdf_y is not None):
             self._pdf = CubicSpline(pdf_x, pdf_y)
