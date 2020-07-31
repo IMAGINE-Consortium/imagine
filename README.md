@@ -1,6 +1,6 @@
 [![Documentation Status](https://readthedocs.org/projects/imagine-code/badge/?version=latest)](https://imagine-code.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://travis-ci.org/IMAGINE-Consortium/imagine.svg?branch=master)](https://travis-ci.org/IMAGINE-Consortium/imagine)
-![Docker](https://github.com/IMAGINE-Consortium/imagine/workflows/Docker/badge.svg)
+[![Build Status](https://travis-ci.com/IMAGINE-Consortium/imagine.svg?branch=master)](https://travis-ci.com/IMAGINE-Consortium/imagine)
+[![Docker](https://github.com/IMAGINE-Consortium/imagine/workflows/Docker/badge.svg)](https://github.com/IMAGINE-Consortium/imagine/actions?query=workflow%3ADocker)
 
 # IMAGINE
 
