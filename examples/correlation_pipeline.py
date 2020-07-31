@@ -147,10 +147,8 @@ s1, s2 = np.dot(A, np.asarray([s1, s2]))
 
 from scipy.stats import norm, truncnorm, pearsonr
 
-print('gauss_pearson', pearsonr(s1, s2))
-s1 = truncnorm(loc=3, scale=2, a=-0.5, b=5).ppf(norm(0, 1).cdf(s1))
-s2 = np.exp(truncnorm(loc=1, scale=2, a=np.exp(-4), b=np.exp(4)).ppf(norm(0, 1).cdf(s2)))
-print('nl_pearson', pearsonr(s1, s2))
+s1 = truncnorm(loc=3, scale=2, a=(-0.5 - 3)/2, b=(5 - 3)/2).ppf(norm(0, 1).cdf(s1))
+s2 = np.exp(truncnorm(loc=0, scale=2, a=-4/2, b=4/2).ppf(norm(0, 1).cdf(s2)))
 ## WMAP B-field, vary only b0 and psi0
 breg_factory = BregLSAFactory()
 breg_factory.active_parameters = ('b0', 'psi0')
