@@ -73,27 +73,24 @@ class GeneralPrior:
                  bw_method=None, pdf_npoints=1500, inv_cdf_npoints=1500):
 
         # Ensures interval is quantity with consistent units
-        interval = u.Quantity(interval)
+        if interval is not None:
+            interval = u.Quantity(interval)
         self.range = interval
 
         if (pdf_x is None) and (pdf_y is None):
             # If needed, constructs a pdf function from samples, using KDE
             if samples is not None:
                 assert pdf_fun is None, 'Either provide the samples or the PDF, not both.'
-                if interval is not None:
-                    ok = (samples > interval[0]) * (samples < interval[1])
-                    samples = samples[ok]
-                pdf_fun = stats.gaussian_kde(samples, bw_method=bw_method)
+#                if interval is not None:
+#                    ok = (samples > interval[0]) * (samples < interval[1])
+#                    samples = samples[ok]
+                pdf_fun = stats.gaussian_kde(samples.value, bw_method=bw_method)
 
             if pdf_fun is not None:
                 xmin, xmax = interval
                 # Evaluates the PDF
                 pdf_x = np.linspace(xmin, xmax, pdf_npoints)
                 pdf_y = pdf_fun(pdf_x.value)
-                # Normalizes and removes units
-                inv_norm = pdf_y.sum()*(xmax-xmin)/pdf_npoints
-                pdf_y = (pdf_y/inv_norm).value
-                pdf_x = ((pdf_x - pdf_x.min())/(pdf_x.max() - pdf_x.min())).value
 
         # Placeholders
         self.inv_cdf_npoints = inv_cdf_npoints
@@ -114,16 +111,6 @@ class GeneralPrior:
         """
         return self._pdf
 
-    def pdf_unscaled(self, x):
-        """
-        Probability density function (PDF) associated with this prior.
-        """
-
-        return self.pdf(self._scale_parameter(x))
-
-    def _scale_parameter(self, x):
-        return (x - self.range[0])/(self.range[1] - self.range[0])
-
     @property
     def cdf(self):
         """
@@ -143,8 +130,6 @@ class GeneralPrior:
         if (self._inv_cdf is None) and (self.cdf is not None):
             t = np.linspace(0, 1, self.inv_cdf_npoints)
             y = self.cdf(t)
-            # Rescales the image of the function to [0,1]
-            y = (y-y.min())/(y.max()-y.min())
             # For some distributions, there will be multiple
             # values of y=0 for the same t. The following corrects this
             # by simply removing this part of the cdf
@@ -192,15 +177,12 @@ class ScipyPrior(GeneralPrior):
         interval).
     """
     def __init__(self, distr, *args, loc=0.0, scale=1.0,
-                 interval=[-1.0,1.0], **kwargs):
+                 interval=None, **kwargs):
         super().__init__(interval=interval)
 
         assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
 
-        xmin, xmax = interval
-
-        loc = self._scale_parameter(loc)
-        self.distr = distr(*args, loc=loc, scale=scale/(xmax - xmin), **kwargs)
+        self.distr = distr(*args, loc=loc, scale=scale, **kwargs)
 
         self._pdf = self.distr.pdf
         self._cdf = self.distr.cdf
@@ -209,4 +191,4 @@ class ScipyPrior(GeneralPrior):
         # ppf for this (which is supposed to be accurate and fast),
         # but this has not yet being implemented as it requires
         # some extra rescaling to work with the truncation
-        # self._inv_cdf = self.distr.ppf
+        self._inv_cdf = self.distr.ppf
