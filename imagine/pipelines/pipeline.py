@@ -155,14 +155,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._active_parameters
 
     @property
-    def active_ranges(self):
-        """
-        Ranges of all active parameters
-        """
-        # The user should not be able to set this attribute manually
-        return self._active_ranges
-
-    @property
     def priors(self):
         """
         Dictionary containing priors for all active parameters
@@ -217,8 +209,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             new_prior_correlations.update({tuple(t): prior_correlations[n]})
         name_pairs = list(new_prior_correlations.keys())
 
-        for i in range(len(name_pairs)):
-            name_pairs[i] = tuple(sorted(name_pairs[i]))
+#        for i in range(len(name_pairs)):
+#            name_pairs[i] = tuple(sorted(name_pairs[i]))
         if len(name_pairs) != len(list(set(name_pairs))):
             raise ValueError('Inconsistent prior correlations, '
                              'possibly multiple values for the same coefficient')
@@ -226,11 +218,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         for n in name_pairs:
             i, j = self._prior_cube_mapping[n[0]], self._prior_cube_mapping[n[1]]
             c = new_prior_correlations[n]
-            if c is None:
+            if isinstance(c, bool):
+                if not c:
+                    raise ValueError()
                 assert (self.priors[n[0]].samples is not None
                         and self.priors[n[1]].samples is not None)
-                xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples))
-                xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples))
+                xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples.value))
+                xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples.value))
                 print('in pipeline pearson ', pearsonr(xi0, xi1))
                 c = pearsonr(xi0, xi1)[0]
             else:
@@ -311,28 +305,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._evidence_err
 
     @property
-    def samples_scaled(self):
+    def samples(self):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values of the samples
         produced in the run, scaled to the interval [0,1].
         """
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
         return QTable(data=self._samples_array, names=self.active_parameters)
-
-    @property
-    def samples(self):
-        """
-        An :py:class:`astropy.table.QTable` object containing parameter values of the samples
-        produced in the run.
-        """
-        if self._samples is None:
-            self._samples = self.samples_scaled
-
-            for param in self.active_parameters:
-                pmin, pmax = self.active_ranges[param]
-                self._samples[param] = self._samples[param]*(pmax - pmin)+pmin
-
-        return self._samples
 
     @property
     def factory_list(self):
@@ -373,6 +352,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 self._priors[str(factory.name+'_'+ap_name)] = prior
                 i += 1
         self._factory_list = factory_list
+
     @property
     def sampler_supports_mpi(self):
         return(getattr(self, 'SUPPORTS_MPI', False))
