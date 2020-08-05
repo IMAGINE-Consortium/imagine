@@ -21,15 +21,16 @@ class FlatPrior(GeneralPrior):
 
     No initialization is required.
     """
-    def __init__(self, interval=[0,1]):
+    def __init__(self, interval):
         # Updates ranges
         super().__init__(interval=interval)
+        self.vol = interval[1] - interval[0]
         # Constant pdf (for illustration)
-        self._pdf = lambda x: np.ones_like(x)
+        self._pdf = lambda x: np.ones_like(x)/self.vol
 
     def __call__(self, cube):
         """
-        Return variable value as it is
+        Return uniformly distributed variable
 
         parameters
         ----------
@@ -38,15 +39,15 @@ class FlatPrior(GeneralPrior):
 
         Returns
         -------
-        List of variable values in range [0,1]
+        List of variable values in the given interval
         """
         log.debug('@ flat_prior::__call__')
-        return cube
+        return cube*self.vol + self.range[0]
 
 
 class GaussianPrior(ScipyPrior):
     """
-    Truncated normal prior distribution
+    Normal prior distribution
 
 
 
@@ -57,9 +58,6 @@ class GaussianPrior(ScipyPrior):
         of the Gaussian
     sigma : float
         Width of the distribution (standard deviation, if there was no tuncation)
-    interval : tuple or list
-        A pair of points representing, respectively, the minimum and maximum
-        parameter values to be considered.
     """
-    def __init__(self, mu=0.0, sigma=1.0, interval=[-1.0,1.0]):
-        super().__init__(distr=norm, loc=mu, scale=sigma, interval=interval)
+    def __init__(self, mu=0.0, sigma=1.0):
+        super().__init__(distr=norm, loc=mu, scale=sigma)
