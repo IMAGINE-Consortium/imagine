@@ -1,97 +1,113 @@
-#!/usr/env python
+"""
+The basic elements of an IMAGINE pipeline
 
-# External packages
+The present script exemplifies the usage of the basic features of IMAGINE and
+the use of MPI parallelism.
+
+This is the scripted version of the first IMAGINE tutorial. Before examining this
+script, we strongly recommend reading the original tutorial either in the
+documentation website or in the corresponding jupyter notebook in the tutorials
+directory.
+"""
 import numpy as np
-import healpy as hp
 import astropy.units as u
 import corner
-import matplotlib.pyplot as pl
-# IMAGINE
+import matplotlib
+from scipy.stats import norm, truncnorm, truncexpon, pearsonr
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
 import imagine as img
-import imagine.observables as img_obs
-## WMAP field factories
-from imagine.fields.hamx import BregLSA, BregLSAFactory
-from imagine.fields.hamx import TEregYMW16, TEregYMW16Factory
-from imagine.fields.hamx import CREAna, CREAnaFactory
-from imagine.fields.hamx import BrndES, BrndESFactory
+import imagine.fields.test_field as testFields
+from imagine.simulators.test_simulator import TestSimulator
+
+from mpi4py import MPI
 
 
-def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
-    """
-    Prepares fake total intensity and Faraday depth data
+def prepare_prior_samples(n_samp, c, distr1, distr2):
+    s1 = np.random.normal(0, 1, n_samp)
+    s2 = np.random.normal(0, 1, n_samp)
+
+    corr = np.eye(2)
+    corr[0, 1] = corr[1, 0] = c
+
+    A = np.linalg.cholesky(corr)
+
+    s1, s2 = np.dot(A, np.asarray([s1, s2]))
+
+    s1 = distr1.ppf(norm(0, 1).cdf(s1))
+    s2 = distr2.ppf(norm(0, 1).cdf(s2))
+
+    return s1, s2
+
+
+def prepare_mock_dataset(a0, b0, psi0, size=10,
+                         error=0.1, seed=233):
+    r"""
+    Prepares a mock dataset
+
+    The model is characterised by:
+
+    ..math::
+        signal(x) = \left[1+\cos(psi*x)\right] \times \mathcal{G}(\mu=a_0,\sigma=b_0;seed=s)\,{\mu\rm G\,cm}^{-3} , \; x \in [0,2\pi]\,\rm kpc
+
+    And the mock data is given by
+
+    ..math::
+        data(x) = signal(x) + noise(x)
+
+    with
+
+    ..math::
+        noise(x) = \mathcal{G}(\mu=0,\sigma=e)
+
+    where :math:`\mathcal{G}` is a Gaussian.
 
     Parameters
     ----------
-    b0, psi0 : float
-        "True values" in the WMAP model
+    a0 : float
+        Mean of the random magnetic field
+    b0 : float
+        Standard deviation of the random magnetic field
+    size : int
+        Number of datapoints
+    error : float
+        Error in the data
+    seed : int
+        Random seed that should be used
 
     Returns
     -------
-    mock_data : imagine.observables.observables_dict.Measurements
-        Mock Measurements
-    mock_cov :  imagine.observables.observables_dict.Covariances
-        Mock Covariances
+    dataset : imagine.dataset
+        An IMAGINE dataset object
     """
-    ## Sets the resolution
-    nside = 2
-    size = 12 * nside ** 2
+    # Sets the x coordinates of the observations
+    x = np.linspace(0.01,2.*np.pi-0.01,size)
+    # Sets the seed for signal field
+    np.random.seed(seed)
 
-    # Generates the fake datasets
-    sync_dset = img_obs.SynchrotronHEALPixDataset(data=np.empty(size) * u.K,
-                                                  frequency=23 * u.GHz, type='I')
-    fd_dset = img_obs.FaradayDepthHEALPixDataset(data=np.empty(size) * u.rad / u.m ** 2)
+    # Computes the signal
+    signal = ((1+np.cos(psi0*x)) *
+              np.random.normal(loc=a0, scale=b0, size=size))
 
-    # Appends them to an Observables Dictionary
-    trigger = img_obs.Measurements()
-    trigger.append(dataset=sync_dset)
-    trigger.append(dataset=fd_dset)
+    # Includes the error
+    fd = signal + np.random.normal(loc=0.,scale=error,size=size)
 
-    # Prepares the Hammurabi simmulator for the mock generation
-    mock_generator = img.simulators.Hammurabi(measurements=trigger, exe_path='../../lab/hamx/build/hamx')
+    # Prepares a data dictionary
+    data_dict = {'meas' : fd,
+                 'err': np.ones_like(fd)*error,
+                 'x': x,
+                 'y': np.zeros_like(fd),
+                 'z': np.zeros_like(fd)}
 
-    # BregLSA field
-    breg_lsa = BregLSA(parameters={'b0': b0, 'psi0': psi0, 'psi1': 0.9, 'chi0': 25.0})
-    # CREAna field
-    cre_ana = CREAna(parameters={'alpha': 3.0, 'beta': 0.0, 'theta': 0.0,
-                                 'r0': 5.0, 'z0': 1.0,
-                                 'E0': 20.6, 'j0': 0.0217})
-    # TEregYMW16 field
-    tereg_ymw16 = TEregYMW16(parameters={})
-    ## Random field
-    brnd_es = BrndES(parameters={'rms': rms, 'k0': 0.5, 'a0': 1.7,
-                                 'k1': 0.5, 'a1': 0.0,
-                                 'rho': 0.5, 'r0': 8., 'z0': 1.},
-                     grid_nx=25, grid_ny=25, grid_nz=15)
+    fd_units = u.microgauss*u.cm**-3
 
-    ## Generate mock data (run hammurabi)
-    outputs = mock_generator([breg_lsa, brnd_es, cre_ana, tereg_ymw16])
-
-    ## Collect the outputs
-    mockedI = outputs[('sync', '23', str(nside), 'I')].global_data[0]
-    mockedRM = outputs[('fd', 'nan', str(nside), 'nan')].global_data[0]
-    dm = np.mean(mockedI)
-    dv = np.std(mockedI)
-
-    ## Add some noise that's just proportional to the average sync I by the factor err
-    dataI = (mockedI + np.random.normal(loc=0, scale=err * dm, size=size)) << u.K
-    errorI = ((err * dm) ** 2) << u.K
-    sync_dset = img_obs.SynchrotronHEALPixDataset(data=dataI, error=errorI,
-                                                  frequency=23 * u.GHz, type='I')
-    ## Just 0.01*50 rad/m^2 of error for noise.
-    dataRM = (mockedRM + np.random.normal(loc=0, scale=err * 50,
-                                          size=12 * nside ** 2)) * u.rad / u.m / u.m
-    errorRM = ((err * 50.) ** 2) << u.rad / u.m ** 2
-    fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM, error=errorRM)
-
-    mock_data = img_obs.Measurements()
-    mock_data.append(dataset=sync_dset)
-    mock_data.append(dataset=fd_dset)
-
-    mock_cov = img_obs.Covariances()
-    mock_cov.append(dataset=sync_dset)
-    mock_cov.append(dataset=fd_dset)
-
-    return mock_data, mock_cov
+    dataset = img.observables.TabularDataset(data_dict, name='test',
+                                             data_column='meas',
+                                             coordinates_type='cartesian',
+                                             x_column='x', y_column='y', z_column='z',
+                                             error_column='err', units=fd_units)
+    return dataset
 
 
 def plot_results(pipe, true_vals, output_file='test.pdf'):
@@ -100,12 +116,12 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
     """
     samp = pipe.samples
     # Sets the levels to show 1, 2 and 3 sigma
-    sigmas = np.array([1., 2., 3.])
-    levels = 1 - np.exp(-0.5 * sigmas * sigmas)
+    sigmas=np.array([1.,2.,3.])
+    levels=1-np.exp(-0.5*sigmas*sigmas)
 
     # Visualize with a corner plot
     figure = corner.corner(np.vstack([samp.columns[0].value, samp.columns[1].value]).T,
-                           range=[0.99] * len(pipe.active_parameters),
+                           range=[0.99]*len(pipe.active_parameters),
                            quantiles=[0.02, 0.5, 0.98],
                            labels=pipe.active_parameters,
                            show_titles=True,
@@ -120,89 +136,100 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
     figure.savefig(output_file)
 
 
-# Choose "true" parameter values for the test
-b0 = 3
-psi0 = 27
-rms = 3
-err = 0.01
+if __name__ == '__main__':
 
-# Creates the mock dataset based on them
-mock_data, mock_cov = prepare_mock_obs_data(b0=b0, psi0=psi0,
-                                            rms=rms, err=0.01)
 
-# Setting up of the pipeline
-## Use an ensemble to estimate the galactic variance
-likelihood = img.likelihoods.EnsembleLikelihood(mock_data, mock_cov)
+    comm = MPI.COMM_WORLD
+    mpirank = comm.Get_rank()
+    mpisize = comm.Get_size()
 
-s1 = np.random.normal(0, 1, 1000)
-s2 = np.random.normal(0, 1, 1000)
-c2 = -0.8
+    output_file_plot = 'correlation_pipeline_corner.pdf'
+    output_text = 'correlation_pipeline_results.txt'
 
-corr = np.eye(2)
-corr[0, 1] = corr[1, 0] = c2
+    # True values of the parameters
+    a0 = 3.; b0 = 6; psi0 = 0.6
+    # Generates the mock data
+    mockDataset = prepare_mock_dataset(a0, b0, psi0)
 
-A = np.linalg.cholesky(corr)
+    # Prepares Measurements and Covariances objects
+    measurements = img.observables.Measurements()
+    measurements.append(dataset=mockDataset)
+    covariances = img.observables.Covariances()
+    covariances.append(dataset=mockDataset)
 
-s1, s2 = np.dot(A, np.asarray([s1, s2]))
+    # Generates the grid
+    one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc, [0, 0]*u.kpc, [0, 0]*u.kpc], resolution=[100, 1, 1])
 
-from scipy.stats import norm, truncnorm, pearsonr
+    distr1 = truncnorm(loc=3, scale=2, a=- 3/2, b=3/2)
+    distr2 = truncexpon(loc=0, scale=2, b=10)
 
-s1 = truncnorm(loc=3, scale=2, a=(-0.5 - 3)/2, b=(5 - 3)/2).ppf(norm(0, 1).cdf(s1))
-s2 = np.exp(truncnorm(loc=0, scale=2, a=-4/2, b=4/2).ppf(norm(0, 1).cdf(s2)))
-## WMAP B-field, vary only b0 and psi0
-breg_factory = BregLSAFactory()
-breg_factory.active_parameters = ('b0', 'psi0')
-breg_factory.priors = {'b0': img.priors.GeneralPrior(samples=s1, interval=[-0.5, 5]),
-                       'psi0': img.priors.FlatPrior(interval=[0., 50.])}
-## Random B-field, vary only RMS amplitude
-brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
-brnd_factory.active_parameters = ('rms',)
-brnd_factory.priors = {'rms': img.priors.GeneralPrior(samples=s2, interval=[np.exp(-4), np.exp(4)])}
-## Fixed CR model
-cre_factory = CREAnaFactory()
-## Fixed FE model
-fereg_factory = TEregYMW16Factory()
+    s1, s2 = prepare_prior_samples(1000, 0.8, distr1, distr2)
 
-# Final Field factory list
-factory_list = [breg_factory, brnd_factory, cre_factory,
-                fereg_factory]
+    print(s1.min(), s1.max())
+    print(s2.min(), s2.max())
+    print(s1)
 
-# Prepares simulator
-simulator = img.simulators.Hammurabi(measurements=mock_data, exe_path='../../lab/hamx/build/hamx')
+    # Prepares the thermal electron field factory
+    ne_factory = testFields.CosThermalElectronDensityFactory(grid=one_d_grid)
 
-# correlator
+    ne_factory.default_parameters = {'beta': np.pi / 2 * u.rad,
+                                     'gamma': np.pi / 2 * u.rad}
 
-corr_dict = {('b0', 'psi0'): -0.3, ('b0', 'rms'): None}
+    ne_factory.active_parameters = ('a',)
+    ne_factory.priors = {'a': img.priors.GeneralPrior(samples=s1*u.rad/u.kpc, interval=[0, 6]*u.rad/u.kpc), }
 
-# Prepares pipeline
-pipeline = img.pipelines.MultinestPipeline(simulator=simulator,
-                                           factory_list=factory_list,
-                                           likelihood=likelihood,
-                                           ensemble_size=1,
-                                           chains_directory='chains',
-                                           prior_correlations=corr_dict)
-pipeline.sampling_controllers = {'n_live_points': 10, 'verbose': True}
-# Runs!
-results = pipeline()
+    # Prepares the random magnetic field factory
+    B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
+    B_factory.active_parameters = ('a0', 'b0')
 
-if mpirank == 0:
-    # Reports the evidence (to file)
-    with open(output_text, 'w+') as f:
-        f.write('log evidence: {}'.format(pipeline.log_evidence))
-        f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
+    B_factory.priors = {'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
+                        'b0': img.priors.GeneralPrior(samples=s2*u.microgauss, interval=[0, 14]*u.microgauss),
+                        }
 
-    # Reports the posterior
-    plot_results(pipeline, [b0, psi0, err],
-                 output_file='example_pipeline.pdf')
+    corr_dict = {('a0', 'b0'): -0.3, ('b0', 'a'): True}
 
-    # Prints setup
-    print('\nRC used:', img.rc)
-    print('Seed used:', pipeline.master_seed)
-    # Prints some results
-    print('\nEvidence found:', pipeline.log_evidence, '±', pipeline.log_evidence_err)
-    print('\nParameters summary:')
-    for parameter in pipeline.active_parameters:
-        print(parameter)
-        constraints = pipeline.posterior_summary[parameter]
-        for k in ['median', 'errup', 'errlo']:
-            print('\t', k, constraints[k])
+    # Sets the field factory list
+    factory_list = [ne_factory, B_factory]
+
+    # Initializes the simulator
+    simer = TestSimulator(measurements)
+
+    # Initializes the likelihood
+    likelihood = img.likelihoods.EnsembleLikelihood(measurements, covariances)
+
+    # Defines the pipeline using the UltraNest sampler, giving it the required elements
+    pipeline = img.pipelines.UltranestPipeline(simulator=simer,
+                                               factory_list=factory_list,
+                                               likelihood=likelihood,
+                                               ensemble_size=128,
+                                               prior_correlations=corr_dict)
+    pipeline.random_type = 'controllable'
+    # Set some controller parameters that are specific to UltraNest.
+    pipeline.sampling_controllers = {'max_ncalls': 1000,
+                                     'Lepsilon': 0.1,
+                                     'dlogz': 0.5,
+                                     'min_num_live_points': 100}
+
+    # RUNS THE PIPELINE
+    results = pipeline()
+
+    if mpirank == 0:
+        # Reports the evidence (to file)
+        with open(output_text,'w+') as f:
+            f.write('log evidence: {}'.format( pipeline.log_evidence))
+            f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
+
+        # Reports the posterior
+        plot_results(pipeline, [a0,b0], output_file=output_file_plot)
+
+        # Prints setup
+        print('\nRC used:', img.rc)
+        print('Seed used:', pipeline.master_seed)
+        # Prints some results
+        print('\nEvidence found:', pipeline.log_evidence, '±', pipeline.log_evidence_err)
+        print('\nParameters summary:')
+        for parameter in pipeline.active_parameters:
+            print(parameter)
+            constraints = pipeline.posterior_summary[parameter]
+            for k in ['median','errup','errlo']:
+                print('\t', k, constraints[k])
