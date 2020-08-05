@@ -41,7 +41,7 @@ def prepare_prior_samples(n_samp, c, distr1, distr2):
     return s1, s2
 
 
-def prepare_mock_dataset(a0, b0, psi0, size=10,
+def prepare_mock_dataset(a0, b0, size=10,
                          error=0.1, seed=233):
     r"""
     Prepares a mock dataset
@@ -87,7 +87,7 @@ def prepare_mock_dataset(a0, b0, psi0, size=10,
     np.random.seed(seed)
 
     # Computes the signal
-    signal = ((1+np.cos(psi0*x)) *
+    signal = ((1+np.cos(x)) *
               np.random.normal(loc=a0, scale=b0, size=size))
 
     # Includes the error
@@ -147,9 +147,9 @@ if __name__ == '__main__':
     output_text = 'correlation_pipeline_results.txt'
 
     # True values of the parameters
-    a0 = 3.; b0 = 6; psi0 = 0.6
+    a0 = 3.; b0 = 6
     # Generates the mock data
-    mockDataset = prepare_mock_dataset(a0, b0, psi0)
+    mockDataset = prepare_mock_dataset(a0, b0)
 
     # Prepares Measurements and Covariances objects
     measurements = img.observables.Measurements()
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     # Generates the grid
     one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc, [0, 0]*u.kpc, [0, 0]*u.kpc], resolution=[100, 1, 1])
 
-    distr1 = truncnorm(loc=3, scale=2, a=- 3/2, b=3/2)
+    distr1 = norm(loc=3, scale=2)
     distr2 = truncexpon(loc=0, scale=2, b=10)
 
     s1, s2 = prepare_prior_samples(1000, 0.8, distr1, distr2)
@@ -176,14 +176,14 @@ if __name__ == '__main__':
                                      'gamma': np.pi / 2 * u.rad}
 
     ne_factory.active_parameters = ('a',)
-    ne_factory.priors = {'a': img.priors.GeneralPrior(samples=s1*u.rad/u.kpc, interval=[0, 6]*u.rad/u.kpc), }
+    ne_factory.priors = {'a': img.priors.GeneralPrior(samples=s1*u.rad/u.kpc)}
 
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0', 'b0')
 
     B_factory.priors = {'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
-                        'b0': img.priors.GeneralPrior(samples=s2*u.microgauss, interval=[0, 14]*u.microgauss),
+                        'b0': img.priors.GeneralPrior(samples=s2*u.microgauss),
                         }
 
     corr_dict = {('a0', 'b0'): -0.3, ('b0', 'a'): True}

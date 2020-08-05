@@ -225,6 +225,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                         and self.priors[n[1]].samples is not None)
                 xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples.value))
                 xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples.value))
+                print(xi0, xi1)
                 print('in pipeline pearson ', pearsonr(xi0, xi1))
                 c = pearsonr(xi0, xi1)[0]
             else:

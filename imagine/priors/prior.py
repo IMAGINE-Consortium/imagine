@@ -85,8 +85,13 @@ class GeneralPrior:
 #                    ok = (samples > interval[0]) * (samples < interval[1])
 #                    samples = samples[ok]
                 pdf_fun = stats.gaussian_kde(samples.value, bw_method=bw_method)
+                if interval is None:
+                    std = np.std(samples.value)
+                    interval = [samples.value.min() - std, samples.value.min() + std]*samples.unit
+                    self.range = interval
 
             if pdf_fun is not None:
+                assert interval is not None, 'Must give a interval for pdf_fun'
                 xmin, xmax = interval
                 # Evaluates the PDF
                 pdf_x = np.linspace(xmin, xmax, pdf_npoints)
