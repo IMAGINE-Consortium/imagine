@@ -7,4 +7,4 @@ install:
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH", REPO=$REPO
   - docker build docker -t imagine --build-arg BRANCH=$BRANCH --build-arg REPO=$REPO
 script:
-  - docker run -i -t imagine /bin/bash -c "source ~/.bashrc && cd /home/lab/imagine && pytest"
+  - docker run -i -t imagine /bin/bash -c "source ~/.bashrc && cd /home/lab/imagine && pytest -m quick"

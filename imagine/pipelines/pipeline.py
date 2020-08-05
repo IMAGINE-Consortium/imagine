@@ -430,24 +430,26 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         Takes a cube containing a uniform sampling of  values and maps then onto
         a distribution compatible with the priors specified in the
         Field Factories.
+        The cube is copied internally to comply with the Ultranest convention.
 
         Parameters
         ----------
         cube : array
             Each row of the array corresponds to a different parameter in the sampling.
-            Warning: the function will modify `cube` inplace.
 
         Returns
         -------
         cube
             The modified cube
         """
+        cube_copy = cube.copy()
+
         if self.prior_correlations is not None:
             from scipy.stats import norm
-            cube = norm.cdf(np.dot(self._A, norm.ppf(cube)))
+            cube_copy = norm.cdf(np.dot(self._A, norm.ppf(cube_copy)))
         for i, parameter in enumerate(self.active_parameters):
-            cube[i] = self.priors[parameter](cube[i])
-        return cube
+            cube_copy[i] = self.priors[parameter](cube_copy[i])
+        return cube_copy
 
     @property
     def distribute_ensemble(self):
