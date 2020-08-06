@@ -112,12 +112,10 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ field_factory::generate')
         # map variable value to parameter value
-        # in mapping, variable name will be checked in default_parameters
-        mapped_variables = self._map_variables_to_parameters(variables)
         # copy default parameters and update wrt argument
         work_parameters = dict(self.default_parameters)
         # update is safe
-        work_parameters.update(mapped_variables)
+        work_parameters.update(variables)
         # generate fields
         result_field = self.field_class(grid=self.grid,
                                         parameters=work_parameters,
