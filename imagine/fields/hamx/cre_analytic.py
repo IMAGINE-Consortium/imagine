@@ -16,28 +16,15 @@ class CREAna(DummyField):
     """
     NAME = 'cre_ana'
 
-    @property
-    def field_checklist(self):
-        """
-        Hammurabi XML locations of physical parameters
-        """
-        checklist = {'alpha': (['cre', 'analytic', 'alpha'], 'value'),
-                     'beta': (['cre', 'analytic', 'beta'], 'value'),
-                     'theta': (['cre', 'analytic', 'theta'], 'value'),
-                     'r0': (['cre', 'analytic', 'r0'], 'value'),
-                     'z0': (['cre', 'analytic', 'z0'], 'value'),
-                     'E0': (['cre', 'analytic', 'E0'], 'value'),
-                     'j0': (['cre', 'analytic', 'j0'], 'value')}
-        return checklist
-
-    @property
-    def simulator_controllist(self):
-        """
-        Hammurabi XML locations of logical parameters
-        """
-        controllist = {'cue': (['cre'], {'cue': '1'}),
-                       'type': (['cre'], {'type': 'analytic'})}
-        return controllist
+    FIELD_CHECKLIST = {'alpha': (['cre', 'analytic', 'alpha'], 'value'),
+                       'beta': (['cre', 'analytic', 'beta'], 'value'),
+                       'theta': (['cre', 'analytic', 'theta'], 'value'),
+                       'r0': (['cre', 'analytic', 'r0'], 'value'),
+                       'z0': (['cre', 'analytic', 'z0'], 'value'),
+                       'E0': (['cre', 'analytic', 'E0'], 'value'),
+                       'j0': (['cre', 'analytic', 'j0'], 'value')}
+    SIMULATOR_CONTROLLIST = {'cue': (['cre'], {'cue': '1'}),
+                             'type': (['cre'], {'type': 'analytic'})}
 
 
 class CREAnaFactory(FieldFactory):

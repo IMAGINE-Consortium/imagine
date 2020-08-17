@@ -31,11 +31,8 @@ class CosThermalElectronDensity(ThermalElectronDensityField):
 
     # Class attributes
     NAME = 'cos_therm_electrons'
-
-    @property
-    def field_checklist(self):
-        return {'n0' : None, 'a' : None, 'alpha' : None,
-                'b' : None, 'beta' : None, 'c' : None, 'gamma' : None}
+    PARAMETERS_LIST = {'n0' : None, 'a' : None, 'alpha' : None,
+                      'b' : None, 'beta' : None, 'c' : None, 'gamma' : None}
 
     def compute_field(self, seed):
         x = self.grid.x
@@ -84,10 +81,7 @@ class NaiveGaussianMagneticField(MagneticField):
     # Class attributes
     NAME = 'naive_gaussian_magnetic_field'
     STOCHASTIC_FIELD = True
-
-    @property
-    def field_checklist(self):
-        return {'a0' : None, 'b0' : None}
+    PARAMETERS_LIST = {'a0' : None, 'b0' : None}
 
     def compute_field(self, seed):
 
