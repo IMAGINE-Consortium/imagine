@@ -24,10 +24,7 @@ class ConstantMagneticField(MagneticField):
 
     # Class attributes
     NAME = 'constant_B'
-
-    @property
-    def field_checklist(self):
-        return {'Bx': None, 'By': None, 'Bz': None}
+    PARAMETERS_LIST = ['Bx', 'By', 'Bz']
 
     def compute_field(self, seed):
         # Creates an empty array to store the result
@@ -45,7 +42,7 @@ class ConstantMagneticField(MagneticField):
 
 class ConstantThermalElectrons(ThermalElectronDensityField):
     """
-    Constant magnetic field
+    Constant thermal electron density field
 
     The field parameters are:
     'ne', the number density of thermal electrons
@@ -53,10 +50,7 @@ class ConstantThermalElectrons(ThermalElectronDensityField):
 
     # Class attributes
     NAME = 'constant_TE'
-
-    @property
-    def field_checklist(self):
-        return {'ne': None}
+    PARAMETERS_LIST = ['ne']
 
     def compute_field(self, seed):
         return np.ones(self.data_shape)*self.parameters['ne']
@@ -80,12 +74,9 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
 
     # Class attributes
     NAME = 'exponential_disc_thermal_electrons'
-
-    @property
-    def field_checklist(self):
-        return {'central_density' : None,
-                'scale_radius' : None,
-                'scale_height' : None}
+    PARAMETERS_LIST = ['central_density',
+                       'scale_radius',
+                       'scale_height']
 
     def compute_field(self, seed):
         R = self.grid.r_cylindrical
@@ -115,10 +106,7 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     # Class attributes
     NAME = 'random_thermal_electrons'
     STOCHASTIC_FIELD = True
-
-    @property
-    def field_checklist(self):
-        return {'mean': None, 'std': None, 'min_ne': None}
+    PARAMETERS_LIST = ['mean', 'std', 'min_ne']
 
     def compute_field(self, seed):
         # Converts dimensional parameters into numerical values
@@ -134,6 +122,6 @@ class RandomThermalElectrons(ThermalElectronDensityField):
 
         # Applies minimum density, if present
         if np.isfinite(minimum_density):
-            result[result<minimum_density] = minimum_density
+            result[result < minimum_density] = minimum_density
 
-        return result << self.units # Restores units
+        return result << self.units  # Restores units

@@ -69,6 +69,12 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
         return(self.TYPE)
 
     @property
+    @req_attr
+    def parameters_list(self):
+        """Parameters of the field"""
+        return self.PARAMETERS_LIST
+
+    @property
     def dependencies_list(self):
         """Dependencies on other fields"""
         return(getattr(self, 'DEPENDENCIES_LIST', []))
@@ -146,7 +152,7 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
             :py:data:`data_description` in units :py:data:`field_units`.
         """
         if self.stochastic_field:
-            assert i_realization<self.ensemble_size
+            assert i_realization < self.ensemble_size
             # Checks and updates dependencies
             self._update_dependencies(dependencies)
             # Computes stochastic field
@@ -184,11 +190,6 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
             print('Description:', self.data_description)
             raise
 
-    @abc.abstractproperty
-    def field_checklist(self):
-        """Dictionary with all parameter names as keys"""
-        raise NotImplementedError
-
     @property
     def ensemble_seeds(self):
         return self._ensemble_seeds
@@ -213,6 +214,6 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
     @parameters.setter
     def parameters(self, parameters):
         for k in parameters:
-            assert (k in self.field_checklist)
+            assert (k in self.parameters_list)
         self._parameters.update(parameters)
         log.debug('update full-set parameters %s' % (parameters))

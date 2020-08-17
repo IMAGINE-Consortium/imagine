@@ -118,6 +118,7 @@ class DummyField(Field):
     # Class attributes
     TYPE = 'dummy'
     UNITS = None
+    PARAMETERS_LIST = None
 
     def __init__(self, *args, **kwargs):
         kwargs['grid'] = None
@@ -132,15 +133,21 @@ class DummyField(Field):
         return(None)
 
     @property
+    def parameters_list(self):
+        """Parameters of the field"""
+        return [k for k in self.field_checklist]
+
+    @property
     def field_checklist(self):
-        return({})
+        """Parameters of the dummy field"""
+        return getattr(self, 'FIELD_CHECKLIST', {})
 
     @property
     def simulator_controllist(self):
         """
         Dictionary containing fixed Simulator settings
         """
-        return({})
+        return getattr(self, 'SIMULATOR_CONTROLLIST', {})
 
     def compute_field(self, *args, **kwargs):
         pass

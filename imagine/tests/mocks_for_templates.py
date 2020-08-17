@@ -60,12 +60,8 @@ class MockDummy(DummyField):
     Used in the test_simulator_template function
     """
     NAME = 'mock'
-    @property
-    def field_checklist(self):
-        return {'value': 101010, 'units': None}
-    @property
-    def simulator_controllist(self):
-        return {'start_value': 17}
+    FIELD_CHECKLIST = {'value': 101010, 'units': None}
+    SIMULATOR_CONTROLLIST = {'start_value': 17}
 
 
 
@@ -76,11 +72,9 @@ class MY_PACKAGE_MY_FIELD_CLASS(DummyField):
 
     # Class attributes
     NAME = 'name_of_the_dummy_field'
+    FIELD_CHECKLIST =  {'Parameter_A': 'parameter_A_settings',
+                        'Parameter_B': None}
 
-    @property
-    def field_checklist(self):
-        return {'Parameter_A': 'parameter_A_settings',
-                'Parameter_B': None}
 
 MY_PACKAGE = type(sys)('MY_PACKAGE')
 MY_PACKAGE.MY_FIELD_CLASS = MY_PACKAGE_MY_FIELD_CLASS
