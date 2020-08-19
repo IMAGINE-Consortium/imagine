@@ -16,11 +16,15 @@ See also :doc:`IMAGINE Components <components>` section of the docs.
 """
 
 # %% IMPORTS
+# Built-in imports
+import abc
+
 # Package imports
 import astropy.units as u
 
 # IMAGINE imports
 from imagine.fields import Field
+from imagine.tools import req_attr
 
 # All declaration
 __all__ = ['MagneticField', 'ThermalElectronDensityField', 'DummyField']
@@ -109,7 +113,7 @@ class CosmicRayElectronDensityField(Field):
         raise NotImplementedError
 
 
-class DummyField(Field):
+class DummyField(Field, metaclass=abc.ABCMeta):
     """
     Base class for a dummy Field used for sending parameters and settings to
     specific Simulators rather than computing and storing a physical field.
@@ -118,6 +122,7 @@ class DummyField(Field):
     # Class attributes
     TYPE = 'dummy'
     UNITS = None
+    PARAMETER_NAMES = None
 
     def __init__(self, *args, **kwargs):
         kwargs['grid'] = None
@@ -132,15 +137,23 @@ class DummyField(Field):
         return(None)
 
     @property
-    def field_checklist(self):
-        return({})
+    def parameter_names(self):
+        """Parameters of the field"""
+        return list(self.field_checklist)
 
     @property
+    @req_attr
+    def field_checklist(self):
+        """Parameters of the dummy field"""
+        return self.FIELD_CHECKLIST
+
+    @property
+    @req_attr
     def simulator_controllist(self):
         """
         Dictionary containing fixed Simulator settings
         """
-        return({})
+        return self.SIMULATOR_CONTROLLIST
 
     def compute_field(self, *args, **kwargs):
         pass

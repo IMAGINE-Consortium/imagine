@@ -141,10 +141,10 @@ class Hammurabi(Simulator):
         """
         # This replaces the old `update_fields` method
         log.debug('@ hammurabi::_update_hammurabi_parameters')
-        if 'dummy' not in self.field_checklist:
+        if 'dummy' not in self.fields:
             return
 
-        checklist = self.field_checklist['dummy']
+        checklist = self.field_checklist
         parameters = self.fields['dummy']
 
         # hammurabiX does not support int64 seeds
