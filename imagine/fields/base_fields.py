@@ -118,7 +118,7 @@ class DummyField(Field):
     # Class attributes
     TYPE = 'dummy'
     UNITS = None
-    PARAMETERS_LIST = None
+    PARAMETER_NAMES = None
 
     def __init__(self, *args, **kwargs):
         kwargs['grid'] = None
@@ -133,9 +133,9 @@ class DummyField(Field):
         return(None)
 
     @property
-    def parameters_list(self):
+    def parameter_names(self):
         """Parameters of the field"""
-        return [k for k in self.field_checklist]
+        return list(self.field_checklist)
 
     @property
     def field_checklist(self):

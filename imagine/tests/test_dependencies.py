@@ -28,7 +28,7 @@ class A(ThermalElectronDensityField):
     """Independent electron density"""
 
     NAME = 'A'
-    PARAMETERS_LIST = []
+    PARAMETER_NAMES = []
 
     def compute_field(self, seed):
         return np.ones(self.data_shape)*self.units
@@ -38,7 +38,7 @@ class B(ThermalElectronDensityField):
     """Independent electron density"""
 
     NAME = 'B'
-    PARAMETERS_LIST = []
+    PARAMETER_NAMES = []
 
     def compute_field(self, seed):
         self.secret = 9  # Example of shared information
@@ -60,7 +60,7 @@ class D(MagneticField):
     """
 
     NAME = 'D'
-    PARAMETERS_LIST = []
+    PARAMETER_NAMES = []
     DEPENDENCIES_LIST = [B, C]
 
     def compute_field(self, seed):
@@ -77,7 +77,7 @@ class E(MagneticField):
     """
 
     NAME = 'E'
-    PARAMETERS_LIST = []
+    PARAMETER_NAMES = []
     DEPENDENCIES_LIST = ['thermal_electron_density']
 
     def compute_field(self, seed):
@@ -93,7 +93,7 @@ class F(MagneticField):
 
     NAME = 'F'
     DEPENDENCIES_LIST = [B, C]
-    PARAMETERS_LIST = []
+    PARAMETER_NAMES = []
 
     def compute_field(self, seed):
         return np.ones(self.data_shape)*0.1*u.microgauss

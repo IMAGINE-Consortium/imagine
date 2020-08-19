@@ -24,7 +24,7 @@ class ConstantMagneticField(MagneticField):
 
     # Class attributes
     NAME = 'constant_B'
-    PARAMETERS_LIST = ['Bx', 'By', 'Bz']
+    PARAMETER_NAMES = ['Bx', 'By', 'Bz']
 
     def compute_field(self, seed):
         # Creates an empty array to store the result
@@ -50,7 +50,7 @@ class ConstantThermalElectrons(ThermalElectronDensityField):
 
     # Class attributes
     NAME = 'constant_TE'
-    PARAMETERS_LIST = ['ne']
+    PARAMETER_NAMES = ['ne']
 
     def compute_field(self, seed):
         return np.ones(self.data_shape)*self.parameters['ne']
@@ -74,7 +74,7 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
 
     # Class attributes
     NAME = 'exponential_disc_thermal_electrons'
-    PARAMETERS_LIST = ['central_density',
+    PARAMETER_NAMES = ['central_density',
                        'scale_radius',
                        'scale_height']
 
@@ -106,7 +106,7 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     # Class attributes
     NAME = 'random_thermal_electrons'
     STOCHASTIC_FIELD = True
-    PARAMETERS_LIST = ['mean', 'std', 'min_ne']
+    PARAMETER_NAMES = ['mean', 'std', 'min_ne']
 
     def compute_field(self, seed):
         # Converts dimensional parameters into numerical values

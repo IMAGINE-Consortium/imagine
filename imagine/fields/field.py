@@ -70,9 +70,9 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     @req_attr
-    def parameters_list(self):
+    def parameter_names(self):
         """Parameters of the field"""
-        return self.PARAMETERS_LIST
+        return self.PARAMETER_NAMES
 
     @property
     def dependencies_list(self):
@@ -214,6 +214,6 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
     @parameters.setter
     def parameters(self, parameters):
         for k in parameters:
-            assert (k in self.parameters_list)
+            assert (k in self.parameter_names)
         self._parameters.update(parameters)
         log.debug('update full-set parameters %s' % (parameters))

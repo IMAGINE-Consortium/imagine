@@ -13,7 +13,8 @@ class ThermalElectronsDensityTemplate(ThermalElectronDensityField):
     STOCHASTIC_FIELD = True
     # If there are any dependencies, they should be included in this list
     DEPENDENCIES_LIST = []
-    PARAMETERS_LIST = ['Parameter_A', 'Parameter_B']
+    # List of all parameters for the field
+    PARAMETER_NAMES = ['Parameter_A', 'Parameter_B']
 
     def compute_field(self, seed):
         # If this is an stochastic field, the integer `seed `must be

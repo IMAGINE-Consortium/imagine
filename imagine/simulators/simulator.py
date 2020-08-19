@@ -165,7 +165,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                     # Stores the data
                     self.fields[field.type] = field.get_data(i, dependencies)
                     # Stores the parameters list
-                    self.field_parameters[field.type] = field.parameters_list
+                    self.field_parameters[field.type] = field.parameter_names
                     # Stores the checklist (for dummies only)
                     if field.type == 'dummy':
                         self.field_checklist = field.field_checklist.copy()
