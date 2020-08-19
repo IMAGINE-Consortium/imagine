@@ -17,6 +17,8 @@ class BrndES(DummyField):
 
     # Class attributes
     NAME = 'breg_wmap'
+    SIMULATOR_CONTROLLIST = None  # Unused, see simulator_controllist property
+    FIELD_CHECKLIST = None  # Unused, see field_checklist property
 
     def __init__(self, *args, grid_nx=None, grid_ny=None, grid_nz=None,
                  **kwargs):

@@ -49,6 +49,8 @@ class C(DummyField):
     """Dummy field dependent on B"""
 
     NAME = 'C'
+    FIELD_CHECKLIST = {}
+    SIMULATOR_CONTROLLIST = {}
     DEPENDENCIES_LIST = [B]
 
 

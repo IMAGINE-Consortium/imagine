@@ -74,6 +74,7 @@ class MY_PACKAGE_MY_FIELD_CLASS(DummyField):
     NAME = 'name_of_the_dummy_field'
     FIELD_CHECKLIST =  {'Parameter_A': 'parameter_A_settings',
                         'Parameter_B': None}
+    SIMULATOR_CONTROLLIST = {}
 
 
 MY_PACKAGE = type(sys)('MY_PACKAGE')
