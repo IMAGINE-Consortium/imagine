@@ -54,8 +54,10 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         self.measurement_dict = measurement_dict
         self.covariance_dict = covariance_dict
 
-    def __call__(self, *args, **kwargs):
-        return(self.call(*args, **kwargs))
+    def __call__(self, observable_dict, **kwargs):
+        if self.mask_dict is not None:
+            observable_dict = self.mask_dict(observable_dict)
+        return(self.call(observable_dict, **kwargs))
 
     @property
     def mask_dict(self):
@@ -76,7 +78,7 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         assert isinstance(measurement_dict, Measurements)
         self._measurement_dict = measurement_dict
         if self._mask_dict is not None:  # apply mask
-            self._measurement_dict.apply_mask(self._mask_dict)
+            self._measurement_dict = self.mask_dict(self._measurement_dict)
 
     @property
     def covariance_dict(self):
@@ -88,7 +90,7 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
             assert isinstance(covariance_dict, Covariances)
         self._covariance_dict = covariance_dict
         if self._mask_dict is not None:  # apply mask
-            self._covariance_dict.apply_mask(self._mask_dict)
+            self._covariance_dict = self.mask_dict(self._covariance_dict)
 
     @abc.abstractmethod
     def call(self, observable_dict):

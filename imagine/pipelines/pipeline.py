@@ -533,8 +533,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         assert(head_idx == len(self._active_parameters))
 
         observables = self._simulator(field_list)
-        # apply mask
-        observables.apply_mask(self.likelihood.mask_dict)
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
         # check likelihood value until negative (or no larger than given threshold)
