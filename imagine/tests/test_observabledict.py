@@ -117,7 +117,7 @@ class TestObservableDicts(object):
         arr = np.array([0., 1., 2., 3., 4.]).reshape(1, 5)
         meadict = Measurements()
         meadict.append(('test', 'nan', '5', 'nan'), arr, True)
-        meadict.apply_mask(mskdict)
+        meadict = mskdict(meadict)
         assert np.allclose(meadict[('test', 'nan', '3', 'nan')].data[0], [1, 3, 4])
         # HEALPix map
         msk = np.random.randint(0, 2, 48).reshape(1, 48)
@@ -126,7 +126,7 @@ class TestObservableDicts(object):
         arr = np.random.rand(1, 48)
         meadict.append(('test', 'nan', '2', 'nan'), arr)
         pix_num = msk.sum()
-        meadict.apply_mask(mskdict)
+        meadict = mskdict(meadict)
         assert ('test', 'nan', str(pix_num), 'nan') in meadict.keys()
 
     def test_covdict_apply_mask(self):
@@ -137,6 +137,6 @@ class TestObservableDicts(object):
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
         covdict.append(('test', 'nan', str(2*mpisize), 'nan'), cov, True)
-        covdict.apply_mask(mskdict)
+        covdict = mskdict(covdict)
         pix_num = msk.sum()
         assert ('test', 'nan', str(pix_num), 'nan') in covdict.keys()

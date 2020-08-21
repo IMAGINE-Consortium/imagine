@@ -41,22 +41,14 @@ def mask_obs(obs, mask):
         Masked observable of shape (ensemble size, masked data size).
     """
     log.debug('@ masker::mask_data')
-    assert isinstance(obs, np.ndarray)
-    assert isinstance(mask, np.ndarray)
     assert (obs.shape[0] >= 1)
     assert (mask.shape[0] == 1)
     assert (obs.shape[1] == mask.shape[1])
-    new_obs = deepcopy(obs)
-    raw_mask = (deepcopy(mask)).astype(np.bool)
-    #
-    idx = int(0)
-    for ptr in raw_mask[0]:
-        if not ptr:
-            new_obs = np.delete(new_obs, idx, 1)
-        else:
-            idx += int(1)
-    assert (new_obs.shape[1] == idx)
-    return new_obs
+
+    # Creates a boolean mask
+    bool_mask = mask[0].astype(bool)
+
+    return obs[:, bool_mask]
 
 
 def mask_cov(cov, mask):
@@ -65,38 +57,34 @@ def mask_cov(cov, mask):
 
     Parameters
     ----------
-    cov : distributed numpy.ndarray
-        Covariance matrix of observalbes in global shape (data size, data size)
-        each node contains part of the global rows.
+    cov : (distributed) numpy.ndarray
+        Covariance matrix of observables in global shape (data size, data size)
+        each node contains part of the global rows
+        (if `imagine.rc['distributed_arrays']=True`).
     mask : numpy.ndarray
         Copied mask map in shape (1, data size).
 
     Returns
     -------
-    numpy.ndarray
+    masked_cov : numpy.ndarray
         Masked covariance matrix of shape (masked data size, masked data size).
     """
     log.debug('@ masker::mask_cov')
-    assert isinstance(cov, np.ndarray)
-    assert isinstance(mask, np.ndarray)
     assert (mask.shape[0] == 1)
     assert (cov.shape[1] == mask.shape[1])
-    new_cov = deepcopy(cov)
-    raw_mask = (deepcopy(mask)).astype(np.bool)
-    # masking cols
-    col_idx = int(0)
-    for ptr in raw_mask[0]:
-        if not ptr:
-            new_cov = np.delete(new_cov, col_idx, 1)
-        else:
-            col_idx += int(1)
-    assert (new_cov.shape[1] == col_idx)
-    # masking rows
-    row_idx = int(0)
-    row_min, row_max = mpi_arrange(raw_mask.shape[1])
-    for ptr in raw_mask[0, row_min:row_max]:
-        if ptr == 0:
-            new_cov = np.delete(new_cov, row_idx, 0)
-        else:
-            row_idx += int(1)
-    return new_cov
+
+    # Creates a 1D boolean mask
+    bool_mask_1D = mask[0].astype(bool)
+    # Constructs a 2D boolean mask and replaces 1D mask
+    bool_mask = np.outer(bool_mask_1D, bool_mask_1D)
+
+    # If mpi distributed_arrays are being used, the shape of the mask
+    # needs to be adjusted, as each node accesses only some rows
+    row_min, row_max = mpi_arrange(bool_mask_1D.size)
+    nrows, ncolumns = bool_mask_1D[row_min:row_max].sum(), bool_mask_1D.sum()
+    bool_mask = bool_mask[row_min:row_max, :]
+
+    # Applies the mask and reshapes
+    masked_cov = cov[bool_mask].reshape((nrows, ncolumns))
+
+    return masked_cov

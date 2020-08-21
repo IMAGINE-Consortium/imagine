@@ -117,23 +117,35 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def apply_mask(self, mask_dict):
-        """
-        Parameters
-        ----------
-        mask_dict : imagine.observables.observable_dict.Masks
-            Masks object
-        """
-        raise NotImplementedError
 
 
 class Masks(ObservableDict):
     """
-    Stores HEALPix mask maps
+    Stores HEALPix mask maps.
 
-    See `imagine.observables.observable_dict` module documentation for
-    further details.
+    After the Masks dictionary is assembled it can be applied to any other
+    observables dictionary to return a dictionary containing masked maps
+    (see below).
+
+
+    Example
+    --------
+    >>> import imagine.observables as obs
+    >>> import numpy as np
+    >>> meas, cov, mask = obs.Measurements(), obs.Covariances(), obs.Masks()
+    >>> key = ('test','nan','4','nan')
+    >>> meas.append(('test','nan','4','nan'), np.array([[1,2,3,4.]]), plain=True)
+    >>> mask.append(('test','nan','4','nan'), np.array([[1,1,0,0.]]), plain=True)
+    >>> masked_meas = mask(meas)
+    >>> print(masked_meas[('test','nan','2','nan')].data)
+    [[1. 2.]]
+    >>> cov.append(('test','nan','4','nan'), np.diag((1,2,3,4.)), plain=True)
+    >>> masked_cov = mask(cov)
+    >>> print(masked_cov[('test','nan','2','nan')].data)
+    [[1. 0.]
+     [0. 2.]]
+
+
     """
 
     def append(self, name, new_data, plain=False):
@@ -163,13 +175,55 @@ class Masks(ObservableDict):
         elif isinstance(new_data, np.ndarray):
             assert (new_data.shape[0] == 1)
             if not plain:
-                assert (new_data.shape[1] == 12*np.uint(name[2])*np.uint(name[2]))
+                assert (new_data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(new_data, 'measured')})
         else:
             raise TypeError('unsupported data type')
 
-    def apply_mask(self, *args, **kwargs):
-        pass
+    def __call__(self, observable_dict):
+        """
+        Applies the masks
+
+        Parameters
+        ----------
+        observable_dict : imagine.observables.ObservableDict
+            Dictionary containing (some) entries where one wants to apply the
+            masks.
+
+        Returns
+        -------
+        masked_dict : imagine.observables.ObservableDict
+            New observables dictionary containing masked entries (any entries
+            in the original dictionary for which no mask was specified are
+            referenced in `masked_dict` without modification).
+        """
+        assert (isinstance(observable_dict, Measurements) or
+                isinstance(observable_dict, Simulations) or
+                isinstance(observable_dict, Covariances))
+
+        # Creates an empty ObservableDict of the same type/subclass
+        masked_dict = type(observable_dict)()
+
+        for name, observable in observable_dict._archive.items():
+            if name not in self._archive:
+                # Saves reference to any observables where the masks are
+                # not available
+                masked_dict.append(name, observable)
+            else:
+                # Reads the mask
+                mask = self._archive[name].data
+                # Applies appropriate function
+                if isinstance(observable_dict, Covariances):
+                    masked_data = mask_cov(observable_dict[name].data, mask)
+                else:
+                    masked_data = mask_obs(observable_dict[name].data, mask)
+
+                # Appends the masked Observable, copying (refs to) units/coords
+                new_name = (name[0], name[1], str(masked_data.shape[1]), name[3])
+                masked_dict.append(new_name, masked_data, plain=True)
+                masked_dict.coords = observable.coords
+                masked_dict.unit = observable.unit
+        return masked_dict
 
 
 class Measurements(ObservableDict):
@@ -217,30 +271,15 @@ class Measurements(ObservableDict):
         assert (len(name) == 4), 'Wrong format for Observable key!'
         if isinstance(new_data, Observable):
             assert (new_data.dtype == 'measured')
-            if not plain:
-                assert (new_data.size == 12*np.uint(name[2])**2)
-            self._archive.update({name: new_data})  # rw
+            self._archive.update({name: new_data})
         elif isinstance(new_data, np.ndarray):
             if not plain:
-                assert (new_data.shape[1] == 12*np.uint(name[2])**2)
+                assert (new_data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(data=new_data,
                                                    dtype='measured',
-                                                   coords=coords)})  # rw
+                                                   coords=coords)})
         else:
             raise TypeError('Unsupported data type')
-
-    def apply_mask(self, mask_dict=None):
-        log.debug('@ observable_dict::Measurements::apply_mask')
-        if mask_dict is None:
-            pass
-        else:
-            assert isinstance(mask_dict, Masks)
-            for name, msk in mask_dict._archive.items():
-                if name in self._archive.keys():
-                    masked = mask_obs(self._archive[name].data, msk.data)
-                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-                    self._archive.pop(name, None)  # pop out obsolete data
-                    self.append(new_name, masked, plain=True)  # append new as plain data
 
 
 class Simulations(ObservableDict):
@@ -276,26 +315,12 @@ class Simulations(ObservableDict):
             self._archive[name].append(new_data)
         else:  # new_data
             if isinstance(new_data, Observable):
-                if not plain:
-                    assert (new_data.size == 12*np.uint64(name[2])**2)
                 self._archive.update({name: new_data})
             elif isinstance(new_data, np.ndarray):  # distributed data
                 self._archive.update({name: Observable(new_data, 'simulated')})
             else:
                 raise TypeError('unsupported data type')
 
-    def apply_mask(self, mask_dict):
-        log.debug('@ observable_dict::Simulations::apply_mask')
-        if mask_dict is None:
-            pass
-        else:
-            assert isinstance(mask_dict, Masks)
-            for name, msk in mask_dict._archive.items():
-                if name in self._archive.keys():
-                    masked = mask_obs(self._archive[name].data, msk.data)
-                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-                    self._archive.pop(name, None)  # pop out obsolete
-                    self.append(new_name, masked, plain=True)  # append new as plain data
 
 
 class Covariances(ObservableDict):
@@ -337,25 +362,14 @@ class Covariances(ObservableDict):
 
         assert (len(name) == 4)
         if isinstance(new_data, Observable):  # always rewrite
-            if not plain:
-                assert (new_data.size == 12*np.uint64(name[2])**2)
             self._archive.update({name: new_data})  # rw
         elif isinstance(new_data, np.ndarray):
             if not plain:
-                assert (new_data.shape[1] == 12*np.uint64(name[2])**2)
+                assert (new_data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(new_data, 'covariance')})
         else:
             raise TypeError('unsupported data type')
 
-    def apply_mask(self, mask_dict):
-        log.debug('@ observable_dict::Covariances::apply_mask')
-        if mask_dict is None:
-            pass
-        else:
-            assert isinstance(mask_dict, Masks)
-            for name, msk in mask_dict._archive.items():
-                if name in self._archive.keys():
-                    masked = mask_cov(self._archive[name].data, msk.data)
-                    new_name = (name[0], name[1], str(masked.shape[1]), name[3])
-                    self._archive.pop(name, None)  # pop out obsolete
-                    self.append(new_name, masked, plain=True)  # append new as plain data
+
+def _Nside_to_Npixels(Nside):
+    return 12*int(Nside)**2
