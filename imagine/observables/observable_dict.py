@@ -175,7 +175,7 @@ class Masks(ObservableDict):
         elif isinstance(new_data, np.ndarray):
             assert (new_data.shape[0] == 1)
             if not plain:
-                assert (new_data.shape[1] == 12*np.uint(name[2])*np.uint(name[2]))
+                assert (new_data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(new_data, 'measured')})
         else:
             raise TypeError('unsupported data type')
@@ -274,7 +274,7 @@ class Measurements(ObservableDict):
             self._archive.update({name: new_data})
         elif isinstance(new_data, np.ndarray):
             if not plain:
-                assert (new_data.shape[1] == 12*np.uint(name[2])**2)
+                assert (new_data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(data=new_data,
                                                    dtype='measured',
                                                    coords=coords)})
@@ -317,8 +317,6 @@ class Simulations(ObservableDict):
             if isinstance(new_data, Observable):
                 self._archive.update({name: new_data})
             elif isinstance(new_data, np.ndarray):  # distributed data
-                if not plain:
-                    assert (new_data.size == 12*np.uint64(name[2])**2)
                 self._archive.update({name: Observable(new_data, 'simulated')})
             else:
                 raise TypeError('unsupported data type')
@@ -367,8 +365,11 @@ class Covariances(ObservableDict):
             self._archive.update({name: new_data})  # rw
         elif isinstance(new_data, np.ndarray):
             if not plain:
-                assert (new_data.shape[1] == 12*np.uint64(name[2])**2)
+                assert (new_data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(new_data, 'covariance')})
         else:
             raise TypeError('unsupported data type')
 
+
+def _Nside_to_Npixels(Nside):
+    return 12*int(Nside)**2
