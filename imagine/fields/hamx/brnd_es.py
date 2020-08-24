@@ -78,14 +78,14 @@ class BrndESFactory(FieldFactory):
                           'rho': 0.5,
                           'r0': 8,
                           'z0': 1}
-    PRIORS = {'rms': FlatPrior([0, 4]),
-              'k0': FlatPrior([0.1, 1]),
-              'a0': FlatPrior([1, 3]),
-              'k1': FlatPrior([0.01, 1]),
-              'a1': FlatPrior([0, 3]),
-              'rho': FlatPrior([0, 1]),
-              'r0': FlatPrior([2, 10]),
-              'z0': FlatPrior([0.1, 3])}
+    PRIORS = {'rms': FlatPrior(xmin=0, xmax=4),
+              'k0': FlatPrior(xmin=0.1, xmax=1),
+              'a0': FlatPrior(xmin=1, xmax=3),
+              'k1': FlatPrior(xmin=0.01, xmax=1),
+              'a1': FlatPrior(xmin=0, xmax=3),
+              'rho': FlatPrior(xmin=0, xmax=1),
+              'r0': FlatPrior(xmin=2, xmax=10),
+              'z0': FlatPrior(xmin=0.1, xmax=3)}
 
     def __init__(self, *args, grid_nx=None,
                  grid_ny=None, grid_nz=None, **kwargs):

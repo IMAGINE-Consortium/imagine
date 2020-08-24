@@ -3,14 +3,109 @@
 import astropy.units as u
 import numpy as np
 import scipy.stats as stats
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
+import matplotlib.pylab as pl
 
 # All declaration
-__all__ = ['GeneralPrior', 'ScipyPrior']
+__all__ = ['GeneralPrior', 'ScipyPrior', 'EmpiricalPrior']
 
 
 # %% CLASS DEFINITIONS
 class GeneralPrior:
+    """
+
+    """
+    def __init__(self, xmin=None, xmax=None, unit=None):
+
+        # Ensures interval is quantity with consistent units
+        unit, xm_l = self.unit_checker(unit, [xmin, xmax])
+
+        if unit is None:
+            unit = u.Unit(s='')
+
+        self.unit = unit
+        self.range = [xmin, xmax]*unit
+
+        # Placeholders
+        self._cdf = None
+        self._inv_cdf = None
+        self.distr = None
+        self._pdf = None
+
+    @staticmethod
+    def unit_checker(unit, list_of_quant):
+        ul = []
+        for uq in list_of_quant:
+            if isinstance(uq, u.Quantity):
+                if unit is None:
+                    unit = uq.unit
+                else:
+                    uq.to(unit)
+                ul.append(uq.value)
+            else:
+                ul.append(uq)
+        return unit, ul
+
+    @property
+    def pdf(self):
+        """
+        Probability density function (PDF) associated with this prior.
+        """
+#        return self.distr.pdf
+        return self._pdf
+#    def pdf_unscaled(self, x):
+#        """
+#        Probability density function (PDF) associated with this prior.
+#        """
+#        return self.pdf(self._scale_parameter(x))
+
+#    def _scale_parameter(self, x):
+#        return (x - self.range[0])/(self.range[1] - self.range[0])
+
+    @property
+    def cdf(self):
+        """
+        Cumulative distribution function (CDF) associated with this prior.
+        """
+        return self._cdf
+        # return self.distr.cdf
+
+    @property
+    def inv_cdf(self):
+        return self._inv_cdf
+
+        #return self.distr.ppf
+
+    def __call__(self, x):
+        """
+        The "prior mapping", i.e. returns the value of the
+        inverse of the CDF at point(s) `x`.
+        """
+        return self.inv_cdf(x) #*self.unit
+
+
+
+    @staticmethod
+    def distr_initilalizer(pdf=None, cdf=None, ppf=None, interval=None):
+        if all([pdf, cdf, ppf]) is None:
+            raise ValueError('At least a cdf, a pdf or a ppf must be specified!')
+
+        class Distr(stats.rv_continuous):
+
+            def _pdf(self, x):
+                return pdf(x)
+            def _cdf(self, x):
+                return cdf(x)
+            def _ppf(self, x):
+                return ppf(x)
+
+        if interval is None:
+            interval = [None, None]
+        return Distr(a=interval[0], b=interval[1])
+
+
+# %% CLASS DEFINITIONS
+class EmpiricalPrior(GeneralPrior):
     """
     Allows constructing a prior from a pre-existing sampling of the parameter
     space or a known probability density function (PDF).
@@ -69,45 +164,43 @@ class GeneralPrior:
         inverse.
     """
     def __init__(self, samples=None, pdf_fun=None,
-                 pdf_x=None, pdf_y=None, interval=None,
-                 bw_method=None, pdf_npoints=1500, inv_cdf_npoints=1500):
+                 pdf_x=None, pdf_y=None, xmin=None, xmax=None,
+                 bw_method=None, pdf_npoints=1500, unit=None):
+        if pdf_x is None:
+            if pdf_y is None:
+                # If needed, constructs a pdf function from samples, using KDE
+                if samples is not None:
+                    assert pdf_fun is None, 'Either provide the samples or the PDF, not both.'
+                    unit, li = self.unit_checker(unit, [xmin, xmax, samples])
+                    assert unit is not None, 'At least one input must have a unit or a astropy unit must be provided'
+                    if xmin or xmax is None:
+                        std = np.std(li[2])
+                    if xmin is None:
+                        li[0] = li[2].min() - std
+                    if xmax is None:
+                        li[1] = li[2].max() + std
+                    self.samples = li[2]*unit
 
-        # Ensures interval is quantity with consistent units
-        if interval is not None:
-            interval = u.Quantity(interval)
-        self.range = interval
+                    pdf_fun = stats.gaussian_kde(li[2], bw_method=bw_method)
+                else:
+                    assert (xmin is not None and xmax is not None), 'both xmin and xmax must be given for pdf_fun'
+                    unit, li = self.unit_checker(unit, [xmin, xmax])
+                if pdf_fun is not None:
+                    # Evaluates the PDF
+                    pdf_x = np.linspace(li[0], li[1], pdf_npoints)
+                    pdf_y = pdf_fun(pdf_x)
+                else:
+                    raise ValueError('either samples or pdf_fun or pdf_y must be given')
 
-        if (pdf_x is None) and (pdf_y is None):
-            # If needed, constructs a pdf function from samples, using KDE
-            if samples is not None:
-                assert pdf_fun is None, 'Either provide the samples or the PDF, not both.'
-#                if interval is not None:
-#                    ok = (samples > interval[0]) * (samples < interval[1])
-#                    samples = samples[ok]
-                pdf_fun = stats.gaussian_kde(samples.value, bw_method=bw_method)
-                if interval is None:
-                    std = np.std(samples.value)
-                    interval = [samples.value.min() - std, samples.value.min() + std]*samples.unit
-                    self.range = interval
-
-            if pdf_fun is not None:
-                assert interval is not None, 'Must give a interval for pdf_fun'
-                xmin, xmax = interval
-                # Evaluates the PDF
-                pdf_x = np.linspace(xmin, xmax, pdf_npoints)
-                pdf_y = pdf_fun(pdf_x.value)
-
-        # Placeholders
-        self.inv_cdf_npoints = inv_cdf_npoints
-        self._cdf = None
-        self._inv_cdf = None
-        self.distr = None
-        self.samples = samples
-
-        if (pdf_x is not None) and (pdf_y is not None):
-            self._pdf = CubicSpline(pdf_x, pdf_y)
         else:
-            self._pdf = None
+            li = [pdf_x.min(), pdf_x.max()]
+        super().__init__(xmin=li[0], xmax=li[1], unit=unit)
+        dx = (li[1] - li[0]) / pdf_npoints
+        inv_norm = pdf_y.sum() * dx
+        pdf_y = (pdf_y / inv_norm)
+        self._pdf = interp1d(x=pdf_x, y=pdf_y)
+        self._cdf = interp1d(np.append(li[0], pdf_x + dx), np.append(0, np.cumsum(pdf_y * dx)))
+        self._inv_cdf = interp1d(np.append(0, np.cumsum(pdf_y * dx)), np.append(li[0], pdf_x + dx))
 
     @property
     def pdf(self):
@@ -121,38 +214,14 @@ class GeneralPrior:
         """
         Cumulative distribution function (CDF) associated with this prior.
         """
-        if self._cdf is None:
-            if self.pdf is not None:
-                self._cdf = self.pdf.antiderivative()
         return self._cdf
 
     @property
     def inv_cdf(self):
         """
         Inverse of the CDF associated with this prior,
-        expressed as a :py:class:`scipy.interpolate.CubicSpline` object.
         """
-        if (self._inv_cdf is None) and (self.cdf is not None):
-            t = np.linspace(0, 1, self.inv_cdf_npoints)
-            y = self.cdf(t)
-            # For some distributions, there will be multiple
-            # values of y=0 for the same t. The following corrects this
-            # by simply removing this part of the cdf
-            select_zeros = (y == 0)
-            if len(select_zeros) > 1:
-                y = y[~select_zeros]
-                t = t[~select_zeros]
-            # Creates interpolated spline
-            self._inv_cdf = CubicSpline(y, t)
-
         return self._inv_cdf
-
-    def __call__(self, x):
-        """
-        The "prior mapping", i.e. returns the value of the
-        inverse of the CDF at point(s) `x`.
-        """
-        return self.inv_cdf(x)
 
 
 class ScipyPrior(GeneralPrior):
@@ -181,9 +250,9 @@ class ScipyPrior(GeneralPrior):
         parameter values to be considered (will be used to rescale the
         interval).
     """
-    def __init__(self, distr, *args, loc=0.0, scale=1.0,
-                 interval=None, **kwargs):
-        super().__init__(interval=interval)
+    def __init__(self, distr, unit=None, *args, loc=0.0, scale=1.0, xmin=None, xmax=None, **kwargs):
+        super().__init__(xmin=xmin, xmax=xmax, unit=unit)
+        assert self.unit is not None, 'Either the interval has units or a unit must be provided'
 
         assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
 

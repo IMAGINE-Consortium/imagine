@@ -225,7 +225,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                         and self.priors[n[1]].samples is not None)
                 xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples.value))
                 xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples.value))
-                print(xi0, xi1)
+                #print(xi0)
+                #print(self.priors[n[0]].samples.value[np.isnan(xi0)])
+                #print((self.priors[n[1]].samples.value))
+                #print(xi0)
+                #print(xi1)
                 print('in pipeline pearson ', pearsonr(xi0, xi1))
                 c = pearsonr(xi0, xi1)[0]
             else:
@@ -334,7 +338,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         assert isinstance(factory_list, (list, tuple)), 'Factory list must be a tuple or list'
         self._active_parameters = tuple()
         self._priors = dict()
-        self._prior_cube_mapping = {}
+        self._prior_cube_mapping = dict()
 
         i = 0
 
@@ -356,7 +360,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     def sampler_supports_mpi(self):
-        return(getattr(self, 'SUPPORTS_MPI', False))
+        return getattr(self, 'SUPPORTS_MPI', False)
 
     @property
     def simulator(self):
@@ -541,10 +545,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ pipeline::_core_likelihood')
         log.debug('sampler at %s' % str(cube))
-        # security boundary check
-        if np.any(cube > 1.) or np.any(cube < 0.):
-            log.debug('cube %s requested. returned most negative possible number' % str(cube))
-            return np.nan_to_num(-np.inf)
         # return active variables from pymultinest cube to factories
         # and then generate new field objects
         head_idx = 0
@@ -557,7 +557,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             tail_idx = head_idx + len(factory.active_parameters)
             factory_cube = cube[head_idx:tail_idx]
             for i, av in enumerate(factory.active_parameters):
-                variable_dict[av] = factory_cube[i]
+                variable_dict[av] = factory_cube[i]*self.priors[factory.field_name + '_' + av].unit
 
             field_list += (factory(variables=variable_dict,
                                    ensemble_size=self.ensemble_size_actual,

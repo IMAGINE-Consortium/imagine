@@ -51,7 +51,7 @@ class BregLSAFactory(FieldFactory):
                           'psi0': 27.0,
                           'psi1': 0.9,
                           'chi0': 25.0}
-    PRIORS = {'b0': FlatPrior([0., 10.]),
-              'psi0': FlatPrior([0., 50.]),
-              'psi1': FlatPrior([0., 5.]),
-              'chi0': FlatPrior([-25., 50.])}
+    PRIORS = {'b0': FlatPrior(xmin=0., xmax=10.),
+              'psi0': FlatPrior(xmin=0., xmax=50.),
+              'psi1': FlatPrior(xmin=0., xmax=5.),
+              'chi0': FlatPrior(xmin=-25., xmax=50.)}

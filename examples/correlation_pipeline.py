@@ -13,15 +13,15 @@ import numpy as np
 import astropy.units as u
 import corner
 import matplotlib
-from scipy.stats import norm, truncnorm, truncexpon, pearsonr
-matplotlib.use('Agg')
+import matplotlib.pylab as pl
+from scipy.stats import norm, lognorm, truncexpon
 
-import matplotlib.pyplot as plt
 import imagine as img
 import imagine.fields.test_field as testFields
 from imagine.simulators.test_simulator import TestSimulator
-
 from mpi4py import MPI
+
+matplotlib.use('Agg')
 
 
 def prepare_prior_samples(n_samp, c, distr1, distr2):
@@ -41,7 +41,7 @@ def prepare_prior_samples(n_samp, c, distr1, distr2):
     return s1, s2
 
 
-def prepare_mock_dataset(a0, b0, size=10,
+def prepare_mock_dataset(a0, b0, a, size=1000,
                          error=0.1, seed=233):
     r"""
     Prepares a mock dataset
@@ -87,13 +87,15 @@ def prepare_mock_dataset(a0, b0, size=10,
     np.random.seed(seed)
 
     # Computes the signal
-    signal = ((1+np.cos(x)) *
-              np.random.normal(loc=a0, scale=b0, size=size))
+    signal = 5*(1+ np.cos(x*a)) * np.random.normal(loc=a0, scale=b0, size=size)
 
     # Includes the error
-    fd = signal + np.random.normal(loc=0.,scale=error,size=size)
+    fd = signal + np.random.normal(loc=0., scale=error, size=size)
 
     # Prepares a data dictionary
+    pl.plot(x, signal, label='truth')
+    pl.plot(x, fd, label='data')
+    pl.savefig('./data_groundtruth')
     data_dict = {'meas' : fd,
                  'err': np.ones_like(fd)*error,
                  'x': x,
@@ -120,7 +122,10 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
     levels=1-np.exp(-0.5*sigmas*sigmas)
 
     # Visualize with a corner plot
-    figure = corner.corner(np.vstack([samp.columns[0].value, samp.columns[1].value]).T,
+    l = []
+    for i in range(len(samp.columns)):
+        l.append(samp.columns[i])
+    figure = corner.corner(np.vstack(l).T,
                            range=[0.99]*len(pipe.active_parameters),
                            quantiles=[0.02, 0.5, 0.98],
                            labels=pipe.active_parameters,
@@ -143,13 +148,13 @@ if __name__ == '__main__':
     mpirank = comm.Get_rank()
     mpisize = comm.Get_size()
 
-    output_file_plot = 'correlation_pipeline_corner.pdf'
-    output_text = 'correlation_pipeline_results.txt'
+    output_file_plot = 'correlation_pipeline_corner_1e5.pdf'
+    output_text = 'correlation_pipeline_results_1e5.txt'
 
     # True values of the parameters
-    a0 = 3.; b0 = 6
+    a0 = 3.; b0 = 2; a = 0.5
     # Generates the mock data
-    mockDataset = prepare_mock_dataset(a0, b0)
+    mockDataset = prepare_mock_dataset(a0, b0, a)
 
     # Prepares Measurements and Covariances objects
     measurements = img.observables.Measurements()
@@ -158,35 +163,73 @@ if __name__ == '__main__':
     covariances.append(dataset=mockDataset)
 
     # Generates the grid
-    one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc, [0, 0]*u.kpc, [0, 0]*u.kpc], resolution=[100, 1, 1])
+    one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc, [0, 0]*u.kpc, [0, 0]*u.kpc], resolution=[1000, 1, 1])
 
-    distr1 = norm(loc=3, scale=2)
+    distr1 = lognorm(loc=0.4, s=2)
     distr2 = truncexpon(loc=0, scale=2, b=10)
 
     s1, s2 = prepare_prior_samples(1000, 0.8, distr1, distr2)
-
-    print(s1.min(), s1.max())
-    print(s2.min(), s2.max())
-    print(s1)
 
     # Prepares the thermal electron field factory
     ne_factory = testFields.CosThermalElectronDensityFactory(grid=one_d_grid)
 
     ne_factory.default_parameters = {'beta': np.pi / 2 * u.rad,
-                                     'gamma': np.pi / 2 * u.rad}
+                                     'gamma': np.pi / 2 * u.rad,
+                                     'n0': 5*u.cm**-3}
 
     ne_factory.active_parameters = ('a',)
-    ne_factory.priors = {'a': img.priors.GeneralPrior(samples=s1*u.rad/u.kpc)}
+    p1 = img.priors.EmpiricalPrior(xmin=0., samples=s1, unit=1 / u.kpc * u.rad)
+    ne_factory.priors = {'a': p1}
+    pdf_x = np.linspace(p1.range[0], p1.range[1], 1500)
+    pl.hist(s1, bins=100, label='hist', density=True)
+    pl.plot(pdf_x, p1.pdf(pdf_x), label='prior_pdf')
+    pl.plot(pdf_x, distr1.pdf(pdf_x), label='scipy_pdf')
+    pl.legend()
+    pl.savefig('pdf_' + 'a' + '.png')
+    pl.close()
+    pl.plot(pdf_x, p1.cdf(pdf_x), label='prior_cdf')
+    pl.plot(pdf_x, distr1.cdf(pdf_x), label='scipy_cdf')
+    pl.legend()
+    pl.savefig('cdf_' + 'a' + '.png')
+    pl.close()
+    pl.plot(np.linspace(0, 1, 1000), p1._inv_cdf(np.linspace(0, 1, 1000)), label='prior_ppf')
+    pl.plot(np.linspace(0, 1, 1000), distr1.ppf(np.linspace(0, 1, 1000)), label='scipy_ppf')
+    pl.legend()
+    pl.savefig('ppf_' + 'a' + '.png')
+    pl.close()
+
 
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
-    B_factory.active_parameters = ('a0', 'b0')
+    B_factory.default_parameters = {'b0': 2}
+    B_factory.active_parameters = ('a0',)
 
-    B_factory.priors = {'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
-                        'b0': img.priors.GeneralPrior(samples=s2*u.microgauss),
+    B_factory.priors = {'a0': img.priors.FlatPrior(xmin=-5*u.microgauss, xmax=5*u.microgauss, unit=u.microgauss),
+    #                    'b0': img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss),
                         }
 
-    corr_dict = {('a0', 'b0'): -0.3, ('b0', 'a'): True}
+    p2 = img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss)
+    pdf_x = np.linspace(p2.range[0], p2.range[1], 1500)
+    pl.hist(s2, bins=100, label='hist', density=True)
+    pl.plot(pdf_x, p2.pdf(pdf_x), label='prior_pdf')
+    pl.plot(pdf_x, distr2.pdf(pdf_x), label='scipy_pdf')
+    pl.legend()
+    pl.savefig('pdf_' + 'b0' + '.png')
+    pl.close()
+    #pl.plot(pdf_x, p2.cdf(pdf_x), label='prior_cdf')
+    #pl.plot(pdf_x, distr2.cdf(pdf_x), label='scipy_cdf')
+    #pl.legend()
+    #pl.savefig('cdf_' + 'b0' + '.png')
+    #pl.close()
+    pl.plot(np.linspace(0, 1, 1000), p2._inv_cdf(np.linspace(0, 1, 1000)), label='prior_ppf')
+    pl.plot(np.linspace(0, 1, 1000), distr2.ppf(np.linspace(0, 1, 1000)), label='scipy_ppf')
+    pl.savefig('ppf_' + 'b0' + '.png')
+    pl.legend()
+    pl.close()
+    corr_dict = {
+        ('a0', 'a'): -0.3,
+    #    ('b0', 'a'): True
+    }
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
@@ -201,14 +244,16 @@ if __name__ == '__main__':
     pipeline = img.pipelines.UltranestPipeline(simulator=simer,
                                                factory_list=factory_list,
                                                likelihood=likelihood,
-                                               ensemble_size=128,
+                                               ensemble_size=50,
                                                prior_correlations=corr_dict)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 1000,
-                                     'Lepsilon': 0.1,
-                                     'dlogz': 0.5,
-                                     'min_num_live_points': 100}
+    pipeline.sampling_controllers = {'max_ncalls': 25000,
+                                     'Lepsilon': 50,
+                                     'dlogz': 2,
+                                     'min_num_live_points': 1000,
+                                     'verbose': True,
+                                     'resume': False}
 
     # RUNS THE PIPELINE
     results = pipeline()
@@ -220,7 +265,7 @@ if __name__ == '__main__':
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        plot_results(pipeline, [a0,b0], output_file=output_file_plot)
+        plot_results(pipeline, [a0, a], output_file=output_file_plot)
 
         # Prints setup
         print('\nRC used:', img.rc)

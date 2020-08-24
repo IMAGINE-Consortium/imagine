@@ -5,6 +5,7 @@ import logging as log
 # Package imports
 import numpy as np
 from scipy.stats import norm
+import astropy.units as u
 
 # IMAGINE imports
 from imagine.priors import GeneralPrior, ScipyPrior
@@ -21,12 +22,12 @@ class FlatPrior(GeneralPrior):
 
     No initialization is required.
     """
-    def __init__(self, interval):
+    def __init__(self, xmin, xmax, unit=None):
         # Updates ranges
-        super().__init__(interval=interval)
-        self.vol = interval[1] - interval[0]
+        super().__init__(xmin=xmin, xmax=xmax, unit=unit)
+        self.vol = xmax - xmin
         # Constant pdf (for illustration)
-        self._pdf = lambda x: np.ones_like(x)/self.vol
+        self._pdf = lambda x: np.ones_like(x)/self.vol.value
 
     def __call__(self, cube):
         """
@@ -42,7 +43,7 @@ class FlatPrior(GeneralPrior):
         List of variable values in the given interval
         """
         log.debug('@ flat_prior::__call__')
-        return cube*self.vol + self.range[0]
+        return cube*self.vol.value + self.range[0].value
 
 
 class GaussianPrior(ScipyPrior):
@@ -59,5 +60,6 @@ class GaussianPrior(ScipyPrior):
     sigma : float
         Width of the distribution (standard deviation, if there was no tuncation)
     """
-    def __init__(self, mu=0.0, sigma=1.0):
-        super().__init__(distr=norm, loc=mu, scale=sigma)
+    def __init__(self, unit, mu=0.0, sigma=1.0):
+        assert isinstance(unit, u.Unit)
+        super().__init__(distr=norm, loc=mu, scale=sigma, unit=unit)

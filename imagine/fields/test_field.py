@@ -42,10 +42,9 @@ class CosThermalElectronDensity(ThermalElectronDensityField):
         y = self.grid.y
         z = self.grid.z
         p = self.parameters
-
-        return ( p['n0']*(1 + np.cos(p['a']*x + p['alpha']))
-                        *(1 + np.cos(p['b']*y + p['beta']))
-                        *(1 + np.cos(p['c']*z + p['gamma'])) )
+        return ((p['n0']) * (1 + np.cos(p['a'] * x + p['alpha']))
+                          * (1 + np.cos(p['b'] * y + p['beta']))
+                          * (1 + np.cos(p['c'] * z + p['gamma'])))
 
 
 class CosThermalElectronDensityFactory(FieldFactory):
@@ -63,9 +62,9 @@ class CosThermalElectronDensityFactory(FieldFactory):
                           'alpha': 0.*u.rad,
                           'beta':  0.*u.rad,
                           'gamma': 0.*u.rad}
-    k = FlatPrior(interval=[0.01, 100]*u.rad/u.kpc)
-    d = FlatPrior(interval=[0, 2*np.pi]*u.rad/u.kpc)
-    PRIORS = {'n0': FlatPrior(interval=[0, 10]*u.cm**-3),
+    k = FlatPrior(xmin=0.01*u.rad/u.kpc, xmax=100*u.rad/u.kpc)
+    d = FlatPrior(xmin=0*u.rad/u.kpc, xmax=2*np.pi*u.rad/u.kpc)
+    PRIORS = {'n0': FlatPrior(xmin=0*u.cm**-3, xmax=10*u.cm**-3),
               'a': k, 'b': k, 'c': k,
               'alpha': d, 'beta': d, 'gamma': d}
 
@@ -94,9 +93,8 @@ class NaiveGaussianMagneticField(MagneticField):
         # Creates an empty array to store the result
         B = np.empty(self.data_shape) * self.units
 
-        mu = self.parameters['a0'].to_value(self.units)
-        sigma = self.parameters['b0'].to_value(self.units)
-
+        mu = self.parameters['a0']
+        sigma = self.parameters['b0']
         # Draws values from a normal distribution with these parameters
         # using the seed provided in the argument
         distr = stats.norm(loc=mu, scale=sigma)
@@ -115,5 +113,5 @@ class NaiveGaussianMagneticFieldFactory(FieldFactory):
     FIELD_CLASS = NaiveGaussianMagneticField
     DEFAULT_PARAMETERS = {'a0': 1*u.microgauss,
                           'b0': 0.1*u.microgauss}
-    PRIORS = {'a0': FlatPrior(interval=[-20, 20]*u.microgauss),
-              'b0': FlatPrior(interval=[-20, 20]*u.microgauss)}
+    PRIORS = {'a0': FlatPrior(xmin=20*u.microgauss, xmax=20*u.microgauss),
+              'b0': FlatPrior(xmin=20*u.microgauss, xmax=20*u.microgauss)}
