@@ -231,7 +231,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         if misc.is_notebook():
             display(Math(out))
         else:
-            print(out)
+            # Restores linebreaks and prints
+            print(out.replace(r'\n','\n'))
 
     @property
     def log_evidence(self):
