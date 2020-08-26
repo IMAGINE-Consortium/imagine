@@ -8,21 +8,31 @@ and classes defined in the mock_for_templates module
 import astropy.units as u
 import numpy as np
 import pytest
+import os
 
 # IMAGINE imports
 import imagine.tests.mocks_for_templates as mock
 import imagine.fields as img_fields
+import imagine.priors as img_priors
 import imagine.observables as img_obs
 from imagine.likelihoods import SimpleLikelihood
+from imagine.simulators import TestSimulator
+
+# imports templates
 from imagine.templates.magnetic_field_template import MagneticFieldTemplate
 from imagine.templates.thermal_electrons_template import ThermalElectronsDensityTemplate
 from imagine.templates.field_factory_template import FieldFactoryTemplate
 from imagine.templates.simulator_template import SimulatorTemplate
+from imagine.templates.pipeline_template import PipelineTemplate
+
 
 __all__ = []
 
 # Marks tests in this module as quick
 pytestmark = pytest.mark.quick
+
+# Convenience
+muG = u.microgauss
 
 # %% PYTEST DEFINITIONS
 def test_magnetic_field_template():
@@ -34,17 +44,17 @@ def test_magnetic_field_template():
                                        resolution=[2]*3)
 
     magnetic_field = MagneticFieldTemplate(grid,
-                                           parameters={'Parameter_A': 17*u.microgauss,
+                                           parameters={'Parameter_A': 17*muG,
                                                       'Parameter_B': 2})
     data = magnetic_field.get_data()
     Bx = data[:,:,:,0]
     By = data[:,:,:,1]
     Bz = data[:,:,:,2]
 
-    assert np.all(Bx == 17*u.microgauss)
-    assert np.all(By == 2*u.microgauss)
-    assert Bz[0,0,0] == -42*u.microgauss
-    assert Bz[1,1,1] == 42*u.microgauss
+    assert np.all(Bx == 17*muG)
+    assert np.all(By == 2*muG)
+    assert Bz[0,0,0] == -42*muG
+    assert Bz[1,1,1] == 42*muG
 
 
 def test_thermal_electrons_template():
@@ -103,9 +113,9 @@ def test_simulator_template():
 
     grid = img_fields.UniformGrid(box=[[0*u.kpc, 1*u.kpc]]*3, resolution=[2]*3)
     B = img_fields.ConstantMagneticField(grid,
-                                         parameters={'Bx': 42*u.microgauss,
-                                         'By':  1*u.microgauss,
-                                         'Bz':  0*u.microgauss})
+                                         parameters={'Bx': 42*muG,
+                                         'By':  1*muG,
+                                         'Bz':  0*muG})
     ne = img_fields.ConstantThermalElectrons(grid,
                                              parameters={'ne': 1000*u.m**-3})
     dummy = mock.MockDummy(parameters={'value': -100000, 'units': 1*u.jansky})
@@ -114,16 +124,110 @@ def test_simulator_template():
     obs = simulations[dset.key]
     assert np.allclose(obs.global_data, [[25.48235893, 42.]])
 
+
+
+class ConstantBFactory(img_fields.FieldFactory):
+    """Example: field factory for YourFieldClass"""
+
+    # Class attributes
+    # Field class this factory uses
+    FIELD_CLASS = img_fields.ConstantMagneticField
+
+    # Default values are used for inactive parameters
+    DEFAULT_PARAMETERS = {'Bx': 1.*muG, 'By': 2.*muG, 'Bz': 3.*muG}
+
+    # All parameters need a range and a prior
+    PRIORS = {'Bx': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG,
+                                       interval=[0, 5.]*muG),
+              'By': img_priors.FlatPrior(interval=[0, 1.]*muG),
+              'Bz': img_priors.FlatPrior(interval=[0, 1.]*muG)}
+
+
+
+class FakeRandomTE(img_fields.ThermalElectronDensityField):
+    # Class attributes
+    NAME = 'fake_rnd_TE'
+
+    STOCHASTIC_FIELD = True
+    DEPENDENCIES_LIST = []
+    PARAMETER_NAMES = ['param']
+
+    def compute_field(self, seed):
+        # One can access the parameters supplied in the following way
+        return np.ones(self.data_shape)*u.cm**(-3)
+
+class FakeRandomTEFactory(img_fields.FieldFactory):
+    """Example: field factory for YourFieldClass"""
+    FIELD_CLASS = FakeRandomTE
+    DEFAULT_PARAMETERS = {'param':2}
+    PRIORS = {'param': img_priors.FlatPrior(interval=[0, 10.])}
+
+
 def test_pipeline_template():
     """
     Tests the PipelineTemplate
     """
-    # Likelihood (with fake measurements / covariances
+    # Fake measurements / covariances
+    fd_units = u.microgauss*u.cm**-3
+    x = np.arange(5)
+    fd = np.ones_like(x)
+    data = {'meas' : fd,
+            'err': np.ones_like(fd)*0.1,
+            'x': x,
+            'y': np.zeros_like(fd),
+            'z': np.zeros_like(fd)}
+    dset = img_obs.TabularDataset(data, name='test',
+                                  data_column='meas',
+                                  coordinates_type='cartesian',
+                                  x_column='x', y_column='y',
+                                  z_column='z', error_column='err',
+                                  units=fd_units)
     measurements = img_obs.Measurements()
     covariances = img_obs.Covariances()
-    dset = img_obs.SynchrotronHEALPixDataset(np.ones(12*2**2)*u.K, 1*u.GHz,
-                                             'Q', error=0.1*u.K)
     measurements.append(dataset=dset)
     covariances.append(dataset=dset)
+
+    # Likelihood
     likelihood = SimpleLikelihood(measurements, covariances)
-    # TODO this has to be finished!
+
+    # Grid
+    grid = img_fields.UniformGrid(box=[[0,2*np.pi]*u.kpc,
+                                       [0,0]*u.kpc,
+                                       [0,0]*u.kpc],
+                                  resolution=[30,1,1])
+    # Field factories
+    TE_factory = FakeRandomTEFactory(grid=grid)
+    TE_factory.active_parameters = ['param']
+    B_factory = ConstantBFactory(grid=grid)
+    B_factory.active_parameters = ['Bx', 'By']
+
+    # Simulator
+    simulator = TestSimulator(measurements)
+
+    # Sets the pipeline
+    pipeline = PipelineTemplate(simulator=simulator,
+                                factory_list=[TE_factory, B_factory],
+                                likelihood=likelihood,
+                                ensemble_size=2)
+    # Tests sampling controlers
+    pipeline.sampling_controllers = dict(controller_a=True)
+
+
+    Ga = img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG,
+                                       interval=[0, 5.]*muG)
+    # Runs fake pipeline, including another sampling controller
+    # This in turn checks multiple structures of the pipeline object
+    pipeline(controller_b=False)
+
+    # Tests posterior report (checks execution only)
+    pipeline.posterior_report()
+    # Tests posterior summary
+    assert pipeline.posterior_summary['constant_B_Bx']['median']==2.5*muG
+    assert pipeline.posterior_summary['constant_B_By']['median']==0.5*muG
+
+    # Tests (temporary) chains directory creation
+    assert os.path.isdir(pipeline.chains_directory)
+    # checks ("computed") log_evidence
+    assert (pipeline.log_evidence, pipeline.log_evidence_err) == (42.0, 17.0)
+    # Checks pipeline barrier on deletion (i.e. the __del__ method)
+    del pipeline
