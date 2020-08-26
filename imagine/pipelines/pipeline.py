@@ -372,7 +372,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         cube_rtn = np.empty_like(cube)
         for i, parameter in enumerate(self.active_parameters):
-            cube_rtn[i] = self.priors[parameter].pdf(cube_rtn[i])
+            cube_rtn[i] = self.priors[parameter].pdf(cube[i])
         return cube_rtn
 
     def prior_transform(self, cube):
