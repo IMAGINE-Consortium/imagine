@@ -42,7 +42,7 @@ class PipelineTemplate(Pipeline):
 
         # Most samplers have a `run` method, which should be executed
         self.sampling_controllers.update(kwargs)
-        self.results = self.sampler.run(self.sampling_controllers)
+        self.results = self.sampler.run(**self.sampling_controllers)
 
         # The samples should be converted to a numpy array and saved
         # to self._samples_array. This should have different samples

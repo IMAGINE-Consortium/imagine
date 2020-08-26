@@ -93,12 +93,28 @@ MY_PACKAGE.B_max = 2*u.Msun
 # --------------------------------------------------------------------------
 # For testing the pipeline_template
 class MY_SAMPLER_Sampler:
-    def __init__(param_names=None, loglike=None, prior_transform=None,
-                 prior_pdf=None):
-        pass
+    def __init__(self, **kwargs):
+        # Saves all initialization parameters
+        for name, val in kwargs.items():
+            setattr(self, name, val)
 
-    def run(**kwargs):
-        return {'samples': [0.5,0.5], 'logz': 42, 'logzerr': 17}
+    def run(self, **kwargs):
+        # Checks active parameters
+        assert self.param_names == ('fake_rnd_TE_param', 'constant_B_Bx', 'constant_B_By')
+        # Checks prior_transform (which includes FlatPrior and GaussianPrior
+        assert np.allclose(self.prior_transform(np.array([0.5,0.15,0.25])),
+                           [0.5, 0.19684753, 0.25])
+        # Checks the prior_pdf
+        assert np.allclose(self.prior_pdf([0.5, 0.5, 0.5]),
+                           [1., 0.53990967, 1.])
+        # Checks likelihood_function
+        assert np.allclose(self.loglike(np.array([0.5, 0.5, 0.5])),
+                           -5.088229933538249)
+        assert self.seed == 1
+
+        # Returns fake results
+        return {'samples': np.array([[0.000001,0.5,.999999]]*3).T,
+                'logz': 42.0, 'logzerr': 17.0}
 
 MY_SAMPLER = type(sys)('MY_SAMPLER')
 MY_SAMPLER.Sampler = MY_SAMPLER_Sampler
