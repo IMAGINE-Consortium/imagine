@@ -245,9 +245,9 @@ class Measurements(ObservableDict):
             adequate key. If `dataset` is present, all other arguments will be ignored.
         name : str tuple
             Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
-            If data is independent from frequency, set 'nan'.
-            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
+            ``(data-name, data-freq, data-Nside/"tab", ext)``.
+            If data is independent from frequency, set None.
+            `ext` can be 'I','Q','U','PI','PA', None or other customized tags.
         new_data : numpy.ndarray or imagine.observables.observable.Observable
             distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
         plain : bool

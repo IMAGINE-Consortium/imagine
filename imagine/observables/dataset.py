@@ -39,7 +39,6 @@ class Dataset(BaseClass):
     def name(self):
         return(self.NAME)
 
-
     @property
     def frequency(self):
         return self._frequency
@@ -47,19 +46,15 @@ class Dataset(BaseClass):
     @frequency.setter
     def frequency(self, frequency):
         # Converts the frequency to a string in GHz
-        if hasattr(frequency, 'unit'):
+        if isinstance(frequency, u.Quantity):
             frequency = frequency.to_value(u.GHz, equivalencies=u.spectral())
-            if frequency.is_integer():
-                frequency = int(frequency)
 
-        if frequency is not None:
-            frequency = str(frequency)
         self._frequency = frequency
 
     @property
     def data(self):
         """ Array in the shape (1, N) """
-        return self._data[np.newaxis,:]
+        return self._data[np.newaxis, :]
 
     @property
     def key(self):
@@ -109,7 +104,7 @@ class TabularDataset(Dataset):
     err_col : str or None. Default: None
         The key used for accessing the error for the data values.
         If *None*, no errors are used.
-    frequency : astropy.units.Quantity or None. Default: None
+    frequency : :obj:`~astropy.units.Quantity` object or None. Default: None
         Frequency of the measurement (if relevant)
     tag : str or None. Default: None
         Extra information associated with the observable.
@@ -198,8 +193,8 @@ class HEALPixDataset(Dataset):
             print(12*int(Nside)**2, data.size)
             raise
 
-        self.Nside = str(Nside)
-        assert len(data.shape)==1
+        self.Nside = Nside
+        assert len(data.shape) == 1
         self._data = data
 
         if cov is not None:
@@ -297,12 +292,12 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     # Class attributes
     NAME = 'sync'
 
-    def __init__(self, data, frequency, type,
+    def __init__(self, data, frequency, typ,
                  error=None, cov=None, Nside=None):
         super().__init__(data, error=error, cov=cov, Nside=Nside)
 
         self.frequency = frequency
 
-        # Checks whether the type is valid
-        assert type in ['I', 'Q', 'U', 'PI', 'PA']
-        self.tag = type
+        # Checks whether the typ is valid
+        assert typ in ['I', 'Q', 'U', 'PI', 'PA']
+        self.tag = typ
