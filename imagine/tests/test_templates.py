@@ -95,8 +95,7 @@ def test_simulator_template():
             'lat': [-1,0]*u.deg, 'lon': [2,3]*u.rad}
     dset = img_obs.TabularDataset(fake, name='my_observable_quantity',
                                   tag='I', frequency=20*u.cm, units=u.jansky,
-                                  data_column='dat', error_column='err',
-                                  lat_column='lat', lon_column='lon')
+                                  data_col='dat', err_col='err')
     measurements.append(dataset=dset)
 
     simulator = SimulatorTemplate(measurements)

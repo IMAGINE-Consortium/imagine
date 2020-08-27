@@ -149,13 +149,11 @@ def test_Field_dependency():
 
 
 def test_Simulator_dependency_resolution():
-    dat = TabularDataset({'x': [0], 'lat': 0, 'lon': 0, 'err': 0.1},
+    dat = TabularDataset({'data': [0], 'lat': 0, 'lon': 0, 'err': 0.1},
                          name='nothing',
                          units=u.rad,
-                         data_column='x',
-                         error_column='err',
-                         lat_column='lat',
-                         lon_column='lon')
+                         data_col='data',
+                         err_col='err')
     mea = Measurements()
     mea.append(dataset=dat)
 
@@ -164,4 +162,4 @@ def test_Simulator_dependency_resolution():
     fields_list = list(map(lambda x: x(grid), (F, E, D, C, B, A)))
     obs = sim(fields_list)
 
-    assert obs[('nothing', 'nan', 'tab', 'nan')].global_data[0][0] == 33.3
+    assert obs[('nothing', None, 'tab', None)].global_data[0][0] == 33.3

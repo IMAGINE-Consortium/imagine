@@ -28,8 +28,8 @@ class Dataset(BaseClass):
 
         self.coords = None
         self.Nside = None
-        self.frequency = 'nan'
-        self.tag = 'nan'
+        self.frequency = None
+        self.tag = None
         self._cov = None
         self._error = None
         self._data = None
@@ -52,7 +52,9 @@ class Dataset(BaseClass):
             if frequency.is_integer():
                 frequency = int(frequency)
 
-        self._frequency = str(frequency)
+        if frequency is not None:
+            frequency = str(frequency)
+        self._frequency = frequency
 
     @property
     def data(self):
@@ -62,7 +64,7 @@ class Dataset(BaseClass):
     @property
     def key(self):
         """Key used in the Observables_dictionary """
-        return (self.name,self.frequency, self.Nside, self.tag)
+        return (self.name, self.frequency, self.Nside, self.tag)
 
     @property
     def cov(self):
