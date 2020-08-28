@@ -1,6 +1,7 @@
 # %% IMPORTS
 # Built-in imports
 import abc
+from itertools import chain
 import logging as log
 import tempfile
 import os
@@ -491,6 +492,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
         else:
             self.ensemble_seeds = None
+
+    # This function returns all parameter names of all factories in order
+    def get_par_names(self):
+        # Create list of names
+        names = list(chain(*[factory.active_parameters
+                             for factory in self._factory_list]))
+
+        # Return them
+        return(names)
 
     def _get_observables(self, cube):
         # security boundary check

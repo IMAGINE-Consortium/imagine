@@ -114,7 +114,8 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
         return self._archive[key]
 
     @abc.abstractmethod
-    def append(self, dataset=None, *, name=None, data=None, plain=False):
+    def append(self, dataset=None, *, name=None, data=None, plain=False,
+               coords=None):
         """
         Adds/updates name and data
 
@@ -146,7 +147,6 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             else:
                 plain=True
         else:
-            coords=None
             cov = data
 
         assert (len(name) == 4), 'Wrong format for Observable key!'
@@ -283,7 +283,7 @@ class Simulations(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Simulations::append')
-        name, data, *_ = super().append(*args, **kwargs)
+        name, data, *_, coords = super().append(*args, **kwargs)
 
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
@@ -292,7 +292,9 @@ class Simulations(ObservableDict):
             if isinstance(data, Observable):
                 self._archive.update({name: data})
             elif isinstance(data, np.ndarray):  # distributed data
-                self._archive.update({name: Observable(data, 'simulated')})
+                self._archive.update({name: Observable(data=data,
+                                                       dtype='simulated',
+                                                       coords=coords)})
             else:
                 raise TypeError('unsupported data type')
 

@@ -16,7 +16,7 @@ mpirank = comm.Get_rank()
 pytestmark = pytest.mark.quick
 
 # %% PYTEST DEFINITIONS
-class TestObservalbes(object):
+class TestObservables(object):
     def test_init_measure(self):
         arr = np.random.rand(1,128)
         test_obs = Observable(arr, 'measured')

@@ -414,5 +414,6 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                                     realization_id=i,
                                     output_units=self.output_units[key])
                 sims.append(name=key,
-                            data=sim[np.newaxis, :].to(self.output_units[key]))
+                            data=sim[np.newaxis, :].to(self.output_units[key]),
+                            coords=self.output_coords[key])
         return sims
