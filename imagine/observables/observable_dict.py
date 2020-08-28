@@ -74,18 +74,22 @@ __all__ = ['ObservableDict', 'Masks', 'Measurements', 'Simulations',
 # %% CLASS DEFINITIONS
 class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
     """
-    Base class from which `imagine.observables.observable_dict.Measurements`,
-    `imagine.observables.observable_dict.Covariances`, `imagine.observables.observable_dict.Simulations`
-    and `imagine.observables.observable_dict.Masks` are derived.
+    Base class from which :class:`Measurements`, :class:`Covariances`,
+    :class:`Simulations` and class `Masks` classes are derived.
 
-    See `imagine.observables.observable_dict` module documentation for
+    See :mod:`~imagine.observables.observable_dict` module documentation for
     further details.
     """
-    def __init__(self):
+    def __init__(self, *datasets):
         # Call super constructor
         super().__init__()
 
+        # Initialize archive dict
         self._archive = {}
+
+        # Append all provided datasets
+        for dataset in datasets:
+            self.append(dataset=dataset)
 
     @property
     def archive(self):
@@ -98,24 +102,44 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
         return self._archive[key]
 
     @abc.abstractmethod
-    def append(self, name, new_data, plain=False):
+    def append(self, name=None, new_data=None, plain=False, *, dataset=None):
         """
         Adds/updates name and data
 
         Parameters
         ----------
+        dataset : imagine.observables.dataset.Dataset
+            The IMAGINE dataset already adjusts the format of the data and sets the
+            adequate key. If `dataset` is present, all other arguments will be ignored.
         name : str tuple
             Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside/size),str(ext))``.
-            If data is independent from frequency, set 'nan'.
-            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        new_data
+            ``(data-name, data-freq, data-Nside/"tab", ext)``.
+            If data is independent from frequency, set None.
+            `ext` can be 'I','Q','U','PI','PA', None or other customized tags.
+        new_data : numpy.ndarray or imagine.observables.observable.Observable
             distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
         plain : bool
-            If True, means unstructured data.
+            If True, means unstructured/tabular data.
             If False (default case), means HEALPix-like sky map.
         """
-        raise NotImplementedError
+
+        if dataset is not None:
+            assert isinstance(dataset, Dataset)
+            name = dataset.key
+            data = dataset.data
+            cov = dataset.cov
+            coords = dataset.coords
+            if isinstance(dataset, HEALPixDataset):
+                plain=False
+            else:
+                plain=True
+        else:
+            coords=None
+            data = new_data
+            cov = new_data
+
+        assert (len(name) == 4), 'Wrong format for Observable key!'
+        return(name, data, cov, plain, coords)
 
 
 
@@ -148,25 +172,10 @@ class Masks(ObservableDict):
 
     """
 
-    def append(self, name, new_data, plain=False):
-        """
-        Adds/updates name and data
-
-        Parameters
-        ----------
-        name : str tuple
-            Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside/"tab"),str(ext))``.
-            If data is independent from frequency, set 'nan'.
-            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        new_data
-            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
-        plain : bool
-            If True, means unstructured data.
-            If False (default case), means HEALPix-like sky map.
-        """
+    def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Masks::append')
-        assert (len(name) == 4)
+        name, new_data, _, plain, _ = super().append(*args, **kwargs)
+
         if isinstance(new_data, Observable):
             assert (new_data.dtype == 'measured')
             if not plain:
@@ -234,41 +243,10 @@ class Measurements(ObservableDict):
     further details.
     """
 
-    def append(self, name=None, new_data=None, plain=False, dataset=None):
-        """
-        Adds/updates name and data
-
-        Parameters
-        ----------
-        dataset : imagine.observables.dataset.Dataset
-            The IMAGINE dataset already adjusts the format of the data and sets the
-            adequate key. If `dataset` is present, all other arguments will be ignored.
-        name : str tuple
-            Should follow the convention:
-            ``(data-name, data-freq, data-Nside/"tab", ext)``.
-            If data is independent from frequency, set None.
-            `ext` can be 'I','Q','U','PI','PA', None or other customized tags.
-        new_data : numpy.ndarray or imagine.observables.observable.Observable
-            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
-        plain : bool
-            If True, means unstructured/tabular data.
-            If False (default case), means HEALPix-like sky map.
-        """
+    def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Measurements::append')
+        name, new_data, _, plain, coords = super().append(*args, **kwargs)
 
-        if dataset is not None:
-            assert isinstance(dataset, Dataset)
-            name = dataset.key
-            new_data = dataset.data
-            coords = dataset.coords
-            if isinstance(dataset, HEALPixDataset):
-                plain=False
-            else:
-                plain=True
-        else:
-            coords=None
-
-        assert (len(name) == 4), 'Wrong format for Observable key!'
         if isinstance(new_data, Observable):
             assert (new_data.dtype == 'measured')
             self._archive.update({name: new_data})
@@ -290,26 +268,10 @@ class Simulations(ObservableDict):
     further details.
     """
 
-    def append(self, name, new_data, plain=False):
-        """
-        Adds/updates name and data
-
-        Parameters
-        ----------
-        name : str tuple
-            Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
-            If data is independent from frequency, set 'nan'.
-            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        new_data
-            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
-        plain : bool
-            If True, means unstructured data.
-            If False (default case), means HEALPix-like sky map.
-        """
+    def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Simulations::append')
+        name, new_data, *_ = super().append(*args, **kwargs)
 
-        assert (len(name) == 4)
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
             self._archive[name].append(new_data)
@@ -322,7 +284,6 @@ class Simulations(ObservableDict):
                 raise TypeError('unsupported data type')
 
 
-
 class Covariances(ObservableDict):
     """
     Stores observational covariances
@@ -331,36 +292,10 @@ class Covariances(ObservableDict):
     further details.
     """
 
-    def append(self, name=None, new_data=None, plain=False, dataset=None):
-        """
-        Adds/updates name and data
-
-        Parameters
-        ----------
-        name : str tuple
-            Should follow the convention:
-            ``(data-name,str(data-freq),str(data-Nside)/"tab",str(ext))``.
-            If data is independent from frequency, set 'nan'.
-            `ext` can be 'I','Q','U','PI','PA', 'nan' or other customized tags.
-        data
-            distributed/copied ndarray/Observable
-        plain : bool
-            If True, means unstructured data.
-            If False (default case), means HEALPix-like sky map.
-        """
+    def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Covariances::append')
+        name, _, new_data, plain, _ = super().append(*args, **kwargs)
 
-        if dataset is not None:
-            assert isinstance(dataset, Dataset)
-            name = dataset.key
-            new_data = dataset.cov
-
-            if isinstance(dataset, HEALPixDataset):
-                plain=False
-            else:
-                plain=True
-
-        assert (len(name) == 4)
         if isinstance(new_data, Observable):  # always rewrite
             self._archive.update({name: new_data})  # rw
         elif isinstance(new_data, np.ndarray):

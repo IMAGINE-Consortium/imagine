@@ -261,7 +261,7 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     dataset. This can be Stokes parameters, total and polarised
     intensity, and polarisation angle.
 
-    The parameter `type` and the units of the map in `data` must follow:
+    The parameter `typ` and the units of the map in `data` must follow:
 
     * 'I' - total intensity (in unit K-cmb)
     * 'Q' - Stokes Q (in unit K-cmb, IAU convention)
@@ -278,7 +278,7 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     Nside : int, optional
       For extra internal consistency checking. If `Nside` is present,
       it will be checked whether :math:`12\times N_{side}^2` matches data.size
-    type : str
+    typ : str
       The type of map being supplied in `data`.
 
     Attributes
@@ -292,9 +292,8 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     # Class attributes
     NAME = 'sync'
 
-    def __init__(self, data, frequency, typ,
-                 error=None, cov=None, Nside=None):
-        super().__init__(data, error=error, cov=cov, Nside=Nside)
+    def __init__(self, data, frequency, typ, **kwargs):
+        super().__init__(data, **kwargs)
 
         self.frequency = frequency
 
