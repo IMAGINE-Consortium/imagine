@@ -45,7 +45,7 @@ class Dataset(BaseClass):
 
     @frequency.setter
     def frequency(self, frequency):
-        # Converts the frequency to a string in GHz
+        # Converts the frequency to a value in GHz
         if isinstance(frequency, u.Quantity):
             frequency = frequency.to_value(u.GHz, equivalencies=u.spectral())
 

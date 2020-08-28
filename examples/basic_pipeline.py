@@ -76,19 +76,15 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
     fd = signal + np.random.normal(loc=0.,scale=error,size=size)
 
     # Prepares a data dictionary
-    data_dict = {'meas' : fd,
+    data_dict = {'meas' : u.Quantity(fd, u.microgauss*u.cm**-3),
                  'err': np.ones_like(fd)*error,
                  'x': x,
                  'y': np.zeros_like(fd),
                  'z': np.zeros_like(fd)}
 
-    fd_units = u.microgauss*u.cm**-3
-
-    dataset = img.observables.TabularDataset(data_dict, name='test', 
-                                             data_column='meas',
-                                             coordinates_type='cartesian',
-                                             x_column='x', y_column='y', z_column='z',
-                                             error_column='err', units=fd_units)
+    dataset = img.observables.TabularDataset(data_dict, name='test',
+                                             data_col='meas',
+                                             err_col='err')
     return dataset
 
 
@@ -129,7 +125,9 @@ if __name__ == '__main__':
     output_text = 'basic_pipeline_results.txt'
 
     # True values of the parameters
-    a0=3.; b0=6
+    a0 = 3
+    b0 = 6
+
     # Generates the mock data
     mockDataset = prepare_mock_dataset(a0, b0)
 
