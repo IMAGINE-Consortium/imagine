@@ -26,11 +26,11 @@ class TestSimpleLikeli(object):
         arr_a = np.random.rand(1, 48)
         comm.Bcast(arr_a, root=0)
         mea = Observable(arr_a, 'measured')
-        meadict.append(('test', 'nan', '2', 'nan'), mea)
+        meadict.append(name=('test', None, 2, None), data=mea)
         # mock sims
         arr_b = np.random.rand(3, 48)
         sim = Observable(arr_b, 'simulated')
-        simdict.append(('test', 'nan', '2', 'nan'), sim)
+        simdict.append(name=('test', None, 2, None), data=sim)
         # no covariance
         lh = SimpleLikelihood(meadict)
         # calc by likelihood
@@ -50,15 +50,20 @@ class TestSimpleLikeli(object):
         arr_a = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_a, root=0)
         mea = Observable(arr_a, 'measured')
-        meadict.append(('test', 'nan', str(4*mpisize), 'nan'), mea, True)
+        meadict.append(name=('test', None, 4*mpisize, None),
+                       data=mea,
+                       plain=True)
         # mock sims
         arr_b = np.random.rand(5, 4*mpisize)
         sim = Observable(arr_b, 'simulated')
-        simdict.append(('test', 'nan', str(4*mpisize), 'nan'), sim, True)
+        simdict.append(name=('test', None, 4*mpisize, None),
+                       data=sim)
         # mock covariance
         arr_c = np.random.rand(4, 4*mpisize)
         cov = Observable(arr_c, 'covariance')
-        covdict.append(('test', 'nan', str(4*mpisize), 'nan'), cov, True)
+        covdict.append(name=('test', None, 4*mpisize, None),
+                       data=cov,
+                       plain=True)
         # with covariance
         lh = SimpleLikelihood(meadict, covdict)
         # calc by likelihood
@@ -81,11 +86,15 @@ class TestEnsembleLikeli(object):
         arr_a = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_a, root=0)
         mea = Observable(arr_a, 'measured')
-        meadict.append(('test', 'nan', str(4*mpisize), 'nan'), mea, True)
+        meadict.append(name=('test', None, 4*mpisize, None),
+                       data=mea,
+                       plain=True)
         # mock covariance
         arr_c = np.random.rand(4, 4*mpisize)
         cov = Observable(arr_c, 'covariance')
-        covdict.append(('test', 'nan', str(4*mpisize), 'nan'), cov, True)
+        covdict.append(name=('test', None, 4*mpisize, None),
+                       data=cov,
+                       plain=True)
         # mock observable with repeated single realisation
         arr_b = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_b, root=0)
@@ -93,7 +102,8 @@ class TestEnsembleLikeli(object):
         for i in range(len(arr_ens)):
             arr_ens[i] = arr_b
         sim = Observable(arr_ens, 'simulated')
-        simdict.append(('test', 'nan', str(4*mpisize), 'nan'), sim, True)
+        simdict.append(name=('test', None, 4*mpisize, None),
+                       data=sim)
         # simplelikelihood
         lh_simple = SimpleLikelihood(meadict, covdict)
         rslt_simple = lh_simple(simdict)
@@ -109,7 +119,8 @@ class TestEnsembleLikeli(object):
         arr_a = np.random.rand(1, 12*mpisize**2)
         comm.Bcast(arr_a, root=0)
         mea = Observable(arr_a, 'measured')
-        meadict.append(('test', 'nan', str(mpisize), 'nan'), mea)
+        meadict.append(name=('test', None, mpisize, None),
+                       data=mea)
         # mock observable with repeated single realisation
         arr_b = np.random.rand(1, 12*mpisize**2)
         comm.Bcast(arr_b, root=0)
@@ -120,7 +131,8 @@ class TestEnsembleLikeli(object):
         for i in range(len(arr_ens)):
             arr_ens[i] = arr_b
         sim = Observable(arr_ens, 'simulated')
-        simdict.append(('test', 'nan', str(mpisize), 'nan'), sim)
+        simdict.append(name=('test', None, mpisize, None),
+                       data=sim)
         # simplelikelihood
         lh_simple = SimpleLikelihood(meadict)
         rslt_simple = lh_simple(simdict)

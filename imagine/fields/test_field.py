@@ -46,7 +46,7 @@ class CosThermalElectronDensity(ThermalElectronDensityField):
 
 class CosThermalElectronDensityFactory(FieldFactory):
     """
-    Field factory associated with the :py:class:`CosThermalElectronDensityw`
+    Field factory associated with the :py:class:`CosThermalElectronDensity`
     class
     """
 

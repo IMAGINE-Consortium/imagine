@@ -155,7 +155,7 @@ def test_Simulator_dependency_resolution():
                          data_col='data',
                          err_col='err')
     mea = Measurements()
-    mea.append(dataset=dat)
+    mea.append(dat)
 
     sim = DummySimulator(mea)
 
