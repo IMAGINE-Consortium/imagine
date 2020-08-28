@@ -81,6 +81,18 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
     further details.
     """
     def __init__(self, *datasets):
+        """
+        Initialize this :class:`ObservableDict` class.
+
+        Optional
+        --------
+        datasets : positional arguments of :obj:`~imagine.observables.Dataset`
+            Datasets that must be appended to this :obj:`ObservableDict` object
+            after initialization.
+
+
+        """
+
         # Call super constructor
         super().__init__()
 
