@@ -176,10 +176,10 @@ def test_pipeline_template():
             'y': np.zeros_like(fd),
             'z': np.zeros_like(fd)}
     dset = img_obs.TabularDataset(data, name='test',
-                                  data_column='meas',
-                                  coordinates_type='cartesian',
-                                  x_column='x', y_column='y',
-                                  z_column='z', error_column='err',
+                                  data_col='meas',
+                                  coords_type='cartesian',
+                                  x_col='x', y_col='y',
+                                  z_col='z', err_col='err',
                                   units=fd_units)
     measurements = img_obs.Measurements()
     covariances = img_obs.Covariances()

@@ -63,7 +63,7 @@ class Dataset(BaseClass):
 
     @property
     def cov(self):
-        if self._cov is None:
+        if (self._cov is None) and (self._error is not None):
             self._cov = self._error * peye(self._data.size)
         return self._cov
 
@@ -217,6 +217,11 @@ class FaradayDepthHEALPixDataset(HEALPixDataset):
     Nside : int, optional
         For extra internal consistency checking. If `Nside` is present,
         it will be checked whether :math:`12\times N_{side}^2` matches
+    error : float or array
+        If errors are uncorrelated, this can be used to specify them
+        (a diagonal covariance matrix will then be constructed).
+    cov : numpy.ndarray
+        2D-array containing the covariance matrix
 
     Attributes
     -------
@@ -242,6 +247,11 @@ class DispersionMeasureHEALPixDataset(HEALPixDataset):
     Nside : int, optional
         For extra internal consistency checking. If `Nside` is present,
         it will be checked whether :math:`12\times N_{side}^2` matches
+    error : float or array
+        If errors are uncorrelated, this can be used to specify them
+        (a diagonal covariance matrix will then be constructed).
+    cov : numpy.ndarray
+        2D-array containing the covariance matrix
 
     Attributes
     -------
@@ -280,6 +290,11 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
       it will be checked whether :math:`12\times N_{side}^2` matches data.size
     typ : str
       The type of map being supplied in `data`.
+    error : float or array
+        If errors are uncorrelated, this can be used to specify them
+        (a diagonal covariance matrix will then be constructed).
+    cov : numpy.ndarray
+        2D-array containing the covariance matrix
 
     Attributes
     -------

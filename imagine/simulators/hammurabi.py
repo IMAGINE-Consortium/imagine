@@ -105,10 +105,8 @@ class Hammurabi(Simulator):
         # Includes the new data
         sync_name_cache = []
         for key in self.observables:
-            name, freq, nside, flag = key
-
-            if nside == 'tab':
-                raise NotImplementedError('Tabular datasets not yet supported!')
+            # Adjust the keys to hammurabi X format
+            name, freq, nside, flag = self._adjust_key(key)
 
             if name == 'sync':
                 if (freq, nside) not in sync_name_cache:  # Avoids duplication
@@ -178,7 +176,7 @@ class Hammurabi(Simulator):
             self._clean_up_dumped_fields()
 
         # Adjusts the units (without copy) and returns
-        return self._ham.sim_map[key] << self._units(key)
+        return self._ham.sim_map[self._adjust_key(key)] << self._units(key)
 
     def _units(self, key):
         if key[0] == 'sync':
@@ -278,7 +276,7 @@ class Hammurabi(Simulator):
             mask_data[0].tofile(self._mask_dump_file)
 
             # Adjusts Hammurabi's settings
-            Nside = mask_keys[0][2]
+            Nside = str(mask_keys[0][2])
             self._ham.mod_par(['mask'], {'cue':'1',
                                               'filename': self._mask_dump_file.name,
                                               'nside': Nside})
@@ -291,3 +289,24 @@ class Hammurabi(Simulator):
                 del self._mask_dump_file
 
         self._masks = masks
+
+    def _adjust_key(self, key):
+        """Adjust key to a hammurabi-convenient format"""
+
+        name, freq, nside, flag = key
+
+        if freq is None:
+            freq = 'nan'
+        elif hasattr(freq, 'is_integer'):
+            if freq.is_integer():
+                freq = int(freq)
+        freq = str(freq)
+
+        if flag is None:
+            flag = 'nan'
+
+        if nside == 'tab':
+            raise NotImplementedError('Tabular datasets not yet supported!')
+        nside = str(nside)
+
+        return (name, freq, nside, flag)
