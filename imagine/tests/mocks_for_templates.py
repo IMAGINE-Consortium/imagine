@@ -42,8 +42,8 @@ def MY_SIMULATOR_simulate(simulator_settings, x, y, z,
     assert x.shape == y.shape == z.shape
     # Tests checklists and the shape of the coordinate array
     mock_sim = np.empty(lat.size)*checklist_params['value']
-    # Tests the controllist and the freq_Ghz arg (which is supposed to be a string)
-    assert type(freq_Ghz) == str
+    # Tests the controllist and the freq_Ghz arg
+    assert isinstance(freq_Ghz, float)
     mock_sim[0] = simulator_settings['mock']['start_value']*float(freq_Ghz)
     # Tests reading a Field
     mock_sim[1] = B_field_values[0,0,0,0].to_value(u.microgauss)

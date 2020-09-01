@@ -1,6 +1,7 @@
 # %% IMPORTS
 # Built-in imports
 import abc
+from itertools import chain
 import logging as log
 import tempfile
 import os
@@ -493,21 +494,16 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         else:
             self.ensemble_seeds = None
 
-    def _core_likelihood(self, cube):
-        """
-        core log-likelihood calculator
+    # This function returns all parameter names of all factories in order
+    def get_par_names(self):
+        # Create list of names
+        names = list(chain(*[factory.active_parameters
+                             for factory in self._factory_list]))
 
-        Parameters
-        ----------
-        cube
-            list of variable values
+        # Return them
+        return(names)
 
-        Returns
-        -------
-        log-likelihood value
-        """
-        log.debug('@ pipeline::_core_likelihood')
-        log.debug('sampler at %s' % str(cube))
+    def _get_observables(self, cube):
         # security boundary check
         if np.any(cube > 1.) or np.any(cube < 0.):
             log.debug('cube %s requested. returned most negative possible number' % str(cube))
@@ -534,6 +530,28 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         assert(head_idx == len(self._active_parameters))
 
         observables = self._simulator(field_list)
+
+        return(observables)
+
+    def _core_likelihood(self, cube):
+        """
+        core log-likelihood calculator
+
+        Parameters
+        ----------
+        cube
+            list of variable values
+
+        Returns
+        -------
+        log-likelihood value
+        """
+        log.debug('@ pipeline::_core_likelihood')
+        log.debug('sampler at %s' % str(cube))
+
+        # Obtain observables for provided cube
+        observables = self._get_observables(cube)
+
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
         # check likelihood value until negative (or no larger than given threshold)

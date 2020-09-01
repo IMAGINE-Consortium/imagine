@@ -25,13 +25,16 @@ class TestObservableDicts(object):
     def test_measuredict_append_array(self):
         arr = np.random.rand(1, 3)
         measuredict = Measurements()
-        measuredict.append(('test', 'nan', '3', 'nan'), arr, True)  # plain array
-        local_arr = measuredict[('test', 'nan', '3', 'nan')].data
+        measuredict.append(name=('test', None, 3, None),
+                           data=arr,
+                           plain=True)  # plain array
+        local_arr = measuredict[('test', None, 3, None)].data
         if mpirank == 0:
             assert np.allclose(local_arr[0], arr[0])
         hrr = np.random.rand(1, 48)
-        measuredict.append(('test', 'nan', '2', 'nan'), hrr)  # healpix array
-        local_arr = measuredict[('test', 'nan', '2', 'nan')].data
+        measuredict.append(name=('test', None, 2, None),
+                           data=hrr)  # healpix array
+        local_arr = measuredict[('test', None, 2, None)].data
         if mpirank == 0:
             assert np.allclose(local_arr[0], hrr[0])
 
@@ -39,104 +42,136 @@ class TestObservableDicts(object):
         hrr = np.random.rand(1, 48)
         obs1 = Observable(hrr, 'measured')
         measuredict = Measurements()
-        measuredict.append(('test', 'nan', '2', 'nan'), obs1)  # healpix Observable
-        assert np.allclose(measuredict[('test', 'nan', '2', 'nan')].data[0], hrr[0])
+        measuredict.append(name=('test', None, 2, None),
+                           data=obs1)  # healpix Observable
+        assert np.allclose(measuredict[('test', None, 2, None)].data[0], hrr[0])
         arr = np.random.rand(1, 3)
         obs2 = Observable(arr, 'measured')
-        measuredict.append(('test', 'nan', '3', 'nan'), obs2, True)  # plain Observable
-        assert np.allclose(measuredict[('test', 'nan', '3', 'nan')].data[0], arr[0])
+        measuredict.append(name=('test', None, 3, None),
+                           data=obs2,
+                           plain=True)  # plain Observable
+        assert np.allclose(measuredict[('test', None, 3, None)].data[0], arr[0])
 
     def test_simdict_append_array(self):
         arr = np.random.rand(2, 3)
         simdict = Simulations()
-        simdict.append(('test', 'nan', '3', 'nan'), arr, True)  # plain array
-        assert simdict[('test', 'nan', '3', 'nan')].shape == (2*mpisize, 3)
-        assert np.allclose(simdict[('test', 'nan', '3', 'nan')].data, arr)
+        simdict.append(name=('test', None, 3, None),
+                       data=arr,
+                       plain=True)  # plain array
+        assert simdict[('test', None, 3, None)].shape == (2*mpisize, 3)
+        assert np.allclose(simdict[('test', None, 3, None)].data, arr)
         hrr = np.random.rand(3, 48)
-        simdict.append(('test', 'nan', '2', 'nan'), hrr)  # healpix array
-        assert simdict[('test', 'nan', '2', 'nan')].shape == (3*mpisize, 48)
-        assert np.allclose(simdict[('test', 'nan', '2', 'nan')].data, hrr)
+        simdict.append(name=('test', None, 2, None),
+                       data=hrr)  # healpix array
+        assert simdict[('test', None, 2, None)].shape == (3*mpisize, 48)
+        assert np.allclose(simdict[('test', None, 2, None)].data, hrr)
 
     def test_simdict_append_array_twice(self):
         arr = np.random.rand(2, 3)
         simdict = Simulations()
-        simdict.append(('test', 'nan', '3', 'nan'), arr, True)  # plain array
-        assert simdict[('test', 'nan', '3', 'nan')].shape == (2*mpisize, 3)
-        simdict.append(('test', 'nan', '3', 'nan'), arr, True)  # plain array
-        assert simdict[('test', 'nan', '3', 'nan')].shape == (4*mpisize, 3)
+        simdict.append(name=('test', None, 3, None),
+                       data=arr,
+                       plain=True)  # plain array
+        assert simdict[('test', None, 3, None)].shape == (2*mpisize, 3)
+        simdict.append(name=('test', None, 3, None),
+                       data=arr,
+                       plain=True)  # plain array
+        assert simdict[('test', None, 3, None)].shape == (4*mpisize, 3)
 
     def test_simdict_append_observable(self):
         hrr = np.random.rand(2, 48)
         obs1 = Observable(hrr, 'simulated')
         simdict = Simulations()
-        simdict.append(('test', 'nan', '2', 'nan'), obs1)  # healpix Observable
-        assert simdict[('test', 'nan', '2', 'nan')].shape == (2*mpisize, 48)
-        assert np.allclose(simdict[('test', 'nan', '2', 'nan')].data, hrr)
+        simdict.append(name=('test', None, 2, None),
+                       data=obs1)  # healpix Observable
+        assert simdict[('test', None, 2, None)].shape == (2*mpisize, 48)
+        assert np.allclose(simdict[('test', None, 2, None)].data, hrr)
         arr = np.random.rand(5, 3)
         obs2 = Observable(arr, 'simulated')
-        simdict.append(('test', 'nan', '3', 'nan'), obs2, True)  # plain Observable
-        assert simdict[('test', 'nan', '3', 'nan')].shape == (5*mpisize, 3)
-        assert np.allclose(simdict[('test', 'nan', '3', 'nan')].data, arr)
+        simdict.append(name=('test', None, 3, None),
+                       data=obs2,
+                       plain=True)  # plain Observable
+        assert simdict[('test', None, 3, None)].shape == (5*mpisize, 3)
+        assert np.allclose(simdict[('test', None, 3, None)].data, arr)
 
     def test_covdict_append_array(self):
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
-        covdict.append(('test', 'nan', str(2*mpisize), 'nan'), cov, True)  # plain covariance
-        assert covdict[('test', 'nan', str(2*mpisize), 'nan')].shape == (2*mpisize, 2*mpisize)
-        assert np.allclose(covdict[('test', 'nan', str(2*mpisize), 'nan')].data, cov)
+        covdict.append(name=('test', None, 2*mpisize, None),
+                       data=cov,
+                       plain=True)  # plain covariance
+        assert covdict[('test', None, 2*mpisize, None)].shape == (2*mpisize, 2*mpisize)
+        assert np.allclose(covdict[('test', None, 2*mpisize, None)].data, cov)
         cov = np.random.rand(12*mpisize, 12*mpisize*mpisize)
-        covdict.append(('test', 'nan', str(mpisize), 'nan'), cov)  # healpix covariance
-        assert covdict[('test', 'nan', str(mpisize), 'nan')].shape == (12*mpisize*mpisize, 12*mpisize*mpisize)
-        assert np.allclose(covdict[('test', 'nan', str(mpisize), 'nan')].data, cov)
+        covdict.append(name=('test', None, mpisize, None),
+                       data=cov)  # healpix covariance
+        assert covdict[('test', None, mpisize, None)].shape == (12*mpisize*mpisize, 12*mpisize*mpisize)
+        assert np.allclose(covdict[('test', None, mpisize, None)].data, cov)
 
     def test_covdict_append_observable(self):
         cov = Observable(np.random.rand(2, 2*mpisize), 'covariance')
         covdict = Covariances()
-        covdict.append(('test', 'nan', str(2*mpisize), 'nan'), cov, True)  # plain covariance
-        assert np.allclose(covdict[('test', 'nan', str(2*mpisize), 'nan')].data, cov.data)
+        covdict.append(name=('test', None, 2*mpisize, None),
+                       data=cov,
+                       plain=True)  # plain covariance
+        assert np.allclose(covdict[('test', None, 2*mpisize, None)].data, cov.data)
         cov = Observable(np.random.rand(12*mpisize, 12*mpisize*mpisize), 'covariance')
-        covdict.append(('test', 'nan', str(mpisize), 'nan'), cov)  # healpix covariance
-        assert np.allclose(covdict[('test', 'nan', str(mpisize), 'nan')].data, cov.data)
+        covdict.append(name=('test', None, mpisize, None),
+                       data=cov)  # healpix covariance
+        assert np.allclose(covdict[('test', None, mpisize, None)].data, cov.data)
 
     def test_maskdict_append_array(self):
         msk = np.random.randint(0, 2, 48).reshape(1, -1)
         comm.Bcast(msk, root=0)
         mskdict = Masks()
-        mskdict.append(('test', 'nan', '2', 'nan'), msk)
-        local_msk = mskdict[('test', 'nan', '2', 'nan')].data
+        mskdict.append(name=('test', None, 2, None),
+                       data=msk)
+        local_msk = mskdict[('test', None, 2, None)].data
         assert np.allclose(local_msk[0], msk[0])
-        mskdict.append(('test', 'nan', '48', 'nan'), msk, True)
-        local_msk = mskdict[('test', 'nan', '48', 'nan')].data
+        mskdict.append(name=('test', None, 48, None),
+                       data=msk,
+                       plain=True)
+        local_msk = mskdict[('test', None, 48, None)].data
         assert np.allclose(local_msk[0], msk[0])
 
     def test_meadict_apply_mask(self):
         msk = np.array([0, 1, 0, 1, 1]).reshape(1, 5)
         mskdict = Masks()
         comm.Bcast(msk, root=0)
-        mskdict.append(('test', 'nan', '5', 'nan'), msk, True)
+        mskdict.append(name=('test', None, 5, None),
+                       data=msk,
+                       plain=True)
         arr = np.array([0., 1., 2., 3., 4.]).reshape(1, 5)
         meadict = Measurements()
-        meadict.append(('test', 'nan', '5', 'nan'), arr, True)
+        meadict.append(name=('test', None, 5, None),
+                       data=arr,
+                       plain=True)
         meadict = mskdict(meadict)
-        assert np.allclose(meadict[('test', 'nan', '3', 'nan')].data[0], [1, 3, 4])
+        assert np.allclose(meadict[('test', None, 3, None)].data[0], [1, 3, 4])
         # HEALPix map
         msk = np.random.randint(0, 2, 48).reshape(1, 48)
         comm.Bcast(msk, root=0)
-        mskdict.append(('test', 'nan', '2', 'nan'), msk)
+        mskdict.append(name=('test', None, 2, None),
+                       data=msk)
         arr = np.random.rand(1, 48)
-        meadict.append(('test', 'nan', '2', 'nan'), arr)
+        meadict.append(name=('test', None, 2, None),
+                       data=arr)
         pix_num = msk.sum()
         meadict = mskdict(meadict)
-        assert ('test', 'nan', str(pix_num), 'nan') in meadict.keys()
+        assert ('test', None, pix_num, None) in meadict.keys()
 
     def test_covdict_apply_mask(self):
         msk = np.random.randint(0, 2, 2*mpisize).reshape(1, -1)
         mskdict = Masks()
         comm.Bcast(msk, root=0)
-        mskdict.append(('test', 'nan', str(2*mpisize), 'nan'), msk, True)
+        mskdict.append(name=('test', None, 2*mpisize, None),
+                       data=msk,
+                       plain=True)
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
-        covdict.append(('test', 'nan', str(2*mpisize), 'nan'), cov, True)
+        covdict.append(name=('test', None, 2*mpisize, None),
+                       data=cov,
+                       plain=True)
         covdict = mskdict(covdict)
         pix_num = msk.sum()
-        assert ('test', 'nan', str(pix_num), 'nan') in covdict.keys()
+        assert ('test', None, pix_num, None) in covdict.keys()
