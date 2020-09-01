@@ -6,6 +6,7 @@ import logging as log
 import tempfile
 import os
 from os import path
+import shutil
 
 # Package imports
 from astropy.table import QTable
@@ -116,7 +117,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples = None
 
     def __call__(self, *args, **kwargs):
-        return(self.call(*args, **kwargs))
+        return self.call(*args, **kwargs)
 
     @property
     def chains_directory(self):
@@ -145,6 +146,17 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 del self._chains_dir_obj
             assert path.isdir(chains_directory)
             self._chains_directory = chains_directory
+
+    def clean_chains_directory(self):
+        """Removes the contents of the chains directory"""
+        if mpirank==0:
+            for f in os.listdir(self.chains_directory):
+                fullpath = path.join(self.chains_directory, f)
+                try:
+                    shutil.rmtree(fullpath)
+                except NotADirectoryError:
+                    os.remove(fullpath)
+        comm.Barrier()
 
     @property
     def active_parameters(self):

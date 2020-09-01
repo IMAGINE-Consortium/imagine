@@ -1,7 +1,6 @@
 # %% IMPORTS
 # Built-in imports
 import logging as log
-import shutil
 import os
 from os import path
 
@@ -145,15 +144,12 @@ class UltranestPipeline(Pipeline):
         ultranest_dir = path.join(self.chains_directory, 'ultranest')
         # Creates directory, if needed
         os.makedirs(ultranest_dir, exist_ok=True)
-
         # Cleans up the chains directory if not resuming
         if not init_params['resume']:
             init_params['resume'] = 'overwrite'
             # Removing manually as UltraNest's 'overwrite' option does not
             # seem to be working correctly
-            shutil.rmtree(ultranest_dir)
-            # re-creates directory
-            os.makedirs(ultranest_dir)
+            self.clean_chains_directory()
 
         # Creates directory, if needed
         os.makedirs(ultranest_dir, exist_ok=True)
