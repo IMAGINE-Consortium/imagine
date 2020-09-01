@@ -42,7 +42,7 @@ def prepare_prior_samples(n_samp, c, distr1, distr2):
 
 
 def prepare_mock_dataset(a0, b0, a, size=1000,
-                         error=0.1, seed=233):
+                         error=0.8, seed=233):
     r"""
     Prepares a mock dataset
 
@@ -82,12 +82,12 @@ def prepare_mock_dataset(a0, b0, a, size=1000,
         An IMAGINE dataset object
     """
     # Sets the x coordinates of the observations
-    x = np.linspace(0.01,2.*np.pi-0.01,size)
+    x = np.linspace(0.01, 2.*np.pi-0.01, size)
     # Sets the seed for signal field
     np.random.seed(seed)
 
     # Computes the signal
-    signal = 5*(1+ np.cos(x*a)) * np.random.normal(loc=a0, scale=b0, size=size)
+    signal = 5*(1 + np.cos(x*a)) * np.random.normal(loc=a0, scale=b0, size=size)
 
     # Includes the error
     fd = signal + np.random.normal(loc=0., scale=error, size=size)
@@ -96,7 +96,7 @@ def prepare_mock_dataset(a0, b0, a, size=1000,
     pl.plot(x, signal, label='truth')
     pl.plot(x, fd, label='data')
     pl.savefig('./data_groundtruth')
-    data_dict = {'meas' : fd,
+    data_dict = {'meas': fd,
                  'err': np.ones_like(fd)*error,
                  'x': x,
                  'y': np.zeros_like(fd),
@@ -118,8 +118,8 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
     """
     samp = pipe.samples
     # Sets the levels to show 1, 2 and 3 sigma
-    sigmas=np.array([1.,2.,3.])
-    levels=1-np.exp(-0.5*sigmas*sigmas)
+    sigmas = np.array([1., 2., 3.])
+    levels = 1-np.exp(-0.5*sigmas*sigmas)
 
     # Visualize with a corner plot
     l = []
@@ -142,14 +142,12 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
 
 
 if __name__ == '__main__':
-
-
     comm = MPI.COMM_WORLD
     mpirank = comm.Get_rank()
     mpisize = comm.Get_size()
 
-    output_file_plot = 'correlation_pipeline_corner_1e5.pdf'
-    output_text = 'correlation_pipeline_results_1e5.txt'
+    output_file_plot = 'correlation_pipeline_corner.pdf'
+    output_text = 'correlation_pipeline_results.txt'
 
     # True values of the parameters
     a0 = 3.; b0 = 2; a = 0.5
@@ -201,11 +199,11 @@ if __name__ == '__main__':
 
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
-    B_factory.default_parameters = {'b0': 2}
-    B_factory.active_parameters = ('a0',)
+    # B_factory.default_parameters = {'b0': 2}
+    B_factory.active_parameters = ('a0', 'b0')
 
     B_factory.priors = {'a0': img.priors.FlatPrior(xmin=-5*u.microgauss, xmax=5*u.microgauss, unit=u.microgauss),
-    #                    'b0': img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss),
+                        'b0': img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss),
                         }
 
     p2 = img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss)
@@ -228,7 +226,7 @@ if __name__ == '__main__':
     pl.close()
     corr_dict = {
         ('a0', 'a'): -0.3,
-    #    ('b0', 'a'): True
+        ('b0', 'a'): True
     }
 
     # Sets the field factory list
@@ -248,8 +246,8 @@ if __name__ == '__main__':
                                                prior_correlations=corr_dict)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 25000,
-                                     'Lepsilon': 50,
+    pipeline.sampling_controllers = {'max_ncalls': 30000,
+                                     'Lepsilon': 70,
                                      'dlogz': 2,
                                      'min_num_live_points': 1000,
                                      'verbose': True,
@@ -265,7 +263,7 @@ if __name__ == '__main__':
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        plot_results(pipeline, [a0, a], output_file=output_file_plot)
+        plot_results(pipeline, [a0, b0, a], output_file=output_file_plot)
 
         # Prints setup
         print('\nRC used:', img.rc)
