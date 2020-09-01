@@ -1,6 +1,7 @@
 #!/usr/env python
 
-# External packages 
+import os
+# External packages
 import numpy as np
 import healpy as hp
 import astropy.units as u
@@ -18,12 +19,12 @@ from imagine.fields.hamx import BrndES, BrndESFactory
 def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     """
     Prepares fake total intensity and Faraday depth data
-    
+
     Parameters
     ----------
     b0, psi0 : float
         "True values" in the WMAP model
-    
+
     Returns
     -------
     mock_data : imagine.observables.observables_dict.Measurements
@@ -33,11 +34,11 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     """
     ## Sets the resolution
     nside=2
-    size = 12*nside**2 
+    size = 12*nside**2
 
-    # Generates the fake datasets 
-    sync_dset = img_obs.SynchrotronHEALPixDataset(data=np.empty(size)*u.K, 
-                                                  frequency=23*u.GHz, type='I')
+    # Generates the fake datasets
+    sync_dset = img_obs.SynchrotronHEALPixDataset(data=np.empty(size)*u.K,
+                                                  frequency=23*u.GHz, typ='I')
     fd_dset = img_obs.FaradayDepthHEALPixDataset(data=np.empty(size)*u.rad/u.m**2)
 
     # Appends them to an Observables Dictionary
@@ -47,7 +48,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
 
     # Prepares the Hammurabi simmulator for the mock generation
     mock_generator = img.simulators.Hammurabi(measurements=trigger)
-    
+
     # BregLSA field
     breg_lsa = BregLSA(parameters={'b0': b0, 'psi0': psi0, 'psi1': 0.9, 'chi0': 25.0})
     # CREAna field
@@ -61,13 +62,13 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
                                  'k1': 0.5, 'a1': 0.0,
                                  'rho': 0.5, 'r0': 8., 'z0': 1.},
                      grid_nx=25, grid_ny=25, grid_nz=15)
-    
+
     ## Generate mock data (run hammurabi)
     outputs = mock_generator([breg_lsa, brnd_es, cre_ana, tereg_ymw16])
-    
+
     ## Collect the outputs
-    mockedI = outputs[('sync', '23', str(nside), 'I')].global_data[0]
-    mockedRM = outputs[('fd', 'nan', str(nside), 'nan')].global_data[0]
+    mockedI = outputs[('sync', 23., nside, 'I')].global_data[0]
+    mockedRM = outputs[('fd', None, nside, None)].global_data[0]
     dm=np.mean(mockedI)
     dv=np.std(mockedI)
 
@@ -75,13 +76,13 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     dataI = (mockedI + np.random.normal(loc=0, scale=err*dm, size=size)) << u.K
     errorI = ((err*dm)**2) << u.K
     sync_dset = img_obs.SynchrotronHEALPixDataset(data=dataI, error=errorI,
-                                                  frequency=23*u.GHz, type='I')
-    ## Just 0.01*50 rad/m^2 of error for noise.  
-    dataRM = (mockedRM + np.random.normal(loc=0, scale=err*50, 
+                                                  frequency=23*u.GHz, typ='I')
+    ## Just 0.01*50 rad/m^2 of error for noise.
+    dataRM = (mockedRM + np.random.normal(loc=0, scale=err*50,
                                           size=12*nside**2))*u.rad/u.m/u.m
     errorRM = ((err*50.)**2) << u.rad/u.m**2
-    fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM, error=errorRM)    
-    
+    fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM, error=errorRM)
+
     mock_data = img_obs.Measurements()
     mock_data.append(dataset=sync_dset)
     mock_data.append(dataset=fd_dset)
@@ -89,7 +90,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     mock_cov = img_obs.Covariances()
     mock_cov.append(dataset=sync_dset)
     mock_cov.append(dataset=fd_dset)
-    
+
     return mock_data, mock_cov
 
 def plot_results(pipe, true_vals, output_file='test.pdf'):
@@ -125,7 +126,7 @@ rms=3
 err=0.01
 
 # Creates the mock dataset based on them
-mock_data, mock_cov = prepare_mock_obs_data(b0=b0, psi0=psi0, 
+mock_data, mock_cov = prepare_mock_obs_data(b0=b0, psi0=psi0,
                                             rms=rms, err=0.01)
 
 # Setting up of the pipeline
@@ -135,7 +136,7 @@ likelihood = img.likelihoods.EnsembleLikelihood(mock_data, mock_cov)
 ## WMAP B-field, vary only b0 and psi0
 breg_factory = BregLSAFactory()
 breg_factory.active_parameters = ('b0', 'psi0')
-breg_factory.priors = {'b0':  img.priors.FlatPrior(interval=[0., 10.]), 
+breg_factory.priors = {'b0':  img.priors.FlatPrior(interval=[0., 10.]),
                       'psi0': img.priors.FlatPrior(interval=[0., 50.])}
 ## Random B-field, vary only RMS amplitude
 brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
@@ -153,10 +154,13 @@ factory_list = [breg_factory, brnd_factory, cre_factory,
 # Prepares simulator
 simulator = img.simulators.Hammurabi(measurements=mock_data)
 
+
+os.makedirs('pipeline_example_chains', exist_ok=True)
+
 # Prepares pipeline
-pipeline = img.pipelines.MultinestPipeline(simulator=simulator, 
-                                       factory_list=factory_list, 
-                                       likelihood=likelihood, 
+pipeline = img.pipelines.MultinestPipeline(simulator=simulator,
+                                       factory_list=factory_list,
+                                       likelihood=likelihood,
                                        ensemble_size=20,
                                        chains_directory='pipeline_example_chains')
 pipeline.sampling_controllers = {'n_live_points': 500, 'verbose': True}
@@ -171,7 +175,7 @@ if mpirank == 0:
         f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
     # Reports the posterior
-    plot_results(pipeline, [b0, psi0, err], 
+    plot_results(pipeline, [b0, psi0, err],
                  output_file='example_pipeline.pdf')
 
     # Prints setup

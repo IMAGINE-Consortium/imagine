@@ -171,7 +171,7 @@ if __name__ == '__main__':
                                                ensemble_size=512)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 1000,
+    pipeline.sampling_controllers = {'max_ncalls': 1500,
                                     'Lepsilon': 0.1,
                                     'dlogz': 0.5,
                                     'min_num_live_points': 100}
