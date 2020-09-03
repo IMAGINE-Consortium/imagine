@@ -116,6 +116,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples_array = None
         self._samples = None
 
+        # Generates ensemble seeds
+        self._randomness()
+
     def __call__(self, *args, **kwargs):
         return self.call(*args, **kwargs)
 
@@ -506,10 +509,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         np.random.seed(self.master_seed)
 
         if self.random_type == 'fixed':
-            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
+            common_ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
+            self.ensemble_seeds = {factory: common_ensemble_seeds
+                                   for factory in self._factory_list}
+        elif self.random_type == 'controllable':
+            self.ensemble_seeds = {factory: ensemble_seed_generator(self.ensemble_size_actual)
+                                   for factory in self._factory_list}
         else:
-            self.ensemble_seeds = None
-
+            self.ensemble_seeds = {factory: None for factory in self._factory_list}
 
     # This function returns all parameter names of all factories in order
     def get_par_names(self):
@@ -539,9 +546,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             for i, av in enumerate(factory.active_parameters):
                 variable_dict[av] = factory_cube[i]
 
+            ensemble_seeds = self.ensemble_seeds[factory]
             field_list += (factory(variables=variable_dict,
                                    ensemble_size=self.ensemble_size_actual,
-                                   ensemble_seeds=self.ensemble_seeds),)
+                                   ensemble_seeds=ensemble_seeds),)
             log.debug('create '+factory.name+' field')
             head_idx = tail_idx
         assert(head_idx == len(self._active_parameters))
@@ -565,9 +573,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ pipeline::_core_likelihood')
         log.debug('sampler at %s' % str(cube))
-
-        # Resets the seeds
-        self._randomness()
 
         # Obtain observables for provided cube
         observables = self._get_observables(cube)
