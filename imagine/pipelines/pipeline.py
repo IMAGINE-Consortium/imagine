@@ -149,6 +149,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def clean_chains_directory(self):
         """Removes the contents of the chains directory"""
+        log.debug('@ pipeline::clean_chains_directory')
+
         if mpirank==0:
             for f in os.listdir(self.chains_directory):
                 fullpath = path.join(self.chains_directory, f)
@@ -477,6 +479,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         Resets internal state before a new run
         """
+        log.debug('@ pipeline::tidy_up')
+
         self.results = None
         self._evidence = None
         self._evidence_err = None
@@ -505,6 +509,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
         else:
             self.ensemble_seeds = None
+
 
     # This function returns all parameter names of all factories in order
     def get_par_names(self):
@@ -561,6 +566,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         log.debug('@ pipeline::_core_likelihood')
         log.debug('sampler at %s' % str(cube))
 
+        # Resets the seeds
+        self._randomness()
+
         # Obtain observables for provided cube
         observables = self._get_observables(cube)
 
@@ -569,6 +577,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # check likelihood value until negative (or no larger than given threshold)
         if self.check_threshold and current_likelihood > self.likelihood_threshold:
             raise ValueError('log-likelihood beyond threshold')
+
+        log.info('Likelihood evaluation at point:'
+                 ' {0} value: {1}'.format(cube, current_likelihood))
         return current_likelihood * self.likelihood_rescaler
 
     def _mpi_likelihood(self, cube):
