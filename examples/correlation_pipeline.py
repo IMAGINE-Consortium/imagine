@@ -165,6 +165,7 @@ if __name__ == '__main__':
 
     distr1 = lognorm(loc=0.4, s=2)
     distr2 = truncexpon(loc=0, scale=2, b=10)
+    c = 0.8
 
     s1, s2 = prepare_prior_samples(1000, 0.8, distr1, distr2)
 
@@ -246,8 +247,8 @@ if __name__ == '__main__':
                                                prior_correlations=corr_dict)
     pipeline.random_type = 'controllable'
     # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 30000,
-                                     'Lepsilon': 70,
+    pipeline.sampling_controllers = {'max_ncalls': 50000,
+                                     'Lepsilon': 50,
                                      'dlogz': 2,
                                      'min_num_live_points': 1000,
                                      'verbose': True,
