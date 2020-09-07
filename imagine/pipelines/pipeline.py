@@ -609,7 +609,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         if self.sampler_supports_mpi:
 
-            log.debug('@ multinest_pipeline::_mpi_likelihood')
+            log.debug('@ pipeline::_mpi_likelihood')
 
             # Gathers cubes from all nodes
             cube_local_size = cube.size
