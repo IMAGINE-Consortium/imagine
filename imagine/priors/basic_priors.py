@@ -8,14 +8,14 @@ from scipy.stats import norm
 import astropy.units as u
 
 # IMAGINE imports
-from imagine.priors import GeneralPrior, ScipyPrior
+from imagine.priors import Prior, ScipyPrior
 
 # All declaration
 __all__ = ['FlatPrior', 'GaussianPrior']
 
 
 # %% CLASS DEFINITIONS
-class FlatPrior(GeneralPrior):
+class FlatPrior(Prior):
     """
     Prior distribution stating that any parameter values
     within the valid interval have the same prior probability.

@@ -8,7 +8,7 @@ import astropy.units as u
 
 # IMAGINE imports
 from imagine.fields.grid import BaseGrid, UniformGrid
-from imagine.priors import GeneralPrior
+from imagine.priors import Prior
 from imagine.tools import BaseClass, unity_mapper, req_attr
 
 # All declaration

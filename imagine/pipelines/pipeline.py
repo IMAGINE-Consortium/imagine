@@ -17,7 +17,7 @@ import numpy as np
 from imagine import rc
 from imagine.likelihoods import Likelihood
 from imagine.fields import FieldFactory
-from imagine.priors import GeneralPrior
+from imagine.priors import Prior
 from imagine.simulators import Simulator
 from imagine.tools import BaseClass, ensemble_seed_generator, misc
 
