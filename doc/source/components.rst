@@ -383,19 +383,23 @@ repository. Below the usage of an imported dataset is illustrated::
     covariances.append(dataset=my_data)
 
 
+
 Each observable type should has an agreed/conventional name.
-The presently available observable names are:
+The presently available **observable names** are:
 
-* 'fd' - Faraday depth
-* 'sync' - Synchrotron emission
+.. _observable_names:
 
-    * with tag 'I' - Total intensity
-    * with tag 'Q' - Stokes Q
-    * with tag 'U' - Stokes U
-    * with tag 'PI' - polarisation intensity
-    * with tag 'PA' - polarisation angle
+Observable names
+    * 'fd' - Faraday depth
+    * 'dm' - Dispersion measure
+    * 'sync' - Synchrotron emission
 
-* 'dm' - Dispersion measure
+        * with tag 'I' - Total intensity
+        * with tag 'Q' - Stokes Q
+        * with tag 'U' - Stokes U
+        * with tag 'PI' - polarisation intensity
+        * with tag 'PA' - polarisation angle
+
 
 
 .. _Tabular datasets:
@@ -426,8 +430,8 @@ a catalog from ViZieR and stores in in an IMAGINE tabular dataset object::
 
     # Loads it to the TabularDataset (the catalogue obj actually contains units)
     RM_Mao2010 = TabularDataset(catalog, name='fd', units=catalog['RM'].unit,
-                                data_column='RM', error_column='e_RM', tag=None,
-                                lat_column='GLAT', lon_column='GLON')
+                                data_col='RM', err_col='e_RM', tag=None,
+                                lat_col='GLAT', lon_col='GLON')
 
 From this point the object :py:obj:`RM_Mao2010` can be appended to a
 :py:obj:`Measurements <imagine.observables.observable_dict.Measurements>`.
@@ -483,14 +487,37 @@ requires the user to supply the frequency of the observation and the subtype
 
 .. _Observables:
 
------------------------------------------
-Measurements, Simulations and Covariances
------------------------------------------
+---------------------------------------
+Observables and observable dictionaries
+---------------------------------------
+
+In IMAGINE, observable quantities (either measured or simulated) are
+represented internally by instances of the
+:py:class:`imagine.observables.Observable <imagine.observables.observable.Observable>`
+class. These are grouped in *observable dictionaries* (subclasses of
+:py:class:`imagine.observables.ObservableDict <imagine.observables.observable_dict.ObservableDict>`)
+which are used to exchange multiple observables between IMAGINE's components.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Measurements and Simulations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A
+:py:class:`imagine.observables.Measurements <imagine.observables.observable_dict.Measurements>`
+object is used, as the name implies, to hold a set of actual measured physical
+datasets (e.g. a set of intensity maps of the sky at different wavelengths).
+
+As discussed :ref:`previously <Datasets>`, data can be provided to
+:py:class:`Measurements <imagine.observables.observable_dict.Measurements>`
+quite simply passing a :py:class:`Datasets <imagine.observables.dataset.Dataset>`.
+object to the :py:meth:`append <imagine.observables.observable_dict.Measurements.append`
+method of ones :py:class:`Measurements <imagine.observables.observable_dict.Measurements>`.
+
 
 .. _ObservableDictionaries:
 
 
-
+:ref:`observable names <observable_names>`
 
 
 .. _Simulators:
@@ -499,9 +526,16 @@ Measurements, Simulations and Covariances
 Simulators
 ----------
 
+Simulators are reponsible for mapping a set of :ref:`Fields` onto a set of
+:ref:`Observables <Observables>`. They are represented by a subclass of
+:py:class:`imagine.simulators.Simulator <imagine.simulators.simulator.Simulator>`.
+
 .. literalinclude:: ../../imagine/templates/simulator_template.py
 
 
+^^^^^^^^^^^^^^^^^^^
+Hammurabi simulator
+^^^^^^^^^^^^^^^^^^^
 
 
 
