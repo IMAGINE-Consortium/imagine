@@ -10,18 +10,29 @@ script, we strongly recommend reading the original tutorial either in the
 documentation website or in the corresponding jupyter notebook in the tutorials
 directory.
 """
+
+# Built-in imports
+import os
+import logging
+from mpi4py import MPI
+# External packages
 import numpy as np
 import astropy.units as u
 import corner
 import matplotlib
-matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
+# IMAGINE
 import imagine as img
+import imagine.observables as img_obs
 import imagine.fields.test_field as testFields
 from imagine.simulators.test_simulator import TestSimulator
 
-from mpi4py import MPI
+matplotlib.use('Agg')
+# Sets up MPI variables
+comm = MPI.COMM_WORLD
+mpirank = comm.Get_rank()
+mpisize = comm.Get_size()
+
 
 def prepare_mock_dataset(a0=3., b0=6., size=10,
                          error=0.1, seed=233):
@@ -76,19 +87,15 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
     fd = signal + np.random.normal(loc=0.,scale=error,size=size)
 
     # Prepares a data dictionary
-    data_dict = {'meas' : fd,
+    data_dict = {'meas' : u.Quantity(fd, u.microgauss*u.cm**-3),
                  'err': np.ones_like(fd)*error,
                  'x': x,
                  'y': np.zeros_like(fd),
                  'z': np.zeros_like(fd)}
 
-    fd_units = u.microgauss*u.cm**-3
-
-    dataset = img.observables.TabularDataset(data_dict, name='test', 
-                                             data_column='meas',
-                                             coordinates_type='cartesian',
-                                             x_column='x', y_column='y', z_column='z',
-                                             error_column='err', units=fd_units)
+    dataset = img.observables.TabularDataset(data_dict, name='test',
+                                             data_col='meas',
+                                             err_col='err')
     return dataset
 
 
@@ -118,20 +125,29 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
     figure.savefig(output_file)
 
 
-if __name__ == '__main__':
 
 
-    comm = MPI.COMM_WORLD
-    mpirank = comm.Get_rank()
-    mpisize = comm.Get_size()
+def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
+                       sampling_controllers = {}, ensemble_size=50,
+                       true_parameters={'a0':3, 'b0': 6},
+                       run_directory='basic_pipeline_run'):
 
-    output_file_plot = 'basic_pipeline_corner.pdf'
-    output_text = 'basic_pipeline_results.txt'
+    # Creates a directory for storing the chains and log
+    chains_dir = os.path.join(run_directory, 'chains')
+    if mpirank==0:
+        os.makedirs(chains_dir, exist_ok=True)
+    comm.Barrier()
 
-    # True values of the parameters
-    a0=3.; b0=6
+    # Sets up logging
+    logging.basicConfig(
+      filename=os.path.join(run_directory, 'basic_pipeline.log'),
+      level=logging.INFO)
+
+    output_file_plot = os.path.join(run_directory, 'corner_plot.pdf')
+    output_text = os.path.join(run_directory, 'results.txt')
+
     # Generates the mock data
-    mockDataset = prepare_mock_dataset(a0, b0)
+    mockDataset = prepare_mock_dataset(**true_parameters)
 
     # Prepares Measurements and Covariances objects
     measurements = img.observables.Measurements()
@@ -155,7 +171,7 @@ if __name__ == '__main__':
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0','b0')
     B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
-                       'b0': img.priors.FlatPrior(interval=[0, 10]*u.microgauss)}
+                      'b0': img.priors.FlatPrior(interval=[2, 10]*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
@@ -167,16 +183,13 @@ if __name__ == '__main__':
     likelihood = img.likelihoods.EnsembleLikelihood(measurements, covariances)
 
     # Defines the pipeline using the UltraNest sampler, giving it the required elements
-    pipeline = img.pipelines.UltranestPipeline(simulator=simer,
-                                               factory_list=factory_list,
-                                               likelihood=likelihood,
-                                               ensemble_size=512)
-    pipeline.random_type = 'controllable'
-    # Set some controller parameters that are specific to UltraNest.
-    pipeline.sampling_controllers = {'max_ncalls': 1000,
-                                    'Lepsilon': 0.1,
-                                    'dlogz': 0.5,
-                                    'min_num_live_points': 100}
+    pipeline = pipeline_class(simulator=simer,
+                              factory_list=factory_list,
+                              likelihood=likelihood,
+                              ensemble_size=ensemble_size,
+                              chains_directory=chains_dir)
+    pipeline.sampling_controllers = sampling_controllers
+
 
     # RUNS THE PIPELINE
     results = pipeline()
@@ -188,7 +201,9 @@ if __name__ == '__main__':
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        plot_results(pipeline, [a0,b0], output_file=output_file_plot)
+        plot_results(pipeline,
+                     [true_parameters['a0'], true_parameters['b0']],
+                     output_file=output_file_plot)
 
         # Prints setup
         print('\nRC used:', img.rc)
@@ -201,3 +216,52 @@ if __name__ == '__main__':
             constraints = pipeline.posterior_summary[parameter]
             for k in ['median','errup','errlo']:
                 print('\t', k, constraints[k])
+
+if __name__ == '__main__':
+    # ------ UltraNest -------
+    # Sets run directory name
+    run_directory=os.path.join('imagine_runs','basic_pipeline_run_ultranest')
+    # Sets up the sampler to be used
+    pipeline_class = img.pipelines.UltranestPipeline
+    # Set some controller parameters that are specific to UltraNest.
+    sampling_controllers = {'dlogz': 0.05,
+                            'min_num_live_points': 400,
+                            'min_ess': 1000}
+    # Starts the run
+    if mpirank == 0:
+        print('Running using UltraNest')
+    basic_pipeline_run(run_directory=run_directory,
+                       sampling_controllers=sampling_controllers,
+                       pipeline_class=pipeline_class)
+
+    # ------ MultiNest -------
+    # Sets run directory name
+    run_directory=os.path.join('imagine_runs','basic_pipeline_run_multinest')
+    # Sets up the sampler to be used
+    pipeline_class = img.pipelines.MultinestPipeline
+    # Set some controller parameters that are specific to MultiNest.
+    sampling_controllers = {'n_live_points': 400}
+    # Starts the run
+    if mpirank == 0:
+        print('Running using MultiNest')
+
+    basic_pipeline_run(run_directory=run_directory,
+                       sampling_controllers=sampling_controllers,
+                       pipeline_class=pipeline_class)
+
+    # ------ Dynesty -------
+    # Sets run directory name
+    run_directory=os.path.join('imagine_runs','basic_pipeline_run_dynesty')
+    # Sets up the sampler to be used
+    pipeline_class = img.pipelines.DynestyPipeline
+    # Set some controller parameters that are specific to Dynesty.
+    sampling_controllers = {'nlive_init': 400,
+                            'dlogz_init': 0.1,
+                            'dynamic': True}
+    # Starts the run
+    if mpirank == 0:
+        print('Running using Dynesty')
+
+    basic_pipeline_run(run_directory=run_directory,
+                       sampling_controllers=sampling_controllers,
+                       pipeline_class=pipeline_class)

@@ -28,8 +28,8 @@ class Dataset(BaseClass):
 
         self.coords = None
         self.Nside = None
-        self.frequency = 'nan'
-        self.tag = 'nan'
+        self.frequency = None
+        self.tag = None
         self._cov = None
         self._error = None
         self._data = None
@@ -39,34 +39,31 @@ class Dataset(BaseClass):
     def name(self):
         return(self.NAME)
 
-
     @property
     def frequency(self):
         return self._frequency
 
     @frequency.setter
     def frequency(self, frequency):
-        # Converts the frequency to a string in GHz
-        if hasattr(frequency, 'unit'):
+        # Converts the frequency to a value in GHz
+        if isinstance(frequency, u.Quantity):
             frequency = frequency.to_value(u.GHz, equivalencies=u.spectral())
-            if frequency.is_integer():
-                frequency = int(frequency)
 
-        self._frequency = str(frequency)
+        self._frequency = frequency
 
     @property
     def data(self):
         """ Array in the shape (1, N) """
-        return self._data[np.newaxis,:]
+        return self._data[np.newaxis, :]
 
     @property
     def key(self):
         """Key used in the Observables_dictionary """
-        return (self.name,self.frequency, self.Nside, self.tag)
+        return (self.name, self.frequency, self.Nside, self.tag)
 
     @property
     def cov(self):
-        if self._cov is None:
+        if (self._cov is None) and (self._error is not None):
             self._cov = self._error * peye(self._data.size)
         return self._cov
 
@@ -80,34 +77,36 @@ class TabularDataset(Dataset):
 
     Parameters
     ----------
-    data : dict-like
+    data : dict_like
         Can be a :py:class:`dict`, :py:class:`astropy.table.Table`,
         :py:class:`pandas.DataFrame`, or similar object
         containing the data.
     name : str
         Standard name of this type of observable. E.g. 'fd', 'sync', 'dm'.
-    data_column : str
+
+    Optional
+    --------
+    data_col : str or None. Default: None
         Key used to access the relevant dataset from the provided data
         (i.e. data[data_column]).
-    units : astropy.units.Unit or str
+        If *None*, this value is equal to `name`.
+    units : :obj:`~astropy.units.Unit` object, str or None. Default: None
         Units used for the data.
-    coordinates_type : str
-        Type of coordinates used. Can be 'galactic' or 'cartesian'.
-    lon_column : str
-        Key used to access the Galactic longitudes (in deg) from
+        If *None*, the units are inferred from the given `data_column`.
+    coords_type : {'galactic'; 'cartesian'} or None. Default: None
+        Type of coordinates used.
+        If *None*, type is inferred from present coordinate columns.
+    lon_col, lat_col : str. Default: ('lon', 'lat')
+        Key used to access the Galactic longitudes/latitudes (in deg) from
         `data`.
-    lat_column : str
-        Key used to access the Galactic latitudes (in deg) from
-        `data`.
-    lat_column : str
-        Key used to access the Galactic latitudes (in deg) from
-        `data`.
-    x_column, y_column, z_column : str
-        Keys used to access the coordinates (in kpc) from
-        `data`.
-    frequency : astropy.units.Quantity
+    x_col, y_col, z_col : str. Default: ('x', 'y', 'z')
+        Keys used to access the coordinates (in kpc) from `data`.
+    err_col : str or None. Default: None
+        The key used for accessing the error for the data values.
+        If *None*, no errors are used.
+    frequency : :obj:`~astropy.units.Quantity` object or None. Default: None
         Frequency of the measurement (if relevant)
-    tag : str
+    tag : str or None. Default: None
         Extra information associated with the observable.
           * 'I' - total intensity (in unit K-cmb)
           * 'Q' - Stokes Q (in unit K-cmb, IAU convention)
@@ -115,36 +114,65 @@ class TabularDataset(Dataset):
           * 'PI' - polarisation intensity (in unit K-cmb)
           * 'PA' - polarisation angle (in unit rad, IAU convention)
     """
-    def __init__(self, data, name, data_column=None, units=None,
-                 coordinates_type='galactic', lon_column='lon', lat_column='lat',
-                 x_column='x', y_column='y', z_column='z',
-                 error_column=None, frequency='nan', tag='nan'):
+    def __init__(self, data, name, *, data_col=None, units=None,
+                 coords_type=None, lon_col='lon', lat_col='lat',
+                 x_col='x', y_col='y', z_col='z', err_col=None,
+                 frequency=None, tag=None):
+        # Set name
         self.NAME = name
+
+        # Call super constructor
         super().__init__()
-        if data_column is None:
-            data_column=name
 
+        # If data_col is None, set it to name
+        if data_col is None:
+            data_col = name
 
-        self._data = u.Quantity(data[data_column], units, copy=False)
-        if coordinates_type == 'galactic':
-            self.coords = {'type': coordinates_type,
-                           'lon': u.Quantity(data[lon_column], unit=u.deg),
-                           'lat': u.Quantity(data[lat_column], unit=u.deg)}
-        elif coordinates_type == 'cartesian':
-            self.coords = {'type': coordinates_type,
-                           'x': u.Quantity(data[x_column], unit=u.kpc),
-                           'y': u.Quantity(data[y_column], unit=u.kpc),
-                           'z': u.Quantity(data[z_column], unit=u.kpc)}
-        elif coordinates_type == None:
+        # Obtain data column
+        self._data = u.Quantity(data[data_col], units)
+        units = self._data.unit
+
+        # Determine the keys for galactic and cartesian coordinates
+        gal_keys = {lon_col, lat_col}
+        cart_keys = {x_col, y_col, z_col}
+
+        # If coords_type is None, attempt to infer type from provided data
+        if coords_type is None:
+            # Obtain data keys
+            keys = data.keys()
+
+            # If only cart_keys are present, set type to 'cartesian'
+            if cart_keys.issubset(keys) and not gal_keys.issubset(keys):
+                coords_type = 'cartesian'
+
+            # Else, if only gal_keys are present, set type to 'galactic'
+            elif gal_keys.issubset(keys) and not cart_keys.issubset(keys):
+                coords_type = 'galactic'
+
+        # Obtain coordinates
+        if coords_type is None:
             pass
+        elif(coords_type.lower() == 'galactic'):
+            self.coords = {'type': 'galactic',
+                           'lon': u.Quantity(data[lon_col], unit=u.deg),
+                           'lat': u.Quantity(data[lat_col], unit=u.deg)}
+        elif(coords_type.lower() == 'cartesian'):
+            self.coords = {'type': 'cartesian',
+                           'x': u.Quantity(data[x_col], unit=u.kpc),
+                           'y': u.Quantity(data[y_col], unit=u.kpc),
+                           'z': u.Quantity(data[z_col], unit=u.kpc)}
         else:
             raise ValueError('Unknown coordinates_type!')
 
+        # Obtain errors if provided
+        if err_col is not None:
+            self._error = u.Quantity(data[err_col], units)
+
+        # Save provided frequency and tag
         self.frequency = frequency
         self.tag = tag
-        if error_column is not None:
-            self._error = u.Quantity(data[error_column], units, copy=False)
 
+        # Set Nside
         self.Nside = "tab"
 
 
@@ -165,8 +193,8 @@ class HEALPixDataset(Dataset):
             print(12*int(Nside)**2, data.size)
             raise
 
-        self.Nside = str(Nside)
-        assert len(data.shape)==1
+        self.Nside = Nside
+        assert len(data.shape) == 1
         self._data = data
 
         if cov is not None:
@@ -189,6 +217,11 @@ class FaradayDepthHEALPixDataset(HEALPixDataset):
     Nside : int, optional
         For extra internal consistency checking. If `Nside` is present,
         it will be checked whether :math:`12\times N_{side}^2` matches
+    error : float or array
+        If errors are uncorrelated, this can be used to specify them
+        (a diagonal covariance matrix will then be constructed).
+    cov : numpy.ndarray
+        2D-array containing the covariance matrix
 
     Attributes
     -------
@@ -214,6 +247,11 @@ class DispersionMeasureHEALPixDataset(HEALPixDataset):
     Nside : int, optional
         For extra internal consistency checking. If `Nside` is present,
         it will be checked whether :math:`12\times N_{side}^2` matches
+    error : float or array
+        If errors are uncorrelated, this can be used to specify them
+        (a diagonal covariance matrix will then be constructed).
+    cov : numpy.ndarray
+        2D-array containing the covariance matrix
 
     Attributes
     -------
@@ -233,7 +271,7 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     dataset. This can be Stokes parameters, total and polarised
     intensity, and polarisation angle.
 
-    The parameter `type` and the units of the map in `data` must follow:
+    The parameter `typ` and the units of the map in `data` must follow:
 
     * 'I' - total intensity (in unit K-cmb)
     * 'Q' - Stokes Q (in unit K-cmb, IAU convention)
@@ -250,8 +288,13 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     Nside : int, optional
       For extra internal consistency checking. If `Nside` is present,
       it will be checked whether :math:`12\times N_{side}^2` matches data.size
-    type : str
+    typ : str
       The type of map being supplied in `data`.
+    error : float or array
+        If errors are uncorrelated, this can be used to specify them
+        (a diagonal covariance matrix will then be constructed).
+    cov : numpy.ndarray
+        2D-array containing the covariance matrix
 
     Attributes
     -------
@@ -264,12 +307,11 @@ class SynchrotronHEALPixDataset(HEALPixDataset):
     # Class attributes
     NAME = 'sync'
 
-    def __init__(self, data, frequency, type,
-                 error=None, cov=None, Nside=None):
-        super().__init__(data, error=error, cov=cov, Nside=Nside)
+    def __init__(self, data, frequency, typ, **kwargs):
+        super().__init__(data, **kwargs)
 
         self.frequency = frequency
 
-        # Checks whether the type is valid
-        assert type in ['I', 'Q', 'U', 'PI', 'PA']
-        self.tag = type
+        # Checks whether the typ is valid
+        assert typ in ['I', 'Q', 'U', 'PI', 'PA']
+        self.tag = typ

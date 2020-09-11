@@ -33,7 +33,6 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
             unit = u.Unit(s='')
 
         self.unit = unit
-        print(xmin_val,unit)
         if xmin_val is None:
             xmin_val = -np.inf
         if xmax_val is None:
@@ -67,7 +66,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         if self._pdf is None:
             self._pdf = interp1d(x=self._pdf_x, y=self._pdf_y)
 
-        unit, x_val = self.unit_checker(self.unit, x)
+        unit, [x_val] = self.unit_checker(self.unit, [x])
 
         return self._pdf(x)
 
@@ -168,7 +167,7 @@ class CustomPrior(Prior):
         if samples is not None:
             unit, [xmin_val, xmax_val, samples_val] = self.unit_checker(unit, [xmin, xmax, samples])
             assert unit is not None, 'At least one input must have a unit or a astropy unit must be provided'
-            if xmin or xmax is None:
+            if (xmin is None) or (xmax is None):
                 std = np.std(samples_val)
             if xmin is None:
                 xmin_val = samples_val.min() - std

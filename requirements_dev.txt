@@ -1,5 +1,6 @@
 -e .
 check-manifest
+nbval>=0.9.6
 pytest>=4.6.0
 pytest-cov
 pytest-mpl

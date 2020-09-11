@@ -17,26 +17,18 @@ class BregLSA(DummyField):
 
     # Class attributes
     NAME = 'breg_lsa'
-
-    @property
-    def field_checklist(self):
-        """
-        Hammurabi XML locations of physical parameters
-        """
-        checklist = {'b0': (['magneticfield', 'regular', 'lsa', 'b0'], 'value'),
-                     'psi0': (['magneticfield', 'regular', 'lsa', 'psi0'], 'value'),
-                     'psi1': (['magneticfield', 'regular', 'lsa', 'psi1'], 'value'),
-                     'chi0': (['magneticfield', 'regular', 'lsa', 'chi0'], 'value')}
-        return checklist
-
-    @property
-    def simulator_controllist(self):
-        """
-        Hammurabi XML locations of logical parameters
-        """
-        controllist = {'cue': (['magneticfield', 'regular'], {'cue': '1'}),
-                       'type': (['magneticfield', 'regular'], {'type': 'lsa'})}
-        return controllist
+    FIELD_CHECKLIST = {'b0': (['magneticfield', 'regular', 'lsa', 'b0'],
+                              'value'),
+                       'psi0': (['magneticfield', 'regular', 'lsa', 'psi0'],
+                                'value'),
+                       'psi1': (['magneticfield', 'regular', 'lsa', 'psi1'],
+                                'value'),
+                       'chi0': (['magneticfield', 'regular', 'lsa', 'chi0'],
+                                'value')}
+    SIMULATOR_CONTROLLIST = {'cue': (['magneticfield', 'regular'],
+                                     {'cue': '1'}),
+                             'type': (['magneticfield', 'regular'],
+                                      {'type': 'lsa'})}
 
 
 class BregLSAFactory(FieldFactory):

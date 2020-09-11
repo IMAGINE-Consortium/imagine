@@ -55,10 +55,9 @@ class SimulatorTemplate(Simulator):
         # If a dummy field is being used, instead of an actual realisation,
         # the parameters can be accessed from self.fields['dummy']
         my_dummy_field_parameters = self.fields['dummy']
-        # Checklists can be used to send specific information to simulators
-        # about specific parameters. Usually, to keep the modularity, this is
-        # only done only for dummy fields
-        checklist_params = self.field_checklist['dummy']
+        # Checklists allow _dummy fields_ to send specific information to
+        # simulators about specific parameters
+        checklist_params = self.field_checklist
         # Controllists in dummy fields contain a dict of simulator settings
         simulator_settings = self.controllist
 

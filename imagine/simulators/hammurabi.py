@@ -13,6 +13,7 @@ import numpy as np
 # IMAGINE imports
 import imagine as img
 from imagine.simulators import Simulator
+from imagine.observables import Masks
 
 # All declaration
 __all__ = ['Hammurabi']
@@ -36,12 +37,18 @@ class Hammurabi(Simulator):
 
     Parameters
     ----------
-    measurements : Measurements object
-        IMAGINE defined dictionary of measured data.
+    measurements : imagine.observables.observable_dict.Measurements
+        Observables dictionary containing measured data.
     exe_path : string
         Absolute hammurabi executable path.
+        Default: `imagine.rc['hammurabi_hamx_path']`
+        (see :py:mod:`imagine.tools.conf`).
     xml_path : string
         Absolute hammurabi xml parameter file path.
+    masks : imagine.observables.observable_dict.Masks
+        Observables dictionary containing masks. For this to work with
+        Hammurabi, the same exact same mask should be associated with all
+        observables.
     """
 
     # Class attributes
@@ -53,7 +60,7 @@ class Hammurabi(Simulator):
     ALLOWED_GRID_TYPES = ['cartesian']
 
 
-    def __init__(self, measurements, xml_path=None, exe_path=None):
+    def __init__(self, measurements, xml_path=None, exe_path=None, masks=None):
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
 
@@ -81,6 +88,8 @@ class Hammurabi(Simulator):
         # List of files containing evaluations of fields
         self._field_dump_files = []
 
+        self.masks=masks
+
     def initialize_ham_xml(self):
         """
         Modify hammurabi XML tree according to the requested measurements.
@@ -96,10 +105,8 @@ class Hammurabi(Simulator):
         # Includes the new data
         sync_name_cache = []
         for key in self.observables:
-            name, freq, nside, flag = key
-
-            if nside == 'tab':
-                raise NotImplementedError('Tabular datasets not yet supported!')
+            # Adjust the keys to hammurabi X format
+            name, freq, nside, flag = self._adjust_key(key)
 
             if name == 'sync':
                 if (freq, nside) not in sync_name_cache:  # Avoids duplication
@@ -141,10 +148,10 @@ class Hammurabi(Simulator):
         """
         # This replaces the old `update_fields` method
         log.debug('@ hammurabi::_update_hammurabi_parameters')
-        if 'dummy' not in self.field_checklist:
+        if 'dummy' not in self.fields:
             return
 
-        checklist = self.field_checklist['dummy']
+        checklist = self.field_checklist
         parameters = self.fields['dummy']
 
         # hammurabiX does not support int64 seeds
@@ -169,7 +176,7 @@ class Hammurabi(Simulator):
             self._clean_up_dumped_fields()
 
         # Adjusts the units (without copy) and returns
-        return self._ham.sim_map[key] << self._units(key)
+        return self._ham.sim_map[self._adjust_key(key)] << self._units(key)
 
     def _units(self, key):
         if key[0] == 'sync':
@@ -237,3 +244,69 @@ class Hammurabi(Simulator):
         for f in self._field_dump_files:
             f.close()
         self._field_dump_files.clear()
+
+    @property
+    def masks(self):
+        """Masks that are applied while running the simulator
+        """
+        return self._masks
+
+    @masks.setter
+    def masks(self, masks):
+        if masks is not None:
+            assert isinstance(masks, Masks)
+
+            # Gets the keys of the relevant quantities
+            mask_keys = [k for k in masks.keys()
+                        if k[0] in self.simulated_quantities]
+            # Checks whether the all observables are covered
+            # (as Hammurabi always applies its masks to everything)
+            assert mask_keys == self.observables, 'All Hammurabi observables must be covered by the masks'
+
+            # Checks whether masks are equivalent
+            mask_data = masks[mask_keys[0]].data
+            for k in mask_keys:
+                assert np.array_equal(mask_data, masks[k].data), 'For Hammurabi, all the masks must be identical'
+
+            # Generates temporary file
+            self._mask_dump_file = tempfile.NamedTemporaryFile(prefix='mask_',
+                                                        suffix='.bin',
+                                                        dir=img.rc['temp_dir'])
+            # Dumps the mask
+            mask_data[0].tofile(self._mask_dump_file)
+
+            # Adjusts Hammurabi's settings
+            Nside = str(mask_keys[0][2])
+            self._ham.mod_par(['mask'], {'cue':'1',
+                                              'filename': self._mask_dump_file.name,
+                                              'nside': Nside})
+        else:
+            # Resets XML if something was previously set
+            if hasattr(self, '_masks'):
+                self._ham.mod_par(['mask'], {'cue':'0',
+                                             'filename': "mask.bin",
+                                             'nside': "32"})
+                del self._mask_dump_file
+
+        self._masks = masks
+
+    def _adjust_key(self, key):
+        """Adjust key to a hammurabi-convenient format"""
+
+        name, freq, nside, flag = key
+
+        if freq is None:
+            freq = 'nan'
+        elif hasattr(freq, 'is_integer'):
+            if freq.is_integer():
+                freq = int(freq)
+        freq = str(freq)
+
+        if flag is None:
+            flag = 'nan'
+
+        if nside == 'tab':
+            raise NotImplementedError('Tabular datasets not yet supported!')
+        nside = str(nside)
+
+        return (name, freq, nside, flag)

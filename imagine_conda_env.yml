@@ -8,6 +8,7 @@ dependencies:
   - corner=2.0.*
   - cython=0.29.*
   - dynesty=1.0.*
+  - e13tools=0.9.*
   - mpi4py=3.*
   - healpy=1.*
   - h5py=2.10.*=mpi*

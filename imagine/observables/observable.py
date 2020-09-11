@@ -150,12 +150,12 @@ class Observable(object):
             raise ValueError('dtype cannot be none')
         else:
             assert (dtype in ('measured', 'simulated', 'covariance'))
-            self._dtype = deepcopy(dtype)
+            self._dtype = str(dtype)
 
     @rw_flag.setter
     def rw_flag(self, rw_flag):
-        assert (rw_flag in (True, False))
-        self._rw_flag = deepcopy(rw_flag)
+        assert isinstance(rw_flag, bool)
+        self._rw_flag = rw_flag
 
     def append(self, new_data):
         """

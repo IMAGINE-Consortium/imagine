@@ -115,7 +115,8 @@ class MultinestPipeline(Pipeline):
                                 'n_clustering_params': None,
                                 'max_modes': 100,
                                 'n_iter_before_update': 100,
-                                'outputfiles_basename': None}
+                                'outputfiles_basename': None,
+                                'verbose': True}
 
         # Keyword arguments can alter the sampling controllers
         self.sampling_controllers = kwargs  # Updates the dict
@@ -135,7 +136,11 @@ class MultinestPipeline(Pipeline):
         # Updates the sampling controllers to reflect what is being used
         self.sampling_controllers = solve_params  # Updates the dict
 
+        if not self.sampling_controllers['resume']:
+            self.clean_chains_directory()
+
         # Runs pyMultinest
+        log.info('Calling pymultinest.solve')
         self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
                                          Prior=self.prior_transform,
                                          n_dims=len(self._active_parameters),

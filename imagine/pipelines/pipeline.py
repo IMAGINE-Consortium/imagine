@@ -1,10 +1,12 @@
 # %% IMPORTS
 # Built-in imports
 import abc
+from itertools import chain
 import logging as log
 import tempfile
 import os
 from os import path
+import shutil
 
 # Package imports
 from astropy.table import QTable
@@ -75,7 +77,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, *, simulator, factory_list, likelihood,
-                 ensemble_size=1, chains_directory=None, prior_correlations=None):
+                 ensemble_size=1, chains_directory=None, prior_correlations={}):
         # Call super constructor
         super().__init__()
 
@@ -115,8 +117,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples_array = None
         self._samples = None
 
+        # Generates ensemble seeds
+        self._randomness()
+
     def __call__(self, *args, **kwargs):
-        return(self.call(*args, **kwargs))
+        return self.call(*args, **kwargs)
 
     @property
     def chains_directory(self):
@@ -145,6 +150,19 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 del self._chains_dir_obj
             assert path.isdir(chains_directory)
             self._chains_directory = chains_directory
+
+    def clean_chains_directory(self):
+        """Removes the contents of the chains directory"""
+        log.debug('@ pipeline::clean_chains_directory')
+
+        if mpirank==0:
+            for f in os.listdir(self.chains_directory):
+                fullpath = path.join(self.chains_directory, f)
+                try:
+                    shutil.rmtree(fullpath)
+                except NotADirectoryError:
+                    os.remove(fullpath)
+        comm.Barrier()
 
     @property
     def active_parameters(self):
@@ -225,11 +243,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                         and self.priors[n[1]].samples is not None)
                 xi0 = norm.ppf(loc=0, scale=1, q=self.priors[n[0]].cdf(self.priors[n[0]].samples.value))
                 xi1 = norm.ppf(loc=0, scale=1, q=self.priors[n[1]].cdf(self.priors[n[1]].samples.value))
-                #print(xi0)
-                #print(self.priors[n[0]].samples.value[np.isnan(xi0)])
-                #print((self.priors[n[1]].samples.value))
-                #print(xi0)
-                #print(xi1)
+
                 print('in pipeline pearson ', pearsonr(xi0, xi1))
                 c = pearsonr(xi0, xi1)[0]
             else:
@@ -275,7 +289,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         if misc.is_notebook():
             display(Math(out))
         else:
-            print(out)
+            # Restores linebreaks and prints
+            print(out.replace(r'\n','\n'))
 
     @property
     def log_evidence(self):
@@ -312,11 +327,17 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     @property
     def samples(self):
         """
-        An :py:class:`astropy.table.QTable` object containing parameter values of the samples
-        produced in the run, scaled to the interval [0,1].
+        An :py:class:`astropy.table.QTable` object containing parameter values
+        of the samples produced in the run.
         """
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
-        return QTable(data=self._samples_array, names=self.active_parameters)
+
+        samp = QTable(data=self._samples_array, names=self.active_parameters)
+        # Restores the units
+        for param, prior in self.priors.items():
+            samp[param] = samp[param] <<  prior.unit
+
+        return samp
 
     @property
     def factory_list(self):
@@ -353,9 +374,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 self._active_parameters += (str(factory.name+'_'+ap_name),)
                 # Sets the Prior
                 prior = factory.priors[ap_name]
-                assert isinstance(prior, GeneralPrior)
-                self._priors[str(factory.name+'_'+ap_name)] = prior
-                i += 1
+                assert isinstance(prior, Prior)
+                self._priors[factory.name+'_'+ap_name] = prior
         self._factory_list = factory_list
 
     @property
@@ -395,8 +415,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        cube : array
-            Each row of the array corresponds to a different parameter in the sampling.
+        cube : np.ndarray
+            Each row of the array corresponds to a different parameter value
+            in the sampling (dimensionless, but in the standard units of the
+            prior).
 
         Returns
         -------
@@ -405,7 +427,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         cube_rtn = np.empty_like(cube)
         for i, parameter in enumerate(self.active_parameters):
-            cube_rtn[i] = self.priors[parameter].pdf(cube_rtn[i])
+            prior = self.priors[parameter]
+            cube_rtn[i] = prior.pdf(cube[i]*prior.unit)
         return cube_rtn
 
     def prior_transform(self, cube):
@@ -429,11 +452,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         cube_copy = cube.copy()
 
-        if self.prior_correlations is not None:
+        if len(self.prior_correlations) > 0:
             from scipy.stats import norm
             cube_copy = norm.cdf(np.dot(self._A, norm.ppf(cube_copy)))
         for i, parameter in enumerate(self.active_parameters):
-            cube_copy[i] = self.priors[parameter](cube_copy[i])
+            val = self.priors[parameter](cube_copy[i])
+            if isinstance(val, apu.Quantity):
+                val = val.value
+            cube_copy[i] = val
         return cube_copy
 
     @property
@@ -501,6 +527,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         Resets internal state before a new run
         """
+        log.debug('@ pipeline::tidy_up')
+
         self.results = None
         self._evidence = None
         self._evidence_err = None
@@ -526,9 +554,50 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         np.random.seed(self.master_seed)
 
         if self.random_type == 'fixed':
-            self.ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
+            common_ensemble_seeds = ensemble_seed_generator(self.ensemble_size_actual)
+            self.ensemble_seeds = {factory: common_ensemble_seeds
+                                   for factory in self._factory_list}
+        elif self.random_type == 'controllable':
+            self.ensemble_seeds = {factory: ensemble_seed_generator(self.ensemble_size_actual)
+                                   for factory in self._factory_list}
         else:
-            self.ensemble_seeds = None
+            self.ensemble_seeds = {factory: None for factory in self._factory_list}
+
+    # This function returns all parameter names of all factories in order
+    def get_par_names(self):
+        # Create list of names
+        names = list(chain(*[factory.active_parameters
+                             for factory in self._factory_list]))
+
+        # Return them
+        return(names)
+
+    def _get_observables(self, cube):
+        # return active variables from pymultinest cube to factories
+        # and then generate new field objects
+        head_idx = 0
+        tail_idx = 0
+        field_list = tuple()
+
+        # the ordering in factory list and variable list is vital
+        for factory in self._factory_list:
+            variable_dict = dict()
+            tail_idx = head_idx + len(factory.active_parameters)
+            factory_cube = cube[head_idx:tail_idx]
+            for i, av in enumerate(factory.active_parameters):
+                variable_dict[av] = factory_cube[i]*self.priors[factory.field_name + '_' + av].unit
+
+            ensemble_seeds = self.ensemble_seeds[factory]
+            field_list += (factory(variables=variable_dict,
+                                   ensemble_size=self.ensemble_size_actual,
+                                   ensemble_seeds=ensemble_seeds),)
+            log.debug('create '+factory.name+' field')
+            head_idx = tail_idx
+        assert(head_idx == len(self._active_parameters))
+
+        observables = self._simulator(field_list)
+
+        return(observables)
 
     def _core_likelihood(self, cube):
         """
@@ -545,35 +614,18 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ pipeline::_core_likelihood')
         log.debug('sampler at %s' % str(cube))
-        # return active variables from pymultinest cube to factories
-        # and then generate new field objects
-        head_idx = 0
-        tail_idx = 0
-        field_list = tuple()
 
-        # the ordering in factory list and variable list is vital
-        for factory in self._factory_list:
-            variable_dict = dict()
-            tail_idx = head_idx + len(factory.active_parameters)
-            factory_cube = cube[head_idx:tail_idx]
-            for i, av in enumerate(factory.active_parameters):
-                variable_dict[av] = factory_cube[i]*self.priors[factory.field_name + '_' + av].unit
+        # Obtain observables for provided cube
+        observables = self._get_observables(cube)
 
-            field_list += (factory(variables=variable_dict,
-                                   ensemble_size=self.ensemble_size_actual,
-                                   ensemble_seeds=self.ensemble_seeds),)
-            log.debug('create '+factory.name+' field')
-            head_idx = tail_idx
-        assert(head_idx == len(self._active_parameters))
-
-        observables = self._simulator(field_list)
-        # apply mask
-        observables.apply_mask(self.likelihood.mask_dict)
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
         # check likelihood value until negative (or no larger than given threshold)
         if self.check_threshold and current_likelihood > self.likelihood_threshold:
             raise ValueError('log-likelihood beyond threshold')
+
+        log.info('Likelihood evaluation at point:'
+                 ' {0} value: {1}'.format(cube, current_likelihood))
         return current_likelihood * self.likelihood_rescaler
 
     def _mpi_likelihood(self, cube):
@@ -598,7 +650,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         if self.sampler_supports_mpi:
 
-            log.debug('@ multinest_pipeline::_mpi_likelihood')
+            log.debug('@ pipeline::_mpi_likelihood')
 
             # Gathers cubes from all nodes
             cube_local_size = cube.size

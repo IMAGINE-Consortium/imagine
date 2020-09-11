@@ -25,7 +25,9 @@ class FlatPrior(Prior):
     def __init__(self, xmin, xmax, unit=None):
         # Updates ranges
         super().__init__(xmin=xmin, xmax=xmax, unit=unit)
-        self.vol = xmax - xmin
+        # Computes this from `range`, after the base Prior class has
+        # already dealt with units
+        self.vol = self.range[1] - self.range[0]
         # Constant pdf (for illustration)
         self._pdf = lambda x: np.ones_like(x)/self.vol.value
 
@@ -43,6 +45,7 @@ class FlatPrior(Prior):
         List of variable values in the given interval
         """
         log.debug('@ flat_prior::__call__')
+
         return cube*self.vol.value + self.range[0].value
 
 
@@ -60,6 +63,11 @@ class GaussianPrior(ScipyPrior):
     sigma : float
         Width of the distribution (standard deviation, if there was no tuncation)
     """
-    def __init__(self, unit, mu=0.0, sigma=1.0):
-        assert isinstance(unit, u.Unit)
-        super().__init__(distr=norm, loc=mu, scale=sigma, unit=unit)
+
+    def __init__(self, mu=0.0, sigma=1.0, xmin=None, xmax=None, unit=None,
+                 **kwargs):
+
+        unit, [mu_val, sigma_val] = self.unit_checker(unit, [mu, sigma])
+
+        super().__init__(distr=norm, loc=mu, scale=sigma, unit=unit,
+                         xmin=xmin, xmax=xmax, **kwargs)

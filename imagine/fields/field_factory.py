@@ -28,20 +28,6 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     and translates it into physical parameter values,
     returning a field object with current parameter set.
 
-    Example
-    -------
-    To include a new Field_Factory, one needs to create a derived class
-    with customized initialization. Below we show an example which is
-    compatible with the :py:class:`xConstantField` showed in the
-    :ref:`components:Fields` section of the documentation::
-
-        @icy
-        class xConstantField_Factory(GeneralFieldFactory):
-            def __init__(self, grid=None, boxsize=None, resolution=None):
-                super().__init__(grid, boxsize, resolution)
-                self.field_class = xConstantField
-                self.default_parameters = {'constantA': 5.0}
-                self.parameter_ranges = {'constantA': [-10., 10.]}
 
     Parameters
     ----------
@@ -83,6 +69,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         # Placeholders
         self.default_parameters = self.DEFAULT_PARAMETERS
         self.active_parameters = active_parameters
+        self.parameter_ranges = {}
         self.priors = self.PRIORS
 
     def __call__(self, *, variables={}, ensemble_size=None,
@@ -216,7 +203,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         """
         A dictionary containing the priors associated with each parameter.
         Each prior is represented by an instance of
-        :py:class:`imagine.priors.prior.GeneralPrior`.
+        :py:class:`imagine.priors.prior.Prior`.
 
         To set new priors one can update the priors dictionary using
         attribution (any missing values will be set to
@@ -228,6 +215,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     def priors(self, new_prior_dict):
         if not hasattr(self, '_priors'):
             self._priors = {}
+        parameter_ranges = {}
 
         # Uses previous information
         prior_dict = self._priors.copy()
@@ -236,8 +224,32 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         for name in self.default_parameters:
             assert (name in prior_dict), 'Missing Prior for '+name
             prior = prior_dict[name]
-            assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
+            assert isinstance(prior, Prior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
             self._priors[name] = prior
+            parameter_ranges[name] = prior.range
+        self.parameter_ranges = parameter_ranges
+
+    @property
+    def parameter_ranges(self):
+        """
+        Dictionary storing varying range of all default parameters in
+        the form {'parameter-name': (min, max)}
+        """
+        return self._parameter_ranges
+
+    @parameter_ranges.setter
+    def parameter_ranges(self, new_ranges):
+        assert isinstance(new_ranges, dict)
+        for k, v in new_ranges.items():
+            # check if k is inside default
+            assert (k in self.default_parameters.keys())
+            assert (len(v) == 2)
+        try:
+            self._parameter_ranges.update(new_ranges)
+            log.debug('update parameter ranges %s' % str(new_ranges))
+        except AttributeError:
+            self._parameter_ranges = new_ranges
+            log.debug('set parameter ranges %s' % str(new_ranges))
 
     @staticmethod
     def _interval(mean, sigma, n):

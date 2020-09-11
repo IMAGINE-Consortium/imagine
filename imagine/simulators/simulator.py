@@ -52,6 +52,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
         self.grids = None
         self.fields = None
         self.field_checklist = {}
+        self.field_parameters = {}
         self.controllist = {}
         self.observables = []
         self.output_coords = {}
@@ -163,8 +164,11 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                 if field.type not in self.fields:
                     # Stores the data
                     self.fields[field.type] = field.get_data(i, dependencies)
-                    # Stores the checklist dictionary
-                    self.field_checklist[field.type] = field.field_checklist
+                    # Stores the parameters list
+                    self.field_parameters[field.type] = field.parameter_names
+                    # Stores the checklist (for dummies only)
+                    if field.type == 'dummy':
+                        self.field_checklist = field.field_checklist.copy()
 
                 elif field.type != 'dummy':
                     # If multiple fields of the same type are present, sums them up
@@ -179,8 +183,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                     self.fields[field.type].update(field.get_data(i, dependencies))
 
                     # The checklists are also combined
-                    self.field_checklist[field.type] = self.field_checklist[field.type].copy()
-                    self.field_checklist[field.type].update(field.field_checklist)
+                    self.field_checklist.update(field.field_checklist)
 
                 if field.type == 'dummy':
                     self.controllist[field.name] = field.simulator_controllist
@@ -410,5 +413,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                 sim = self.simulate(key=key, coords_dict=self.output_coords[key],
                                     realization_id=i,
                                     output_units=self.output_units[key])
-                sims.append(key, sim[np.newaxis, :].to(self.output_units[key]))
+                sims.append(name=key,
+                            data=sim[np.newaxis, :].to(self.output_units[key]),
+                            coords=self.output_coords[key])
         return sims
