@@ -38,7 +38,7 @@ class FlatPrior(Prior):
         parameters
         ----------
         cube : list
-            List of variable values in range [0,1]
+            List of variable values
 
         Returns
         -------
@@ -46,7 +46,12 @@ class FlatPrior(Prior):
         """
         log.debug('@ flat_prior::__call__')
 
-        return cube*self.vol.value + self.range[0].value
+        unit, [cube_val] = self.unit_checker(self.unit, [cube])
+        # Rescales to the correct interval
+        cube_val = cube_val * (self.range[1].value -  self.range[0].value)
+        cube_val += self.range[0].value
+
+        return cube_val << unit
 
 
 class GaussianPrior(ScipyPrior):

@@ -93,6 +93,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
             cdf_y /= cdf_y.max() # Avoids potential problems due to truncation
             cdf_x = np.append(xmin_val, self._pdf_x + dx)
             self._inv_cdf = interp1d(cdf_y, cdf_x)
+
         return self._inv_cdf
 
     def __call__(self, x):
@@ -100,7 +101,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         The "prior mapping", i.e. returns the value of the
         inverse of the CDF at point(s) `x`.
         """
-        return self.inv_cdf(x) *self.unit
+        return self.inv_cdf(x) << self.unit
 
     @property
     def scipy_distr(self):
@@ -181,7 +182,7 @@ class CustomPrior(Prior):
 
         # Evaluates the PDF
         pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
-        pdf_y = pdf_fun(pdf_x * unit)
+        pdf_y = pdf_fun(pdf_x << unit)
 
         super().__init__(xmin=xmin_val, xmax=xmax_val, unit=unit,
                          pdf_npoints=pdf_npoints)
