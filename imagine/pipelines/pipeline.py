@@ -87,8 +87,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # parameter ranges and priors, based on the list
         self.simulator = simulator
         self.likelihood = likelihood
-        if prior_correlations is not None:
-            self.prior_correlations = prior_correlations
+        self.prior_correlations = prior_correlations
         self.ensemble_size = ensemble_size
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
@@ -215,62 +214,70 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     @prior_correlations.setter
     def prior_correlations(self, prior_correlations):
+        if prior_correlations is None:
+            # If None is provided, resets the correlations
+            self._prior_correlations = None
+            return
+        else:
+            # Otherwise, updates the prior correlations dictionary and
+            # computes the L matrix
 
-        # Checks coefficient consistency
-        correlated_priors = []
-        new_prior_correlations = {}
-        for n in list(prior_correlations.keys()):
-            t = []
-            for m in range(2):
-                for f in self.factory_list:
-                    if list(n)[m] in f.active_parameters:
-                        newname = f.name + '_' + list(n)[m]
-                        correlated_priors.append(newname)
-                        t.append(newname)
-            new_prior_correlations.update({tuple(t): prior_correlations[n]})
-        name_pairs = list(new_prior_correlations.keys())
+            # First, checks coefficient consistency
+            correlated_priors = []
+            new_prior_correlations = {}
+            for n in list(prior_correlations.keys()):
+                t = []
+                for m in range(2):
+                    for f in self.factory_list:
+                        if list(n)[m] in f.active_parameters:
+                            newname = f.name + '_' + list(n)[m]
+                            correlated_priors.append(newname)
+                            t.append(newname)
+                new_prior_correlations.update({tuple(t): prior_correlations[n]})
+            name_pairs = list(new_prior_correlations.keys())
 
-        if len(name_pairs) != len(list(set(name_pairs))):
-            raise ValueError('Inconsistent prior correlations, '
-                             'possibly multiple values for the same coefficient')
+            if len(name_pairs) != len(list(set(name_pairs))):
+                raise ValueError('Inconsistent prior correlations, '
+                                'possibly multiple values for the same coefficient')
 
-        corr_matrix = np.eye(len(self._active_parameters))
-        for name_pair in name_pairs:
-            i, j = (self._prior_cube_mapping[param] for param in name_pair)
-            c = new_prior_correlations[name_pair]
-            if isinstance(c, bool):
-                if not c:
-                    raise ValueError()
+            corr_matrix = np.eye(len(self._active_parameters))
+            for name_pair in name_pairs:
+                i, j = (self._prior_cube_mapping[param] for param in name_pair)
+                c = new_prior_correlations[name_pair]
+                if isinstance(c, bool):
+                    if not c:
+                        raise ValueError()
 
-                # Creates zero mean Gaussian distributions from the originals
-                gaussian_pair = []
-                for name in name_pair:
-                    prior = self.priors[name]
-                    assert prior is not None
+                    # Creates zero mean Gaussian distributions from the
+                    # original samples
+                    gaussian_pair = []
+                    for name in name_pair:
+                        prior = self.priors[name]
+                        assert prior is not None
 
-                    # Makes sure the samples are within the selected range
-                    ok = (prior.samples >= prior.range[0])
-                    ok *= (prior.samples <= prior.range[1])
+                        # Makes sure the samples are within the selected range
+                        ok = (prior.samples >= prior.range[0])
+                        ok *= (prior.samples <= prior.range[1])
 
-                    x = scipy_norm.ppf(loc=0, scale=1,
-                                       q=prior.cdf(prior.samples.value[ok]))
+                        x = scipy_norm.ppf(loc=0, scale=1,
+                                          q=prior.cdf(prior.samples.value[ok]))
 
-                    gaussian_pair.append(x)
-                # Computes the Pearson correlation coefficient from the
-                # pair of distributions
-                c = scipy_pearsonr(*gaussian_pair)[0]
-            else:
-                # If this was supplied, check whether the value is consistent
-                assert (-1 <= c <= 1)
-            corr_matrix[i, j] = corr_matrix[j, i] = c
+                        gaussian_pair.append(x)
+                    # Computes the Pearson r correlation coefficient from the
+                    # pair of distributions
+                    c = scipy_pearsonr(*gaussian_pair)[0]
+                else:
+                    # If this was supplied, check whether the value is consistent
+                    assert (-1 <= c <= 1)
+                corr_matrix[i, j] = corr_matrix[j, i] = c
 
-        # Computes the Cholesky L (lower-triangular) matrix which is used
-        # to correlated the priors in the prior_transform method
-        self._correlator_L = np.linalg.cholesky(corr_matrix)
-        # Stores a list of correlated priors, for convenience
-        self.correlated_priors = set(correlated_priors)
-        # Finally, saves updated dictionary
-        self._prior_correlations = new_prior_correlations
+            # Computes the Cholesky L (lower-triangular) matrix which is used
+            # to correlate the priors in the prior_transform method
+            self._correlator_L = np.linalg.cholesky(corr_matrix)
+            # Stores a list of correlated priors, for convenience
+            self.correlated_priors = set(correlated_priors)
+            # Finally, saves updated dictionary
+            self._prior_correlations = new_prior_correlations
 
 
 
