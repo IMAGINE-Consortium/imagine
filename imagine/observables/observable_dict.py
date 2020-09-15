@@ -79,20 +79,15 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
 
     See :mod:`~imagine.observables.observable_dict` module documentation for
     further details.
+
+
+    Parameters
+    ----------
+    datasets : imagine.observables.Dataset, optional
+        If present, Datasets that are appended to this
+        :py:obj:`ObservableDict` object after initialization.
     """
     def __init__(self, *datasets):
-        """
-        Initialize this :class:`ObservableDict` class.
-
-        Optional
-        --------
-        datasets : positional arguments of :obj:`~imagine.observables.Dataset`
-            Datasets that must be appended to this :obj:`ObservableDict` object
-            after initialization.
-
-
-        """
-
         # Call super constructor
         super().__init__()
 
