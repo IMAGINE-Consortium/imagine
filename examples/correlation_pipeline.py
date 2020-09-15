@@ -105,10 +105,10 @@ def prepare_mock_dataset(a0, b0, a, size=1000,
     fd_units = u.microgauss*u.cm**-3
 
     dataset = img.observables.TabularDataset(data_dict, name='test',
-                                             data_column='meas',
-                                             coordinates_type='cartesian',
-                                             x_column='x', y_column='y', z_column='z',
-                                             error_column='err', units=fd_units)
+                                             data_col='meas',
+                                             coords_type='cartesian',
+                                             x_col='x', y_col='y', z_col='z',
+                                             err_col='err', units=fd_units)
     return dataset
 
 
@@ -123,8 +123,8 @@ def plot_results(pipe, true_vals, output_file='test.pdf'):
 
     # Visualize with a corner plot
     l = []
-    for i in range(len(samp.columns)):
-        l.append(samp.columns[i])
+    for i in range(len(samp.cols)):
+        l.append(samp.cols[i])
     figure = corner.corner(np.vstack(l).T,
                            range=[0.99]*len(pipe.active_parameters),
                            quantiles=[0.02, 0.5, 0.98],
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                                      'n0': 5*u.cm**-3}
 
     ne_factory.active_parameters = ('a',)
-    p1 = img.priors.EmpiricalPrior(xmin=0., samples=s1, unit=1 / u.kpc * u.rad)
+    p1 = img.priors.CustomPrior(xmin=0., samples=s1, unit=1 / u.kpc * u.rad)
     ne_factory.priors = {'a': p1}
 #    pdf_x = np.linspace(p1.range[0], p1.range[1], 1500)
 #    pl.hist(s1, bins=100, label='hist', density=True)
@@ -204,10 +204,10 @@ if __name__ == '__main__':
     B_factory.active_parameters = ('a0', 'b0')
 
     B_factory.priors = {'a0': img.priors.FlatPrior(xmin=-5*u.microgauss, xmax=5*u.microgauss, unit=u.microgauss),
-                        'b0': img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss),
+                        'b0': img.priors.CustomPrior(samples=s2*u.microgauss, xmin=0*u.microgauss),
                         }
 
-    p2 = img.priors.EmpiricalPrior(samples=s2*u.microgauss, xmin=0*u.microgauss)
+    p2 = img.priors.CustomPrior(samples=s2*u.microgauss, xmin=0*u.microgauss)
     pdf_x = np.linspace(p2.range[0], p2.range[1], 1500)
     pl.hist(s2, bins=100, label='hist', density=True)
     pl.plot(pdf_x, p2.pdf(pdf_x), label='prior_pdf')
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     #pl.legend()
     #pl.savefig('cdf_' + 'b0' + '.png')
     #pl.close()
-    pl.plot(np.linspace(0, 1, 1000), p2._inv_cdf(np.linspace(0, 1, 1000)), label='prior_ppf')
+    pl.plot(np.linspace(0, 1, 1000), p2.inv_cdf(np.linspace(0, 1, 1000)), label='prior_ppf')
     pl.plot(np.linspace(0, 1, 1000), distr2.ppf(np.linspace(0, 1, 1000)), label='scipy_ppf')
     pl.savefig('ppf_' + 'b0' + '.png')
     pl.legend()

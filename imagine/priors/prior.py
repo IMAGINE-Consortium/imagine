@@ -44,6 +44,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         self._inv_cdf = None
         self._distr = None
         self._pdf = None
+        self.samples = None
 
     @staticmethod
     def unit_checker(unit, list_of_quant):
@@ -149,7 +150,8 @@ class CustomPrior(Prior):
     xmin, xmax: tuple or list
         A pair of points representing, respectively, the minimum/maximum
         parameter values to be considered. If not provided, the
-        smallest/largest value in the sample will be used
+        smallest/largest value in the sample minus/plus one standard deviation
+        will be used.
     bw_method: scalar or str
         Used by :py:class:`scipy.stats.gaussian_kde` to select the bandwidth
         employed to estimate the PDF from provided samples. Can be a number,
@@ -158,12 +160,12 @@ class CustomPrior(Prior):
     pdf_npoints : int
         Number of points used to evaluate pdf_fun or the KDE constructed from
         the samples.
-    inv_cdf_npoints : int
-        Number of points used to evaluate the CDF for the calculation of its
-        inverse.
+    samples_ref : bool
+        If True (default), a reference to the samples is stored, allowing prior
+        correlations to be computed by the Pipeline.
     """
     def __init__(self, samples=None, pdf_fun=None, xmin=None, xmax=None,
-                 bw_method=None, pdf_npoints=1500, unit=None):
+                 unit=None, bw_method=None, pdf_npoints=1500, samples_ref=True):
         # If needed, constructs a pdf function from samples, using KDE
         if samples is not None:
             unit, [xmin_val, xmax_val, samples_val] = self.unit_checker(unit, [xmin, xmax, samples])
@@ -192,6 +194,11 @@ class CustomPrior(Prior):
 
         self._pdf_y = pdf_y
         self._pdf_x = pdf_x
+
+        if (samples is not None) and samples_ref:
+            # If requested, stores the samples to allow later (in the Pipeline)
+            # determination of correlations between parameters
+            self.samples = samples << self.unit  # Adjusts units to avoid errors
 
 
 class ScipyPrior(Prior):
