@@ -8,7 +8,7 @@ from .config import *
 # Import base modules
 from . import (
     carrier_mapper, class_tools, covariance_estimator, io_handler, masker,
-    misc, mpi_helper, parallel_ops, random_seed, timer)
+    misc, mpi_helper, parallel_ops, random_seed, timer, visualization)
 from .carrier_mapper import *
 from .class_tools import *
 from .covariance_estimator import *
@@ -19,6 +19,7 @@ from .mpi_helper import *
 from .parallel_ops import *
 from .random_seed import *
 from .timer import *
+from .visualization import *
 
 # All declaration
 __all__ = ['carrier_mapper', 'class_tools', 'config', 'covariance_estimator',
