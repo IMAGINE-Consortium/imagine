@@ -81,6 +81,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def __init__(self, *, simulator, factory_list, likelihood, ensemble_size=1,
                  chains_directory=None, prior_correlations=None,
+                 show_summary_reports=True, show_progress_reports=False,
                  n_evals_report=1000):
         # Call super constructor
         super().__init__()
@@ -122,7 +123,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples = None
         self.correlated_priors = None
 
-        # Progress reporting settings
+        # Report settings
+        self.show_summary_reports = show_summary_reports
+        self.show_progress_reports = show_progress_reports
         self._n_evals_report = n_evals_report
         self._likelihood_evaluations_counter = 0
 
@@ -131,9 +134,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def __call__(self, *args, **kwargs):
         result = self.call(*args, **kwargs)
-        self.progress_report()
-        self.posterior_report()
-        self.evidence_report()
+        if self.show_summary_reports:
+            self.posterior_report()
+            self.evidence_report()
 
         return result
 
@@ -298,6 +301,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return visualization.corner_plot(self, **kwargs)
 
     def progress_report(self):
+        display(Markdown("**Progress report:**"))
         print('Progress report: evals {}'.format(self._likelihood_evaluations_counter))
         pass
 
@@ -350,7 +354,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             display(Math(out))
         else:
             print('Evidence report')
-            print('logZ =', pipeline.log_evidence, '±', pipeline.log_evidence_err)
+            print('logZ =', self.log_evidence, '±', self.log_evidence_err)
 
 
     @property
@@ -694,7 +698,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         log.info('Likelihood evaluation at point:'
                  ' {0} value: {1}'.format(cube, current_likelihood))
         # Reports, if needed
-        if self._likelihood_evaluations_counter % self._n_evals_report == 0:
+
+        if (self.show_progress_reports and
+            self._likelihood_evaluations_counter % self._n_evals_report == 0):
             self.progress_report()
         self._likelihood_evaluations_counter += 1
 
