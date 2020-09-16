@@ -16,6 +16,8 @@ from mpi4py import MPI
 import numpy as np
 from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
+from IPython.display import display, Math, Markdown
+import matplotlib.pyplot as plt
 
 # IMAGINE imports
 from imagine import rc
@@ -23,7 +25,7 @@ from imagine.likelihoods import Likelihood
 from imagine.fields import FieldFactory
 from imagine.priors import Prior
 from imagine.simulators import Simulator
-from imagine.tools import BaseClass, ensemble_seed_generator, misc
+from imagine.tools import BaseClass, ensemble_seed_generator, misc, visualization
 
 # GLOBALS
 comm = MPI.COMM_WORLD
@@ -78,7 +80,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, *, simulator, factory_list, likelihood, ensemble_size=1,
-                 chains_directory=None, prior_correlations=None):
+                 chains_directory=None, prior_correlations=None,
+                 n_evals_report=1000):
         # Call super constructor
         super().__init__()
 
@@ -119,11 +122,20 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples = None
         self.correlated_priors = None
 
+        # Progress reporting settings
+        self._n_evals_report = n_evals_report
+        self._likelihood_evaluations_counter = 0
+
         # Generates ensemble seeds
         self._randomness()
 
     def __call__(self, *args, **kwargs):
-        return self.call(*args, **kwargs)
+        result = self.call(*args, **kwargs)
+        self.progress_report()
+        self.posterior_report()
+        self.evidence_report()
+
+        return result
 
     @property
     def chains_directory(self):
@@ -279,9 +291,17 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # Finally, saves updated dictionary
             self._prior_correlations = new_prior_correlations
 
+    def corner_plot(self, **kwargs):
+        """
 
+        """
+        return visualization.corner_plot(self, **kwargs)
 
-    def posterior_report(self, sdigits=2):
+    def progress_report(self):
+        print('Progress report: evals {}'.format(self._likelihood_evaluations_counter))
+        pass
+
+    def posterior_report(self, sdigits=2, **kwargs):
         """
         Displays the best fit values and 1-sigma errors for each active parameter.
 
@@ -292,9 +312,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         sdigits : int
             The number of significant digits to be used
         """
-        from IPython.display import display, Math
         out = ''
-
         for param, pdict in self.posterior_summary.items():
             if misc.is_notebook():
                 # Extracts LaTeX representation from astropy unit object
@@ -315,10 +333,25 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 out += r'{0} (-{1})/(+{2}) {3}\n'.format(v, l, u, unit)
 
         if misc.is_notebook():
+            display(Markdown("\n**Posterior report:**"))
+            self.corner_plot(**kwargs)
+            plt.show()
             display(Math(out))
         else:
             # Restores linebreaks and prints
+            print('Posterior report')
             print(out.replace(r'\n','\n'))
+
+    def evidence_report(self, sdigits=4):
+        if misc.is_notebook():
+            display(Markdown("**Evidence report:**"))
+            out = r"\log\mathcal{{ Z }} = "
+            out += q2tex(self.log_evidence, self.log_evidence_err)
+            display(Math(out))
+        else:
+            print('Evidence report')
+            print('logZ =', pipeline.log_evidence, '±', pipeline.log_evidence_err)
+
 
     @property
     def log_evidence(self):
@@ -568,6 +601,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples_array = None
         self._samples = None
         self._randomness()
+        self._likelihood_evaluations_counter = 0
 
     def _randomness(self):
         """
@@ -656,8 +690,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         if self.check_threshold and current_likelihood > self.likelihood_threshold:
             raise ValueError('log-likelihood beyond threshold')
 
+        # Logs the value
         log.info('Likelihood evaluation at point:'
                  ' {0} value: {1}'.format(cube, current_likelihood))
+        # Reports, if needed
+        if self._likelihood_evaluations_counter % self._n_evals_report == 0:
+            self.progress_report()
+        self._likelihood_evaluations_counter += 1
+
         return current_likelihood * self.likelihood_rescaler
 
     def _mpi_likelihood(self, cube):
