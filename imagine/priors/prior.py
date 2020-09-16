@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 
 # IMAGINE imports
 from imagine.tools import BaseClass, req_attr
-
+from imagine.tools import unit_checker
 # All declaration
 __all__ = ['Prior', 'ScipyPrior', 'CustomPrior']
 
@@ -27,7 +27,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
     def __init__(self, xmin=None, xmax=None, unit=None, pdf_npoints=1500):
 
         # Ensures interval is quantity with consistent units
-        unit, [xmin_val, xmax_val] = self.unit_checker(unit, [xmin, xmax])
+        unit, [xmin_val, xmax_val] = unit_checker(unit, [xmin, xmax])
 
         if unit is None:
             unit = u.Unit(s='')
@@ -46,20 +46,6 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         self._pdf = None
         self.samples = None
 
-    @staticmethod
-    def unit_checker(unit, list_of_quant):
-        ul = []
-        for uq in list_of_quant:
-            if isinstance(uq, u.Quantity):
-                if unit is None:
-                    unit = uq.unit
-                else:
-                    uq.to(unit)
-                ul.append(uq.to_value(unit))
-            else:
-                ul.append(uq)
-        return unit, ul
-
     def pdf(self, x):
         """
         Probability density function (PDF) associated with this prior.
@@ -67,7 +53,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         if self._pdf is None:
             self._pdf = interp1d(x=self._pdf_x, y=self._pdf_y)
 
-        unit, [x_val] = self.unit_checker(self.unit, [x])
+        unit, [x_val] = unit_checker(self.unit, [x])
 
         return self._pdf(x)
 
@@ -168,7 +154,7 @@ class CustomPrior(Prior):
                  unit=None, bw_method=None, pdf_npoints=1500, samples_ref=True):
         # If needed, constructs a pdf function from samples, using KDE
         if samples is not None:
-            unit, [xmin_val, xmax_val, samples_val] = self.unit_checker(unit, [xmin, xmax, samples])
+            unit, [xmin_val, xmax_val, samples_val] = unit_checker(unit, [xmin, xmax, samples])
             assert unit is not None, 'At least one input must have a unit or a astropy unit must be provided'
             if (xmin is None) or (xmax is None):
                 std = np.std(samples_val)
@@ -180,7 +166,7 @@ class CustomPrior(Prior):
             pdf_fun = stats.gaussian_kde(samples_val, bw_method=bw_method)
         else:
             assert (xmin is not None and xmax is not None), 'both xmin and xmax must be given for pdf_fun'
-            unit, [xmin_val, xmax_val] = self.unit_checker(unit, [xmin, xmax])
+            unit, [xmin_val, xmax_val] = unit_checker(unit, [xmin, xmax])
 
         # Evaluates the PDF
         pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
@@ -245,6 +231,6 @@ class ScipyPrior(Prior):
         else:
             # If a trucated distribution is required, proceed as in
             # the empirical case
-            unit, [xmin_val, xmax_val] = self.unit_checker(unit, [xmin, xmax])
+            unit, [xmin_val, xmax_val] = unit_checker(unit, [xmin, xmax])
             self._pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
             self._pdf_y = distr_instance.pdf(self._pdf_x)

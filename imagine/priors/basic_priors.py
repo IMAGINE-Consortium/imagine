@@ -9,7 +9,7 @@ import astropy.units as u
 
 # IMAGINE imports
 from imagine.priors import Prior, ScipyPrior
-
+from imagine.tools import unit_checker
 # All declaration
 __all__ = ['FlatPrior', 'GaussianPrior']
 
@@ -46,7 +46,7 @@ class FlatPrior(Prior):
         """
         log.debug('@ flat_prior::__call__')
 
-        unit, [cube_val] = self.unit_checker(self.unit, [cube])
+        unit, [cube_val] = unit_checker(self.unit, [cube])
         # Rescales to the correct interval
         cube_val = cube_val * (self.range[1].value -  self.range[0].value)
         cube_val += self.range[0].value
@@ -72,7 +72,7 @@ class GaussianPrior(ScipyPrior):
     def __init__(self, mu=0.0, sigma=1.0, xmin=None, xmax=None, unit=None,
                  **kwargs):
 
-        unit, [mu_val, sigma_val] = self.unit_checker(unit, [mu, sigma])
+        unit, [mu_val, sigma_val] = unit_checker(unit, [mu, sigma])
 
         super().__init__(distr=norm, loc=mu, scale=sigma, unit=unit,
                          xmin=xmin, xmax=xmax, **kwargs)
