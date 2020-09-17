@@ -2,12 +2,15 @@
 This module contains convenient standard plotting functions
 """
 import numpy as np
+import matplotlib.pyplot as plt
 from corner import corner
+import cmasher as cmr
 
 def corner_plot(pipeline=None, samples=None, live_samples=None, truths_dict=None,
-               show_sigma=True, **kwargs):
+                show_sigma=True, **kwargs):
+    """
 
-
+    """
     if truths_dict is None:
         truths_list = None
     else:
@@ -45,3 +48,65 @@ def corner_plot(pipeline=None, samples=None, live_samples=None, truths_dict=None
         corner_fig.axes[3].hist(live_samples[:,1], color='tab:orange', alpha=0.5)
 
     return corner_fig
+
+def trace_plot(pipeline=None, samples=None, live_samples=None, likelihood=None,
+               lnX=None, cmap='cmr.ocean', color_live='#e34a33', hist_bins=30):
+    """
+    Produces a set of "trace plots" for a nested sampling run,
+    showing the position of "dead" points as a function of prior mass.
+    Also plots the distributions of dead points accumulated until now, and the
+    distributions of live points.
+    """
+    nParams = len(pipeline.active_parameters)
+
+    nrows = nParams+1
+    height = min(nrows*1.5, 11.7) # Less than A4 height
+
+    fig, axs = plt.subplots(nrows=nrows, ncols=2,
+                            gridspec_kw={'width_ratios':[3,2]},
+                            figsize=(8.3, height), dpi=200)
+
+    norm_likelihood = likelihood
+    norm_likelihood = norm_likelihood - norm_likelihood.min()
+    norm_likelihood = norm_likelihood/norm_likelihood.max()
+
+    plot_settings = {'marker': '.'}
+
+    colors = cmr.take_cmap_colors(cmap, nParams+1,
+                                  cmap_range=(0.1, 0.85),
+                                  return_fmt='hex')
+
+    # Works on the trace plots
+    for i, ax in enumerate(axs[:,0]):
+        if i==0:
+            y = norm_likelihood
+            ax.set_ylabel(r'$\ln\mathcal{L}$'+'\n(normaliz.)')
+        else:
+            y = samples[:,i-1]
+            ax.set_ylabel(pipeline.active_parameters[i-1])
+
+        plot_settings['color'] = colors[i]
+        ax.plot(-lnX, y, **plot_settings)
+        ax.set_xlabel('$-\ln X$')
+
+    # Works on the histograms
+    for i, ax in enumerate(axs[:,1]):
+        if i==0:
+            ax.set_axis_off()
+        else:
+            ax.set_xlabel(pipeline.active_parameters[i-1])
+                                                 bins=hist_bins)
+            hist, edges = np.histogram(samples[:,i-1], bins=hist_bins)
+
+            ax.plot(edges[:-1], hist, color=colors[i], drawstyle='steps-pre')
+
+            if live_samples is not None:
+                hist_live, edges_live = np.histogram(live_samples[:,i-1],
+
+                # Makes sure everything is visible in the same histogram
+                hist_live = hist_live* hist.max()/hist_live.max()
+
+                ax.plot(edges_live[:-1], hist_live, color=color_live, drawstyle='steps-pre')
+
+
+    plt.tight_layout()

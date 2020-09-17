@@ -6,6 +6,7 @@ channels:
 dependencies:
   - astropy=4.0.*
   - corner=2.0.*
+  - cmasher=1.5.*
   - cython=0.29.*
   - dynesty=1.0.*
   - e13tools=0.9.*
