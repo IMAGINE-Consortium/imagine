@@ -101,7 +101,7 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
     norm_likelihood = norm_likelihood - norm_likelihood.min()
     norm_likelihood = norm_likelihood/norm_likelihood.max()
 
-    plot_settings = {'marker': '.'}
+    plot_settings = {'marker': '.', 'linestyle':'none'}
 
     colors = cmr.take_cmap_colors(cmap, nParams+1,
                                   cmap_range=(0.1, 0.85),

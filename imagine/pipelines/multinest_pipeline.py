@@ -171,6 +171,6 @@ class MultinestPipeline(Pipeline):
 
             if len(rejected_data)>0:
                 self.intermediate_results['rejected_points'] = rejected_data[:, :nPar]
-                self.intermediate_results['live_points'] = rejected_data[:, :nPar]
+                self.intermediate_results['live_points'] = live_data[:, :nPar]
                 self.intermediate_results['logLikelihood'] = rejected_data[:, nPar]
                 self.intermediate_results['lnX'] = rejected_data[:, nPar+1]

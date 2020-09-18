@@ -127,7 +127,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # Report settings
         self.show_summary_reports = show_summary_reports
         self.show_progress_reports = show_progress_reports
-        self._n_evals_report = n_evals_report
+        self.n_evals_report = n_evals_report
         self._likelihood_evaluations_counter = 0
         self.intermediate_results = defaultdict(lambda: None)
 
@@ -723,7 +723,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # Reports, if needed
         self._likelihood_evaluations_counter += 1
         if (self.show_progress_reports and
-            self._likelihood_evaluations_counter % self._n_evals_report == 0):
+            self._likelihood_evaluations_counter % self.n_evals_report == 0):
             self.progress_report()
 
         return current_likelihood * self.likelihood_rescaler

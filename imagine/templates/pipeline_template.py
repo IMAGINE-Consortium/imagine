@@ -55,3 +55,22 @@ class PipelineTemplate(Pipeline):
         self._evidence_err = self.results['logzerr']
 
         return self.results
+
+
+def get_intermediate_results(self):
+    # If the sampler saves intermediate results on disk or internally,
+    # these should be read here, so that a progress report can be produced
+    # every `pipeline.n_evals_report` likelihood evaluations.
+    # For this to work, the following should be added to the
+    # `intermediate_results` dictionary (currently commented out):
+
+    ## Sets current rejected/dead points, as a numpy array of shape (n, npar)
+    #self.intermediate_results['rejected_points'] = rejected
+    ## Sets likelihood value of *rejected* points
+    #self.intermediate_results['logLikelihood'] = likelihood_rejected
+    ## Sets the prior volume/mass associated with each rejected point
+    #self.intermediate_results['lnX'] = rejected_data[:, nPar+1]
+    ## Sets current live nested sampling points (optional)
+    #self.intermediate_results['live_points'] = live
+
+    pass
