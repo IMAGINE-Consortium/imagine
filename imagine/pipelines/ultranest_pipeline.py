@@ -170,3 +170,6 @@ class UltranestPipeline(Pipeline):
         self._evidence_err = self.results['logzerr']
 
         return self.results
+
+    def get_intermediate_results(self):
+        pass
