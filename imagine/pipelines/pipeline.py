@@ -7,6 +7,7 @@ import tempfile
 import os
 from os import path
 import shutil
+from collections import defaultdict
 
 # Package imports
 from astropy.table import QTable
@@ -16,7 +17,7 @@ from mpi4py import MPI
 import numpy as np
 from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
-from IPython.display import display, Math, Markdown
+import IPython.display as ipd
 import matplotlib.pyplot as plt
 
 # IMAGINE imports
@@ -82,7 +83,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     def __init__(self, *, simulator, factory_list, likelihood, ensemble_size=1,
                  chains_directory=None, prior_correlations=None,
                  show_summary_reports=True, show_progress_reports=False,
-                 n_evals_report=1000):
+                 n_evals_report=500):
         # Call super constructor
         super().__init__()
 
@@ -128,9 +129,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.show_progress_reports = show_progress_reports
         self._n_evals_report = n_evals_report
         self._likelihood_evaluations_counter = 0
+        self.intermediate_results = defaultdict(lambda: None)
 
         # Generates ensemble seeds
         self._randomness()
+
 
     def __call__(self, *args, **kwargs):
         result = self.call(*args, **kwargs)
@@ -300,10 +303,27 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         return visualization.corner_plot(self, **kwargs)
 
+
     def progress_report(self):
-        display(Markdown("**Progress report:**"))
+        """
+        Reports the progress of the inference
+        """
+        self.get_intermediate_results()
+
         print('Progress report: evals {}'.format(self._likelihood_evaluations_counter))
-        pass
+
+        dead_samples = self.intermediate_results['rejected_points']
+        live_samples = self.intermediate_results['live_points']
+        likelihood = self.intermediate_results['logLikelihood']
+        lnX = self.intermediate_results['lnX']
+        if not ((dead_samples is None) or (likelihood is None) or (lnX is None)):
+            if misc.is_notebook():
+                ipd.clear_output()
+                fig = visualization.trace_plot(parameter_names=self.active_parameters,
+                                     samples=dead_samples,
+                                     live_samples=live_samples,
+                                     likelihood=likelihood, lnX=lnX)
+                plt.show()
 
     def posterior_report(self, sdigits=2, **kwargs):
         """
@@ -337,10 +357,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 out += r'{0} (-{1})/(+{2}) {3}\n'.format(v, l, u, unit)
 
         if misc.is_notebook():
-            display(Markdown("\n**Posterior report:**"))
+            ipd.display(ipd.Markdown("\n**Posterior report:**"))
             self.corner_plot(**kwargs)
             plt.show()
-            display(Math(out))
+            ipd.display(ipd.Math(out))
         else:
             # Restores linebreaks and prints
             print('Posterior report')
@@ -348,10 +368,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def evidence_report(self, sdigits=4):
         if misc.is_notebook():
-            display(Markdown("**Evidence report:**"))
+            ipd.display(ipd.Markdown("**Evidence report:**"))
             out = r"\log\mathcal{{ Z }} = "
             out += q2tex(self.log_evidence, self.log_evidence_err)
-            display(Math(out))
+            ipd.display(ipd.Math(out))
         else:
             print('Evidence report')
             print('logZ =', self.log_evidence, '±', self.log_evidence_err)
@@ -606,6 +626,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples = None
         self._randomness()
         self._likelihood_evaluations_counter = 0
+        self.intermediate_results = defaultdict(lambda: None)
+
 
     def _randomness(self):
         """
@@ -697,12 +719,12 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         # Logs the value
         log.info('Likelihood evaluation at point:'
                  ' {0} value: {1}'.format(cube, current_likelihood))
-        # Reports, if needed
 
+        # Reports, if needed
+        self._likelihood_evaluations_counter += 1
         if (self.show_progress_reports and
             self._likelihood_evaluations_counter % self._n_evals_report == 0):
             self.progress_report()
-        self._likelihood_evaluations_counter += 1
 
         return current_likelihood * self.likelihood_rescaler
 
@@ -758,6 +780,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # check if all nodes are at the same parameter-space position
             assert ((cube_pool == np.tile(cube_pool[:cube_local_size], mpisize)).all())
             return self._core_likelihood(cube)
+
+    @abc.abstractmethod
+    def get_intermediate_results(self):
+        raise NotImplementedError
 
     @abc.abstractmethod
     def call(self, **kwargs):

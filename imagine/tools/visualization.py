@@ -49,22 +49,53 @@ def corner_plot(pipeline=None, samples=None, live_samples=None, truths_dict=None
 
     return corner_fig
 
-def trace_plot(pipeline=None, samples=None, live_samples=None, likelihood=None,
-               lnX=None, cmap='cmr.ocean', color_live='#e34a33', hist_bins=30):
+def trace_plot(samples=None, live_samples=None, likelihood=None,
+               lnX=None, parameter_names=None, cmap='cmr.ocean',
+               color_live='#e34a33', fig=None, hist_bins=30):
     """
     Produces a set of "trace plots" for a nested sampling run,
     showing the position of "dead" points as a function of prior mass.
     Also plots the distributions of dead points accumulated until now, and the
     distributions of live points.
+
+    Parameters
+    ----------
+    samples : numpy.ndarray
+        (Nsamples, Npars)-array containing the rejected points
+    likelihood : numpy.ndarray
+        Nsamples-array containing the log likelihood values
+    lnX : numpy.ndarray
+        Nsamples-array containing the "prior mass"
+    parameter_names : list or tuple
+        List of the nPars active parameter names
+    live_samples : numpy.ndarray, optional
+        (Nsamples, Npars)-array containing the present live points
+    cmap : str
+        Name of the colormap to be used
+    color_live : str
+        Colour used for the live points distributions (if those are present)
+    fig : matplotlib.Figure
+        If a previous figure was generated, it can be passed to this function
+        for update using this argument
+    hist_bins : int
+        The number of bins used for the histograms
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+        The figure produced
     """
-    nParams = len(pipeline.active_parameters)
+    _, nParams = samples.shape
 
     nrows = nParams+1
     height = min(nrows*1.5, 11.7) # Less than A4 height
 
-    fig, axs = plt.subplots(nrows=nrows, ncols=2,
-                            gridspec_kw={'width_ratios':[3,2]},
-                            figsize=(8.3, height), dpi=200)
+    if fig is None:
+        fig, axs = plt.subplots(nrows=nrows, ncols=2,
+                                gridspec_kw={'width_ratios':[3,2]},
+                                figsize=(8.3, height), dpi=200)
+    else:
+        axs = np.array(fig.axes).reshape(nrows,2)
 
     norm_likelihood = likelihood
     norm_likelihood = norm_likelihood - norm_likelihood.min()
@@ -83,7 +114,10 @@ def trace_plot(pipeline=None, samples=None, live_samples=None, likelihood=None,
             ax.set_ylabel(r'$\ln\mathcal{L}$'+'\n(normaliz.)')
         else:
             y = samples[:,i-1]
-            ax.set_ylabel(pipeline.active_parameters[i-1])
+            if parameter_names is not None:
+                ax.set_ylabel(parameter_names[i-1])
+            else:
+                ax.set_ylabel(i)
 
         plot_settings['color'] = colors[i]
         ax.plot(-lnX, y, **plot_settings)
@@ -94,14 +128,17 @@ def trace_plot(pipeline=None, samples=None, live_samples=None, likelihood=None,
         if i==0:
             ax.set_axis_off()
         else:
-            ax.set_xlabel(pipeline.active_parameters[i-1])
-                                                 bins=hist_bins)
+            if parameter_names is not None:
+                ax.set_xlabel(parameter_names[i-1])
+            else:
+                ax.set_xlabel(i)
             hist, edges = np.histogram(samples[:,i-1], bins=hist_bins)
 
             ax.plot(edges[:-1], hist, color=colors[i], drawstyle='steps-pre')
 
             if live_samples is not None:
                 hist_live, edges_live = np.histogram(live_samples[:,i-1],
+                                                     bins=hist_bins)
 
                 # Makes sure everything is visible in the same histogram
                 hist_live = hist_live* hist.max()/hist_live.max()
@@ -110,3 +147,4 @@ def trace_plot(pipeline=None, samples=None, live_samples=None, likelihood=None,
 
 
     plt.tight_layout()
+    return fig

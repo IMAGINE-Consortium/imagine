@@ -5,6 +5,8 @@ from os import path
 
 # Package imports
 import pymultinest
+import numpy as np
+import os
 
 # IMAGINE imports
 from imagine.pipelines import Pipeline
@@ -154,3 +156,21 @@ class MultinestPipeline(Pipeline):
         self._evidence_err = self.results['logZerr']
 
         return self.results
+
+    def get_intermediate_results(self):
+
+        nPar = len(self._active_parameters)
+
+
+        if os.path.isfile(os.path.join(self.chains_directory, 'multinest_ev.dat')):
+            live_data = np.genfromtxt(
+                os.path.join(self.chains_directory, 'multinest_phys_live.points'))
+            rejected_data = np.genfromtxt(
+                os.path.join(self.chains_directory, 'multinest_ev.dat'))
+
+
+            if len(rejected_data)>0:
+                self.intermediate_results['rejected_points'] = rejected_data[:, :nPar]
+                self.intermediate_results['live_points'] = rejected_data[:, :nPar]
+                self.intermediate_results['logLikelihood'] = rejected_data[:, nPar]
+                self.intermediate_results['lnX'] = rejected_data[:, nPar+1]
