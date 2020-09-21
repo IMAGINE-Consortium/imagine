@@ -94,6 +94,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.likelihood = likelihood
         self.prior_correlations = prior_correlations
         self.ensemble_size = ensemble_size
+        os.makedirs(chains_directory, exist_ok=True)
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
         self.sample_callback = False
@@ -301,7 +302,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
 
         """
-        return visualization.corner_plot(self, **kwargs)
+        return visualization.corner_plot(pipeline=self, **kwargs)
 
 
     def progress_report(self):
@@ -310,7 +311,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         self.get_intermediate_results()
 
-        print('Progress report: evals {}'.format(self._likelihood_evaluations_counter))
 
         dead_samples = self.intermediate_results['rejected_points']
         live_samples = self.intermediate_results['live_points']
@@ -325,11 +325,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             msg = 'Saving progress report to {}'.format(fig_filepath)
             if misc.is_notebook():
                 ipd.clear_output()
+                ipd.display(ipd.Markdown("\n**Progress report:**"
+                  '\nnumber of likelihood evaluations  {}'.format(
+                    self._likelihood_evaluations_counter)))
                 plt.show()
             else:
                 print(msg)
             log.info(msg)
             fig.savefig(fig_filepath)
+
 
     def posterior_report(self, sdigits=2, **kwargs):
         """

@@ -93,7 +93,7 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
     if fig is None:
         fig, axs = plt.subplots(nrows=nrows, ncols=2,
                                 gridspec_kw={'width_ratios':[3,2]},
-                                figsize=(8.3, height), dpi=200)
+                                figsize=(8.3, height), dpi=125)
     else:
         axs = np.array(fig.axes).reshape(nrows,2)
 
