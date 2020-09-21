@@ -137,7 +137,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def __call__(self, *args, **kwargs):
         result = self.call(*args, **kwargs)
-        if self.show_summary_reports:
+        if self.show_summary_reports and (mpirank == 0):
             self.posterior_report()
             self.evidence_report()
 
@@ -317,13 +317,19 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         likelihood = self.intermediate_results['logLikelihood']
         lnX = self.intermediate_results['lnX']
         if not ((dead_samples is None) or (likelihood is None) or (lnX is None)):
+            fig = visualization.trace_plot(parameter_names=self.active_parameters,
+                                  samples=dead_samples,
+                                  live_samples=live_samples,
+                                  likelihood=likelihood, lnX=lnX)
+            fig_filepath = os.path.join(self.chains_directory, 'progress_report.pdf')
+            msg = 'Saving progress report to {}'.format(fig_filepath)
             if misc.is_notebook():
                 ipd.clear_output()
-                fig = visualization.trace_plot(parameter_names=self.active_parameters,
-                                     samples=dead_samples,
-                                     live_samples=live_samples,
-                                     likelihood=likelihood, lnX=lnX)
                 plt.show()
+            else:
+                print(msg)
+            log.info(msg)
+            fig.savefig(fig_filepath)
 
     def posterior_report(self, sdigits=2, **kwargs):
         """
@@ -724,7 +730,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._likelihood_evaluations_counter += 1
         if (self.show_progress_reports and
             self._likelihood_evaluations_counter % self.n_evals_report == 0):
-            self.progress_report()
+            if mpirank==0:
+                self.progress_report()
 
         return current_likelihood * self.likelihood_rescaler
 
