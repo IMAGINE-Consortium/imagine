@@ -6,31 +6,70 @@ import matplotlib.pyplot as plt
 from corner import corner
 import cmasher as cmr
 
-def corner_plot(pipeline=None, samples=None, live_samples=None, truths_dict=None,
-                show_sigma=True, **kwargs):
+def corner_plot(pipeline=None, truths_dict=None, show_sigma=True, param_names=None,
+                table=None, samples=None, live_samples=None,
+                **kwargs):
+    """
+    Makes a corner plot.
+
+    If a :py:obj:`Pipeline <imagine.pipelines.pipeline.Pipeline>` object is
+    supplied, it will be used to collect all the necessary information.
+    Alternatively, one can supply either a :py:obj:`astropy.table.Table`
+    or a :py:obj:`numpy.ndarray` containing with different parameters as
+    columns.
+
+    The plotting is done using the :py:mod:`corner` package, and extra
+    keyword parameters are passed directly to it
+
+    Parameters
+    ----------
+    pipeline : imagine.pipelines.pipeline.Pipeline
+        Pipeline from which samples are read in the default case.
+    truths_dict : dict
+        Dictionary containing active parameters as keys and the expected values
+        as values
+    show_sigma : bool
+        If True, plots the 1, 2 and 3-sigma contours.
+    param_names : list
+        If present, only parameters from this list will be plotted
+    table : astropy.Table
+        If present, samples from this table are used instead of the Pipeline.
+    samples : numpy.ndarray
+        If present, samples are read from this array
+    live_samples : numpy.ndarray
+        If this array is present, a second set of samples are shown in the
+        plots.
+
+    Returns
+    -------
+    corner_fig : matplotlib.Figure
+        Figure containing the generated corner plot
     """
 
-    """
+    if samples is None:
+        if table is None:
+            samp = pipeline.samples
+        else:
+            samp = table
+        if param_names is None:
+           param_names = list(samp.columns)
+        samples = np.vstack([samp[i].value for i in param_names]).T
+
     if truths_dict is None:
         truths_list = None
     else:
         truths_list = []
-        for p in pipeline.active_parameters:
+        for p in param_names:
             if p in truths_dict:
                 truths_list.append(truths_dict[p])
             else:
                 truths_list.append(None)
 
-    if samples is None:
-        samp = pipeline.samples
-        samples = np.vstack([samp[i].value
-                             for i in pipeline.active_parameters]).T
-
     # 1, 2, 3-sigma levels
     levels=[1-np.exp(-0.5*i**2) for i in range(1,4)]
 
     config = dict(color='tab:blue', truths=truths_list,
-                  labels=pipeline.active_parameters,
+                  labels=param_names,
                   fill_contours=False,
                   levels=levels,
                   plot_contours=show_sigma,
