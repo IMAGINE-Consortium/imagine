@@ -406,7 +406,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
         """
         sims = Simulations()
         self.register_ensemble_size(field_list)
-        for i in range(self.ensemble_size):
+        for i in range(self._ensemble_size):
             # Prepares all fields
             self.prepare_fields(field_list, i)
             for key in self.observables:
