@@ -94,7 +94,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.likelihood = likelihood
         self.prior_correlations = prior_correlations
         self.ensemble_size = ensemble_size
-        os.makedirs(chains_directory, exist_ok=True)
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
         self.sample_callback = False
@@ -169,6 +168,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # Removes previous temporary directory, if exists
             if hasattr(self, '_chains_dir_obj'):
                 del self._chains_dir_obj
+            # Creates new directory (if needed)
+            os.makedirs(chains_directory, exist_ok=True)
             assert path.isdir(chains_directory)
             self._chains_directory = chains_directory
 
@@ -177,8 +178,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         log.debug('@ pipeline::clean_chains_directory')
 
         if mpirank==0:
-            for f in os.listdir(self.chains_directory):
-                fullpath = path.join(self.chains_directory, f)
+            for f in os.listdir(self._chains_directory):
+                fullpath = path.join(self._chains_directory, f)
                 try:
                     shutil.rmtree(fullpath)
                 except NotADirectoryError:
@@ -247,7 +248,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             for n in list(prior_correlations.keys()):
                 t = []
                 for m in range(2):
-                    for f in self.factory_list:
+                    for f in self._factory_list:
                         if list(n)[m] in f.active_parameters:
                             newname = f.name + '_' + list(n)[m]
                             correlated_priors.append(newname)
@@ -271,7 +272,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                     # original samples
                     gaussian_pair = []
                     for name in name_pair:
-                        prior = self.priors[name]
+                        prior = self._priors[name]
                         assert prior is not None
 
                         # Makes sure the samples are within the selected range
@@ -317,11 +318,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         likelihood = self.intermediate_results['logLikelihood']
         lnX = self.intermediate_results['lnX']
         if not ((dead_samples is None) or (likelihood is None) or (lnX is None)):
-            fig = visualization.trace_plot(parameter_names=self.active_parameters,
+            fig = visualization.trace_plot(parameter_names=self._active_parameters,
                                   samples=dead_samples,
                                   live_samples=live_samples,
                                   likelihood=likelihood, lnX=lnX)
-            fig_filepath = os.path.join(self.chains_directory, 'progress_report.pdf')
+            fig_filepath = os.path.join(self._chains_directory, 'progress_report.pdf')
             msg = 'Saving progress report to {}'.format(fig_filepath)
             if misc.is_notebook():
                 ipd.clear_output()
@@ -427,9 +428,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         assert self._samples_array is not None, 'Samples not available. Did you run the pipeline?'
 
-        samp = QTable(data=self._samples_array, names=self.active_parameters)
+        samp = QTable(data=self._samples_array, names=self._active_parameters)
         # Restores the units
-        for param, prior in self.priors.items():
+        for param, prior in self._priors.items():
             samp[param] = samp[param] <<  prior.unit
 
         return samp
@@ -521,8 +522,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             The modified cube
         """
         cube_rtn = np.empty_like(cube)
-        for i, parameter in enumerate(self.active_parameters):
-            prior = self.priors[parameter]
+        for i, parameter in enumerate(self._active_parameters):
+            prior = self._priors[parameter]
             cube_rtn[i] = prior.pdf(cube[i]*prior.unit)
         return cube_rtn
 
@@ -554,8 +555,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # Correlates the cube, using the previously computed Cholesky L matrix
             cube_copy = scipy_norm.cdf( self._correlator_L @ scipy_norm.ppf(cube_copy) )
 
-        for i, parameter in enumerate(self.active_parameters):
-            val = self.priors[parameter](cube_copy[i])
+        for i, parameter in enumerate(self._active_parameters):
+            val = self._priors[parameter](cube_copy[i])
             if isinstance(val, apu.Quantity):
                 val = val.value
             cube_copy[i] = val
@@ -687,7 +688,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             tail_idx = head_idx + len(factory.active_parameters)
             factory_cube = cube[head_idx:tail_idx]
             for i, av in enumerate(factory.active_parameters):
-                variable_dict[av] = factory_cube[i]*self.priors[factory.field_name + '_' + av].unit
+                variable_dict[av] = factory_cube[i]*self._priors[factory.field_name + '_' + av].unit
 
             ensemble_seeds = self.ensemble_seeds[factory]
             field_list += (factory(variables=variable_dict,
