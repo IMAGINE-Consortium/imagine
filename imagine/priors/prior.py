@@ -184,7 +184,7 @@ class CustomPrior(Prior):
 
         # Evaluates the PDF
         pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
-        pdf_y = pdf_fun(pdf_x << unit)
+        pdf_y = pdf_fun(pdf_x)
 
         super().__init__(xmin=xmin_val, xmax=xmax_val, unit=unit,
                          pdf_npoints=pdf_npoints)
