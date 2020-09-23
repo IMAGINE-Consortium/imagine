@@ -44,11 +44,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     Attributes
     ----------
-    dynesty_parameter_dict : dict
-        extra parameters for controlling Dynesty
-        i.e., 'nlive', 'bound', 'sample'
-    sample_callback : bool
-        not implemented yet
     likelihood_rescaler : double
         Rescale log-likelihood value
     random_type : str
@@ -77,7 +72,11 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     chains_directory : str
         Path of the directory where the chains should be saved
     prior_correlations : dict
-        Dictionary conta
+        Dictionary used to set up prior distribution correlations. If two
+        parameters are A and B are correlated a priori, an entry should be
+        added to the prior_correlations dictionary in the form
+        `(name_A, name_B): True`, to extract the correlation from the samples
+        (in the case of CustomPriors) or `(name_A, name_B): value` otherwise.
     """
 
     def __init__(self, *, simulator, factory_list, likelihood, ensemble_size=1,
@@ -96,7 +95,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.ensemble_size = ensemble_size
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
-        self.sample_callback = False
 
         self.distribute_ensemble = rc['pipeline_distribute_ensemble']
 
