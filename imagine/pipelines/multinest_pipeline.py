@@ -104,7 +104,7 @@ class MultinestPipeline(Pipeline):
         # Resets internal state
         self.tidy_up()
 
-        default_solve_params = {'resume': False,
+        default_solve_params = {'resume': True,
                                 'n_live_points': 400,
                                 'evidence_tolerance': 0.5,
                                 'max_iter': 0,

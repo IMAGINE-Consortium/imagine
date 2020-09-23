@@ -1,5 +1,6 @@
 astropy>=4.0.0
 corner>=2.0.0
+dill>=0.3.2
 dynesty>=1.0.0
 e13tools>=0.9.3
 h5py>=2.10.0
@@ -7,7 +8,7 @@ hampyx>=2.4.0
 healpy>=1.0.0
 mpi4py>=3.0.0
 numpy>=1.18.0
-pymultinest>=2.9.0
+pymultinest>=2.10.0
 scipy>=1.1.0
 ultranest>=2.2.1
 cmasher>=1.5.0
