@@ -48,8 +48,9 @@ RUN mkdir /tmp/local/src && cp ../googletest/src/* /tmp/local/src
 WORKDIR /home/lab
 
 # HAMMURABI X
-RUN git clone https://github.com/hammurabi-dev/hammurabiX.git hamx
+RUN mkdir /home/lab/hamx
 WORKDIR /home/lab/hamx
+RUN wget https://github.com/hammurabi-dev/hammurabiX/archive/v2.4.1.tar.gz && tar -xzf v2.4.1.tar.gz --strip-components 1 && rm v2.4.1.tar.gz
 RUN mkdir /home/lab/hamx/build
 WORKDIR /home/lab/hamx/build
 RUN cmake .. && make install
