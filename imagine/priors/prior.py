@@ -145,6 +145,9 @@ class CustomPrior(Prior):
         estimate using Gaussian kernels.
     pdf_fun : function
         A Python function containing the PDF for this prior.
+        Note that the  function must be able to operate on
+        :py:obj:`Quantity <astropy.units.quantity.Quantity>` object if the
+        parameter is not dimensionless.
     xmin, xmax : float
         A pair of points representing, respectively, the minimum/maximum
         parameter values to be considered. If not provided (or set to `None`),
@@ -185,7 +188,11 @@ class CustomPrior(Prior):
 
         # Evaluates the PDF
         pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
-        pdf_y = pdf_fun(pdf_x)
+
+        if unit is not None:
+            pdf_y = pdf_fun(pdf_x << unit)
+        else:
+            pdf_y = pdf_fun(pdf_x)
 
         super().__init__(xmin=xmin_val, xmax=xmax_val, unit=unit,
                          pdf_npoints=pdf_npoints)
