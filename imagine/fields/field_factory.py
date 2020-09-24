@@ -189,6 +189,8 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     @default_parameters.setter
     def default_parameters(self, new_defaults):
         assert isinstance(new_defaults, dict)
+        new_defaults = {key: u.Quantity(value)
+                        for (key, value) in new_defaults.items()}
         try:
             self._default_parameters.update(new_defaults)
             log.debug('update default parameters %s' % str(new_defaults))
