@@ -5,50 +5,57 @@ import logging as log
 # Package imports
 import numpy as np
 from scipy.stats import norm
+import astropy.units as u
 
 # IMAGINE imports
-from imagine.priors import GeneralPrior, ScipyPrior
+from imagine.priors import Prior, ScipyPrior
 
 # All declaration
 __all__ = ['FlatPrior', 'GaussianPrior']
 
 
 # %% CLASS DEFINITIONS
-class FlatPrior(GeneralPrior):
+class FlatPrior(Prior):
     """
-    Prior distribution stating that any parameter values
-    within the valid interval have the same prior probability.
+    Prior distribution where any parameter values within the valid interval
+    have the same prior probability.
 
-    No initialization is required.
+    Parameters
+    ----------
+    xmin, xmax : float
+        A pair of points representing, respectively, the minimum/maximum
+        parameter values to be considered.
+    unit : astropy.units.Unit, optional
+        If present, sets the units used for this parameter. If absent, this
+        is inferred from `xmin` and `xmax`.
     """
-    def __init__(self, interval=[0,1]):
+    def __init__(self, xmin, xmax, unit=None):
         # Updates ranges
-        super().__init__(interval=interval)
+        super().__init__(xmin=xmin, xmax=xmax, unit=unit)
+        # Computes this from `range`, after the base Prior class has
+        # already dealt with units
+        self.vol = self.range[1] - self.range[0]
         # Constant pdf (for illustration)
-        self._pdf = lambda x: np.ones_like(x)
+        self._pdf = lambda x: np.ones_like(x)/self.vol.value
 
     def __call__(self, cube):
-        """
-        Return variable value as it is
-
-        parameters
-        ----------
-        cube : list
-            List of variable values in range [0,1]
-
-        Returns
-        -------
-        List of variable values in range [0,1]
-        """
         log.debug('@ flat_prior::__call__')
-        return cube
+
+        unit, [cube_val] = self.unit_checker(self.unit, [cube])
+        # Rescales to the correct interval
+        cube_val = cube_val * (self.range[1].value -  self.range[0].value)
+        cube_val += self.range[0].value
+
+        return cube_val << unit
 
 
 class GaussianPrior(ScipyPrior):
     """
-    Truncated normal prior distribution
+    Normal prior distribution.
 
-
+    This can operate either as a regular Gaussian distribution
+    (defined from -infinity to infinity) or, if `xmin` and `xmax` values
+    are set, as a trucated Gaussian distribution.
 
     Parameters
     ----------
@@ -57,9 +64,20 @@ class GaussianPrior(ScipyPrior):
         of the Gaussian
     sigma : float
         Width of the distribution (standard deviation, if there was no tuncation)
-    interval : tuple or list
-        A pair of points representing, respectively, the minimum and maximum
-        parameter values to be considered.
+    xmin, xmax : float
+        A pair of points representing, respectively, the minimum/maximum
+        parameter values to be considered (i.e. the truncation interval).
+        If these are not provided (or set to `None`), the prior range is
+        assumed to run from -infinity to infinity
+    unit : astropy.units.Unit, optional
+        If present, sets the units used for this parameter. If absent, this
+        is inferred from `mu` and `sigma`.
     """
-    def __init__(self, mu=0.0, sigma=1.0, interval=[-1.0,1.0]):
-        super().__init__(distr=norm, loc=mu, scale=sigma, interval=interval)
+
+    def __init__(self, mu=0.0, sigma=1.0, xmin=None, xmax=None, unit=None,
+                 **kwargs):
+
+        unit, [mu_val, sigma_val] = self.unit_checker(unit, [mu, sigma])
+
+        super().__init__(distr=norm, loc=mu, scale=sigma, unit=unit,
+                         xmin=xmin, xmax=xmax, **kwargs)

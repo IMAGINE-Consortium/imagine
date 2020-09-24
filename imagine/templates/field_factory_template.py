@@ -16,6 +16,5 @@ class FieldFactoryTemplate(FieldFactory):
                           'Parameter_B': B_std_val}
 
     # All parameters need a range and a prior
-    PRIORS = {'Parameter_A': FlatPrior(interval=[A_min, A_max]),
-              'Parameter_B': GaussianPrior(mu=B_std_val, sigma=B_sig,
-                                       interval=[B_min, B_max])}
+    PRIORS = {'Parameter_A': FlatPrior(xmin=A_min, xmax=A_max),
+              'Parameter_B': GaussianPrior(mu=B_std_val, sigma=B_sig)}

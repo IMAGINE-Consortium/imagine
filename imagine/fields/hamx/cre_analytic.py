@@ -42,10 +42,10 @@ class CREAnaFactory(FieldFactory):
                           'z0': 1,
                           'E0': 20.6,
                           'j0': 0.0217}
-    PRIORS = {'alpha': FlatPrior([2, 4]),
-              'beta': FlatPrior([-1, 1]),
-              'theta': FlatPrior([-1, 1]),
-              'r0': FlatPrior([0.1, 10]),
-              'z0': FlatPrior([0.1, 3]),
-              'E0': FlatPrior([10, 30]),
-              'j0': FlatPrior([0, 0.1])}
+    PRIORS = {'alpha': FlatPrior(xmin=2, xmax=4),
+              'beta': FlatPrior(xmin=-1, xmax=1),
+              'theta': FlatPrior(xmin=-1, xmax=1),
+              'r0': FlatPrior(xmin=0.1, xmax=10),
+              'z0': FlatPrior(xmin=0.1, xmax=3),
+              'E0': FlatPrior(xmin=10, xmax=30),
+              'j0': FlatPrior(xmin=0, xmax=0.1)}

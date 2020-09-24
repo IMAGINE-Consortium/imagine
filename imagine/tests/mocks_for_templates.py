@@ -103,12 +103,12 @@ class MY_SAMPLER_Sampler:
         assert self.param_names == ('fake_rnd_TE_param', 'constant_B_Bx', 'constant_B_By')
         # Checks prior_transform (which includes FlatPrior and GaussianPrior
         assert np.allclose(self.prior_transform(np.array([0.5,0.15,0.25])),
-                           [0.5, 0.19684753, 0.25])
+                           [5., 0.98587462, 1.16275512])
         # Checks the prior_pdf
-        assert np.allclose(self.prior_pdf([0.5, 0.5, 0.5]),
-                           [1., 0.53990967, 1.])
+        assert np.allclose(self.prior_pdf([1.5,1.5,1.5]),
+                           [0.1, 0.79788083, 0.79788456])
         # Checks likelihood_function
-        assert np.allclose(self.loglike(np.array([0.5, 0.5, 0.5])),
+        assert np.allclose(self.loglike(np.array([0.5, 10.5, 0.5])),
                            -5.088229933538249)
         assert self.seed == 1
 

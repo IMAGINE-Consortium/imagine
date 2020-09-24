@@ -8,7 +8,7 @@ import astropy.units as u
 
 # IMAGINE imports
 from imagine.fields.grid import BaseGrid, UniformGrid
-from imagine.priors import GeneralPrior
+from imagine.priors import Prior
 from imagine.tools import BaseClass, unity_mapper, req_attr
 
 # All declaration
@@ -28,20 +28,6 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     and translates it into physical parameter values,
     returning a field object with current parameter set.
 
-    Example
-    -------
-    To include a new Field_Factory, one needs to create a derived class
-    with customized initialization. Below we show an example which is
-    compatible with the :py:class:`xConstantField` showed in the
-    :ref:`components:Fields` section of the documentation::
-
-        @icy
-        class xConstantField_Factory(GeneralFieldFactory):
-            def __init__(self, grid=None, boxsize=None, resolution=None):
-                super().__init__(grid, boxsize, resolution)
-                self.field_class = xConstantField
-                self.default_parameters = {'constantA': 5.0}
-                self.parameter_ranges = {'constantA': [-10., 10.]}
 
     Parameters
     ----------
@@ -82,8 +68,8 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
 
         # Placeholders
         self.default_parameters = self.DEFAULT_PARAMETERS
-        self.parameter_ranges = {}
         self.active_parameters = active_parameters
+        self.parameter_ranges = {}
         self.priors = self.PRIORS
 
     def __call__(self, *, variables={}, ensemble_size=None,
@@ -113,12 +99,10 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         """
         log.debug('@ field_factory::generate')
         # map variable value to parameter value
-        # in mapping, variable name will be checked in default_parameters
-        mapped_variables = self._map_variables_to_parameters(variables)
         # copy default parameters and update wrt argument
         work_parameters = dict(self.default_parameters)
         # update is safe
-        work_parameters.update(mapped_variables)
+        work_parameters.update(variables)
         # generate fields
         result_field = self.field_class(grid=self.grid,
                                         parameters=work_parameters,
@@ -221,7 +205,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         """
         A dictionary containing the priors associated with each parameter.
         Each prior is represented by an instance of
-        :py:class:`imagine.priors.prior.GeneralPrior`.
+        :py:class:`imagine.priors.prior.Prior`.
 
         To set new priors one can update the priors dictionary using
         attribution (any missing values will be set to
@@ -233,7 +217,6 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
     def priors(self, new_prior_dict):
         if not hasattr(self, '_priors'):
             self._priors = {}
-
         parameter_ranges = {}
 
         # Uses previous information
@@ -243,7 +226,7 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
         for name in self.default_parameters:
             assert (name in prior_dict), 'Missing Prior for '+name
             prior = prior_dict[name]
-            assert isinstance(prior, GeneralPrior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
+            assert isinstance(prior, Prior), 'Prior must be an instance of :py:class:`imagine.priors.prior.GeneralPrior`.'
             self._priors[name] = prior
             parameter_ranges[name] = prior.range
         self.parameter_ranges = parameter_ranges
@@ -270,59 +253,10 @@ class FieldFactory(BaseClass, metaclass=abc.ABCMeta):
             self._parameter_ranges = new_ranges
             log.debug('set parameter ranges %s' % str(new_ranges))
 
-    @property
-    def default_variables(self):
-        """
-        A dictionary containing default parameter values converted into
-        default normalized variables (i.e with values scaled to be in the
-        range [0,1]).
-        """
-        log.debug('@ field_factory::default_variables')
-        tmp = dict()
-        for par, def_val in self.default_parameters.items():
-            low, high = self.parameter_ranges[par]
-            tmp[par] = float(def_val - low)/float(high - low)
-        return tmp
-
-    def _map_variables_to_parameters(self, variables):
-        """
-        Converts Bayesian sampling variables into model parameters
-
-        Parameters
-        ----------
-        variables : dict
-            Python dictionary in form {'parameter-name', logic-value}
-
-        Returns
-        -------
-        parameter_dict : dict
-            Python dictionary in form {'parameter-name', physical-value}
-        """
-        log.debug('@ field_factory::_map_variables_to_parameters')
-        assert isinstance(variables, dict)
-        parameter_dict = {}
-        for variable_name in variables:
-            # variable_name must have been registered in .default_parameters
-            # and, also being active
-            assert (variable_name in self.default_parameters and
-                    variable_name in self.active_parameters)
-            low, high = self.parameter_ranges[variable_name]
-            # Ensures consistent physical units, if needed
-            if isinstance(low, u.Quantity):
-                units = low.unit;
-                low = low.value
-                high = high.to(units).value
-            else:
-                units = 1
-            # unity_mapper defined in imainge.tools.carrier_mapper
-            mapped_variable = unity_mapper(variables[variable_name], low, high)
-            parameter_dict[variable_name] = mapped_variable * units
-        return parameter_dict
-
     @staticmethod
     def _interval(mean, sigma, n):
-        return(mean-n*sigma, mean+n*sigma)
+        return mean-n*sigma, mean+n*sigma
 
     @staticmethod
     def _positive_interval(mean, sigma, n):
-        return(max(0, mean-n*sigma), mean+n*sigma)
+        return max(0, mean-n*sigma), mean+n*sigma

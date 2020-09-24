@@ -93,7 +93,8 @@ def test_field_factory_template():
 
     assert isinstance(field, mock.MY_PACKAGE.MY_FIELD_CLASS)
     assert field.parameters['Parameter_A'] == 1*u.K
-    assert np.isclose(field.parameters['Parameter_B'], 1.3*u.Msun)
+    print(field.parameters['Parameter_B'])
+    assert np.isclose(field.parameters['Parameter_B'], 0.65)
 
 
 def test_simulator_template():
@@ -136,11 +137,11 @@ class ConstantBFactory(img_fields.FieldFactory):
     DEFAULT_PARAMETERS = {'Bx': 1.*muG, 'By': 2.*muG, 'Bz': 3.*muG}
 
     # All parameters need a range and a prior
+    # this tests: FlatPrior, GaussianPrior, GaussianPrior (truncated)
     PRIORS = {'Bx': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG,
-                                       interval=[0, 5.]*muG),
-              'By': img_priors.FlatPrior(interval=[0, 1.]*muG),
-              'Bz': img_priors.FlatPrior(interval=[0, 1.]*muG)}
-
+                                             xmin=0*muG, xmax=5.0*muG),
+              'By': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG),
+              'Bz': img_priors.FlatPrior(xmin=0*muG, xmax=1.*muG)}
 
 
 class FakeRandomTE(img_fields.ThermalElectronDensityField):
@@ -159,7 +160,7 @@ class FakeRandomTEFactory(img_fields.FieldFactory):
     """Example: field factory for YourFieldClass"""
     FIELD_CLASS = FakeRandomTE
     DEFAULT_PARAMETERS = {'param':2}
-    PRIORS = {'param': img_priors.FlatPrior(interval=[0, 10.])}
+    PRIORS = {'param': img_priors.FlatPrior(xmin=0, xmax=10.)}
 
 
 def test_pipeline_template():
@@ -211,9 +212,6 @@ def test_pipeline_template():
     # Tests sampling controlers
     pipeline.sampling_controllers = dict(controller_a=True)
 
-
-    Ga = img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG,
-                                       interval=[0, 5.]*muG)
     # Runs fake pipeline, including another sampling controller
     # This in turn checks multiple structures of the pipeline object
     pipeline(controller_b=False)
@@ -221,7 +219,7 @@ def test_pipeline_template():
     # Tests posterior report (checks execution only)
     pipeline.posterior_report()
     # Tests posterior summary
-    assert pipeline.posterior_summary['constant_B_Bx']['median']==2.5*muG
+    assert pipeline.posterior_summary['constant_B_Bx']['median']==0.5*muG
     assert pipeline.posterior_summary['constant_B_By']['median']==0.5*muG
 
     # Tests (temporary) chains directory creation

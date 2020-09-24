@@ -156,10 +156,10 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
     covariances.append(dataset=mockDataset)
 
     # Generates the grid
-    one_d_grid = img.fields.UniformGrid(box=[[0,2*np.pi]*u.kpc,
-                                      [0,0]*u.kpc,
-                                      [0,0]*u.kpc],
-                                resolution=[100,1,1])
+    one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc,
+                                      [0, 0]*u.kpc,
+                                      [0, 0]*u.kpc],
+                                resolution=[100, 1, 1])
 
     # Prepares the thermal electron field factory
     ne_factory = testFields.CosThermalElectronDensityFactory(grid=one_d_grid)
@@ -170,8 +170,8 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0','b0')
-    B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5,5]*u.microgauss),
-                      'b0': img.priors.FlatPrior(interval=[2,10]*u.microgauss)}
+    B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
+                      'b0': img.priors.FlatPrior(interval=[2, 10]*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
