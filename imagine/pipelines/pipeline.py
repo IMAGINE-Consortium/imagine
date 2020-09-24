@@ -308,7 +308,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                         ok *= (prior.samples <= prior.range[1])
 
                         x = scipy_norm.ppf(loc=0, scale=1,
-                                          q=prior.cdf(prior.samples.value[ok]))
+                                           q=prior.cdf(prior.samples.value[ok]))
 
                         gaussian_pair.append(x)
                     # Computes the Pearson r correlation coefficient from the
@@ -504,6 +504,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 prior = factory.priors[ap_name]
                 assert isinstance(prior, Prior)
                 self._priors[factory.name+'_'+ap_name] = prior
+                i += 1
         self._factory_list = factory_list
 
     @property

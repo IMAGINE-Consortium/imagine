@@ -1,13 +1,5 @@
 """
-The basic elements of an IMAGINE pipeline
-
-The present script exemplifies the usage of the basic features of IMAGINE and
-the use of MPI parallelism.
-
-This is the scripted version of the first IMAGINE tutorial. Before examining this
-script, we strongly recommend reading the original tutorial either in the
-documentation website or in the corresponding jupyter notebook in the tutorials
-directory.
+An example using prior correlations
 """
 import numpy as np
 import astropy.units as u
@@ -179,24 +171,6 @@ if __name__ == '__main__':
     ne_factory.active_parameters = ('a',)
     p1 = img.priors.CustomPrior(xmin=0., samples=s1, unit=1 / u.kpc * u.rad)
     ne_factory.priors = {'a': p1}
-#    pdf_x = np.linspace(p1.range[0], p1.range[1], 1500)
-#    pl.hist(s1, bins=100, label='hist', density=True)
-#    pl.plot(pdf_x, p1.pdf(pdf_x), label='prior_pdf')
-#    pl.plot(pdf_x, distr1.pdf(pdf_x), label='scipy_pdf')
-#    pl.legend()
-#    pl.savefig('pdf_' + 'a' + '.png')
-#    pl.close()
-#    pl.plot(pdf_x, p1.cdf(pdf_x), label='prior_cdf')
-#    pl.plot(pdf_x, distr1.cdf(pdf_x), label='scipy_cdf')
-#    pl.legend()
-#    pl.savefig('cdf_' + 'a' + '.png')
-#    pl.close()
-#    pl.plot(np.linspace(0, 1, 1000), p1._inv_cdf(np.linspace(0, 1, 1000)), label='prior_ppf')
-#    pl.plot(np.linspace(0, 1, 1000), distr1.ppf(np.linspace(0, 1, 1000)), label='scipy_ppf')
-#    pl.legend()
-#    pl.savefig('ppf_' + 'a' + '.png')
-#    pl.close()
-
 
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)

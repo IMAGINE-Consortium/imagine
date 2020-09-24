@@ -17,10 +17,17 @@ __all__ = ['FlatPrior', 'GaussianPrior']
 # %% CLASS DEFINITIONS
 class FlatPrior(Prior):
     """
-    Prior distribution stating that any parameter values
-    within the valid interval have the same prior probability.
+    Prior distribution where any parameter values within the valid interval
+    have the same prior probability.
 
-    No initialization is required.
+    Parameters
+    ----------
+    xmin, xmax : float
+        A pair of points representing, respectively, the minimum/maximum
+        parameter values to be considered.
+    unit : astropy.units.Unit, optional
+        If present, sets the units used for this parameter. If absent, this
+        is inferred from `xmin` and `xmax`.
     """
     def __init__(self, xmin, xmax, unit=None):
         # Updates ranges
@@ -32,18 +39,6 @@ class FlatPrior(Prior):
         self._pdf = lambda x: np.ones_like(x)/self.vol.value
 
     def __call__(self, cube):
-        """
-        Return uniformly distributed variable
-
-        parameters
-        ----------
-        cube : list
-            List of variable values
-
-        Returns
-        -------
-        List of variable values in the given interval
-        """
         log.debug('@ flat_prior::__call__')
 
         unit, [cube_val] = unit_checker(self.unit, [cube])
@@ -56,9 +51,11 @@ class FlatPrior(Prior):
 
 class GaussianPrior(ScipyPrior):
     """
-    Normal prior distribution
+    Normal prior distribution.
 
-
+    This can operate either as a regular Gaussian distribution
+    (defined from -infinity to infinity) or, if `xmin` and `xmax` values
+    are set, as a trucated Gaussian distribution.
 
     Parameters
     ----------
@@ -67,6 +64,14 @@ class GaussianPrior(ScipyPrior):
         of the Gaussian
     sigma : float
         Width of the distribution (standard deviation, if there was no tuncation)
+    xmin, xmax : float
+        A pair of points representing, respectively, the minimum/maximum
+        parameter values to be considered (i.e. the truncation interval).
+        If these are not provided (or set to `None`), the prior range is
+        assumed to run from -infinity to infinity
+    unit : astropy.units.Unit, optional
+        If present, sets the units used for this parameter. If absent, this
+        is inferred from `mu` and `sigma`.
     """
 
     def __init__(self, mu=0.0, sigma=1.0, xmin=None, xmax=None, unit=None,

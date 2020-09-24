@@ -130,14 +130,18 @@ class CustomPrior(Prior):
         the probability density function (PDF) through kernel density
         estimate using Gaussian kernels.
     pdf_fun : function
-        A Python function containing the PDF associated with this prior.
-        If an no `interval` is provided, the domain of PDF(x) will be assumed to be
-        within the interval [0,1].
-    xmin, xmax: tuple or list
+        A Python function containing the PDF for this prior.
+        Note that the  function must be able to operate on
+        :py:obj:`Quantity <astropy.units.quantity.Quantity>` object if the
+        parameter is not dimensionless.
+    xmin, xmax : float
         A pair of points representing, respectively, the minimum/maximum
-        parameter values to be considered. If not provided, the
-        smallest/largest value in the sample minus/plus one standard deviation
-        will be used.
+        parameter values to be considered. If not provided (or set to `None`),
+        the smallest/largest value in the sample minus/plus one standard
+        deviation will be used.
+    unit : astropy.units.Unit
+        If present, sets the units used for this parameter. If absent, this
+        is inferred from `xmin` and `xmax`.
     bw_method: scalar or str
         Used by :py:class:`scipy.stats.gaussian_kde` to select the bandwidth
         employed to estimate the PDF from provided samples. Can be a number,
@@ -170,7 +174,11 @@ class CustomPrior(Prior):
 
         # Evaluates the PDF
         pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
-        pdf_y = pdf_fun(pdf_x << unit)
+
+        if unit is not None:
+            pdf_y = pdf_fun(pdf_x << unit)
+        else:
+            pdf_y = pdf_fun(pdf_x)
 
         super().__init__(xmin=xmin_val, xmax=xmax_val, unit=unit,
                          pdf_npoints=pdf_npoints)
@@ -209,13 +217,19 @@ class ScipyPrior(Prior):
         Same meaning as in :py:class:`scipy.stats.rv_continuous`: sets the
         width of the distribution (e.g. the standard deviation in the normal
         case).
-    interval : tuple or list
-        A pair of points representing, respectively, the minimum and maximum
-        parameter values to be considered (will be used to rescale the
-        interval).
+    xmin, xmax : float
+        A pair of points representing, respectively, the minimum/maximum
+        parameter values to be considered (note that this will truncate the
+        original scipy distribution provided).
+        If these are not provided (or set to `None`), the prior range is
+        assumed to run from -infinity to infinity (in this case, `unit`
+        *must* be provided).
+    unit : astropy.units.Unit
+        If present, sets the units used for this parameter. If absent, this
+        is inferred from `xmin` and `xmax`.
     """
-    def __init__(self, distr, *args, unit=None, loc=0.0, scale=1.0,
-                 xmin=None, xmax=None, pdf_npoints=1500, **kwargs):
+    def __init__(self, distr, *args, loc=0.0, scale=1.0, xmin=None, xmax=None,
+                 unit=None, pdf_npoints=1500, **kwargs):
         super().__init__(xmin=xmin, xmax=xmax, unit=unit,
                          pdf_npoints=pdf_npoints)
 
