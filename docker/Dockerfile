@@ -38,19 +38,13 @@ RUN wget http://www.fftw.org/fftw-3.3.8.tar.gz && tar -xzf fftw-3.3.8.tar.gz --s
 RUN ./configure --enable-threads --enable-openmp --enable-shared --prefix=/tmp/local/ && make && make install
 WORKDIR /home/lab
 
-# GOOGLE TEST
-RUN git clone https://github.com/google/googletest.git googletest
-WORKDIR /home/lab/googletest
-RUN mkdir /home/lab/googletest/build
-WORKDIR /home/lab/googletest/build
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/tmp/local .. && make && make install
-RUN mkdir /tmp/local/src && cp ../googletest/src/* /tmp/local/src
-WORKDIR /home/lab
-
 # HAMMURABI X
 RUN mkdir /home/lab/hamx
 WORKDIR /home/lab/hamx
 RUN wget https://github.com/hammurabi-dev/hammurabiX/archive/v2.4.1.tar.gz && tar -xzf v2.4.1.tar.gz --strip-components 1 && rm v2.4.1.tar.gz
+# Deactivates testing (and together with it, the google tests dependency)
+RUN sed -E 's/(OPTION.ENABLE_TESTING .+) ON/\1 OFF/g' CMakeLists.txt > CMakeLists_new.txt
+RUN mv CMakeLists_new.txt CMakeLists.txt
 RUN mkdir /home/lab/hamx/build
 WORKDIR /home/lab/hamx/build
 RUN cmake .. && make install
@@ -66,7 +60,6 @@ WORKDIR /home/lab
 # CLEAN PACKAGES
 RUN conda clean -afy && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 RUN rm -f *.tar.gz
-RUN rm -rf /home/lab/googletest
 RUN rm -rf /home/lab/fftw
 RUN apt-get autoremove && apt-get clean
 
