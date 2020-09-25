@@ -19,7 +19,7 @@ from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
 import IPython.display as ipd
 import matplotlib.pyplot as plt
-import dill
+import hickle as hkl
 
 # IMAGINE imports
 from imagine import rc
@@ -28,6 +28,7 @@ from imagine.fields import FieldFactory
 from imagine.priors import Prior
 from imagine.simulators import Simulator
 from imagine.tools import BaseClass, ensemble_seed_generator, misc, visualization
+from imagine.tools import io
 
 # GLOBALS
 comm = MPI.COMM_WORLD
@@ -146,10 +147,12 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
 
     def __call__(self, *args, **kwargs):
+        self.save()  # Keeps the setup safe
         result = self.call(*args, **kwargs)
         if self.show_summary_reports and (mpirank == 0):
             self.posterior_report()
             self.evidence_report()
+        self.save()  # Keeps the results safe
 
         return result
 
@@ -834,12 +837,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     def call(self, **kwargs):
         raise NotImplementedError
 
-    def save(self, path=None):
-        if path is None:
-            path = os.path.join(self.run_directory, 'pipeline_object.pickle')
-        print('Saving the IMAGINE Pipeline state to:', os.path.abspath(path))
-        with open(path, 'wb') as f:
-            dill.dump(self, f)
+    def save(self):
+        io.save_pipeline(self)
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the

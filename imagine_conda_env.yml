@@ -8,8 +8,8 @@ dependencies:
   - corner=2.0.*
   - cmasher=1.5.*
   - cython=0.29.*
-  - dill=0.3.*
   - dynesty=1.0.*
+  - dill=0.3.*
   - e13tools=0.9.*
   - mpi4py=3.*
   - healpy=1.*
