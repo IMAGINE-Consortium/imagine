@@ -1,7 +1,8 @@
-#!/usr/env python
+#!/usr/bin/env python
 
 # Built-in imports
 import os
+import sys
 import logging
 from mpi4py import MPI
 # External packages
@@ -26,7 +27,20 @@ comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
-def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01):
+timer = img.tools.Timer()
+
+def msg(txt, banner=True):
+    if mpirank==0:
+        if banner:
+            print('\n')
+            print('-'*60)
+        print(txt, flush=True)
+        if banner:
+            print('-'*60, flush=True)
+    else:
+        print('', flush=True, end='') # Flushes STDOUT
+
+def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     """
     Prepares fake total intensity and Faraday depth data
 
@@ -43,7 +57,6 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01):
         Mock Covariances
     """
     ## Sets the resolution
-    nside=2
     size = 12*nside**2
 
     # Generates the fake datasets
@@ -103,13 +116,12 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01):
 
     return mock_data, mock_cov
 
-
-def example_run(pipeline_class=img.pipelines.MultinestPipeline,
-                sampling_controllers={}, ensemble_size=8,
-                run_directory='example_pipeline',
-                n_evals_report = 50,
-                true_pars={'b0': 3, 'psi0': 27, 'rms': 4},
-                obs_err=0.01):
+def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
+                     sampling_controllers={}, ensemble_size=8,
+                     run_directory='example_pipeline',
+                     n_evals_report = 50, nside=4,
+                     true_pars={'b0': 3, 'psi0': 27, 'rms': 4},
+                     obs_err=0.01):
 
     # Creates run directory for storing the chains and log
     if mpirank==0:
@@ -122,11 +134,11 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
       level=logging.INFO)
 
     # Creates the mock dataset based on "true" parameters provided
-    if mpirank==0:
-        print('\nGenerating mock data', flush=True)
-    mock_data, mock_cov = prepare_mock_obs_data(err=obs_err, **true_pars)
-    if mpirank==0:
-        print('\nPreparing pipeline', flush=True)
+    msg('Generating mock data')
+    mock_data, mock_cov = prepare_mock_obs_data(err=obs_err, nside=nside,
+                                                **true_pars)
+
+    msg('Preparing pipeline')
 
     # Setting up of the pipeline
     ## Use an ensemble to estimate the galactic variance
@@ -163,24 +175,18 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
                               ensemble_size=ensemble_size,
                               run_directory=run_directory)
     pipeline.sampling_controllers = sampling_controllers
+    pipeline.save()
 
-    timer = img.tools.Timer()
-    # Checks the runtime
-    timer.tick('likelihood')
-    pipeline._likelihood_function([3,3,3])
-    test_time = timer.tock('likelihood')
-    if mpirank == 0:
-        print('\nSingle likelihood evaluation: {0:.2f} s'.format(test_time))
-    comm.Barrier()
+    return pipeline
 
+
+def run_pipeline(pipeline):
     # Runs!
-    if mpirank == 0:
-        print('\n\nRunning the pipeline\n',flush=True)
+    msg('Running the pipeline')
     timer.tick('pipeline')
     results=pipeline()
     total_time = timer.tock('pipeline')
-    if mpirank == 0:
-        print('\n\nFinished the run in {0:.2f}'.format(total_time), flush=True)
+    msg('\n\nFinished the run in {0:.2f}'.format(total_time), banner=False)
     comm.Barrier()
 
     if mpirank == 0:
@@ -209,14 +215,48 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
             for k in ['median','errup','errlo']:
                 print('\t', k, constraints[k])
 
+def show_usage(cmd):
+    print('IMAGINE example run\n')
+    print('Usage: ')
+    print('\t{} prepare\t   Prepares (or tests) an example Pipeline'.format(cmd))
+    print('\t{} run\t   Runs an example Pipeline (preparing if necessary'.format(cmd))
+    exit()
 
-os.environ['OMP_NUM_THREADS'] = '4'
 if __name__ == '__main__':
-    if mpirank == 0:
-        print('Warning, this example is still under development!')
+    # Checks command line arguments
+    cmd, args = sys.argv[0], sys.argv[1:]
+    if len(args)==0:
+        show_usage(cmd)
+    elif args[0]=='prepare':
+        prepare_only = True
+    elif args[0]=='run':
+        prepare_only = False
+    else:
+        show_usage(cmd)
+
+    msg('IMAGINE EXAMPLE RUN\n\n', banner=False)
 
     # Sets run directory name
     run_directory=os.path.join('runs','example_pipeline')
-    # Starts the run
-    example_run(sampling_controllers={'max_iter': 1, 'n_live_points':40},
-                run_directory=run_directory)
+
+    if not os.path.isdir(run_directory):
+        msg('Preparing Pipeline')
+        pipeline = prepare_pipeline(
+          ensemble_size=10,
+          sampling_controllers={'max_iter': 5, 'n_live_points':500},
+          run_directory=run_directory)
+    else:
+        msg('Loading Pipeline')
+        pipeline = img.load_pipeline(run_directory)
+
+    pipeline.sampling_controllers={'max_iter': 5, 'n_live_points':500}
+
+    # Checks the runtime
+    msg('Testing pipeline')
+    timer.tick('likelihood')
+    pipeline._likelihood_function([3,3,3])
+    test_time = timer.tock('likelihood')
+    msg('Single likelihood evaluation: {0:.2f} s'.format(test_time), banner=False)
+
+    if not prepare_only:
+        run_pipeline(pipeline)
