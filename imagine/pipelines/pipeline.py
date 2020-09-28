@@ -332,7 +332,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def corner_plot(self, **kwargs):
         """
-
+        Calls :py:func:`imagine.tools.visualization.corner_plot` to make
+        a corner plot of samples produced by this Pipeline
         """
         return visualization.corner_plot(pipeline=self, **kwargs)
 
@@ -369,9 +370,12 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     def posterior_report(self, sdigits=2, **kwargs):
         """
-        Displays the best fit values and 1-sigma errors for each active parameter.
+        Displays the best fit values and 1-sigma errors for each active
+        parameter. Also produces a corner plot of the samples, which is
+        saved to the run directory.
 
-        If running on a jupyter-notebook, a nice LaTeX display is used.
+        If running on a jupyter-notebook, a nice LaTeX display is used, and
+        the plot is shown.
 
         Parameters
         ----------
