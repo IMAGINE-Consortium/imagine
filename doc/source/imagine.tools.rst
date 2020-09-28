@@ -36,10 +36,10 @@ imagine.tools.covariance\_estimator module
    :undoc-members:
    :show-inheritance:
 
-imagine.tools.io\_handler module
---------------------------------
+imagine.tools.io module
+-----------------------
 
-.. automodule:: imagine.tools.io_handler
+.. automodule:: imagine.tools.io
    :members:
    :undoc-members:
    :show-inheritance:
@@ -88,6 +88,14 @@ imagine.tools.timer module
 --------------------------
 
 .. automodule:: imagine.tools.timer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+imagine.tools.visualization module
+----------------------------------
+
+.. automodule:: imagine.tools.visualization
    :members:
    :undoc-members:
    :show-inheritance:
