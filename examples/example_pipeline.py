@@ -26,7 +26,7 @@ comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
-def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
+def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01):
     """
     Prepares fake total intensity and Faraday depth data
 
@@ -71,7 +71,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
     brnd_es = BrndES(parameters={'rms': rms, 'k0': 0.5, 'a0': 1.7,
                                  'k1': 0.5, 'a1': 0.0,
                                  'rho': 0.5, 'r0': 8., 'z0': 1.},
-                     grid_nx=25, grid_ny=25, grid_nz=15)
+                     grid_nx=50, grid_ny=50, grid_nz=30)
 
     ## Generate mock data (run hammurabi)
     outputs = mock_generator([breg_lsa, brnd_es, cre_ana, tereg_ymw16])
@@ -103,41 +103,17 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
 
     return mock_data, mock_cov
 
-def plot_results(pipe, true_vals, output_file='test.pdf'):
-    """
-    Makes a cornerplot of the results and saves them to disk
-    """
-    samp = pipe.samples
-    # Sets the levels to show 1, 2 and 3 sigma
-    sigmas=np.array([1.,2.,3.])
-    levels=1-np.exp(-0.5*sigmas*sigmas)
-
-    # Visualize with a corner plot
-    figure = corner.corner(np.vstack([samp.columns[0].value, samp.columns[1].value]).T,
-                           range=[0.99]*len(pipe.active_parameters),
-                           quantiles=[0.02, 0.5, 0.98],
-                           labels=pipe.active_parameters,
-                           show_titles=True,
-                           title_kwargs={"fontsize": 12},
-                           color='steelblue',
-                           truths=true_vals,
-                           truth_color='firebrick',
-                           plot_contours=True,
-                           hist_kwargs={'linewidth': 2},
-                           label_kwargs={'fontsize': 10},
-                           levels=levels)
-    figure.savefig(output_file)
-
 
 def example_run(pipeline_class=img.pipelines.MultinestPipeline,
                 sampling_controllers={}, ensemble_size=8,
                 run_directory='example_pipeline',
-                true_parameters={'b0': 3, 'psi0': 27, 'rms': 3, 'err': 0.01}):
+                n_evals_report = 50,
+                true_pars={'b0': 3, 'psi0': 27, 'rms': 4},
+                obs_err=0.01):
 
-    # Creates a directory for storing the chains and log
-    chains_dir = os.path.join(run_directory, 'chains')
+    # Creates run directory for storing the chains and log
     if mpirank==0:
-        os.makedirs(chains_dir, exist_ok=True)
+        os.makedirs(run_directory, exist_ok=True)
     comm.Barrier()
 
     # Sets up logging
@@ -146,7 +122,11 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
       level=logging.INFO)
 
     # Creates the mock dataset based on "true" parameters provided
-    mock_data, mock_cov = prepare_mock_obs_data(**true_parameters)
+    if mpirank==0:
+        print('\nGenerating mock data', flush=True)
+    mock_data, mock_cov = prepare_mock_obs_data(err=obs_err, **true_pars)
+    if mpirank==0:
+        print('\nPreparing pipeline', flush=True)
 
     # Setting up of the pipeline
     ## Use an ensemble to estimate the galactic variance
@@ -154,13 +134,15 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     ## WMAP B-field, vary only b0 and psi0
     breg_factory = BregLSAFactory()
+    breg_factory.priors = {'b0':  img.priors.FlatPrior(xmin=2., xmax=8.),
+                           'psi0': img.priors.FlatPrior(xmin=0., xmax=50.)}
     breg_factory.active_parameters = ('b0', 'psi0')
-    breg_factory.priors = {'b0':  img.priors.FlatPrior(interval=[0., 10.])}
-    breg_factory.active_parameters = ('b0',)
     ## Random B-field, vary only RMS amplitude
     brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
+    # Note that the random grid resolution is lower than the one
+    # used for the mock, reflecting the typical case
     brnd_factory.active_parameters = ('rms',)
-    brnd_factory.priors = {'rms': img.priors.FlatPrior(interval=[0., 10.])}
+    brnd_factory.priors = {'rms': img.priors.FlatPrior(xmin=2., xmax=8.)}
     ## Fixed CR model
     cre_factory = CREAnaFactory()
     ## Fixed FE model
@@ -174,14 +156,32 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Prepares pipeline
     pipeline = pipeline_class(simulator=simulator,
+                              show_progress_reports=True,
                               factory_list=factory_list,
+                              n_evals_report = n_evals_report,
                               likelihood=likelihood,
                               ensemble_size=ensemble_size,
-                              chains_directory=chains_dir)
+                              run_directory=run_directory)
     pipeline.sampling_controllers = sampling_controllers
 
+    timer = img.tools.Timer()
+    # Checks the runtime
+    timer.tick('likelihood')
+    pipeline._likelihood_function([3,3,3])
+    test_time = timer.tock('likelihood')
+    if mpirank == 0:
+        print('\nSingle likelihood evaluation: {0:.2f} s'.format(test_time))
+    comm.Barrier()
+
     # Runs!
+    if mpirank == 0:
+        print('\n\nRunning the pipeline\n',flush=True)
+    timer.tick('pipeline')
     results=pipeline()
+    total_time = timer.tock('pipeline')
+    if mpirank == 0:
+        print('\n\nFinished the run in {0:.2f}'.format(total_time), flush=True)
+    comm.Barrier()
 
     if mpirank == 0:
         # Reports the evidence (to file)
@@ -192,9 +192,11 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        plot_results(pipeline, [b0, psi0, err],
-                     output_file=os.join(run_directory,
-                                         'example_pipeline_results.pdf'))
+        f = pipeline.corner_plot(truths_dict={'breg_lsa_b0': true_pars['b0'],
+                                              'breg_lsa_psi0': true_pars['psi0'],
+                                              'breg_wmap_rms': true_pars['rms']})
+
+        f.savefig(os.path.join(run_directory,'corner_plot_truth.pdf'))
         # Prints setup
         print('\nRC used:', img.rc)
         print('Seed used:', pipeline.master_seed)
@@ -207,12 +209,14 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
             for k in ['median','errup','errlo']:
                 print('\t', k, constraints[k])
 
+
+os.environ['OMP_NUM_THREADS'] = '4'
 if __name__ == '__main__':
     if mpirank == 0:
         print('Warning, this example is still under development!')
 
     # Sets run directory name
-    run_directory=os.path.join('imagine_runs','example_pipeline')
+    run_directory=os.path.join('runs','example_pipeline')
     # Starts the run
-    example_run(sampling_controllers={'resume': True, 'n_live_points':150},
+    example_run(sampling_controllers={'max_iter': 1, 'n_live_points':40},
                 run_directory=run_directory)
