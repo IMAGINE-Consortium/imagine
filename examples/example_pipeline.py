@@ -84,7 +84,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     brnd_es = BrndES(parameters={'rms': rms, 'k0': 0.5, 'a0': 1.7,
                                  'k1': 0.5, 'a1': 0.0,
                                  'rho': 0.5, 'r0': 8., 'z0': 1.},
-                     grid_nx=50, grid_ny=50, grid_nz=30)
+                     grid_nx=25, grid_ny=25, grid_nz=15)
 
     ## Generate mock data (run hammurabi)
     outputs = mock_generator([breg_lsa, brnd_es, cre_ana, tereg_ymw16])
@@ -117,9 +117,9 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     return mock_data, mock_cov
 
 def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
-                     sampling_controllers={}, ensemble_size=8,
+                     sampling_controllers={}, ensemble_size=10,
                      run_directory='example_pipeline',
-                     n_evals_report = 50, nside=4,
+                     n_evals_report=50, nside=4,
                      true_pars={'b0': 3, 'psi0': 27, 'rms': 4},
                      obs_err=0.01):
 
@@ -127,11 +127,6 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
     if mpirank==0:
         os.makedirs(run_directory, exist_ok=True)
     comm.Barrier()
-
-    # Sets up logging
-    logging.basicConfig(
-      filename=os.path.join(run_directory, 'example_pipeline.log'),
-      level=logging.INFO)
 
     # Creates the mock dataset based on "true" parameters provided
     msg('Generating mock data')
@@ -151,10 +146,10 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
     breg_factory.active_parameters = ('b0', 'psi0')
     ## Random B-field, vary only RMS amplitude
     brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
-    # Note that the random grid resolution is lower than the one
-    # used for the mock, reflecting the typical case
     brnd_factory.active_parameters = ('rms',)
     brnd_factory.priors = {'rms': img.priors.FlatPrior(xmin=2., xmax=8.)}
+    brnd_factory.default_parameters = {'k0': 0.5, 'a0': 1.7, 'k1': 0.5,
+                                       'a1': 0.0, 'rho': 0.5, 'r0': 8., 'z0': 1.}
     ## Fixed CR model
     cre_factory = CREAnaFactory()
     ## Fixed FE model
@@ -180,7 +175,7 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
     return pipeline
 
 
-def run_pipeline(pipeline):
+def run_pipeline(pipeline, true_pars=None):
     # Runs!
     msg('Running the pipeline')
     timer.tick('pipeline')
@@ -191,16 +186,17 @@ def run_pipeline(pipeline):
 
     if mpirank == 0:
         # Reports the evidence (to file)
-        report_file=os.join(run_directory,
+        report_file=os.path.join(run_directory,
                             'example_pipeline_results.txt')
         with open(report_file, 'w+') as f:
             f.write('log evidence: {}'.format( pipeline.log_evidence))
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        f = pipeline.corner_plot(truths_dict={'breg_lsa_b0': true_pars['b0'],
-                                              'breg_lsa_psi0': true_pars['psi0'],
-                                              'breg_wmap_rms': true_pars['rms']})
+        if true_pars is not None:
+            f = pipeline.corner_plot(truths_dict={'breg_lsa_b0': true_pars['b0'],
+                                                  'breg_lsa_psi0': true_pars['psi0'],
+                                                  'brnd_ES': true_pars['rms']})
 
         f.savefig(os.path.join(run_directory,'corner_plot_truth.pdf'))
         # Prints setup
@@ -236,6 +232,8 @@ if __name__ == '__main__':
 
     msg('IMAGINE EXAMPLE RUN\n\n', banner=False)
 
+    true_pars={'b0': 6, 'psi0': 27, 'rms': 3}
+
     # Sets run directory name
     run_directory=os.path.join('runs','example_pipeline')
 
@@ -243,13 +241,18 @@ if __name__ == '__main__':
         msg('Preparing Pipeline')
         pipeline = prepare_pipeline(
           ensemble_size=10,
-          sampling_controllers={'max_iter': 5, 'n_live_points':500},
-          run_directory=run_directory)
+          nside=8,
+          sampling_controllers={ 'n_live_points': 1000},
+          run_directory=run_directory,
+          true_pars=true_pars)
     else:
         msg('Loading Pipeline')
         pipeline = img.load_pipeline(run_directory)
 
-    pipeline.sampling_controllers={'max_iter': 5, 'n_live_points':500}
+    # Sets up logging
+    logging.basicConfig(
+      filename=os.path.join(run_directory, 'example_pipeline.log'),
+      level=logging.INFO)
 
     # Checks the runtime
     msg('Testing pipeline')
@@ -259,4 +262,4 @@ if __name__ == '__main__':
     msg('Single likelihood evaluation: {0:.2f} s'.format(test_time), banner=False)
 
     if not prepare_only:
-        run_pipeline(pipeline)
+        run_pipeline(pipeline, true_pars=true_pars)
