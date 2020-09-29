@@ -16,7 +16,7 @@ class BrndES(DummyField):
     """
 
     # Class attributes
-    NAME = 'breg_wmap'
+    NAME = 'brnd_ES'
     SIMULATOR_CONTROLLIST = None  # Unused, see simulator_controllist property
     FIELD_CHECKLIST = None  # Unused, see field_checklist property
 
