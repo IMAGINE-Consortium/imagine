@@ -1,19 +1,20 @@
 #! /bin/bash
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=l.rodrigues@astro.ru.nl
-#SBATCH --output=/home/lrodrigues/IMAGINE/imagine-pipeline/runs/example_pipeline/run.log
-#SBATCH --time=47:00:00
-#SBATCH --ntasks=20
+#SBATCH --ntasks=10
 #SBATCH --cpus-per-task=16
 #SBATCH --job-name=IMAGINE
 
+# This is an example SLURM batch script. Please adjust to your needs.
+# We request 10 nodes, which are used by MultiNest to explore the likelihood
+# space in parallel
+# We request 16 CPUs per node, which allows Hammurabi to use OpenMP to
+# speed up the likelihood calculations
+
+date
 echo
 echo 'Python used:'
 echo `which python`
 echo "nodes used: $SLURM_NTASKS"
 echo "cores per node used: $SLURM_CPUS_PER_TASK"
-echo
-date
 echo
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
