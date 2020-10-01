@@ -136,7 +136,7 @@ def pdiag(elements, size=None):
             return elements * np.eye(size)
         else:
             # Constructs a sparse matrix
-            return spr.diags(elements,shape=(size,size))
+            return spr.diags(elements,shape=(size,size)).tocsc()
 
 
 @add_to_all
