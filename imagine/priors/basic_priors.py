@@ -77,7 +77,7 @@ class GaussianPrior(ScipyPrior):
     def __init__(self, mu=None, sigma=None, xmin=None, xmax=None, unit=None,
                  **kwargs):
 
-        assert mu is not None, , 'A value for mu must be provided'
+        assert mu is not None, 'A value for mu must be provided'
         assert sigma is not None, 'A value for sigma must be provided'
 
         unit, [mu_val, sigma_val] = unit_checker(unit, [mu, sigma])
