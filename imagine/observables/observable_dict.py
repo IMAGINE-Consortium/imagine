@@ -60,6 +60,7 @@ import logging as log
 
 # Package imports
 import numpy as np
+from scipy.sparse import spmatrix
 
 # IMAGINE imports
 from imagine.observables.dataset import Dataset, HEALPixDataset
@@ -110,7 +111,7 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def append(self, dataset=None, *, name=None, data=None, plain=False,
-               coords=None):
+               unit=None, coords=None):
         """
         Adds/updates name and data
 
@@ -136,6 +137,7 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             name = dataset.key
             data = dataset.data
             cov = dataset.cov
+            cov_unit = dataset.cov_unit
             coords = dataset.coords
             if isinstance(dataset, HEALPixDataset):
                 plain=False
@@ -143,9 +145,10 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
                 plain=True
         else:
             cov = data
+            cov_unit = unit
 
         assert (len(name) == 4), 'Wrong format for Observable key!'
-        return(name, data, cov, plain, coords)
+        return name, data, cov, cov_unit, plain, coords
 
 
 
@@ -180,7 +183,7 @@ class Masks(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Masks::append')
-        name, data, _, plain, _ = super().append(*args, **kwargs)
+        name, data, _, _, plain, _ = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
@@ -253,7 +256,7 @@ class Measurements(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Measurements::append')
-        name, data, _, plain, coords = super().append(*args, **kwargs)
+        name, data, _, _, plain, coords = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
@@ -304,14 +307,16 @@ class Covariances(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Covariances::append')
-        name, _, data, plain, _ = super().append(*args, **kwargs)
+        name, _, data, data_unit, plain, _ = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):  # always rewrite
             self._archive.update({name: data})  # rw
-        elif isinstance(data, np.ndarray):
+        elif isinstance(data, np.ndarray) or isinstance(data, spmatrix):
             if not plain:
                 assert (data.shape[1] == _Nside_to_Npixels(name[2]))
-            self._archive.update({name: Observable(data, 'covariance')})
+            self._archive.update({name: Observable(data=data,
+                                                   dtype='covariance',
+                                                   unit=data_unit)})
         else:
             raise TypeError('unsupported data type')
 

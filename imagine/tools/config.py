@@ -53,7 +53,8 @@ rc = {'temp_dir': None,
       'distributed_arrays': False,
       'pipeline_default_seed': 1,
       'pipeline_distribute_ensemble': False,
-      'hammurabi_hamx_path': None}
+      'hammurabi_hamx_path': None,
+      'max_dense_matrix_size': 200}
 
 
 # %% FUNCTION DEFINITIONS

@@ -32,6 +32,7 @@ import logging as log
 # Package imports
 import astropy.units as u
 import numpy as np
+from scipy.sparse import spmatrix
 
 # IMAGINE imports
 from imagine.tools import pmean, pshape, prosecutor, pglobal
@@ -53,15 +54,15 @@ class Observable(object):
     dtype : str
         Data type, must be either: 'measured', 'simulated' or 'covariance'
     """
-    def __init__(self, data=None, dtype=None, coords=None):
+    def __init__(self, data=None, dtype=None, coords=None, unit=None):
         self.dtype = dtype
 
         if isinstance(data, u.Quantity):
             self.data = data.value
             self.unit = data.unit
-        elif isinstance(data, np.ndarray):
+        elif isinstance(data, np.ndarray) or isinstance(data, spmatrix):
             self.data = data
-            self.unit = None
+            self.unit = unit
         else:
             raise ValueError
 
@@ -137,10 +138,10 @@ class Observable(object):
             self._data = None
         else:
             assert (len(data.shape) == 2)
-            assert isinstance(data, np.ndarray)
+            assert isinstance(data, np.ndarray) or isinstance(data, spmatrix)
             if (self._dtype == 'measured'):  # copy single-row data from memory
                 assert (data.shape[0] == 1)
-            self._data = np.copy(data)
+            self._data = data
             if (self._dtype == 'covariance'):
                 assert np.equal(*self.shape)
 

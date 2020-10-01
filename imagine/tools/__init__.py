@@ -23,7 +23,7 @@ from .visualization import *
 
 # All declaration
 __all__ = ['carrier_mapper', 'class_tools', 'config', 'covariance_estimator',
-           'io', 'masker', 'misc', 'mpi_helper', 'parallel_ops',
+           'io', 'masker', 'misc', 'mpi_helper', 'parallel_ops', 'sparse',
            'random_seed', 'timer']
 __all__.extend(carrier_mapper.__all__)
 __all__.extend(class_tools.__all__)

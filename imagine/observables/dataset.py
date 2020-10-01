@@ -8,7 +8,7 @@ from astropy import units as u
 import numpy as np
 
 # IMAGINE imports
-from imagine.tools import BaseClass, distribute_matrix, peye, req_attr
+from imagine.tools import BaseClass, distribute_matrix, peye, pdiag, req_attr
 
 # All declaration
 __all__ = ['Dataset', 'TabularDataset', 'HEALPixDataset',
@@ -31,6 +31,7 @@ class Dataset(BaseClass):
         self.frequency = None
         self.tag = None
         self._cov = None
+        self.cov_unit = None
         self._error = None
         self._data = None
 
@@ -64,8 +65,14 @@ class Dataset(BaseClass):
     @property
     def cov(self):
         if (self._cov is None) and (self._error is not None):
-            self._cov = self._error * peye(self._data.size)
+            if isinstance(self._error, u.Quantity):
+                error, self.cov_unit = self._error.value, self._error.unit
+            else:
+                error = self._error
+            self._cov = pdiag(error, self._data.size)
+
         return self._cov
+
 
 
 class TabularDataset(Dataset):
@@ -129,7 +136,7 @@ class TabularDataset(Dataset):
             data_col = name
 
         # Obtain data column
-        self._data = u.Quantity(data[data_col], units)
+        self._data = u.Quantity(data[data_col], units, copy=False)
         units = self._data.unit
 
         # Determine the keys for galactic and cartesian coordinates
@@ -154,19 +161,19 @@ class TabularDataset(Dataset):
             pass
         elif(coords_type.lower() == 'galactic'):
             self.coords = {'type': 'galactic',
-                           'lon': u.Quantity(data[lon_col], unit=u.deg),
-                           'lat': u.Quantity(data[lat_col], unit=u.deg)}
+                           'lon': data[lon_col] << u.deg,
+                           'lat': data[lat_col] << u.deg}
         elif(coords_type.lower() == 'cartesian'):
             self.coords = {'type': 'cartesian',
-                           'x': u.Quantity(data[x_col], unit=u.kpc),
-                           'y': u.Quantity(data[y_col], unit=u.kpc),
-                           'z': u.Quantity(data[z_col], unit=u.kpc)}
+                           'x': data[x_col] << u.kpc,
+                           'y': data[y_col] << u.kpc,
+                           'z': data[z_col] << u.kpc}
         else:
             raise ValueError('Unknown coordinates_type!')
 
         # Obtain errors if provided
         if err_col is not None:
-            self._error = u.Quantity(data[err_col], units)
+            self._error = data[err_col] << units
 
         # Save provided frequency and tag
         self.frequency = frequency
@@ -199,7 +206,8 @@ class HEALPixDataset(Dataset):
 
         if cov is not None:
             assert error is None
-
+            if isinstance(cov, u.Quantity):
+                cov, self.cov_unit = cov.value, cov.unit
             self._cov = distribute_matrix(cov)
         else:
             self._error = error
