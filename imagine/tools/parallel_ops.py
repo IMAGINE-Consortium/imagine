@@ -89,7 +89,7 @@ def ptrace(data):
     else:
         # The following line is as fast as np.trace and is compatible
         # sparse matrices
-        return test.diagonal().sum()
+        return data.diagonal().sum()
 
 
 
@@ -121,8 +121,8 @@ def pdiag(elements, size=None):
     size : int
         Size of the diagonal matrix
     """
-    if len(elements)==1:
-        return peye * elements
+    if isinstance(elements, (float, int)):
+        return peye(size) * elements
 
     if size is None:
         size = len(elements)
