@@ -63,7 +63,8 @@ def ptrans(data):
     if rc['distributed_arrays']:
         return m.mpi_trans(data)
     else:
-        return data.T
+        # The transpose method works both for numpy arrays and sparse matrices
+        return data.transpose()
 
 
 @add_to_all

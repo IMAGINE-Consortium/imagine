@@ -54,7 +54,8 @@ rc = {'temp_dir': None,
       'pipeline_default_seed': 1,
       'pipeline_distribute_ensemble': False,
       'hammurabi_hamx_path': None,
-      'max_dense_matrix_size': 200}
+      'max_dense_matrix_size': 200,
+      'oas_cov_tolerance': 1e-10}
 
 
 # %% FUNCTION DEFINITIONS
