@@ -6,8 +6,10 @@ channels:
 dependencies:
   - astropy=4.0.*
   - corner=2.0.*
+  - cmasher=1.5.*
   - cython=0.29.*
   - dynesty=1.0.*
+  - dill=0.3.*
   - e13tools=0.9.*
   - healpy=1.*
   - h5py=2.10.*=mpi*
@@ -15,6 +17,6 @@ dependencies:
   - mpi4py=3.*
   - numpy=1.18.*
   - python=3.7.*
-  - pymultinest=2.9
+  - pymultinest=2.10
   - scipy=1.*
   - ultranest=2.2.1

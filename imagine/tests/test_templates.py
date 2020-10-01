@@ -17,6 +17,7 @@ import imagine.priors as img_priors
 import imagine.observables as img_obs
 from imagine.likelihoods import SimpleLikelihood
 from imagine.simulators import TestSimulator
+from imagine import load_pipeline
 
 # imports templates
 from imagine.templates.magnetic_field_template import MagneticFieldTemplate
@@ -222,9 +223,19 @@ def test_pipeline_template():
     assert pipeline.posterior_summary['constant_B_Bx']['median']==0.5*muG
     assert pipeline.posterior_summary['constant_B_By']['median']==0.5*muG
 
-    # Tests (temporary) chains directory creation
+    # Tests (temporary) chains and run directory creation
+    run_dir = pipeline.run_directory
     assert os.path.isdir(pipeline.chains_directory)
+    assert os.path.isdir(run_dir)
     # checks ("computed") log_evidence
     assert (pipeline.log_evidence, pipeline.log_evidence_err) == (42.0, 17.0)
-    # Checks pipeline barrier on deletion (i.e. the __del__ method)
-    del pipeline
+
+    # Tests saving and loading
+    # (the pipeline should have been saved after )
+    pipeline_copy = load_pipeline(pipeline.run_directory)
+    assert (pipeline_copy.log_evidence, 
+            pipeline_copy.log_evidence_err) == (42.0, 17.0)
+    assert pipeline_copy.posterior_summary['constant_B_By']['median']==0.5*muG
+    
+    
+    

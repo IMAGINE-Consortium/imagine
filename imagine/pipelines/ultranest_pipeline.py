@@ -108,7 +108,7 @@ class UltranestPipeline(Pipeline):
         self.tidy_up()
 
         default_init_params = {
-          'resume': False,
+          'resume': True,
           'num_test_samples': 2,
           'num_bootstraps': 30,
           'draw_multiple': True}
@@ -170,3 +170,6 @@ class UltranestPipeline(Pipeline):
         self._evidence_err = self.results['logzerr']
 
         return self.results
+
+    def get_intermediate_results(self):
+        pass

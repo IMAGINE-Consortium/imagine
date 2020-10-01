@@ -161,6 +161,9 @@ class Hammurabi(Simulator):
             self._ham.mod_par(keychain, {attribute_tag: str(parameters[name])})
 
     def simulate(self, key, coords_dict, realization_id, output_units):
+        # Sets Hampyx's working directory
+        # (this is needed in the case a run is saved and loaded later)
+        self._ham.wk_dir = img.rc['temp_dir']
 
         # If the realization_id is different from the self.current_realization
         # hammurabi needs to re-run to (re)generate the observables

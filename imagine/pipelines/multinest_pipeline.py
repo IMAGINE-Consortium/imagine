@@ -5,6 +5,8 @@ from os import path
 
 # Package imports
 import pymultinest
+import numpy as np
+import os
 
 # IMAGINE imports
 from imagine.pipelines import Pipeline
@@ -102,7 +104,7 @@ class MultinestPipeline(Pipeline):
         # Resets internal state
         self.tidy_up()
 
-        default_solve_params = {'resume': False,
+        default_solve_params = {'resume': True,
                                 'n_live_points': 400,
                                 'evidence_tolerance': 0.5,
                                 'max_iter': 0,
@@ -113,20 +115,17 @@ class MultinestPipeline(Pipeline):
                                 'mode_tolerance': -1e90,
                                 'null_log_evidence': -1e90,
                                 'n_clustering_params': None,
+                                'outputfiles_basename': None,
                                 'max_modes': 100,
                                 'n_iter_before_update': 100,
-                                'outputfiles_basename': None,
                                 'verbose': True}
 
         # Keyword arguments can alter the sampling controllers
         self.sampling_controllers = kwargs  # Updates the dict
 
-        # Checks whether a base name for multinest output files was specified
-        if 'outputfiles_basename' not in self.sampling_controllers:
-            chains_prefix = path.join(self.chains_directory, 'multinest_')
-
-            # If not, uses default location
-            self.sampling_controllers['outputfiles_basename'] = chains_prefix
+        # Sets base name for multinest output files
+        chains_prefix = path.join(self.chains_directory, 'multinest_')
+        self.sampling_controllers['outputfiles_basename'] = chains_prefix
 
         # Prepares initialization and run parameters from
         # defaults and sampling controllers
@@ -141,6 +140,7 @@ class MultinestPipeline(Pipeline):
 
         # Runs pyMultinest
         log.info('Calling pymultinest.solve')
+
         self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
                                          Prior=self.prior_transform,
                                          n_dims=len(self._active_parameters),
@@ -149,8 +149,25 @@ class MultinestPipeline(Pipeline):
                                          seed=self.master_seed,
                                          **solve_params)
 
+
         self._samples_array = self.results['samples']
         self._evidence = self.results['logZ']
         self._evidence_err = self.results['logZerr']
 
         return self.results
+
+    def get_intermediate_results(self):
+
+        nPar = len(self._active_parameters)
+
+        if os.path.isfile(os.path.join(self.chains_directory, 'multinest_ev.dat')):
+            live_data = np.genfromtxt(
+                os.path.join(self.chains_directory, 'multinest_phys_live.points'))
+            rejected_data = np.genfromtxt(
+                os.path.join(self.chains_directory, 'multinest_ev.dat'))
+
+            if len(rejected_data)>0:
+                self.intermediate_results['rejected_points'] = rejected_data[:, :nPar]
+                self.intermediate_results['live_points'] = live_data[:, :nPar]
+                self.intermediate_results['logLikelihood'] = rejected_data[:, nPar]
+                self.intermediate_results['lnX'] = rejected_data[:, nPar+1]

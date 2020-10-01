@@ -32,6 +32,8 @@ matplotlib.use('Agg')
 comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
+# Initializes timer object
+timer = img.tools.Timer()
 
 
 def prepare_mock_dataset(a0=3., b0=6., size=10,
@@ -99,33 +101,6 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
     return dataset
 
 
-def plot_results(pipe, true_vals, output_file='test.pdf'):
-    """
-    Makes a cornerplot of the results and saves them to disk
-    """
-    samp = pipe.samples
-    # Sets the levels to show 1, 2 and 3 sigma
-    sigmas=np.array([1.,2.,3.])
-    levels=1-np.exp(-0.5*sigmas*sigmas)
-
-    # Visualize with a corner plot
-    figure = corner.corner(np.vstack([samp.columns[0].value, samp.columns[1].value]).T,
-                           range=[0.99]*len(pipe.active_parameters),
-                           quantiles=[0.02, 0.5, 0.98],
-                           labels=pipe.active_parameters,
-                           show_titles=True,
-                           title_kwargs={"fontsize": 12},
-                           color='steelblue',
-                           truths=true_vals,
-                           truth_color='firebrick',
-                           plot_contours=True,
-                           hist_kwargs={'linewidth': 2},
-                           label_kwargs={'fontsize': 10},
-                           levels=levels)
-    figure.savefig(output_file)
-
-
-
 
 def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
                        sampling_controllers = {}, ensemble_size=50,
@@ -170,8 +145,10 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0','b0')
-    B_factory.priors ={'a0': img.priors.FlatPrior(interval=[-5, 5]*u.microgauss),
-                      'b0': img.priors.FlatPrior(interval=[2, 10]*u.microgauss)}
+    B_factory.priors ={'a0': img.priors.FlatPrior(xmin=-5*u.microgauss,
+                                                  xmax=5*u.microgauss),
+                      'b0': img.priors.FlatPrior(xmin=2*u.microgauss,
+                                                 xmax=10*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
@@ -187,9 +164,9 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
                               factory_list=factory_list,
                               likelihood=likelihood,
                               ensemble_size=ensemble_size,
+                              show_progress_reports=True,
                               chains_directory=chains_dir)
     pipeline.sampling_controllers = sampling_controllers
-
 
     # RUNS THE PIPELINE
     results = pipeline()
@@ -201,9 +178,10 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        plot_results(pipeline,
-                     [true_parameters['a0'], true_parameters['b0']],
-                     output_file=output_file_plot)
+        pipeline.corner_plot(truths_dict={
+          'naive_gaussian_magnetic_field_a0': true_parameters['a0'],
+          'naive_gaussian_magnetic_field_b0': true_parameters['b0']})
+        plt.savefig(output_file_plot)
 
         # Prints setup
         print('\nRC used:', img.rc)
@@ -218,21 +196,28 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
                 print('\t', k, constraints[k])
 
 if __name__ == '__main__':
+
     # ------ UltraNest -------
     # Sets run directory name
     run_directory=os.path.join('imagine_runs','basic_pipeline_run_ultranest')
     # Sets up the sampler to be used
     pipeline_class = img.pipelines.UltranestPipeline
     # Set some controller parameters that are specific to UltraNest.
-    sampling_controllers = {'dlogz': 0.05,
-                            'min_num_live_points': 400,
-                            'min_ess': 1000}
+    sampling_controllers = {'dlogz': 0.5,
+                            'dKL':0.1,
+                            'min_num_live_points': 500,
+                            'min_ess': 1000,
+                            'resume': True}
     # Starts the run
     if mpirank == 0:
         print('Running using UltraNest')
+        timer.tick('UltraNest')
+
     basic_pipeline_run(run_directory=run_directory,
                        sampling_controllers=sampling_controllers,
                        pipeline_class=pipeline_class)
+    if mpirank == 0:
+        print('Finished. Ellapsed time:', timer.tock('UltraNest'))
 
     # ------ MultiNest -------
     # Sets run directory name
@@ -240,28 +225,34 @@ if __name__ == '__main__':
     # Sets up the sampler to be used
     pipeline_class = img.pipelines.MultinestPipeline
     # Set some controller parameters that are specific to MultiNest.
-    sampling_controllers = {'n_live_points': 400}
+    sampling_controllers = {'n_live_points': 500, 'verbose': True, 'resume': True}
     # Starts the run
     if mpirank == 0:
-        print('Running using MultiNest')
+        print('\n\nRunning using MultiNest')
+        timer.tick('MultiNest')
 
     basic_pipeline_run(run_directory=run_directory,
                        sampling_controllers=sampling_controllers,
                        pipeline_class=pipeline_class)
-
-    # ------ Dynesty -------
-    # Sets run directory name
-    run_directory=os.path.join('imagine_runs','basic_pipeline_run_dynesty')
-    # Sets up the sampler to be used
-    pipeline_class = img.pipelines.DynestyPipeline
-    # Set some controller parameters that are specific to Dynesty.
-    sampling_controllers = {'nlive_init': 400,
-                            'dlogz_init': 0.1,
-                            'dynamic': True}
-    # Starts the run
     if mpirank == 0:
-        print('Running using Dynesty')
+        print('Finished. Ellapsed time:', timer.tock('MultiNest'))
 
-    basic_pipeline_run(run_directory=run_directory,
-                       sampling_controllers=sampling_controllers,
-                       pipeline_class=pipeline_class)
+    ## ------ Dynesty -------
+    ## Sets run directory name
+    #run_directory=os.path.join('imagine_runs','basic_pipeline_run_dynesty')
+    ## Sets up the sampler to be used
+    #pipeline_class = img.pipelines.DynestyPipeline
+    ## Set some controller parameters that are specific to Dynesty.
+    #sampling_controllers = {'nlive_init': 500,
+                            #'dlogz_init': 0.05,
+                            #'dynamic': True}
+    ## Starts the run
+    #if mpirank == 0:
+        #print('\n\nRunning using Dynesty')
+        #timer.tick('Dynesty')
+
+    #basic_pipeline_run(run_directory=run_directory,
+                       #sampling_controllers=sampling_controllers,
+                       #pipeline_class=pipeline_class)
+    #if mpirank == 0:
+        #print('Finished. Ellapsed time:', timer.tock('Dynesty'))
