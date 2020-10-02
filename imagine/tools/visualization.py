@@ -215,21 +215,80 @@ def _key_formatter(key):
 
     return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
 
-def show_observable(obs, **kwargs):
+def show_observable(obs, realization=0, **kwargs):
+    """
+    Displays the contents of a single realisation of an
+    Observable object.
+
+    Parameters
+    ----------
+    obs : imagine.observables.observable.Observable
+        Observable object whose contents one wants to plot
+    realization : int
+        Index of the ensemble realization to be plotted
+    **kwargs
+        Parameters to be passed to the apropriate plotting routine
+        (either `healpy.visufunc.mollview` or `matplotlib.pyplot.imshow`).
+    """
     if obs.otype == 'HEALPix':
         mollview_args = {'norm': 'hist',
                          'cmap': copy(plt.get_cmap('cmr.rainforest')),
                          'unit': obs.unit._repr_latex_()}
         mollview_args.update(kwargs)
-        hp.mollview(obs.global_data[0], **mollview_args)
-    else:
-        print("Plotting observable type '{}' not yet implemented")
+        return hp.mollview(obs.global_data[realization],
+                           **mollview_args)
+    elif obs.otype == 'tabular':
+        if obs.coords['type'] == 'galactic':
+            if 'cmap' in kwargs:
+                cmap = kwargs['cmap']
+            else:
+                cmap = 'cmr.chroma'
+            cmap = cmr.get_sub_cmap(cmap, 0.15, 0.85)
+            values = obs.global_data[realization]
+            values -= values.min()
+            values /= values.max()
+            colors = cmap(values)
+            if 'sub' in kwargs:
+                plt.subplot(*kwargs['sub'])
+            plt.scatter(obs.coords['lon'], obs.coords['lat'], c=colors)
+            plt.xlabel('Gal. lon. [{}]'.format(obs.coords['lat'].unit._repr_latex_()))
+            plt.ylabel('Gal. lat. [{}]'.format(obs.coords['lat'].unit._repr_latex_()))
+            plt.grid(alpha=0.2)
 
-def show_observable_dict(obs_dict, **kwargs):
-      ncols = len(obs_dict.keys())
-      nrows = 1
-      for i, key in enumerate(obs_dict.keys()):
-          cmap = _choose_cmap(key[0])
-          title = _key_formatter(key)
-          show_observable(obs_dict[key], title=title,
-                          cmap=cmap, sub=(nrows,ncols,i+1))
+    else:
+        # Includes the title in the corresponding subplot, even in
+        # the unsupported case (so that the user remembers it)
+        print("Plotting observable type '{}' not yet implemented".format(obs.otype))
+
+def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
+    """
+    Plots the contents of an ObservableDict object.
+
+    obs_dict : imagine.observables.observable.ObservableDict
+        ObservableDict object whose contents one wants to plot.
+    max_realization : int
+        Index of the maximum ensemble realization to be plotted. If None,
+        the whole ensemble is shown.
+    **kwargs
+        Parameters to be passed to the apropriate plotting routine
+        (either :py:func:`healpy.visufunc.mollview` or :py:func:`matplotlib.pyplot.imshow`).
+    """
+    keys = list(obs_dict.keys())
+    ncols = len(keys)
+    if ncols == 0:
+        print('The ObservableDict is empty.')
+        return
+    # Gets the ensemble size from the first Observable
+    nrows = obs_dict[keys[0]].shape[0]
+    if max_realizations is not None:
+        nrows = min(nrows, max_realizations)
+
+    i_subplot = 0
+    for j in range(nrows):
+        for i, key in enumerate(keys):
+            i_subplot += 1
+            cmap = _choose_cmap(key[0])
+            title = _key_formatter(key)
+            show_observable(obs_dict[key], title=title, realization=j,
+                            cmap=cmap, sub=(nrows, ncols, i_subplot))
+

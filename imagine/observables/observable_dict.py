@@ -65,6 +65,7 @@ import numpy as np
 from imagine.observables.dataset import Dataset, HEALPixDataset
 from imagine.observables.observable import Observable
 from imagine.tools import BaseClass, mask_cov, mask_obs, req_attr
+import imagine.tools.visualization as visu
 
 # All declaration
 __all__ = ['ObservableDict', 'Masks', 'Measurements', 'Simulations',
@@ -107,6 +108,13 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
 
     def __getitem__(self, key):
         return self._archive[key]
+
+    def show(self, **kwargs):
+        """
+        Shows the contents of this ObservableDict using
+        :py:func:`imagine.tools.visualization.show_observable_dict`
+        """
+        return visu.show_observable_dict(self, **kwargs)
 
     @abc.abstractmethod
     def append(self, dataset=None, *, name=None, data=None, otype=None,
