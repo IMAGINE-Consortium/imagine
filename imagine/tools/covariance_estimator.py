@@ -15,7 +15,7 @@ import scipy.sparse as spr
 
 # IMAGINE imports
 from imagine.tools.parallel_ops import (
-    pmean, ptrans, pmult, peye, ptrace, pshape, rc)
+    pmean, ptrans, pmult, pdiag, ptrace, pshape, rc)
 
 # All declaration
 __all__ = ['empirical_cov', 'oas_cov', 'oas_mcov']
@@ -141,7 +141,7 @@ def oas_mcov(data):
     if u.size > rc['max_dense_matrix_size'] and (not rc['distributed_arrays']):
         # if the matrix is too big, convert to sparse matrix,
         # first approximating any small values by zero
-        negligible = np.abs(u/ensemble_size) < rc['oas_cov_tolerance']
+        negligible = np.abs(u/mean/ensemble_size) < rc['oas_cov_tolerance']
         u[negligible] = 0
         u = spr.csc_matrix(u)
 
