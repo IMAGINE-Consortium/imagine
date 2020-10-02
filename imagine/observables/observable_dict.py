@@ -109,7 +109,7 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
         return self._archive[key]
 
     @abc.abstractmethod
-    def append(self, dataset=None, *, name=None, data=None, plain=False,
+    def append(self, dataset=None, *, name=None, data=None, otype=None,
                coords=None):
         """
         Adds/updates name and data
@@ -126,9 +126,11 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             `ext` can be 'I','Q','U','PI','PA', None or other customized tags.
         data : numpy.ndarray or imagine.observables.observable.Observable
             distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
-        plain : bool
-            If True, means unstructured/tabular data.
-            If False (default case), means HEALPix-like sky map.
+        otype : str
+            Type of observable. May be: 'HEALPix', for HEALPix-like sky map;
+            'tabular', for tabular data; or 'plain' for unstructured data.
+        coords : dict
+            A dictionary containing the coordinates of tabular data
         """
 
         if dataset is not None:
@@ -137,15 +139,12 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             data = dataset.data
             cov = dataset.cov
             coords = dataset.coords
-            if isinstance(dataset, HEALPixDataset):
-                plain=False
-            else:
-                plain=True
+            otype = dataset.otype
         else:
             cov = data
 
         assert (len(name) == 4), 'Wrong format for Observable key!'
-        return(name, data, cov, plain, coords)
+        return(name, data, cov, otype, coords)
 
 
 
@@ -180,16 +179,16 @@ class Masks(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Masks::append')
-        name, data, _, plain, _ = super().append(*args, **kwargs)
+        name, data, _, otype, _ = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
-            if not plain:
+            if otype == 'HEALPix':
                 assert (data.size == 12*np.uint(name[2])**2)
             self._archive.update({name: data})
         elif isinstance(data, np.ndarray):
             assert (data.shape[0] == 1)
-            if not plain:
+            if otype == 'HEALPix':
                 assert (data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(data, 'measured')})
         else:
@@ -237,9 +236,10 @@ class Masks(ObservableDict):
                 new_name = (name[0], name[1], masked_data.shape[1], name[3])
                 masked_dict.append(name=new_name,
                                    data=masked_data,
-                                   plain=True)
+                                   otype='plain')
                 masked_dict.coords = observable.coords
                 masked_dict.unit = observable.unit
+
         return masked_dict
 
 
@@ -253,17 +253,18 @@ class Measurements(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Measurements::append')
-        name, data, _, plain, coords = super().append(*args, **kwargs)
+        name, data, _, otype, coords = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
             self._archive.update({name: data})
         elif isinstance(data, np.ndarray):
-            if not plain:
+            if otype == 'HEALPix':
                 assert (data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(data=data,
                                                    dtype='measured',
-                                                   coords=coords)})
+                                                   coords=coords,
+                                                   otype=otype)})
         else:
             raise TypeError('Unsupported data type')
 
@@ -278,7 +279,7 @@ class Simulations(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Simulations::append')
-        name, data, *_, coords = super().append(*args, **kwargs)
+        name, data, _, otype, coords = super().append(*args, **kwargs)
 
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
@@ -289,7 +290,8 @@ class Simulations(ObservableDict):
             elif isinstance(data, np.ndarray):  # distributed data
                 self._archive.update({name: Observable(data=data,
                                                        dtype='simulated',
-                                                       coords=coords)})
+                                                       coords=coords,
+                                                       otype=otype)})
             else:
                 raise TypeError('unsupported data type')
 
@@ -304,12 +306,12 @@ class Covariances(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Covariances::append')
-        name, _, data, plain, _ = super().append(*args, **kwargs)
+        name, _, data, otype, _ = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):  # always rewrite
             self._archive.update({name: data})  # rw
         elif isinstance(data, np.ndarray):
-            if not plain:
+            if otype == 'HEALPix':
                 assert (data.shape[1] == _Nside_to_Npixels(name[2]))
             self._archive.update({name: Observable(data, 'covariance')})
         else:
