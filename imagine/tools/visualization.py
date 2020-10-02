@@ -250,6 +250,8 @@ def show_observable(obs, realization=0, **kwargs):
             colors = cmap(values)
             if 'sub' in kwargs:
                 plt.subplot(*kwargs['sub'])
+            if 'title' in kwargs:
+                plt.title(kwargs['title'])
             plt.scatter(obs.coords['lon'], obs.coords['lat'], c=colors)
             plt.xlabel('Gal. lon. [{}]'.format(obs.coords['lat'].unit._repr_latex_()))
             plt.ylabel('Gal. lat. [{}]'.format(obs.coords['lat'].unit._repr_latex_()))
