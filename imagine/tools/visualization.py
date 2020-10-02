@@ -1,10 +1,16 @@
 """
 This module contains convenient standard plotting functions
 """
+# %% IMPORTS
+# Built-in imports
+from copy import copy
+
+# Package imports
 import numpy as np
 import matplotlib.pyplot as plt
 from corner import corner
 import cmasher as cmr
+import healpy as hp
 
 def corner_plot(pipeline=None, truths_dict=None, show_sigma=True, param_names=None,
                 table=None, samples=None, live_samples=None,
@@ -187,3 +193,43 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
 
     plt.tight_layout()
     return fig
+
+__divergent_quantitites = {'fd'}
+
+def _choose_cmap(name=None):
+    if name in __divergent_quantitites:
+        cmap = 'cmr.fusion'
+    else:
+        cmap = 'cmr.rainforest'
+    return copy(plt.get_cmap(cmap))
+
+def _key_formatter(key):
+    name, freq, Nside, tag = key
+
+    if freq is not None:
+        freq = '  {} GHz'.format(freq)
+    else:
+        freq = ''
+    if tag is None:
+        tag = ''
+
+    return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
+
+def show_observable(obs, **kwargs):
+    if obs.otype == 'HEALPix':
+        mollview_args = {'norm': 'hist',
+                         'cmap': copy(plt.get_cmap('cmr.rainforest')),
+                         'unit': obs.unit._repr_latex_()}
+        mollview_args.update(kwargs)
+        hp.mollview(obs.global_data[0], **mollview_args)
+    else:
+        print("Plotting observable type '{}' not yet implemented")
+
+def show_observable_dict(obs_dict, **kwargs):
+      ncols = len(obs_dict.keys())
+      nrows = 1
+      for i, key in enumerate(obs_dict.keys()):
+          cmap = _choose_cmap(key[0])
+          title = _key_formatter(key)
+          show_observable(obs_dict[key], title=title,
+                          cmap=cmap, sub=(nrows,ncols,i+1))
