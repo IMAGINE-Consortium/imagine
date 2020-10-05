@@ -196,14 +196,23 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
 
 __divergent_quantitites = {'fd'}
 
-def _choose_cmap(name=None):
-    if name in __divergent_quantitites:
+def _choose_cmap(title=None):
+    """
+    Chooses a divergent colormap for signed quantities
+    """
+    if title is not None:
+        # Takes only the observable name
+        title = title.split()[0]
+    if title in __divergent_quantitites:
         cmap = 'cmr.fusion'
     else:
         cmap = 'cmr.rainforest'
     return copy(plt.get_cmap(cmap))
 
 def _key_formatter(key):
+    """
+    Converts a ObservableDict key into a plot title
+    """
     name, freq, Nside, tag = key
 
     if freq is not None:
@@ -215,7 +224,7 @@ def _key_formatter(key):
 
     return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
 
-def show_observable(obs, realization=0, **kwargs):
+def show_observable(obs, realization=0, title=None, cartesian_axes='yz', **kwargs):
     """
     Displays the contents of a single realisation of an
     Observable object.
@@ -226,37 +235,54 @@ def show_observable(obs, realization=0, **kwargs):
         Observable object whose contents one wants to plot
     realization : int
         Index of the ensemble realization to be plotted
+    cartesian_axes : str
+        If plotting a tabular observable using cartesian coordinates,
+        this allows selecting which two axes should be used for the plot.
+        E.g. 'xy', 'zy', 'xz'. Default: 'yz'.
     **kwargs
         Parameters to be passed to the apropriate plotting routine
         (either `healpy.visufunc.mollview` or `matplotlib.pyplot.imshow`).
     """
     if obs.otype == 'HEALPix':
+        default_cmap = _choose_cmap(title)
         mollview_args = {'norm': 'hist',
                          'cmap': copy(plt.get_cmap('cmr.rainforest')),
                          'unit': obs.unit._repr_latex_()}
         mollview_args.update(kwargs)
-        return hp.mollview(obs.global_data[realization],
+        return hp.mollview(obs.global_data[realization], title=title,
                            **mollview_args)
     elif obs.otype == 'tabular':
-        if obs.coords['type'] == 'galactic':
-            if 'cmap' in kwargs:
-                cmap = kwargs['cmap']
-            else:
-                cmap = 'cmr.chroma'
-            cmap = cmr.get_sub_cmap(cmap, 0.15, 0.85)
-            values = obs.global_data[realization]
-            values -= values.min()
-            values /= values.max()
-            colors = cmap(values)
-            if 'sub' in kwargs:
-                plt.subplot(*kwargs['sub'])
-            if 'title' in kwargs:
-                plt.title(kwargs['title'])
-            plt.scatter(obs.coords['lon'], obs.coords['lat'], c=colors)
-            plt.xlabel('Gal. lon. [{}]'.format(obs.coords['lat'].unit._repr_latex_()))
-            plt.ylabel('Gal. lat. [{}]'.format(obs.coords['lat'].unit._repr_latex_()))
-            plt.grid(alpha=0.2)
+        ax = None
+        if 'sub' in kwargs:
+            ax = plt.subplot(*kwargs['sub'])
 
+        if obs.coords['type'] == 'galactic':
+            x, y = obs.coords['lon'], obs.coords['lat']
+            plt.xlabel('Gal. lon. [{}]'.format(x.unit._repr_latex_()))
+            plt.ylabel('Gal. lat. [{}]'.format(y.unit._repr_latex_()))
+        elif obs.coords['type'] == 'cartesian':
+            x, y = obs.coords[cartesian_axes[0]], obs.coords[cartesian_axes[1]]
+            plt.xlabel('{} [{}]'.format(cartesian_axes[0], x.unit._repr_latex_()))
+            plt.ylabel('{} [{}]'.format(cartesian_axes[1], y.unit._repr_latex_()))
+        else:
+            raise ValueError('Unsupported coordinates type', obs.coords['type'])
+
+        values = obs.global_data[realization]
+        #values -= values.min()
+        #values /= values.max()
+
+        if 'cmap' in kwargs:
+            cmap = kwargs['cmap']
+        else:
+            cmap = 'cmr.chroma'
+        cmap = cmr.get_sub_cmap(cmap, 0.15, 0.85)
+        #colors = cmap(values)
+
+
+        plt.title(title)
+        im = plt.scatter(x, y, c=values, cmap=cmap)
+        plt.grid(alpha=0.2)
+        plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
     else:
         # Includes the title in the corresponding subplot, even in
         # the unsupported case (so that the user remembers it)
@@ -289,8 +315,7 @@ def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
     for j in range(nrows):
         for i, key in enumerate(keys):
             i_subplot += 1
-            cmap = _choose_cmap(key[0])
             title = _key_formatter(key)
             show_observable(obs_dict[key], title=title, realization=j,
-                            cmap=cmap, sub=(nrows, ncols, i_subplot))
+                            sub=(nrows, ncols, i_subplot), **kwargs)
 
