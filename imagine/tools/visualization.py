@@ -202,7 +202,7 @@ def _choose_cmap(title=None):
     """
     if title is not None:
         # Takes only the observable name
-        title = title.split()[0]
+        title = title.split()[0].strip()
     if title in __divergent_quantitites:
         cmap = 'cmr.fusion'
     else:
@@ -244,9 +244,9 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz', **kwarg
         (either `healpy.visufunc.mollview` or `matplotlib.pyplot.imshow`).
     """
     if obs.otype == 'HEALPix':
-        default_cmap = _choose_cmap(title)
+        default_cmap = _choose_cmap(title=title)
         mollview_args = {'norm': 'hist',
-                         'cmap': copy(plt.get_cmap('cmr.rainforest')),
+                         'cmap': copy(default_cmap),
                          'unit': obs.unit._repr_latex_()}
         mollview_args.update(kwargs)
         return hp.mollview(obs.global_data[realization], title=title,
