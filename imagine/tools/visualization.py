@@ -179,7 +179,8 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
                 ax.set_xlabel(i)
             hist, edges = np.histogram(samples[:,i-1], bins=hist_bins)
 
-            ax.plot(edges[:-1], hist, color=colors[i], drawstyle='steps-pre')
+            ax.plot(edges[:-1], hist, color=colors[i], drawstyle='steps-pre',
+                    label='rej.')
 
             if live_samples is not None:
                 hist_live, edges_live = np.histogram(live_samples[:,i-1],
@@ -188,8 +189,9 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
                 # Makes sure everything is visible in the same histogram
                 hist_live = hist_live* hist.max()/hist_live.max()
 
-                ax.plot(edges_live[:-1], hist_live, color=color_live, drawstyle='steps-pre')
-
+                ax.plot(edges_live[:-1], hist_live, color=color_live, 
+                        drawstyle='steps-pre', label='live')
+            ax.legend(frameon=False)
 
     plt.tight_layout()
     return fig
