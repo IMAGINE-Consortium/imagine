@@ -61,7 +61,8 @@ def save_pipeline(pipeline, use_dill=True):
         # system default the next time it is loaded.
         pipeline.simulator = copy(pipeline.simulator)
         if pipeline.simulator.hamx_path == rc['hammurabi_hamx_path']:
-            pipeline.simulator.hamx_path = None
+            pipeline.simulator._hamx_path = None
+            pipeline.simulator._ham._exe_path = None
     
     if mpirank == 0:
         if use_dill:
