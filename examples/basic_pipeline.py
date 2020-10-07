@@ -145,10 +145,8 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
     B_factory.active_parameters = ('a0','b0')
-    B_factory.priors ={'a0': img.priors.FlatPrior(xmin=-5*u.microgauss,
-                                                  xmax=5*u.microgauss),
-                      'b0': img.priors.FlatPrior(xmin=2*u.microgauss,
-                                                 xmax=10*u.microgauss)}
+    B_factory.priors ={'a0': img.priors.FlatPrior(-5*u.microgauss, 5*u.microgauss),
+                       'b0': img.priors.FlatPrior(2*u.microgauss, 10*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
@@ -206,8 +204,7 @@ if __name__ == '__main__':
     sampling_controllers = {'dlogz': 0.5,
                             'dKL':0.1,
                             'min_num_live_points': 500,
-                            'min_ess': 1000,
-                            'resume': True}
+                            'min_ess': 1000}
     # Starts the run
     if mpirank == 0:
         print('Running using UltraNest')
@@ -225,7 +222,7 @@ if __name__ == '__main__':
     # Sets up the sampler to be used
     pipeline_class = img.pipelines.MultinestPipeline
     # Set some controller parameters that are specific to MultiNest.
-    sampling_controllers = {'n_live_points': 500, 'verbose': True, 'resume': True}
+    sampling_controllers = {'n_live_points': 500, 'verbose': True}
     # Starts the run
     if mpirank == 0:
         print('\n\nRunning using MultiNest')
