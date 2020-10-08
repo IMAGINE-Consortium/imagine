@@ -52,9 +52,12 @@ class Observable(object):
         distributed/copied data
     dtype : str
         Data type, must be either: 'measured', 'simulated' or 'covariance'
+    otype : str
+        Observable type, must be either: 'HEALPix', 'tabular' or 'plain'
     """
-    def __init__(self, data=None, dtype=None, coords=None):
+    def __init__(self, data=None, dtype=None, coords=None, otype=None):
         self.dtype = dtype
+        self.otype = otype
 
         if isinstance(data, u.Quantity):
             self.data = data.value
@@ -74,6 +77,24 @@ class Observable(object):
         Data stored in the LOCAL processor (`numpy.ndarray`, read-only).
         """
         return self._data
+
+    @data.setter
+    def data(self, data):
+        """
+        extra input format check for 'measured' and 'covariance'
+        no extra check for 'simulated'
+        """
+        log.debug('@ observable::data')
+        if data is None:
+            self._data = None
+        else:
+            assert (len(data.shape) == 2)
+            assert isinstance(data, np.ndarray)
+            if (self._dtype == 'measured'):  # copy single-row data from memory
+                assert (data.shape[0] == 1)
+            self._data = np.copy(data)
+            if (self._dtype == 'covariance'):
+                assert np.equal(*self.shape)
 
     @property
     def shape(self):
@@ -113,44 +134,26 @@ class Observable(object):
             raise TypeError('unsupported data type')
 
     @property
-    def rw_flag(self):
-        """
-        Rewriting flag, if true, append method will perform rewriting
-        """
-        return self._rw_flag
-
-    @property
     def dtype(self):
         """
         Data type, can be either: 'measured', 'simulated' or 'covariance'
         """
         return self._dtype
 
-    @data.setter
-    def data(self, data):
-        """
-        extra input format check for 'measured' and 'covariance'
-        no extra check for 'simulated'
-        """
-        log.debug('@ observable::data')
-        if data is None:
-            self._data = None
-        else:
-            assert (len(data.shape) == 2)
-            assert isinstance(data, np.ndarray)
-            if (self._dtype == 'measured'):  # copy single-row data from memory
-                assert (data.shape[0] == 1)
-            self._data = np.copy(data)
-            if (self._dtype == 'covariance'):
-                assert np.equal(*self.shape)
-
     @dtype.setter
     def dtype(self, dtype):
         if dtype is None:
-            raise ValueError('dtype cannot be none')
+            raise ValueError('dtype cannot be None')
         else:
             assert (dtype in ('measured', 'simulated', 'covariance'))
             self._dtype = str(dtype)
+
+    @property
+    def rw_flag(self):
+        """
+        Rewriting flag, if true, append method will perform rewriting
+        """
+        return self._rw_flag
 
     @rw_flag.setter
     def rw_flag(self, rw_flag):

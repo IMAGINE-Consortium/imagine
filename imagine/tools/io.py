@@ -22,7 +22,17 @@ mpirank = comm.Get_rank()
 
 # %% FUNCTION DEFINITIONS
 def save_pipeline(pipeline, use_dill=True):
-
+    """
+    Saves the state of a Pipeline object
+    
+    Parameters
+    ----------
+    pipeline : imagine.pipelines.pipeline.Pipeline
+        The pipeline object one would like to save
+    use_dill : bool
+        If `True` (default) the state is saved using the `dill` package. 
+        Otherwise, experimental support to `hickle` is enabled.
+    """
     # Works on a (shallow) copy
     pipeline = copy(pipeline)
 
@@ -43,8 +53,17 @@ def save_pipeline(pipeline, use_dill=True):
         # Gathers all distributed data -- i.e. turns global (distributed) into local
         for k in pipeline.likelihood.covariance_dict.keys():
             pipeline.likelihood.covariance_dict[k]._data = pipeline.likelihood.covariance_dict[k].global_data
-            # NB any processes with mpirank!=0 will store None in the above operation
+            # NB any process with mpirank!=0 will store None in the above operation
 
+    # Hammurabi-specific path adjustment
+    if hasattr(pipeline.simulator, 'hamx_path'):
+        # In the case hamx path is the system default, it will use the 
+        # system default the next time it is loaded.
+        pipeline.simulator = copy(pipeline.simulator)
+        if pipeline.simulator.hamx_path == rc['hammurabi_hamx_path']:
+            pipeline.simulator._hamx_path = None
+            pipeline.simulator._ham._exe_path = None
+    
     if mpirank == 0:
         if use_dill:
             with open(os.path.join(run_directory,'pipeline.pkl'), 'wb') as f:
@@ -54,13 +73,21 @@ def save_pipeline(pipeline, use_dill=True):
 
     return pipeline
 
-def load_pipeline(directory_path='.', use_dill=True):
-    if use_dill:
+def load_pipeline(directory_path='.'):
+    """
+    Loads the state of a Pipeline object
+    
+    Parameters
+    ----------
+    directory_path : str
+        Path to the directory where the Pipeline state should be saved
+    """
+    if os.path.isfile(os.path.join(directory_path, 'pipeline.hkl')):
+        pipeline = hickle.load(os.path.join(directory_path, 'pipeline.hkl'))
+    else:
         with open(os.path.join(directory_path,'pipeline.pkl'), 'rb') as f:
             pipeline = dill.load(f)
-    else:
-        pipeline = hickle.load(os.path.join(directory_path, 'pipeline.hkl'))
-
+    
     # Adjusts paths (hidden variables are used to avoid checks)
     pipeline._run_directory = os.path.join(directory_path, pipeline._run_directory)
     pipeline._chains_directory = os.path.join(directory_path, pipeline._chains_directory)
@@ -72,4 +99,15 @@ def load_pipeline(directory_path='.', use_dill=True):
             cov = pipeline.likelihood.covariance_dict[k]._data
             pipeline.likelihood.covariance_dict[k]._data = distribute_matrix(cov)
 
+    # Hammurabi-specific path adjustment
+    if hasattr(pipeline.simulator, 'hamx_path'):
+        # In the case hamx path is the system default, it will use the 
+        # system default the next time it is loaded.
+        if pipeline.simulator.hamx_path is None:
+            pipeline.simulator.hamx_path = rc['hammurabi_hamx_path']
+        # The following refreshes the path to the XML template internally
+        # using the xml_path property setter
+        if pipeline.simulator.hamx_path is None:
+            pipeline.xml_path = None
+    
     return pipeline

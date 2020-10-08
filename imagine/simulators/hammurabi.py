@@ -39,10 +39,11 @@ class Hammurabi(Simulator):
     ----------
     measurements : imagine.observables.observable_dict.Measurements
         Observables dictionary containing measured data.
-    exe_path : string
-        Absolute hammurabi executable path.
-        Default: `imagine.rc['hammurabi_hamx_path']`
-        (see :py:mod:`imagine.tools.conf`).
+    hamx_path : string
+        Path to hammurabi executable. By default this will use
+        `imagine.rc['hammurabi_hamx_path']` (see :py:mod:`imagine.tools.conf`).
+        N.B. Using the rc parameter or environment variable allows better
+        portability of a saved Pipeline.
     xml_path : string
         Absolute hammurabi xml parameter file path.
     masks : imagine.observables.observable_dict.Masks
@@ -60,27 +61,26 @@ class Hammurabi(Simulator):
     ALLOWED_GRID_TYPES = ['cartesian']
 
 
-    def __init__(self, measurements, xml_path=None, exe_path=None, masks=None):
+    def __init__(self, measurements, xml_path=None, hamx_path=None, masks=None):
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
 
-        if exe_path is not None:
-            self.exe_path = exe_path
+        if hamx_path is not None:
+            self._hamx_path = hamx_path
         else:
             # Uses standard hamx path
-            self.exe_path = img.rc['hammurabi_hamx_path']
-
-        self.exe_path = exe_path
-        if xml_path is not None:
-            self.xml_path = xml_path
-        else:
+            self._hamx_path = img.rc['hammurabi_hamx_path']
+        
+        self._xml_path = xml_path
+        
+        if xml_path is None:
             # Uses standard hammurabi template
             hampydir = path.dirname(hampyx.__file__)
-            self.xml_path = path.join(hampydir, '../templates/params_template.xml')
+            xml_path = path.join(hampydir, '../templates/params_template.xml')
 
         self.current_realization = -1
         # Initializes Hampyx
-        self._ham = Hampyx(self.xml_path, self.exe_path)
+        self._ham = Hampyx(xml_path, self._hamx_path)
         # Sets Hampyx's working directory
         self._ham.wk_dir = img.rc['temp_dir']
         # Makes the modifications required by measurements to the XML file
@@ -90,6 +90,36 @@ class Hammurabi(Simulator):
 
         self.masks=masks
 
+    @property
+    def hamx_path(self):
+        """Path to HammurabiX executable"""
+        return self._hamx_path
+    
+    @hamx_path.setter
+    def hamx_path(self, hamx_path):
+        # Note: this setter should be used only after initialization
+        # as it relies on _ham
+        self._hamx_path = hamx_path
+        self._ham.exe_path = hamx_path
+        
+    @property
+    def xml_path(self):
+        """Path to HammurabiX template XML"""
+        return self._xml_path
+    
+    @xml_path.setter
+    def xml_path(self, xml_path):
+        # Note: this setter should be used only after initialization
+        # as it relies on _ham
+        self._xml_path = xml_path
+        
+        if xml_path is None:
+            # Uses standard hammurabi template
+            hampydir = path.dirname(hampyx.__file__)
+            xml_path = path.join(hampydir, '../templates/params_template.xml')
+            
+        self._ham.xml_path = xml_path
+        
     def initialize_ham_xml(self):
         """
         Modify hammurabi XML tree according to the requested measurements.

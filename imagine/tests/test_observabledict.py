@@ -27,13 +27,14 @@ class TestObservableDicts(object):
         measuredict = Measurements()
         measuredict.append(name=('test', None, 3, None),
                            data=arr,
-                           plain=True)  # plain array
+                           otype='plain')  # plain array
         local_arr = measuredict[('test', None, 3, None)].data
         if mpirank == 0:
             assert np.allclose(local_arr[0], arr[0])
         hrr = np.random.rand(1, 48)
         measuredict.append(name=('test', None, 2, None),
-                           data=hrr)  # healpix array
+                           data=hrr,
+                           otype='HEALPix')  # healpix array
         local_arr = measuredict[('test', None, 2, None)].data
         if mpirank == 0:
             assert np.allclose(local_arr[0], hrr[0])
@@ -49,7 +50,7 @@ class TestObservableDicts(object):
         obs2 = Observable(arr, 'measured')
         measuredict.append(name=('test', None, 3, None),
                            data=obs2,
-                           plain=True)  # plain Observable
+                           otype='plain')  # plain Observable
         assert np.allclose(measuredict[('test', None, 3, None)].data[0], arr[0])
 
     def test_simdict_append_array(self):
@@ -57,12 +58,13 @@ class TestObservableDicts(object):
         simdict = Simulations()
         simdict.append(name=('test', None, 3, None),
                        data=arr,
-                       plain=True)  # plain array
+                       otype='plain')  # plain array
         assert simdict[('test', None, 3, None)].shape == (2*mpisize, 3)
         assert np.allclose(simdict[('test', None, 3, None)].data, arr)
         hrr = np.random.rand(3, 48)
         simdict.append(name=('test', None, 2, None),
-                       data=hrr)  # healpix array
+                       data=hrr,
+                       otype='HEALPix')  # healpix array
         assert simdict[('test', None, 2, None)].shape == (3*mpisize, 48)
         assert np.allclose(simdict[('test', None, 2, None)].data, hrr)
 
@@ -71,11 +73,11 @@ class TestObservableDicts(object):
         simdict = Simulations()
         simdict.append(name=('test', None, 3, None),
                        data=arr,
-                       plain=True)  # plain array
+                       otype='plain')  # plain array
         assert simdict[('test', None, 3, None)].shape == (2*mpisize, 3)
         simdict.append(name=('test', None, 3, None),
                        data=arr,
-                       plain=True)  # plain array
+                       otype='plain')  # plain array
         assert simdict[('test', None, 3, None)].shape == (4*mpisize, 3)
 
     def test_simdict_append_observable(self):
@@ -83,14 +85,15 @@ class TestObservableDicts(object):
         obs1 = Observable(hrr, 'simulated')
         simdict = Simulations()
         simdict.append(name=('test', None, 2, None),
-                       data=obs1)  # healpix Observable
+                       data=obs1,
+                       otype='HEALPix')  # healpix Observable
         assert simdict[('test', None, 2, None)].shape == (2*mpisize, 48)
         assert np.allclose(simdict[('test', None, 2, None)].data, hrr)
         arr = np.random.rand(5, 3)
         obs2 = Observable(arr, 'simulated')
         simdict.append(name=('test', None, 3, None),
                        data=obs2,
-                       plain=True)  # plain Observable
+                       otype='plain')  # plain Observable
         assert simdict[('test', None, 3, None)].shape == (5*mpisize, 3)
         assert np.allclose(simdict[('test', None, 3, None)].data, arr)
 
@@ -98,8 +101,7 @@ class TestObservableDicts(object):
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
         covdict.append(name=('test', None, 2*mpisize, None),
-                       data=cov,
-                       plain=True)  # plain covariance
+                       data=cov)  # plain covariance
         assert covdict[('test', None, 2*mpisize, None)].shape == (2*mpisize, 2*mpisize)
         assert np.allclose(covdict[('test', None, 2*mpisize, None)].data, cov)
         cov = np.random.rand(12*mpisize, 12*mpisize*mpisize)
@@ -112,8 +114,7 @@ class TestObservableDicts(object):
         cov = Observable(np.random.rand(2, 2*mpisize), 'covariance')
         covdict = Covariances()
         covdict.append(name=('test', None, 2*mpisize, None),
-                       data=cov,
-                       plain=True)  # plain covariance
+                       data=cov)  # plain covariance
         assert np.allclose(covdict[('test', None, 2*mpisize, None)].data, cov.data)
         cov = Observable(np.random.rand(12*mpisize, 12*mpisize*mpisize), 'covariance')
         covdict.append(name=('test', None, mpisize, None),
@@ -129,8 +130,7 @@ class TestObservableDicts(object):
         local_msk = mskdict[('test', None, 2, None)].data
         assert np.allclose(local_msk[0], msk[0])
         mskdict.append(name=('test', None, 48, None),
-                       data=msk,
-                       plain=True)
+                       data=msk)
         local_msk = mskdict[('test', None, 48, None)].data
         assert np.allclose(local_msk[0], msk[0])
 
@@ -139,13 +139,12 @@ class TestObservableDicts(object):
         mskdict = Masks()
         comm.Bcast(msk, root=0)
         mskdict.append(name=('test', None, 5, None),
-                       data=msk,
-                       plain=True)
+                       data=msk)
         arr = np.array([0., 1., 2., 3., 4.]).reshape(1, 5)
         meadict = Measurements()
         meadict.append(name=('test', None, 5, None),
                        data=arr,
-                       plain=True)
+                       otype='plain')
         meadict = mskdict(meadict)
         assert np.allclose(meadict[('test', None, 3, None)].data[0], [1, 3, 4])
         # HEALPix map
@@ -155,7 +154,7 @@ class TestObservableDicts(object):
                        data=msk)
         arr = np.random.rand(1, 48)
         meadict.append(name=('test', None, 2, None),
-                       data=arr)
+                       data=arr, otype='HEALPix')
         pix_num = msk.sum()
         meadict = mskdict(meadict)
         assert ('test', None, pix_num, None) in meadict.keys()
@@ -165,13 +164,11 @@ class TestObservableDicts(object):
         mskdict = Masks()
         comm.Bcast(msk, root=0)
         mskdict.append(name=('test', None, 2*mpisize, None),
-                       data=msk,
-                       plain=True)
+                       data=msk, otype='plain')
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
         covdict.append(name=('test', None, 2*mpisize, None),
-                       data=cov,
-                       plain=True)
+                       data=cov)
         covdict = mskdict(covdict)
         pix_num = msk.sum()
         assert ('test', None, pix_num, None) in covdict.keys()

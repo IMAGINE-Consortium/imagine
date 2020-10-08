@@ -134,6 +134,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._samples_array = None
         self._samples = None
         self.correlated_priors = None
+        self._median_simulation = None
+        self._median_model = None
 
         # Report settings
         self.show_summary_reports = show_summary_reports
@@ -146,13 +148,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._randomness()
 
 
-    def __call__(self, *args, **kwargs):
-        self.save()  # Keeps the setup safe
+    def __call__(self, *args, save_pipeline_state=True, **kwargs):
+        if save_pipeline_state:
+            self.save()  # Keeps the setup safe
         result = self.call(*args, **kwargs)
         if self.show_summary_reports and (mpirank == 0):
             self.posterior_report()
             self.evidence_report()
-        self.save()  # Keeps the results safe
+        if save_pipeline_state:
+            self.save()  # Keeps the results safe
 
         return result
 
@@ -458,6 +462,36 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._evidence_err
 
     @property
+    def median_model(self):
+        """
+        List of Field objects corresponding to the median values of the
+        distributions of parameter values found after a Pipeline run.
+        """
+        if self._median_model is None:
+            self._median_model = []
+            for factory in self.factory_list:
+                params_dict = {}
+                for param, results_dict in self.posterior_summary.items():
+                    if factory.field_name in param:
+                        param = param.replace(factory.field_name + '_','')
+                        params_dict[param] = results_dict['median']
+
+                field = factory(ensemble_seeds=self.ensemble_seeds[factory],
+                                variables=params_dict)
+                self._median_model.append(field)
+        return self._median_model
+
+    @property
+    def median_simulation(self):
+        """
+        Simulation corresponding to the
+        :py:data:`median_model <Pipeline.median_model>`.
+        """
+        if self._median_simulation is None:
+            self._median_simulation = self.simulator(self.median_model)
+        return self._median_simulation
+
+    @property
     def samples(self):
         """
         An :py:class:`astropy.table.QTable` object containing parameter values
@@ -675,6 +709,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._posterior_summary = None
         self._samples_array = None
         self._samples = None
+        self._median_model = None
+        self._median_simulation = None
         self._randomness()
         self._likelihood_evaluations_counter = 0
         self.intermediate_results = defaultdict(lambda: None)
