@@ -189,7 +189,7 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
                 # Makes sure everything is visible in the same histogram
                 hist_live = hist_live* hist.max()/hist_live.max()
 
-                ax.plot(edges_live[:-1], hist_live, color=color_live, 
+                ax.plot(edges_live[:-1], hist_live, color=color_live,
                         drawstyle='steps-pre', label='live')
             ax.legend(frameon=False)
 
@@ -294,6 +294,8 @@ def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
     """
     Plots the contents of an ObservableDict object.
 
+    Parameters
+    ----------
     obs_dict : imagine.observables.observable.ObservableDict
         ObservableDict object whose contents one wants to plot.
     max_realization : int
