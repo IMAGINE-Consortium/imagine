@@ -1,7 +1,8 @@
-#!/usr/env python
+#!/usr/bin/env python
 
 # Built-in imports
 import os
+import sys
 import logging
 from mpi4py import MPI
 # External packages
@@ -26,7 +27,20 @@ comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 mpisize = comm.Get_size()
 
-def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
+timer = img.tools.Timer()
+
+def msg(txt, banner=True):
+    if mpirank==0:
+        if banner:
+            print('\n')
+            print('-'*60)
+        print(txt, flush=True)
+        if banner:
+            print('-'*60, flush=True)
+    else:
+        print('', flush=True, end='') # Flushes STDOUT
+
+def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     """
     Prepares fake total intensity and Faraday depth data
 
@@ -43,7 +57,6 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
         Mock Covariances
     """
     ## Sets the resolution
-    nside=2
     size = 12*nside**2
 
     # Generates the fake datasets
@@ -103,50 +116,24 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=3, err=0.01):
 
     return mock_data, mock_cov
 
-def plot_results(pipe, true_vals, output_file='test.pdf'):
-    """
-    Makes a cornerplot of the results and saves them to disk
-    """
-    samp = pipe.samples
-    # Sets the levels to show 1, 2 and 3 sigma
-    sigmas=np.array([1.,2.,3.])
-    levels=1-np.exp(-0.5*sigmas*sigmas)
+def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
+                     sampling_controllers={}, ensemble_size=10,
+                     run_directory='example_pipeline',
+                     n_evals_report=50, nside=4,
+                     true_pars={'b0': 3, 'psi0': 27, 'rms': 4},
+                     obs_err=0.01):
 
-    # Visualize with a corner plot
-    figure = corner.corner(np.vstack([samp.columns[0].value, samp.columns[1].value]).T,
-                           range=[0.99]*len(pipe.active_parameters),
-                           quantiles=[0.02, 0.5, 0.98],
-                           labels=pipe.active_parameters,
-                           show_titles=True,
-                           title_kwargs={"fontsize": 12},
-                           color='steelblue',
-                           truths=true_vals,
-                           truth_color='firebrick',
-                           plot_contours=True,
-                           hist_kwargs={'linewidth': 2},
-                           label_kwargs={'fontsize': 10},
-                           levels=levels)
-    figure.savefig(output_file)
-
-
-def example_run(pipeline_class=img.pipelines.MultinestPipeline,
-                sampling_controllers={}, ensemble_size=8,
-                run_directory='example_pipeline',
-                true_parameters={'b0': 3, 'psi0': 27, 'rms': 3, 'err': 0.01}):
-
-    # Creates a directory for storing the chains and log
-    chains_dir = os.path.join(run_directory, 'chains')
+    # Creates run directory for storing the chains and log
     if mpirank==0:
-        os.makedirs(chains_dir, exist_ok=True)
+        os.makedirs(run_directory, exist_ok=True)
     comm.Barrier()
 
-    # Sets up logging
-    logging.basicConfig(
-      filename=os.path.join(run_directory, 'example_pipeline.log'),
-      level=logging.INFO)
-
     # Creates the mock dataset based on "true" parameters provided
-    mock_data, mock_cov = prepare_mock_obs_data(**true_parameters)
+    msg('Generating mock data')
+    mock_data, mock_cov = prepare_mock_obs_data(err=obs_err, nside=nside,
+                                                **true_pars)
+
+    msg('Preparing pipeline')
 
     # Setting up of the pipeline
     ## Use an ensemble to estimate the galactic variance
@@ -154,13 +141,15 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     ## WMAP B-field, vary only b0 and psi0
     breg_factory = BregLSAFactory()
+    breg_factory.priors = {'b0':  img.priors.FlatPrior(xmin=2., xmax=8.),
+                           'psi0': img.priors.FlatPrior(xmin=0., xmax=50.)}
     breg_factory.active_parameters = ('b0', 'psi0')
-    breg_factory.priors = {'b0':  img.priors.FlatPrior(interval=[0., 10.])}
-    breg_factory.active_parameters = ('b0',)
     ## Random B-field, vary only RMS amplitude
     brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
     brnd_factory.active_parameters = ('rms',)
-    brnd_factory.priors = {'rms': img.priors.FlatPrior(interval=[0., 10.])}
+    brnd_factory.priors = {'rms': img.priors.FlatPrior(xmin=2., xmax=8.)}
+    brnd_factory.default_parameters = {'k0': 0.5, 'a0': 1.7, 'k1': 0.5,
+                                       'a1': 0.0, 'rho': 0.5, 'r0': 8., 'z0': 1.}
     ## Fixed CR model
     cre_factory = CREAnaFactory()
     ## Fixed FE model
@@ -174,27 +163,42 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Prepares pipeline
     pipeline = pipeline_class(simulator=simulator,
+                              show_progress_reports=True,
                               factory_list=factory_list,
+                              n_evals_report = n_evals_report,
                               likelihood=likelihood,
                               ensemble_size=ensemble_size,
-                              chains_directory=chains_dir)
+                              run_directory=run_directory)
     pipeline.sampling_controllers = sampling_controllers
+    pipeline.save()
 
+    return pipeline
+
+
+def run_pipeline(pipeline, true_pars=None):
     # Runs!
+    msg('Running the pipeline')
+    timer.tick('pipeline')
     results=pipeline()
+    total_time = timer.tock('pipeline')
+    msg('\n\nFinished the run in {0:.2f}'.format(total_time), banner=False)
+    comm.Barrier()
 
     if mpirank == 0:
         # Reports the evidence (to file)
-        report_file=os.join(run_directory,
+        report_file=os.path.join(run_directory,
                             'example_pipeline_results.txt')
         with open(report_file, 'w+') as f:
             f.write('log evidence: {}'.format( pipeline.log_evidence))
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
-        plot_results(pipeline, [b0, psi0, err],
-                     output_file=os.join(run_directory,
-                                         'example_pipeline_results.pdf'))
+        if true_pars is not None:
+            f = pipeline.corner_plot(truths_dict={'breg_lsa_b0': true_pars['b0'],
+                                                  'breg_lsa_psi0': true_pars['psi0'],
+                                                  'brnd_ES': true_pars['rms']})
+
+        f.savefig(os.path.join(run_directory,'corner_plot_truth.pdf'))
         # Prints setup
         print('\nRC used:', img.rc)
         print('Seed used:', pipeline.master_seed)
@@ -207,12 +211,55 @@ def example_run(pipeline_class=img.pipelines.MultinestPipeline,
             for k in ['median','errup','errlo']:
                 print('\t', k, constraints[k])
 
+def show_usage(cmd):
+    print('IMAGINE example run\n')
+    print('Usage: ')
+    print('\t{} prepare\t   Prepares (or tests) an example Pipeline'.format(cmd))
+    print('\t{} run\t   Runs an example Pipeline (preparing if necessary'.format(cmd))
+    exit()
+
 if __name__ == '__main__':
-    if mpirank == 0:
-        print('Warning, this example is still under development!')
+    # Checks command line arguments
+    cmd, args = sys.argv[0], sys.argv[1:]
+    if len(args)==0:
+        show_usage(cmd)
+    elif args[0]=='prepare':
+        prepare_only = True
+    elif args[0]=='run':
+        prepare_only = False
+    else:
+        show_usage(cmd)
+
+    msg('IMAGINE EXAMPLE RUN\n\n', banner=False)
+
+    true_pars={'b0': 6, 'psi0': 27, 'rms': 3}
 
     # Sets run directory name
-    run_directory=os.path.join('imagine_runs','example_pipeline')
-    # Starts the run
-    example_run(sampling_controllers={'resume': True, 'n_live_points':150},
-                run_directory=run_directory)
+    run_directory=os.path.join('runs','example_pipeline')
+
+    if not os.path.isdir(run_directory):
+        msg('Preparing Pipeline')
+        pipeline = prepare_pipeline(
+          ensemble_size=10,
+          nside=8,
+          sampling_controllers={ 'n_live_points': 1000},
+          run_directory=run_directory,
+          true_pars=true_pars)
+    else:
+        msg('Loading Pipeline')
+        pipeline = img.load_pipeline(run_directory)
+
+    # Sets up logging
+    logging.basicConfig(
+      filename=os.path.join(run_directory, 'example_pipeline.log'),
+      level=logging.INFO)
+
+    # Checks the runtime
+    msg('Testing pipeline')
+    timer.tick('likelihood')
+    pipeline._likelihood_function([3,3,3])
+    test_time = timer.tock('likelihood')
+    msg('Single likelihood evaluation: {0:.2f} s'.format(test_time), banner=False)
+
+    if not prepare_only:
+        run_pipeline(pipeline, true_pars=true_pars)

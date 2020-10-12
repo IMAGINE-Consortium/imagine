@@ -11,9 +11,10 @@ dependencies:
   - dynesty=1.0.*
   - dill=0.3.*
   - e13tools=0.9.*
-  - mpi4py=3.*
   - healpy=1.*
   - h5py=2.10.*=mpi*
+  - ipykernel
+  - mpi4py=3.*
   - numpy=1.18.*
   - python=3.7.*
   - pymultinest=2.10

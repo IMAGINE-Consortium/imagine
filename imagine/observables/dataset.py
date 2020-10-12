@@ -34,6 +34,7 @@ class Dataset(BaseClass):
         self.cov_unit = None
         self._error = None
         self._data = None
+        self.otype = None
 
     @property
     @req_attr
@@ -181,6 +182,7 @@ class TabularDataset(Dataset):
 
         # Set Nside
         self.Nside = "tab"
+        self.otype = "tabular"
 
 
 class HEALPixDataset(Dataset):
@@ -201,6 +203,8 @@ class HEALPixDataset(Dataset):
             raise
 
         self.Nside = Nside
+        self.otype = 'HEALPix'
+
         assert len(data.shape) == 1
         self._data = data
 

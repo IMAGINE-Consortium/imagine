@@ -57,7 +57,7 @@ please refer to the
    tutorial_hammurabi
    tutorial_priors
    tutorial_masks
-   tutorial_five
+   tutorial_wmap
 
 
 .. toctree::

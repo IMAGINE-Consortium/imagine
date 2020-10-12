@@ -57,6 +57,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
         self.observables = []
         self.output_coords = {}
         self.output_units = {}
+        self.output_type = {}
         self._ensemble_size = None
         self.register_observables(measurements)
 
@@ -79,6 +80,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                 # perhaps, be useful later
                 self.observables.append(key)
                 self.output_coords[key] = measurements[key].coords
+                self.output_type[key] = measurements[key].otype
                 self.output_units[key] = measurements[key].unit
         assert len(self.observables) > 0, 'No valid observable was requested!'
 
@@ -415,5 +417,6 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                                     output_units=self.output_units[key])
                 sims.append(name=key,
                             data=sim[np.newaxis, :].to(self.output_units[key]),
-                            coords=self.output_coords[key])
+                            coords=self.output_coords[key],
+                            otype=self.output_type[key])
         return sims

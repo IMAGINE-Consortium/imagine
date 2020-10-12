@@ -1,10 +1,16 @@
 """
 This module contains convenient standard plotting functions
 """
+# %% IMPORTS
+# Built-in imports
+from copy import copy
+
+# Package imports
 import numpy as np
 import matplotlib.pyplot as plt
 from corner import corner
 import cmasher as cmr
+import healpy as hp
 
 def corner_plot(pipeline=None, truths_dict=None, show_sigma=True, param_names=None,
                 table=None, samples=None, live_samples=None,
@@ -173,7 +179,8 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
                 ax.set_xlabel(i)
             hist, edges = np.histogram(samples[:,i-1], bins=hist_bins)
 
-            ax.plot(edges[:-1], hist, color=colors[i], drawstyle='steps-pre')
+            ax.plot(edges[:-1], hist, color=colors[i], drawstyle='steps-pre',
+                    label='rej.')
 
             if live_samples is not None:
                 hist_live, edges_live = np.histogram(live_samples[:,i-1],
@@ -182,8 +189,137 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
                 # Makes sure everything is visible in the same histogram
                 hist_live = hist_live* hist.max()/hist_live.max()
 
-                ax.plot(edges_live[:-1], hist_live, color=color_live, drawstyle='steps-pre')
-
+                ax.plot(edges_live[:-1], hist_live, color=color_live,
+                        drawstyle='steps-pre', label='live')
+            ax.legend(frameon=False)
 
     plt.tight_layout()
     return fig
+
+__divergent_quantitites = {'fd'}
+
+def _choose_cmap(title=None):
+    """
+    Chooses a divergent colormap for signed quantities
+    """
+    if title is not None:
+        # Takes only the observable name
+        title = title.split()[0].strip()
+    if title in __divergent_quantitites:
+        cmap = 'cmr.fusion'
+    else:
+        cmap = 'cmr.rainforest'
+    return copy(plt.get_cmap(cmap))
+
+def _key_formatter(key):
+    """
+    Converts a ObservableDict key into a plot title
+    """
+    name, freq, Nside, tag = key
+
+    if freq is not None:
+        freq = '  {} GHz'.format(freq)
+    else:
+        freq = ''
+    if tag is None:
+        tag = ''
+
+    return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
+
+def show_observable(obs, realization=0, title=None, cartesian_axes='yz', **kwargs):
+    """
+    Displays the contents of a single realisation of an
+    Observable object.
+
+    Parameters
+    ----------
+    obs : imagine.observables.observable.Observable
+        Observable object whose contents one wants to plot
+    realization : int
+        Index of the ensemble realization to be plotted
+    cartesian_axes : str
+        If plotting a tabular observable using cartesian coordinates,
+        this allows selecting which two axes should be used for the plot.
+        E.g. 'xy', 'zy', 'xz'. Default: 'yz'.
+    **kwargs
+        Parameters to be passed to the apropriate plotting routine
+        (either `healpy.visufunc.mollview` or `matplotlib.pyplot.imshow`).
+    """
+    if obs.otype == 'HEALPix':
+        default_cmap = _choose_cmap(title=title)
+        mollview_args = {'norm': 'hist',
+                         'cmap': copy(default_cmap),
+                         'unit': obs.unit._repr_latex_()}
+        mollview_args.update(kwargs)
+        return hp.mollview(obs.global_data[realization], title=title,
+                           **mollview_args)
+    elif obs.otype == 'tabular':
+        ax = None
+        if 'sub' in kwargs:
+            ax = plt.subplot(*kwargs['sub'])
+
+        if obs.coords['type'] == 'galactic':
+            x, y = obs.coords['lon'], obs.coords['lat']
+            plt.xlabel('Gal. lon. [{}]'.format(x.unit._repr_latex_()))
+            plt.ylabel('Gal. lat. [{}]'.format(y.unit._repr_latex_()))
+        elif obs.coords['type'] == 'cartesian':
+            x, y = obs.coords[cartesian_axes[0]], obs.coords[cartesian_axes[1]]
+            plt.xlabel('{} [{}]'.format(cartesian_axes[0], x.unit._repr_latex_()))
+            plt.ylabel('{} [{}]'.format(cartesian_axes[1], y.unit._repr_latex_()))
+        else:
+            raise ValueError('Unsupported coordinates type', obs.coords['type'])
+
+        values = obs.global_data[realization]
+        #values -= values.min()
+        #values /= values.max()
+
+        if 'cmap' in kwargs:
+            cmap = kwargs['cmap']
+        else:
+            cmap = 'cmr.chroma'
+        cmap = cmr.get_sub_cmap(cmap, 0.15, 0.85)
+        #colors = cmap(values)
+
+
+        plt.title(title)
+        im = plt.scatter(x, y, c=values, cmap=cmap)
+        plt.grid(alpha=0.2)
+        plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
+    else:
+        # Includes the title in the corresponding subplot, even in
+        # the unsupported case (so that the user remembers it)
+        print("Plotting observable type '{}' not yet implemented".format(obs.otype))
+
+def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
+    """
+    Plots the contents of an ObservableDict object.
+
+    Parameters
+    ----------
+    obs_dict : imagine.observables.observable.ObservableDict
+        ObservableDict object whose contents one wants to plot.
+    max_realization : int
+        Index of the maximum ensemble realization to be plotted. If None,
+        the whole ensemble is shown.
+    **kwargs
+        Parameters to be passed to the apropriate plotting routine
+        (either :py:func:`healpy.visufunc.mollview` or :py:func:`matplotlib.pyplot.imshow`).
+    """
+    keys = list(obs_dict.keys())
+    ncols = len(keys)
+    if ncols == 0:
+        print('The ObservableDict is empty.')
+        return
+    # Gets the ensemble size from the first Observable
+    nrows = obs_dict[keys[0]].shape[0]
+    if max_realizations is not None:
+        nrows = min(nrows, max_realizations)
+
+    i_subplot = 0
+    for j in range(nrows):
+        for i, key in enumerate(keys):
+            i_subplot += 1
+            title = _key_formatter(key)
+            show_observable(obs_dict[key], title=title, realization=j,
+                            sub=(nrows, ncols, i_subplot), **kwargs)
+
