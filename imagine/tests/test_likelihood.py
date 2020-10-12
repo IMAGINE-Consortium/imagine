@@ -61,7 +61,7 @@ class TestSimpleLikeli(object):
         arr_c = np.random.rand(4, 4*mpisize)
         cov = Observable(arr_c, 'covariance')
         covdict.append(name=('test', None, 4*mpisize, None),
-                       data=cov)
+                       cov_data=cov)
         # with covariance
         lh = SimpleLikelihood(meadict, covdict)
         # calc by likelihood
@@ -90,7 +90,7 @@ class TestEnsembleLikeli(object):
         arr_c = np.random.rand(4, 4*mpisize)
         cov = Observable(arr_c, 'covariance')
         covdict.append(name=('test', None, 4*mpisize, None),
-                       data=cov)
+                       cov_data=cov)
         # mock observable with repeated single realisation
         arr_b = np.random.rand(1, 4*mpisize)
         comm.Bcast(arr_b, root=0)

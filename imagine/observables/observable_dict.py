@@ -6,14 +6,13 @@ Covariances, Simulations and Masks, which can be used to store:
     * measured data sets
     * measured/simulated covariances
     * simulated ensemble sets
-    * mask "maps" (but actually mask lists)
+    * mask "maps"
 
-
-Conventions for observables entries
-    * **Faraday depth:** `('fd','nan',str(size/Nside),'nan')`
-    * **Dispersion measure**: `('dm','nan',str(pix),'nan')`
-    * **Synchrotron emission**: `('sync',str(freq),str(pix),X)`
-        where X stands for:
+Conventions for observables key values
+    * **Faraday depth:** `('fd', None, size/Nside, None)`
+    * **Dispersion measure**: `('dm', None, size/Nsize, None)`
+    * **Synchrotron emission**: `('sync', freq, size/Nside, tag)`
+        where tag stands for:
             * 'I' - total intensity (in unit K-cmb)
             * 'Q' - Stokes Q (in unit K-cmb, IAU convention)
             * 'U' - Stokes U (in unit K-cmb, IAU convention)
@@ -21,38 +20,18 @@ Conventions for observables entries
             * 'PA' - polarisation angle (in unit rad, IAU convention)
 
     Remarks:
-        * `str(freq)`, polarisation-related-flag are redundant for Faraday depth
-            and dispersion measure so we put 'nan' instead
+        * `freq`, frequency in GHz
         * `str(pix/nside)` stores either Healpix Nside, or just number of
-            pixels/points we do this for flexibility, in case users have non-HEALPix
-            based in/output
-
-Remarks on the observable tags
-    str(freq), polarisation-related-flag are redundant for Faraday depth and dispersion measure so we put 'nan' instead
-
-    str(pix/nside) stores either Healpix Nisde, or just number of pixels/points
-    we do this for flexibility, in case users have non-HEALPix-map-like in/output
+            pixels/points
 
 Masking convention
-    masked erea associated with pixel value 0,
+    masked area associated with pixel value 0,
     unmasked area with pixel value 1
 
-Masking method
-    mask only applies to observables/covariances
-    observable after masking will be re-recorded as plain data type
-
-
-.. note:: Distribution with MPI
-
-    * all data are either distributed or copied, where "copied" means each node
-      stores the identical copy which is convenient for hosting measured data
-      and mask map
-
-    * Covariances has Field object with global shape "around"
-      (data_size//mpisize, data_size) "around" means to distribute matrix
-      correctly as described in "imagine/tools/mpi_helper.py"
+Masking
+    After applying a mask, the Observables change `otype` from
+    `'HEALPix'` to `'plain'`.
 """
-
 # %% IMPORTS
 # Built-in imports
 import abc
@@ -75,12 +54,8 @@ __all__ = ['ObservableDict', 'Masks', 'Measurements', 'Simulations',
 # %% CLASS DEFINITIONS
 class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
     """
-    Base class from which :class:`Measurements`, :class:`Covariances`,
-    :class:`Simulations` and class `Masks` classes are derived.
-
-    See :mod:`~imagine.observables.observable_dict` module documentation for
-    further details.
-
+    Base class from which :py:class:`Measurements`, :py:class:`Covariances`,
+    :py:class:`Simulations` and class :py:class:`Masks` classes are derived.
 
     Parameters
     ----------
@@ -117,8 +92,8 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
         return visu.show_observable_dict(self, **kwargs)
 
     @abc.abstractmethod
-    def append(self, dataset=None, *, name=None, data=None, otype=None,
-               coords=None):
+    def append(self, dataset=None, *, name=None, data=None, cov_data=None,
+               otype=None, coords=None):
         """
         Adds/updates name and data
 
@@ -145,14 +120,12 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             assert isinstance(dataset, Dataset)
             name = dataset.key
             data = dataset.data
-            cov = dataset.cov
-            coords = dataset.coords
+            cov_data = dataset.cov
             otype = dataset.otype
-        else:
-            cov = data
+            coords = dataset.coords
 
         assert (len(name) == 4), 'Wrong format for Observable key!'
-        return(name, data, cov, otype, coords)
+        return name, data, cov_data, otype, coords
 
 
 
@@ -163,7 +136,6 @@ class Masks(ObservableDict):
     After the Masks dictionary is assembled it can be applied to any other
     observables dictionary to return a dictionary containing masked maps
     (see below).
-
 
     Example
     --------
@@ -181,8 +153,6 @@ class Masks(ObservableDict):
     >>> print(masked_cov[('test','nan','2','nan')].data)
     [[1. 0.]
      [0. 2.]]
-
-
     """
 
     def append(self, *args, **kwargs):
@@ -239,12 +209,16 @@ class Masks(ObservableDict):
                     masked_data = mask_cov(observable_dict[name].data, mask)
                 else:
                     masked_data = mask_obs(observable_dict[name].data, mask)
-
-                # Appends the masked Observable, copying (refs to) units/coords
+                # Prepares key
                 new_name = (name[0], name[1], masked_data.shape[1], name[3])
-                masked_dict.append(name=new_name,
-                                   data=masked_data,
-                                   otype='plain')
+                # Appends the masked Observable
+                if isinstance(observable_dict, Covariances):
+                    masked_dict.append(name=new_name, cov_data=masked_data,
+                                       otype='plain')
+                else:
+                    masked_dict.append(name=new_name, data=masked_data,
+                                       otype='plain')
+                # Copies refs to units/coords
                 masked_dict.coords = observable.coords
                 masked_dict.unit = observable.unit
 
@@ -253,15 +227,35 @@ class Masks(ObservableDict):
 
 class Measurements(ObservableDict):
     """
-    Stores observational data sets
+    Stores observational data.
 
-    See `imagine.observables.observable_dict` module documentation for
-    further details.
+
+    Parameters
+    ----------
+    datasets : imagine.observables.Dataset, optional
+        If present, Datasets that are appended to this
+        :py:obj:`ObservableDict` object after initialization.
+
+    Attributes
+    ----------
+    cov : imagine.observables.observable_dict.Covariances
+        The :py:obj:`Covariances <imagine.observables.observable_dict.Covariances>`
+        object associated with these measurements.
     """
+
+    def __init__(self, *datasets):
+        # Call super constructor
+        self.cov = None
+        super().__init__(*datasets)
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Measurements::append')
-        name, data, _, otype, coords = super().append(*args, **kwargs)
+        name, data, cov, otype, coords = super().append(*args, **kwargs)
+
+        if cov is not None:
+            if self.cov is None:
+                self.cov = Covariances()
+            self.cov.append(*args, **kwargs)
 
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
@@ -311,7 +305,6 @@ class Covariances(ObservableDict):
     See `imagine.observables.observable_dict` module documentation for
     further details.
     """
-
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Covariances::append')
         name, _, data, otype, _ = super().append(*args, **kwargs)

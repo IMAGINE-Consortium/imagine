@@ -101,12 +101,12 @@ class TestObservableDicts(object):
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
         covdict.append(name=('test', None, 2*mpisize, None),
-                       data=cov)  # plain covariance
+                       cov_data=cov)  # plain covariance
         assert covdict[('test', None, 2*mpisize, None)].shape == (2*mpisize, 2*mpisize)
         assert np.allclose(covdict[('test', None, 2*mpisize, None)].data, cov)
         cov = np.random.rand(12*mpisize, 12*mpisize*mpisize)
         covdict.append(name=('test', None, mpisize, None),
-                       data=cov)  # healpix covariance
+                       cov_data=cov)  # healpix covariance
         assert covdict[('test', None, mpisize, None)].shape == (12*mpisize*mpisize, 12*mpisize*mpisize)
         assert np.allclose(covdict[('test', None, mpisize, None)].data, cov)
 
@@ -114,11 +114,11 @@ class TestObservableDicts(object):
         cov = Observable(np.random.rand(2, 2*mpisize), 'covariance')
         covdict = Covariances()
         covdict.append(name=('test', None, 2*mpisize, None),
-                       data=cov)  # plain covariance
+                       cov_data=cov)  # plain covariance
         assert np.allclose(covdict[('test', None, 2*mpisize, None)].data, cov.data)
         cov = Observable(np.random.rand(12*mpisize, 12*mpisize*mpisize), 'covariance')
         covdict.append(name=('test', None, mpisize, None),
-                       data=cov)  # healpix covariance
+                       cov_data=cov)  # healpix covariance
         assert np.allclose(covdict[('test', None, mpisize, None)].data, cov.data)
 
     def test_maskdict_append_array(self):
@@ -168,7 +168,7 @@ class TestObservableDicts(object):
         cov = np.random.rand(2, 2*mpisize)
         covdict = Covariances()
         covdict.append(name=('test', None, 2*mpisize, None),
-                       data=cov)
+                       cov_data=cov)
         covdict = mskdict(covdict)
         pix_num = msk.sum()
         assert ('test', None, pix_num, None) in covdict.keys()

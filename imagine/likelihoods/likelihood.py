@@ -39,11 +39,17 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
     Parameters
     ----------
     measurement_dict : imagine.observables.observable_dict.Measurements
-        Measurements
+        A :py:obj:`Measurements <imagine.observables.observable_dict.Measurements>`
+        dictionary containing observational data.
     covariance_dict : imagine.observables.observable_dict.Covariances
-        Covariances
+        A :py:obj:`Covariances <imagine.observables.observable_dict.Covariances>`
+        dictionary containing observed covariance data.
+        If set to `None` (the usual case), the :py:obj:`Likelihood` will try
+        to find the :py:obj:`Covariances <imagine.observables.observable_dict.Covariances>`
+        in the :py:data:`cov` attribute of the supplied `measurement_dict`.
     mask_dict : imagine.observables.observable_dict.Masks
-        Masks
+        A :py:obj:`Masks <imagine.observables.observable_dict.Masks>` dictionary
+        which should be applied to the measured and simulated data.
     """
 
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
@@ -52,6 +58,8 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
 
         self.mask_dict = mask_dict
         self.measurement_dict = measurement_dict
+        if covariance_dict is None:
+            covariance_dict = measurement_dict.cov
         self.covariance_dict = covariance_dict
 
     def __call__(self, observable_dict, **kwargs):
