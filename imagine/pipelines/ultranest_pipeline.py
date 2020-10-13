@@ -155,7 +155,7 @@ class UltranestPipeline(Pipeline):
         os.makedirs(ultranest_dir, exist_ok=True)
 
         # Runs UltraNest
-        self.sampler = ultranest.ReactiveNestedSampler(
+        sampler = ultranest.ReactiveNestedSampler(
             param_names=list(self.active_parameters),
             loglike=self._likelihood_function,
             transform=self.prior_transform,
@@ -163,7 +163,7 @@ class UltranestPipeline(Pipeline):
             vectorized=False,
             **init_params)
 
-        self.results = self.sampler.run(viz_callback=False, **run_params)
+        self.results = sampler.run(viz_callback=False, **run_params)
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logz']
