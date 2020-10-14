@@ -66,11 +66,10 @@ class Dataset(BaseClass):
     @property
     def cov(self):
         if (self._cov is None) and (self._error is not None):
+            variance = self._error**2
             if isinstance(self._error, u.Quantity):
-                error, self.cov_unit = self._error.value, self._error.unit
-            else:
-                error = self._error
-            self._cov = pdiag(error, self._data.size)
+                variance, self.cov_unit = variance.value, variance.unit
+            self._cov = pdiag(variance, self._data.size)
 
         return self._cov
 
