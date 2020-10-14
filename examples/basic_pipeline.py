@@ -9,10 +9,13 @@ This is the scripted version of the first IMAGINE tutorial. Before examining thi
 script, we strongly recommend reading the original tutorial either in the
 documentation website or in the corresponding jupyter notebook in the tutorials
 directory.
+
+Run suggestion (from the IMAGINE path):
+>>> mpirun -np 16 examples/basic_pipeline.py
 """
 
 # Built-in imports
-import os
+import os, sys
 import logging
 from mpi4py import MPI
 # External packages
@@ -103,7 +106,7 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
 
 
 def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
-                       sampling_controllers = {}, ensemble_size=50,
+                       sampling_controllers = {}, ensemble_size=48,
                        true_parameters={'a0':3, 'b0': 6},
                        run_directory='basic_pipeline_run'):
 
@@ -193,63 +196,82 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
             for k in ['median','errup','errlo']:
                 print('\t', k, constraints[k])
 
+
 if __name__ == '__main__':
+    # Checks command line arguments
+    cmd, args = sys.argv[0], sys.argv[1:]
+    if len(args)==0:
+        choice = 'multinest'
+    elif args[0].lower() in ('multinest', 'ultranest', 'dynesty'):
+        choice = args[0].lower()
+    else:
+        if mpirank == 0:
+            print('\nIMAGINE basic pipeline example run\n')
+            print('usage:  {} [SAMPLER]'.format(cmd))
+            print('\noptional argument:')
+            print('\tSAMPLER\t\tEither "MultiNest" (default), "UltraNest" or "Dynesty"\n')
+        exit()
 
-    # ------ UltraNest -------
-    # Sets run directory name
-    run_directory=os.path.join('imagine_runs','basic_pipeline_run_ultranest')
-    # Sets up the sampler to be used
-    pipeline_class = img.pipelines.UltranestPipeline
-    # Set some controller parameters that are specific to UltraNest.
-    sampling_controllers = {'dlogz': 0.5,
-                            'dKL':0.1,
-                            'min_num_live_points': 500,
-                            'min_ess': 1000}
-    # Starts the run
-    if mpirank == 0:
-        print('Running using UltraNest')
-        timer.tick('UltraNest')
+    if choice == 'multinest':
+        #------ MultiNest -------
+        # Sets run directory name
+        run_directory=os.path.join('runs','basic_pipeline_run_multinest')
+        # Sets up the sampler to be used
+        pipeline_class = img.pipelines.MultinestPipeline
+        # Set some controller parameters that are specific to MultiNest.
+        sampling_controllers = {'n_live_points': 500, 'verbose': True}
+        # Starts the run
+        if mpirank == 0:
+            print('\n\nRunning using MultiNest')
+            timer.tick('MultiNest')
 
-    basic_pipeline_run(run_directory=run_directory,
-                       sampling_controllers=sampling_controllers,
-                       pipeline_class=pipeline_class)
-    if mpirank == 0:
-        print('Finished. Ellapsed time:', timer.tock('UltraNest'))
+        basic_pipeline_run(run_directory=run_directory,
+                          sampling_controllers=sampling_controllers,
+                          pipeline_class=pipeline_class)
+        if mpirank == 0:
+            print('Finished. Ellapsed time:', timer.tock('MultiNest'))
 
-    # ------ MultiNest -------
-    # Sets run directory name
-    run_directory=os.path.join('imagine_runs','basic_pipeline_run_multinest')
-    # Sets up the sampler to be used
-    pipeline_class = img.pipelines.MultinestPipeline
-    # Set some controller parameters that are specific to MultiNest.
-    sampling_controllers = {'n_live_points': 500, 'verbose': True}
-    # Starts the run
-    if mpirank == 0:
-        print('\n\nRunning using MultiNest')
-        timer.tick('MultiNest')
+    elif choice == 'ultranest':
+        # ------ UltraNest -------
+        # Sets run directory name
+        run_directory=os.path.join('runs','basic_pipeline_run_ultranest')
+        # Sets up the sampler to be used
+        pipeline_class = img.pipelines.UltranestPipeline
+        # Set some controller parameters that are specific to UltraNest.
+        sampling_controllers = {'dlogz': 0.5,
+                                'dKL':0.1,
+                                'min_num_live_points': 500,
+                                'min_ess': 1000}
+        # Starts the run
+        if mpirank == 0:
+            print('Running using UltraNest')
+            timer.tick('UltraNest')
 
-    basic_pipeline_run(run_directory=run_directory,
-                       sampling_controllers=sampling_controllers,
-                       pipeline_class=pipeline_class)
-    if mpirank == 0:
-        print('Finished. Ellapsed time:', timer.tock('MultiNest'))
+        basic_pipeline_run(run_directory=run_directory,
+                          sampling_controllers=sampling_controllers,
+                          pipeline_class=pipeline_class)
+        if mpirank == 0:
+            print('Finished. Ellapsed time:', timer.tock('UltraNest'))
 
-    ## ------ Dynesty -------
-    ## Sets run directory name
-    #run_directory=os.path.join('imagine_runs','basic_pipeline_run_dynesty')
-    ## Sets up the sampler to be used
-    #pipeline_class = img.pipelines.DynestyPipeline
-    ## Set some controller parameters that are specific to Dynesty.
-    #sampling_controllers = {'nlive_init': 500,
-                            #'dlogz_init': 0.05,
-                            #'dynamic': True}
-    ## Starts the run
-    #if mpirank == 0:
-        #print('\n\nRunning using Dynesty')
-        #timer.tick('Dynesty')
+    elif choice == 'dynesty':
+        # ------ Dynesty -------
+        img.rc['pipeline_distribute_ensemble'] = True
 
-    #basic_pipeline_run(run_directory=run_directory,
-                       #sampling_controllers=sampling_controllers,
-                       #pipeline_class=pipeline_class)
-    #if mpirank == 0:
-        #print('Finished. Ellapsed time:', timer.tock('Dynesty'))
+        # Sets run directory name
+        run_directory=os.path.join('imagine_runs','basic_pipeline_run_dynesty')
+        # Sets up the sampler to be used
+        pipeline_class = img.pipelines.DynestyPipeline
+        # Set some controller parameters that are specific to Dynesty.
+        sampling_controllers = {'nlive_init': 500,
+                                'dlogz_init': 0.05,
+                                'dynamic': True}
+        # Starts the run
+        if mpirank == 0:
+            print('\n\nRunning using Dynesty')
+            timer.tick('Dynesty')
+
+        basic_pipeline_run(run_directory=run_directory,
+                          sampling_controllers=sampling_controllers,
+                          pipeline_class=pipeline_class)
+        if mpirank == 0:
+            print('Finished. Ellapsed time:', timer.tock('Dynesty'))
