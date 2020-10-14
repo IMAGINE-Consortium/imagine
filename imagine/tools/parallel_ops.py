@@ -9,9 +9,10 @@ or pure Python equivalents, depending on the contents of
 # Package imports
 from e13tools import add_to_all
 import numpy as np
+import scipy.sparse as spr
 
 # IMAGINE imports
-from imagine.tools import mpi_helper as m, rc
+from imagine.tools import mpi_helper as m, rc, sparse
 
 # All declaration
 __all__ = []
@@ -62,7 +63,8 @@ def ptrans(data):
     if rc['distributed_arrays']:
         return m.mpi_trans(data)
     else:
-        return data.T
+        # The transpose method works both for numpy arrays and sparse matrices
+        return data.transpose()
 
 
 @add_to_all
@@ -86,7 +88,10 @@ def ptrace(data):
     if rc['distributed_arrays']:
         return m.mpi_trace(data)
     else:
-        return np.trace(data)
+        # The following line is as fast as np.trace and is compatible
+        # sparse matrices
+        return data.diagonal().sum()
+
 
 
 @add_to_all
@@ -98,7 +103,41 @@ def peye(size):
     if rc['distributed_arrays']:
         return m.mpi_eye(size)
     else:
-        return np.eye(size)
+        if size < rc['max_dense_matrix_size']:
+            return np.eye(size)
+        else:
+            # Constructs a sparse matrix
+            return spr.eye(size).tocsc()
+
+@add_to_all
+def pdiag(elements, size=None):
+    """
+    Constructs a diagonal matrix.
+    If an array is provided, fills the diagonal with it.
+
+    Parameters
+    ----------
+    elements : numpy.ndarray or float
+        Fills the diagonal either with the float or the provided array
+    size : int
+        Size of the diagonal matrix
+    """
+    if isinstance(elements, (float, int)):
+        return peye(size) * elements
+
+    if size is None:
+        size = len(elements)
+    else:
+        assert len(elements) == size
+
+    if rc['distributed_arrays']:
+        return elements * m.mpi_eye(size)
+    else:
+        if size < rc['max_dense_matrix_size']:
+            return elements * np.eye(size)
+        else:
+            # Constructs a sparse matrix
+            return spr.diags(elements,shape=(size,size)).tocsc()
 
 
 @add_to_all
@@ -125,9 +164,10 @@ def plu_solve(operator, source):
     """
     if rc['distributed_arrays']:
         return m.mpi_lu_solve(operator, source)
+    elif spr.issparse(operator) or spr.issparse(source):
+        return spr.linalg.spsolve(operator, source.T)
     else:
         return np.linalg.solve(operator, source.T)
-
 
 @add_to_all
 def pslogdet(data):
@@ -137,6 +177,8 @@ def pslogdet(data):
     """
     if rc['distributed_arrays']:
         return m.mpi_slogdet(data)
+    elif spr.issparse(data):
+        return sparse.slogdet(data)
     else:
         return np.linalg.slogdet(data)
 

@@ -4,13 +4,14 @@ from mpi4py import MPI
 import numpy as np
 import os
 import pytest
+import scipy.sparse as spr
 
 # IMAGINE imports
 from imagine import rc
 from imagine.tools import (
     empirical_cov, oas_cov, oas_mcov, mpi_mean, mpi_arrange, mpi_trans,
     mpi_mult, mpi_eye, mpi_trace, mpi_shape, mpi_lu_solve, mpi_slogdet,
-    mpi_global, mpi_local, mask_obs, mask_cov, seed_generator, config)
+    mpi_global, mpi_local, mask_obs, mask_cov, seed_generator, config, sparse)
 
 # Globals
 comm = MPI.COMM_WORLD
@@ -153,7 +154,6 @@ class TestTools(object):
         full_cov = np.vstack(comm.allgather(local_cov))
         assert np.allclose(null_cov, full_cov)
 
-
     def test_oas_cov(self):
         # mock observable ensemble with identical realizations
         arr = np.random.rand(1,32)
@@ -214,6 +214,14 @@ class TestTools(object):
         test_sign, test_logdet = np.linalg.slogdet(full_arr)
         assert sign == test_sign
         assert np.allclose(logdet, test_logdet)
+
+    def test_slogdet_sparse(self):
+        arr = np.random.random_sample(64).reshape(8,8)
+        spr_arr = spr.csc_matrix(arr)
+        sign, logdet = sparse.slogdet(spr_arr)
+        sign_ref, logdet_ref = np.linalg.slogdet(arr)
+        assert sign == sign_ref
+        assert np.allclose(logdet, logdet_ref)
 
     def test_read_rc_from_env(self):
         # Tests whether the conversion of environment variables is working

@@ -39,6 +39,7 @@ import logging as log
 
 # Package imports
 import numpy as np
+from scipy.sparse import spmatrix
 
 # IMAGINE imports
 from imagine.observables.dataset import Dataset, HEALPixDataset
@@ -93,7 +94,7 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def append(self, dataset=None, *, name=None, data=None, cov_data=None,
-               otype=None, coords=None):
+               otype=None, unit=None, cov_unit=None, coords=None):
         """
         Adds/updates name and data
 
@@ -109,11 +110,18 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             `ext` can be 'I','Q','U','PI','PA', None or other customized tags.
         data : numpy.ndarray or imagine.observables.observable.Observable
             distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>`
+        cov_data : numpy.ndarray or imagine.observables.observable.Observable
+            distributed/copied :py:class:`numpy.ndarray` or :py:class:`Observable <imagine.observables.observable.Observable>` containing the covariance
+            matrix
         otype : str
             Type of observable. May be: 'HEALPix', for HEALPix-like sky map;
             'tabular', for tabular data; or 'plain' for unstructured data.
         coords : dict
             A dictionary containing the coordinates of tabular data
+        unit : astropy.units.Unit
+            Units of `data`
+        cov_unit : astropy.units.Unit
+            Units of covariance matrix
         """
 
         if dataset is not None:
@@ -121,11 +129,12 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             name = dataset.key
             data = dataset.data
             cov_data = dataset.cov
+            cov_unit = dataset.cov_unit
             otype = dataset.otype
             coords = dataset.coords
 
         assert (len(name) == 4), 'Wrong format for Observable key!'
-        return name, data, cov_data, otype, coords
+        return name, data, cov_data, cov_unit, otype, coords
 
 
 
@@ -157,7 +166,7 @@ class Masks(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Masks::append')
-        name, data, _, otype, _ = super().append(*args, **kwargs)
+        name, data, _, _, otype, _ = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):
             assert (data.dtype == 'measured')
@@ -250,7 +259,7 @@ class Measurements(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Measurements::append')
-        name, data, cov, otype, coords = super().append(*args, **kwargs)
+        name, data, cov, cov_units, otype, coords = super().append(*args, **kwargs)
 
         if cov is not None:
             if self.cov is None:
@@ -281,7 +290,7 @@ class Simulations(ObservableDict):
 
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Simulations::append')
-        name, data, _, otype, coords = super().append(*args, **kwargs)
+        name, data, *_, otype, coords = super().append(*args, **kwargs)
 
         if name in self._archive.keys():  # app
             self._archive[name].rw_flag = False
@@ -307,14 +316,16 @@ class Covariances(ObservableDict):
     """
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Covariances::append')
-        name, _, data, otype, _ = super().append(*args, **kwargs)
+        name, _, data, data_unit, otype, _ = super().append(*args, **kwargs)
 
         if isinstance(data, Observable):  # always rewrite
             self._archive.update({name: data})  # rw
-        elif isinstance(data, np.ndarray):
+        elif isinstance(data, np.ndarray) or isinstance(data, spmatrix):
             if otype == 'HEALPix':
                 assert (data.shape[1] == _Nside_to_Npixels(name[2]))
-            self._archive.update({name: Observable(data, 'covariance')})
+            self._archive.update({name: Observable(data=data,
+                                                   dtype='covariance',
+                                                   unit=data_unit)})
         else:
             raise TypeError('unsupported data type')
 
