@@ -109,7 +109,7 @@ class MY_SAMPLER_Sampler:
                            [0.1, 0.79788083, 0.79788456])
         # Checks likelihood_function
         assert np.allclose(self.loglike(np.array([0.5, 10.5, 0.5])),
-                           -5.088229933538249)
+                           -55.581767201053125)
         assert self.seed == 1
 
         # Returns fake results

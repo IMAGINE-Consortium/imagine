@@ -65,7 +65,8 @@ class Dataset(BaseClass):
     @property
     def cov(self):
         if (self._cov is None) and (self._error is not None):
-            self._cov = self._error * peye(self._data.size)
+            variance = self._error**2
+            self._cov = variance * peye(self._data.size)
         return self._cov
 
 
