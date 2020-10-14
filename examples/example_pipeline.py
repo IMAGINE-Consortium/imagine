@@ -97,22 +97,17 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
 
     ## Add some noise that's just proportional to the average sync I by the factor err
     dataI = (mockedI + np.random.normal(loc=0, scale=err*dm, size=size)) << u.K
-    errorI = ((err*dm)**2) << u.K
+    errorI = (err*dm) << u.K
     sync_dset = img_obs.SynchrotronHEALPixDataset(data=dataI, error=errorI,
                                                   frequency=23*u.GHz, typ='I')
     ## Just 0.01*50 rad/m^2 of error for noise.
     dataRM = (mockedRM + np.random.normal(loc=0, scale=err*50,
                                           size=12*nside**2))*u.rad/u.m/u.m
-    errorRM = ((err*50.)**2) << u.rad/u.m**2
+    errorRM = (err*50.) << (u.rad/u.m**2)
     fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM, error=errorRM)
 
-    mock_data = img_obs.Measurements()
-    mock_data.append(dataset=sync_dset)
-    mock_data.append(dataset=fd_dset)
-
-    mock_cov = img_obs.Covariances()
-    mock_cov.append(dataset=sync_dset)
-    mock_cov.append(dataset=fd_dset)
+    mock_data = img_obs.Measurements(sync_dset, fd_dset)
+    mock_cov = img_obs.Covariances(sync_dset, fd_dset)
 
     return mock_data, mock_cov
 
@@ -132,7 +127,6 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
     msg('Generating mock data')
     mock_data, mock_cov = prepare_mock_obs_data(err=obs_err, nside=nside,
                                                 **true_pars)
-
     msg('Preparing pipeline')
 
     # Setting up of the pipeline
@@ -240,7 +234,7 @@ if __name__ == '__main__':
     if not os.path.isdir(run_directory):
         msg('Preparing Pipeline')
         pipeline = prepare_pipeline(
-          ensemble_size=10,
+          ensemble_size=15,
           nside=8,
           sampling_controllers={ 'n_live_points': 1000},
           run_directory=run_directory,
