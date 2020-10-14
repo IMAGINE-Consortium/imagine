@@ -203,7 +203,7 @@ if __name__ == '__main__':
     if len(args)==0:
         choice = 'multinest'
     elif args[0].lower() in ('multinest', 'ultranest', 'dynesty'):
-        choice = args[0].lower()
+        choice = args[0].lower()  # Supports any capitalization
     else:
         if mpirank == 0:
             print('\nIMAGINE basic pipeline example run\n')
