@@ -33,10 +33,8 @@ instead relies on `Field Factory`_ objects.
 While the *field objects* will do the actual computation of the physical field,
 given a set of physical parameters and a coordinate grid,
 the *field factory objects* take care of book-keeping tasks: they hold the
-parameter ranges and default values, they translate the dimensionless parameters
-used by the sampler (always in the interval :math:`[0,1]`) to physical
-parameters, they also store the `Priors`_ associated with each parameter of
-that *field*.
+parameter ranges, default values (in case of inactive parameters) and
+`Priors`_ associated with each parameter of that *field*.
 
 To convert ones own model into a IMAGINE-compatible field, one must create a
 subclass of one of the base classes available the
@@ -46,8 +44,8 @@ sections below) to write a *wrapper* to the original code.
 If the basic field type one is interested in
 is *not* available as a basic field, one
 can create it directly subclassing
-:py:class:`imagine.fields.field.GeneralField` —
-and this could benefit the wider community, please consider
+:py:class:`imagine.fields.field.Field` —
+and if this could benefit the wider community, please consider
 submitting a
 `pull request <https://github.com/IMAGINE-Consortium/imagine/pulls>`_ or
 openning an `issue <https://github.com/IMAGINE-Consortium/imagine/issues>`_
@@ -85,19 +83,17 @@ can be easily plotted using::
 
 The design of any field is done writing a *subclass* of one of the classes in
 :py:mod:`imagine.fields.base_fields` or
-:py:class:`imagine.GeneralField <imagine.fields.field.GeneralField>`
+:py:class:`imagine.Field <imagine.fields.field.Field>`
 that overrides the method
-:py:meth:`compute_field(seed) <imagine.fields.field.GeneralField.compute_field>`,
+:py:meth:`compute_field(seed) <imagine.fields.field.Field.compute_field>`,
 using it to compute the field on each spatial point.
 For this, the coordinate grid on which the field should
 be evaluated can be accessed from
-:py:data:`self.grid <imagine.fields.field.GeneralField.grid>`
+:py:data:`self.grid <imagine.fields.field.Field.grid>`
 and the parameters from
-:py:data:`self.parameters <imagine.fields.field.GeneralField.parameters>`.
-The same parameters must be listed as *keys* in the
-:py:data:`field_checklist <imagine.fields.field.GeneralField.field_checklist>`
-dictionary (the values in the dictionary are used to supply extra information
-to specific simulators, but can be left as `None` in the general case).
+:py:data:`self.parameters <imagine.fields.field.Field.parameters>`.
+The same parameters must be listed in the :py:data:`PARAMETER_NAMES` field class
+attribute (see the templates below for examples).
 
 
 .. _Grid:
@@ -119,16 +115,17 @@ Galaxy (or galaxy) centre, with the :math:`z` coordinate giving the distance to
 the midplane.
 
 To construct a grid with uniformly-distributed coordinates one can use the
-:py:class:`imagine.fields.grid.UniformGrid` that accompanies IMAGINE.
+:py:class:`imagine.fields.UniformGrid <imagine.fields.grid.UniformGrid>`
+that accompanies IMAGINE.
 For example, one can create a grid where the cylindrical coordinates are equally
 spaced using::
 
-    import imagine as img
-    cylindrical_grid = img.UniformGrid(box=[[0.25*u.kpc, 15*u.kpc],
-                                            [-180*u.deg, np.pi*u.rad],
-                                            [-15*u.kpc, 15*u.kpc]],
-                          resolution = [9,12,9],
-                          grid_type = 'cylindrical')
+    from imagine.fields import UniformGrid
+    cylindrical_grid = UniformGrid(box=[[0.25*u.kpc, 15*u.kpc],
+                                        [-180*u.deg, np.pi*u.rad],
+                                        [-15*u.kpc, 15*u.kpc]],
+                                   resolution = [9,12,9],
+                                   grid_type = 'cylindrical')
 
 The :py:data:`box` argument contains the lower and upper limits of the
 coordinates (respectively :math:`r`, :math:`\phi` and :math:`z`),
@@ -151,7 +148,8 @@ cartesian coordinate values, this can be done simply using::
 
 
 To create a personalised (non-uniform) grid, one needs to subclass
-:py:class:`imagine.fields.grid.BaseGrid` and override the method :py:meth:`generate_coordinates <imagine.fields.grid.BaseGrid.generate_coordinates>`. The :py:class:`imagine.fields.grid.UniformGrid`
+:py:class:`imagine.fields.grid.BaseGrid` and override the method :py:meth:`generate_coordinates <imagine.fields.grid.BaseGrid.generate_coordinates>`.
+The :py:class:`UniformGrid <imagine.fields.grid.UniformGrid>`
 class should itself provide a good example/template of how to do this.
 
 
@@ -160,12 +158,12 @@ Thermal electrons
 ^^^^^^^^^^^^^^^^^
 
 A new model for the distribution of thermal electrons can be introduced
-subclassing :py:class:`imagine.fields.base_fields.ThermalElectronDensityField`
+subclassing :py:class:`imagine.fields.ThermalElectronDensityField <imagine.fields.base_fields.ThermalElectronDensityField>`
 according to the template below.
 
 .. literalinclude:: ../../imagine/templates/thermal_electrons_template.py
 
-Note that the return value of the method :py:meth:`compute_field()  <imagine.fields.base_fields.ThermalElectronDensityField>` must be of type
+Note that the return value of the method :py:meth:`compute_field() <imagine.fields.field.Field.compute_field>` must be of type
 :py:class:`astropy.units.Quantity`, with shape consistent with the coordinate
 grid, and units of :math:`\rm cm^{-3}`.
 
@@ -175,21 +173,20 @@ be able to map an arbitrary coordinate grid into densities.
 
 Of course, one can also write ones model (if it is simple enough) into the
 derived subclass definition. On example of a class derived from
-:py:class:`imagine.fields.base_fields.ThermalElectronDensityField` can be seen
+:py:class:`imagine.fields.ThermalElectronDensityField <imagine.fields.base_fields.ThermalElectronDensityField>` can be seen
 bellow::
 
-    from imagine import ThermalElectronDensityField
+    from imagine.fields import ThermalElectronDensityField
 
     class ExponentialThermalElectrons(ThermalElectronDensityField):
         """Example: thermal electron density of an (double) exponential disc"""
 
-        field_name = 'exponential_disc_thermal_electrons'
+        NAME = 'exponential_disc_thermal_electrons'
+        PARAMETER_NAMES = ['central_density',
+                           'scale_radius',
+                           'scale_height']
 
-        @property
-        def field_checklist(self):
-            return {'central_density' : None, 'scale_radius' : None, 'scale_height' : None}
-
-        def compute_field(self):
+        def compute_field(self, seed):
             R = self.grid.r_cylindrical
             z = self.grid.z
             Re = self.parameters['scale_radius']
@@ -204,8 +201,8 @@ Magnetic Fields
 ^^^^^^^^^^^^^^^
 
 One can add a new model for magnetic fields subclassing
-:py:class:`imagine.fields.base_fields.MagneticField` as illustrated in the
-template below.
+:py:class:`imagine.fields.MagneticField <imagine.fields.base_fields.MagneticField>`
+as illustrated in the template below.
 
 .. literalinclude:: ../../imagine/templates/magnetic_field_template.py
 
@@ -213,7 +210,7 @@ It was assumed the existence of a hypothetical module :py:mod:`MY_GALAXY_MODEL`
 which, given a set of parameters and three 3-arrays containing coordinate values,
 computes the magnetic field vector at each point.
 
-The method :py:meth:`compute_field() <imagine.fields.base_fields.MagneticField.compute_field>`
+The method :py:meth:`compute_field() <imagine.fields.field.Field.compute_field>`
 must return an :py:class:`astropy.units.Quantity`,
 with shape `(Nx,Ny,Nz,3)` where `Ni` is the corresponding grid resolution and
 the last axis corresponds to the component (with x, y and z associated with
@@ -223,27 +220,26 @@ correpond to a magnetic field (i.e. units must be :math:`\mu\rm G`, :math:`\rm G
 
 A simple example, comprising a constant magnetic field can be seen below::
 
-    from imagine import MagneticField
+    from imagine.fields import MagneticField
 
     class ConstantMagneticField(MagneticField):
         """Example: constant magnetic field"""
         field_name = 'constantB'
 
-        @property
-        def field_checklist(self):
-            return {'Bx': None, 'By': None, 'Bz': None}
+        NAME = 'constant_B'
+        PARAMETER_NAMES = ['Bx', 'By', 'Bz']
 
-        def compute_field(self):
+        def compute_field(self, seed):
             # Creates an empty array to store the result
             B = np.empty(self.data_shape) * self.parameters['Bx'].unit
             # For a magnetic field, the output must be of shape:
             # (Nx,Ny,Nz,Nc) where Nc is the index of the component.
             # Computes Bx
-            B[:,:,:,0] = self.parameters['Bx']*np.ones(self.grid.shape)
+            B[:, :, :, 0] = self.parameters['Bx']
             # Computes By
-            B[:,:,:,1] = self.parameters['By']*np.ones(self.grid.shape)
+            B[:, :, :, 1] = self.parameters['By']
             # Computes Bz
-            B[:,:,:,2] = self.parameters['Bz']*np.ones(self.grid.shape)
+            B[:, :, :, 2] = self.parameters['Bz']
             return B
 
 
@@ -283,7 +279,7 @@ check the validity of the results plugging the same field on a different
 Simulator. Thus, use this with care!
 
 A dummy field can be implemented by subclassing
-:py:class:`imagine.fields.base_fields.DummyField` as shown bellow.
+:py:class:`imagine.fields.DummyField <imagine.fields.base_fields.DummyField>` as shown bellow.
 
 .. literalinclude:: ../../imagine/templates/dummy_field_template.py
 
@@ -311,7 +307,7 @@ Field Factory
 ^^^^^^^^^^^^^^^^^^^^
 
 Field Factories, represented in IMAGINE by a subclass of
-:py:class:`imagine.fields.field_factory.GeneralFieldFactory`
+:py:class:`imagine.fields.field_factory.FieldFactory`
 are an additional layer of infrastructure used by the samplers
 to provide the connection between the sampling of points in the likelihood space
 and the field object that will be given to the simulator.
@@ -331,15 +327,18 @@ the Simulator, which computes simulated Observables for comparison
 with the measured observables in the Likelihood module.
 
 Given a Field `YourFieldClass` (which must be an instance of a class derived
-from :py:class:`GeneralField <imagine.fields.field.GeneralField>`)
+from :py:class:`Field <imagine.fields.field.Field>`)
 the following template can be used construct a field factory:
 
 .. literalinclude:: ../../imagine/templates/field_factory_template.py
 
 The object `Prior A` must be an instance of
-:py:class:`imagine.priors.prior.GeneralPrior` (see section `Priors`_ for
+:py:class:`imagine.priors.Prior <imagine.priors.prior.Prior>`
+(see section `Priors`_ for
 details). A flat prior (i.e. a uniform, where all parameter values are
-equally likely) can be set using the :py:class:`imagine.priors.basic_priors.FlatPrior` class.
+equally likely) can be set using the
+:py:class:`imagine.priors.FlatPrior <imagine.priors.basic_priors.FlatPrior>`
+class.
 
 One can initialize the Field Factory supplying the grid on which the
 corresponding Field will be evaluated::
@@ -347,7 +346,7 @@ corresponding Field will be evaluated::
       myFactory = YourField_Factory(grid=cartesian_grid)
 
 The factory object :py:obj:`myFactory` can now be handled to the `Pipeline`_,
-which will generate new fields by calling the :py:meth:`~imagine.fields.field_factory.FieldFactory`.
+which will generate new fields by calling the :py:meth:`imagine.fields.field_factory.FieldFactory`.
 
 
 .. _Datasets:

@@ -18,7 +18,7 @@ both observational and mock data.
 
 New observational data are included in IMAGINE using the :ref:`Datasets`,
 which help effortlessly adjusting the format of the data to the standard
-specifications (and are internally easily converted into *Observables*)
+specifications (and are internally easily converted into :ref:`Observables <Observables>`)
 Also, a collection of *Datasets* contributed by the community can be found in
 the Consortium's dedicated `Dataset repository <https://github.com/IMAGINE-Consortium/imagine-datasets>`_.
 
