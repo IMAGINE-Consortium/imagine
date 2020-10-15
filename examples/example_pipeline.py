@@ -107,9 +107,8 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM, error=errorRM)
 
     mock_data = img_obs.Measurements(sync_dset, fd_dset)
-    mock_cov = img_obs.Covariances(sync_dset, fd_dset)
 
-    return mock_data, mock_cov
+    return mock_data
 
 def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
                      sampling_controllers={}, ensemble_size=10,
@@ -131,7 +130,7 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Setting up of the pipeline
     ## Use an ensemble to estimate the galactic variance
-    likelihood = img.likelihoods.EnsembleLikelihood(mock_data, mock_cov)
+    likelihood = img.likelihoods.EnsembleLikelihood(mock_data)
 
     ## WMAP B-field, vary only b0 and psi0
     breg_factory = BregLSAFactory()

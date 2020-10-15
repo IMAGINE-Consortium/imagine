@@ -104,26 +104,28 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.simulator = simulator
         self.likelihood = likelihood
         self.prior_correlations = prior_correlations
-        self.ensemble_size = ensemble_size
+        
         self.run_directory = run_directory
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
 
-        self.distribute_ensemble = rc['pipeline_distribute_ensemble']
+        self._distribute_ensemble = rc['pipeline_distribute_ensemble']
+        
+        # Random seed settings
+        self.random_type = 'controllable'
+        # This may change on every execution if random_type=='free'
+        self.master_seed = rc['pipeline_default_seed']
+        # The ensemble_seeds are fixed in the case of the 'fixed' random_type;
+        # or are regenerated on each Field evaluation, in the 'free' and
+        # 'controllable' cases
+        self.ensemble_seeds = None
+        self.ensemble_size = ensemble_size
 
         # rescaling total likelihood in _core_likelihood
         self.likelihood_rescaler = 1
         # Checking likelihood threshold
         self.check_threshold = False
         self.likelihood_threshold = 0
-
-        # This changes on every execution is random_type=='free'
-        self.master_seed = rc['pipeline_default_seed']
-        self.random_type = 'controllable'
-        # The ensemble_seeds are fixed in the case of the 'fixed' random_type;
-        # or are regenerated on each Field evaluation, in the 'free' and
-        # 'controllable' cases
-        self.ensemble_seeds = None
 
         # Place holders
         self.sampler = None
@@ -143,10 +145,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.n_evals_report = n_evals_report
         self._likelihood_evaluations_counter = 0
         self.intermediate_results = defaultdict(lambda: None)
-
-        # Generates ensemble seeds
-        self._randomness()
-
+        
 
     def __call__(self, *args, save_pipeline_state=True, **kwargs):
         if save_pipeline_state:
@@ -652,8 +651,22 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     def distribute_ensemble(self, distr_ensemble):
         # Saves the choice
         self._distribute_ensemble = distr_ensemble
+        # Calls the setter method to ajust hidden parts
+        self.ensemble_size = self.ensemble_size
 
-        if distr_ensemble:
+
+    @property
+    def ensemble_size(self):
+        return self._ensemble_size
+
+    @ensemble_size.setter
+    def ensemble_size(self, ensemble_size):
+        ensemble_size = int(ensemble_size)
+        assert (ensemble_size > 0)
+        self._ensemble_size = ensemble_size
+        log.debug('set ensemble size to %i' % int(ensemble_size))
+        
+        if self._distribute_ensemble:
             # Sets pointer to the correct likelihood function
             self._likelihood_function = self._mpi_likelihood
             # Sets effective ensemble size
@@ -666,17 +679,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self._likelihood_function = self._core_likelihood
             # Sets effective ensemble size
             self.ensemble_size_actual = self.ensemble_size
-
-    @property
-    def ensemble_size(self):
-        return self._ensemble_size
-
-    @ensemble_size.setter
-    def ensemble_size(self, ensemble_size):
-        ensemble_size = int(ensemble_size)
-        assert (ensemble_size > 0)
-        self._ensemble_size = ensemble_size
-        log.debug('set ensemble size to %i' % int(ensemble_size))
+        self._randomness()
+        
 
     @property
     def sampling_controllers(self):
