@@ -294,7 +294,8 @@ class Hammurabi(Simulator):
                         if k[0] in self.simulated_quantities]
             # Checks whether the all observables are covered
             # (as Hammurabi always applies its masks to everything)
-            assert mask_keys == self.observables, 'All Hammurabi observables must be covered by the masks'
+            for obs in self.observables:
+                assert obs in mask_keys, 'All Hammurabi observables must be covered by the masks'
 
             # Checks whether masks are equivalent
             mask_data = masks[mask_keys[0]].data
