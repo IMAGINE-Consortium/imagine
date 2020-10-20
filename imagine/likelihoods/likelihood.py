@@ -69,6 +69,10 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     def mask_dict(self):
+        """
+        :py:obj:`Masks <imagine.observables.observable_dict.Masks>` dictionary associated with 
+        this object
+        """
         return self._mask_dict
 
     @mask_dict.setter
@@ -79,6 +83,12 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     def measurement_dict(self):
+        """
+        :py:obj:`Measurements <imagine.observables.observable_dict.Measurements>` dictionary associated with 
+        this object
+        
+        NB If a mask is used, only the masked version is stored
+        """
         return self._measurement_dict
 
     @measurement_dict.setter
@@ -90,6 +100,12 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
 
     @property
     def covariance_dict(self):
+        """
+        :py:obj:`Covariances <imagine.observables.observable_dict.Covariances>` dictionary associated with 
+        this object
+        
+        NB If a mask is used, only the masked version is stored
+        """
         return self._covariance_dict
 
     @covariance_dict.setter
@@ -97,7 +113,7 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         if covariance_dict is not None:
             assert isinstance(covariance_dict, Covariances)
         self._covariance_dict = covariance_dict
-        if self._mask_dict is not None:  # apply mask
+        if (self._mask_dict is not None) and (self._covariance_dict is not None):
             self._covariance_dict = self.mask_dict(self._covariance_dict)
 
     @abc.abstractmethod
