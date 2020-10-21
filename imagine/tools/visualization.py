@@ -58,7 +58,7 @@ def corner_plot(pipeline=None, truths_dict=None, show_sigma=True, param_names=No
         else:
             samp = table
         if param_names is None:
-           param_names = list(samp.columns)
+            param_names = list(samp.columns)
         samples = np.vstack([samp[i].value for i in param_names]).T
 
     if truths_dict is None:
@@ -226,7 +226,8 @@ def _key_formatter(key):
 
     return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
 
-def show_observable(obs, realization=0, title=None, cartesian_axes='yz', **kwargs):
+def show_observable(obs, realization=0, title=None, cartesian_axes='yz', 
+                    is_covariance=False, **kwargs):
     """
     Displays the contents of a single realisation of an
     Observable object.
@@ -253,37 +254,44 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz', **kwarg
         mollview_args.update(kwargs)
         return hp.mollview(obs.global_data[realization], title=title,
                            **mollview_args)
+
     elif obs.otype == 'tabular':
-        ax = None
         if 'sub' in kwargs:
             ax = plt.subplot(*kwargs['sub'])
+        else:
+            ax = plt.gca()
 
         if obs.coords['type'] == 'galactic':
             x, y = obs.coords['lon'], obs.coords['lat']
-            plt.xlabel('Gal. lon. [{}]'.format(x.unit._repr_latex_()))
-            plt.ylabel('Gal. lat. [{}]'.format(y.unit._repr_latex_()))
+            ax.set_xlabel('Gal. lon. [{}]'.format(x.unit._repr_latex_()))
+            ax.set_ylabel('Gal. lat. [{}]'.format(y.unit._repr_latex_()))
         elif obs.coords['type'] == 'cartesian':
             x, y = obs.coords[cartesian_axes[0]], obs.coords[cartesian_axes[1]]
-            plt.xlabel('{} [{}]'.format(cartesian_axes[0], x.unit._repr_latex_()))
-            plt.ylabel('{} [{}]'.format(cartesian_axes[1], y.unit._repr_latex_()))
+            ax.set_xlabel('{} [{}]'.format(cartesian_axes[0], x.unit._repr_latex_()))
+            ax.set_ylabel('{} [{}]'.format(cartesian_axes[1], y.unit._repr_latex_()))
         else:
             raise ValueError('Unsupported coordinates type', obs.coords['type'])
 
         values = obs.global_data[realization]
-        #values -= values.min()
-        #values /= values.max()
 
         if 'cmap' in kwargs:
             cmap = kwargs['cmap']
         else:
             cmap = 'cmr.chroma'
         cmap = cmr.get_sub_cmap(cmap, 0.15, 0.85)
-        #colors = cmap(values)
 
+        ax.set_title(title)
+        im = ax.scatter(x, y, c=values, cmap=cmap)
+        ax.grid(alpha=0.2)
+        plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
 
-        plt.title(title)
-        im = plt.scatter(x, y, c=values, cmap=cmap)
-        plt.grid(alpha=0.2)
+    elif is_covariance:
+        if 'sub' in kwargs:
+            ax = plt.subplot(*kwargs['sub'])
+        else:
+            ax = plt.gca()
+        ax.set_title(title)
+        im = ax.imshow(obs.global_data, cmap='cmr.fall_r')
         plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
     else:
         # Includes the title in the corresponding subplot, even in
@@ -305,15 +313,27 @@ def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
         Parameters to be passed to the apropriate plotting routine
         (either :py:func:`healpy.visufunc.mollview` or :py:func:`matplotlib.pyplot.imshow`).
     """
+    # This import needs to be inside the function to avoid problems
+    from imagine.observables import Covariances, ObservableDict
+
+    assert isinstance(obs_dict, ObservableDict)
+
     keys = list(obs_dict.keys())
     ncols = len(keys)
+
+    is_covariance = isinstance(obs_dict, Covariances)
     if ncols == 0:
         print('The ObservableDict is empty.')
         return
-    # Gets the ensemble size from the first Observable
-    nrows = obs_dict[keys[0]].shape[0]
-    if max_realizations is not None:
-        nrows = min(nrows, max_realizations)
+
+    if is_covariance:
+        nrows = 1
+    else:
+        # Gets the ensemble size from the first Observable
+        # (each realisation corresponds to a row)
+        nrows = obs_dict[keys[0]].shape[0]
+        if max_realizations is not None:
+            nrows = min(nrows, max_realizations)
 
     i_subplot = 0
     for j in range(nrows):
@@ -321,5 +341,6 @@ def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
             i_subplot += 1
             title = _key_formatter(key)
             show_observable(obs_dict[key], title=title, realization=j,
+                            is_covariance=is_covariance,
                             sub=(nrows, ncols, i_subplot), **kwargs)
 
