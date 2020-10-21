@@ -6,8 +6,8 @@ import logging as log
 import warnings
 
 # Package imports
+import cloudpickle
 import hickle
-import dill
 from mpi4py import MPI
 import numpy as np
 
@@ -21,7 +21,7 @@ comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 
 # %% FUNCTION DEFINITIONS
-def save_pipeline(pipeline, use_dill=True):
+def save_pipeline(pipeline, use_hickle=False):
     """
     Saves the state of a Pipeline object
     
@@ -29,8 +29,8 @@ def save_pipeline(pipeline, use_dill=True):
     ----------
     pipeline : imagine.pipelines.pipeline.Pipeline
         The pipeline object one would like to save
-    use_dill : bool
-        If `True` (default) the state is saved using the `dill` package. 
+    use_hickle : bool
+        If `False` (default) the state is saved using the `cloudpickle` package. 
         Otherwise, experimental support to `hickle` is enabled.
     """
     # Works on a (shallow) copy
@@ -65,9 +65,9 @@ def save_pipeline(pipeline, use_dill=True):
             pipeline.simulator._ham._exe_path = None
     
     if mpirank == 0:
-        if use_dill:
+        if not use_hickle:
             with open(os.path.join(run_directory,'pipeline.pkl'), 'wb') as f:
-                dill.dump(pipeline, f)
+                cloudpickle.dump(pipeline, f)
         else:
             hickle.dump(pipeline, os.path.join(run_directory,'pipeline.hkl'))
 
@@ -86,7 +86,7 @@ def load_pipeline(directory_path='.'):
         pipeline = hickle.load(os.path.join(directory_path, 'pipeline.hkl'))
     else:
         with open(os.path.join(directory_path,'pipeline.pkl'), 'rb') as f:
-            pipeline = dill.load(f)
+            pipeline = cloudpickle.load(f)
     
     # Adjusts paths (hidden variables are used to avoid checks)
     pipeline._run_directory = os.path.join(directory_path, pipeline._run_directory)

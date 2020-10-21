@@ -881,8 +881,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     def call(self, **kwargs):
         raise NotImplementedError
 
-    def save(self):
-        io.save_pipeline(self)
+    def save(self, **kwargs):
+        io.save_pipeline(self, **kwargs)
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the
