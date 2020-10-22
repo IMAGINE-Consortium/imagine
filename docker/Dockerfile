@@ -2,8 +2,6 @@ FROM continuumio/miniconda3
 ARG BRANCH=master
 ARG REPO=IMAGINE-Consortium/imagine
 
-MAINTAINER jiaxin.wang@sjtu.edu.cn
-
 RUN echo REPO=$REPO  BRANCH=$BRANCH
 
 # Install build environment (for hamx)
@@ -57,16 +55,21 @@ WORKDIR /home/lab/imagine
 RUN pip install -e .
 WORKDIR /home/lab
 
+# IMAGINE datasets extension (installs latest version)
+RUN pip install git+https://github.com/IMAGINE-Consortium/imagine-datasets.git
+RUN mkdir /home/lab/.imagine_datasets_cache
+ENV IMAGINE_DATASETS_CACHE_DIR /home/lab/.imagine_datasets_cache
+
 # CLEAN PACKAGES
 RUN conda clean -afy && find /opt/conda/ -follow -type f -name '*.pyc' -delete
 RUN rm -f *.tar.gz
 RUN rm -rf /home/lab/fftw
 RUN apt-get autoremove && apt-get clean
 
-
 # SET PATH
 ENV PATH /tmp/local/hammurabi/bin:${PATH}
 ENV LD_LIBRARY_PATH /tmp/local/lib:/tmp/local/hammurabi/lib:${LD_LIBRARY_PATH}
+
 
 # MISC
 # Activates imagine conda environment by default
