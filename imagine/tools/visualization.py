@@ -226,7 +226,7 @@ def _key_formatter(key):
 
     return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
 
-def show_observable(obs, realization=0, title=None, cartesian_axes='yz', 
+def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
                     is_covariance=False, **kwargs):
     """
     Displays the contents of a single realisation of an
@@ -291,7 +291,10 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
         else:
             ax = plt.gca()
         ax.set_title(title)
-        im = ax.imshow(obs.global_data, cmap='cmr.fall_r')
+        # Makes the color interval symmetric
+        vmax = np.abs([obs.global_data.min(), obs.global_data.max()]).max()
+        im = ax.imshow(obs.global_data, cmap='cmr.fusion',
+                       vmin=-vmax, vmax=vmax)
         plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
     else:
         # Includes the title in the corresponding subplot, even in
