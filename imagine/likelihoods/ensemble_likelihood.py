@@ -36,6 +36,15 @@ class EnsembleLikelihood(Likelihood):
     mask_dict : imagine.observables.observable_dict.Masks
         Masks
     """
+    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None,
+                 cov_func=None):
+
+        super().__init__(measurement_dict, covariance_dict=covariance_dict,
+                         mask_dict=mask_dict)
+        if cov_func is None:
+            self.cov_func = oas_mcov
+        else:
+            self.cov_func = cov_func
 
     def call(self, simulations_dict):
         """
@@ -60,30 +69,32 @@ class EnsembleLikelihood(Likelihood):
 
         if self._covariance_dict is None:
             for name in simulations_dict.keys():
-                obs_mean, obs_cov = oas_mcov(simulations_dict[name].data)  # to distributed data
+                sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)  # to distributed data
                 data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-                diff = np.nan_to_num(data - obs_mean)
-                if (ptrace(obs_cov) < 1E-28):  # zero will not be reached, at most E-32
+                diff = np.nan_to_num(data - sim_mean)
+                if (ptrace(sim_cov) < 1E-28):  # zero will not be reached, at most E-32
                     likelicache += -0.5*np.vdot(diff, diff)
                 else:
-                    sign, logdet = pslogdet(obs_cov*2*np.pi)
-                    likelicache += -0.5*(np.vdot(diff, plu_solve(obs_cov, diff))+sign*logdet)
+                    sign, logdet = pslogdet(sim_cov*2*np.pi)
+                    likelicache += -0.5*(np.vdot(diff, plu_solve(sim_cov, diff))+sign*logdet)
         else:
             for name in simulations_dict.keys():
-                obs_mean, obs_cov = oas_mcov(simulations_dict[name].data)  # to distributed data
+                sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)  # to distributed data
                 data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-                diff = np.nan_to_num(data - obs_mean)
+                diff = np.nan_to_num(data - sim_mean)
                 if name in self._covariance_dict.keys():  # not all measurements have cov
-                    full_cov = deepcopy(self._covariance_dict[name].data) + obs_cov
+                    full_cov = deepcopy(self._covariance_dict[name].data) + sim_cov
                     if (ptrace(full_cov) < 1E-28):  # zero will not be reached, at most E-32
                         likelicache += -0.5*np.vdot(diff, diff)
                     else:
                         sign, logdet = pslogdet(full_cov*2.*np.pi)
                         likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff))+sign*logdet)
                 else:
-                    if (ptrace(obs_cov) < 1E-28):  # zero will not be reached, at most E-32
+                    if (ptrace(sim_cov) < 1E-28):  # zero will not be reached, at most E-32
                         likelicache += -0.5*np.vdot(diff, diff)
                     else:
-                        sign, logdet = pslogdet(obs_cov*2.*np.pi)
-                        likelicache += -0.5*(np.vdot(diff, plu_solve(obs_cov, diff))+sign*logdet)
+                        sign, logdet = pslogdet(sim_cov*2.*np.pi)
+                        likelicache += -0.5*(np.vdot(diff, plu_solve(sim_cov, diff))+sign*logdet)
         return likelicache
+
+

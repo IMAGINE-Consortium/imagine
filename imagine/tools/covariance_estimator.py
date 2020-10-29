@@ -56,14 +56,56 @@ def empirical_cov(data):
         each node takes part of the rows.
     """
     log.debug('@ covariance_estimator::empirical_cov')
+    _, cov = empirical_mcov(data)
+
+    return cov
+
+
+def empirical_mcov(data):
+    r"""
+    Empirical covariance estimator
+
+
+    Given some data matrix, :math:`D`, where rows are different samples
+    and columns different properties, the covariance can be
+    estimated from
+
+    .. math::
+           U_{ij} = D_{ij} -  \overline{D}_j\,,\;
+           \text{with}\; \overline{D}_j=\tfrac{1}{N} \sum_{i=1}^N D_{ij}
+
+    .. math::
+          \text{cov} = \tfrac{1}{N} U^T U
+
+
+
+    Notes
+    -----
+        While conceptually simple, this is usually not the
+        best option.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Ensemble of observables, in global shape (ensemble size, data size).
+
+    Returns
+    -------
+    cov : numpy.ndarray
+        Distributed (not copied) covariance matrix in global shape (data size, data size),
+        each node takes part of the rows.
+    """
+    log.debug('@ covariance_estimator::empirical_mcov')
     assert isinstance(data, np.ndarray)
     assert (len(data.shape) == 2)
     # Get ensemble size (i.e. the number of rows)
     ensemble_size, _ = pshape(data)
     # Calculates covariance
-    u = data - pmean(data)
+    mean = pmean(data)
+    u = data - mean
     cov = pmult(ptrans(u), u) / ensemble_size
-    return cov
+    return mean, cov
+
 
 def oas_cov(data):
     r"""
