@@ -81,6 +81,9 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
     def keys(self):
         return self._archive.keys()
 
+    def __iter__(self):
+        return iter(self._archive)
+
     def __getitem__(self, key):
         return self._archive[key]
 
