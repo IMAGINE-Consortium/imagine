@@ -15,16 +15,59 @@ import numpy as np
 # IMAGINE imports
 from imagine.tools.parallel_ops import (
     pmean, ptrans, pmult, peye, ptrace, pshape)
+from imagine.tools.config import rc
 
 # All declaration
-__all__ = ['empirical_cov', 'oas_cov', 'oas_mcov']
+__all__ = ['empirical_cov', 'empirical_mcov', 'oas_cov', 'oas_mcov',
+           'diagonal_cov', 'diagonal_mcov']
 
 
 # %% FUNCTION DEFINITIONS
+def diagonal_cov(data):
+    """
+    Assumes the covariance matrix is simply a diagonal matrix whose values
+    correspond to the sample variances
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Ensemble of observables, in global shape (ensemble size, data size).
+
+    Returns
+    -------
+    cov : numpy.ndarray
+        Covariance matrix
+    """
+    # MPI version still to be implemented in the future
+    if rc['distributed_arrays']:
+        raise NotImplementedError
+
+    return np.diag(data.var(axis=0))
+
+
+def diagonal_mcov(data):
+    """
+    Assumes the covariance matrix is simply a diagonal matrix whose values
+    correspond to the sample variances
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Ensemble of observables, in global shape (ensemble size, data size).
+
+    Returns
+    -------
+    mean : numpy.ndarray
+        Ensemble mean
+    cov : numpy.ndarray
+        Covariance matrix
+    """
+    return pmean(data), diagonal_cov(data)
+
+
 def empirical_cov(data):
     r"""
     Empirical covariance estimator
-
 
     Given some data matrix, :math:`D`, where rows are different samples
     and columns different properties, the covariance can be
@@ -57,14 +100,12 @@ def empirical_cov(data):
     """
     log.debug('@ covariance_estimator::empirical_cov')
     _, cov = empirical_mcov(data)
-
     return cov
 
 
 def empirical_mcov(data):
     r"""
     Empirical covariance estimator
-
 
     Given some data matrix, :math:`D`, where rows are different samples
     and columns different properties, the covariance can be
@@ -76,8 +117,6 @@ def empirical_mcov(data):
 
     .. math::
           \text{cov} = \tfrac{1}{N} U^T U
-
-
 
     Notes
     -----
@@ -91,6 +130,8 @@ def empirical_mcov(data):
 
     Returns
     -------
+    mean : numpy.ndarray
+        Copied ensemble mean (on all nodes).
     cov : numpy.ndarray
         Distributed (not copied) covariance matrix in global shape (data size, data size),
         each node takes part of the rows.
@@ -148,6 +189,7 @@ def oas_cov(data):
     _, cov = oas_mcov(data)
 
     return cov
+
 
 def oas_mcov(data):
     """
