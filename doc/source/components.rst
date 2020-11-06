@@ -363,30 +363,52 @@ can be later handed to an
 There are two main types of datasets: `Tabular datasets`_ and
 `HEALPix datasets`_.
 
-A (soon growing) number of ready-to-use datasets are available at the community
+^^^^^^^^^^^^^^^^^^^
+Repository datasets
+^^^^^^^^^^^^^^^^^^^
+
+A number of ready-to-use datasets are available at the community
 maintained `imagine-datasets <https://github.com/IMAGINE-Consortium/imagine-datasets>`_
-repository. Below the usage of an imported dataset is illustrated::
+repository.
+
+To be able to use this, it is necessary to install the `imagine_datasets`
+extension packaged (note that this comes already installed if you are using
+the :ref:`docker <DockerInstallation>` image). This can be done executing
+the following command::
+
+    conda activate imagine  # if using conda
+    pip install git+https://github.com/IMAGINE-Consortium/imagine-datasets.git
+
+
+Below the usage of an imported dataset is illustrated::
 
     import imagine as img
-    import imagine_datasets as img_datasets
+    import imagine_datasets as img_data
 
-    # Loads the dataset (usually involves downloading the data)
-    my_data = img_datasets.observable_type.AuthorYear()
+    # Loads the datasets (will download the datasets!)
+    dset_fd = img_data.HEALPix.fd.Oppermann2012(Nside=32)
+    dset_sync = img_data.HEALPix.sync.Planck2018_Commander_U(Nside=32)
 
     # Initialises ObservableDict objects
-    measurement = img.Measurements()
-    covariances = img.Covariances()
+    measurements = img.observables.Measurements(dset_fd, dset_sync)
 
-    # Loads the data on the ObservableDict's
-    measurement.append(dataset=my_data)
-    covariances.append(dataset=my_data)
+    # Shows the contents
+    measurements.show()
 
+.. image:: img_data_demo.png
+    :align: center
+    :alt: Contents of a Measurements object
 
-
-Each observable type should has an agreed/conventional name.
-The presently available **observable names** are:
 
 .. _observable_names:
+
+^^^^^^^^^^^^^^^^
+Observable names
+^^^^^^^^^^^^^^^^
+
+Each type of observable has an agreed/conventional name.
+The presently available **observable names** are:
+
 
 Observable names
     * 'fd' - Faraday depth
@@ -464,24 +486,27 @@ respectively::
 
     my_FD_dset = FaradayDepthHEALPixDataset(data=fd_data_array,
                                             error=fd_data_array_error)
+
     my_DM_dset = DispersionMeasureHEALPixDataset(data=fd_data_array,
                                                  cov=fd_data_array_covariance)
+
     sync_dset = SynchrotronHEALPixDataset(data=stoke_Q_data,
                                           error=stoke_Q_data_error
                                           frequency=23*u.GHz, type='Q')
 
 
-In the first example, it was assumed that the
+In the first and third examples, it was assumed that the
 *covariance was diagonal*,
 and therefore can be described by an error associated with each pixel, which
-is specified with the keyword argument `error`. In the second example,
-the covariance associated with the data is instead specified supplying a
-two-dimensional array using the the `cov` keyword argument. The final example
-requires the user to supply the frequency of the observation and the subtype
-(in this case, 'Q').
+is specified with the keyword argument `error` (the error is assumed to
+correspond to the square root of the variance in each datapoint).
 
-.. Finally,
-.. :py:class:`imagine.observables.dataset.HEALPixDataset`
+In the second example,
+the covariance associated with the data is instead specified supplying a
+two-dimensional array using the the `cov` keyword argument.
+
+The final example also requires the user to supply the frequency of the
+observation and the subtype (in this case, 'Q').
 
 
 .. _Observables:
@@ -506,17 +531,50 @@ A
 object is used, as the name implies, to hold a set of actual measured physical
 datasets (e.g. a set of intensity maps of the sky at different wavelengths).
 
-As discussed :ref:`previously <Datasets>`, data can be provided to
-:py:class:`Measurements <imagine.observables.observable_dict.Measurements>`
-quite simply passing a :py:class:`Datasets <imagine.observables.dataset.Dataset>`.
-object to the :py:meth:`append <imagine.observables.observable_dict.Measurements.append`
-method of ones :py:class:`Measurements <imagine.observables.observable_dict.Measurements>`.
+There are a number of ways data can be provided to
+:py:class:`Measurements <imagine.observables.observable_dict.Measurements>`.
+The simplest case is when the data is stored in a :py:obj:`Datasets <imagine.observables.dataset.Dataset>` objects, one can provide them to the
+measurements object upon initialization::
+
+  measurements = img.observables.Measurements(dset1, dset2, dset3)
+
+One can also append a dateset to a already initialized :py:obj:`Measurements <imagine.observables.observable_dict.Measurements>` object::
+
+  measurements.append(dataset=dset4)
+
+The final (not usually recommended) option  is appending the data manually to
+the `ObservableDict`, which can be done in the following way::
+
+  measurements.append(name=key, data=data,
+                      cov_data=cov, otype='HEALPix')
+
+In this, :py:data:`data` should contain a :py:obj:`ndarray <numpy.ndarray>`
+or :py:obj:`Quantity <astropy.units.Quantity>`, :py:data:`cov_data` should
+contain the covariance matrix, and :py:data:`otype` must indicate whether
+the data corresponds to: a 'HEALPix' map; 'tabular'; or a 'plain' array.
+
+The :py:data:`name` argument refers to the key that will be used to hash the
+elements in the dictionary. This has to have the following form::
+
+  key = (data_name, data_freq, Nside_or_str, tag)
+
+* The first value should be the one of the :ref:`observable names <observable_names>`
+
+* If data is independent from frequency, :py:data:`data_freq` is set to
+  :py:data:`None`, otherwise it is the frequency in GHz.
+
+* The third value in the key-tuple should contain the HEALPix Nside (for maps)
+  or the string ‘tab’ for tabular data.
+
+* Finally, the last value, ext can be 'I', 'Q', 'U', 'PI', 'PA',
+  :py:data:`None` or other customized tags depending on the nature of the
+  observable.
 
 
 .. _ObservableDictionaries:
 
 
-:ref:`observable names <observable_names>`
+
 
 
 .. _Simulators:
