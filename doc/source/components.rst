@@ -363,6 +363,9 @@ can be later handed to an
 There are two main types of datasets: `Tabular datasets`_ and
 `HEALPix datasets`_.
 
+
+.. _imagine_datasets:
+
 ^^^^^^^^^^^^^^^^^^^
 Repository datasets
 ^^^^^^^^^^^^^^^^^^^
@@ -372,7 +375,7 @@ maintained `imagine-datasets <https://github.com/IMAGINE-Consortium/imagine-data
 repository.
 
 To be able to use this, it is necessary to install the `imagine_datasets`
-extension packaged (note that this comes already installed if you are using
+extension package (note that this comes already installed if you are using
 the :ref:`docker <DockerInstallation>` image). This can be done executing
 the following command::
 
@@ -511,6 +514,8 @@ observation and the subtype (in this case, 'Q').
 
 .. _Observables:
 
+.. _ObservableDictionaries:
+
 ---------------------------------------
 Observables and observable dictionaries
 ---------------------------------------
@@ -521,15 +526,26 @@ represented internally by instances of the
 class. These are grouped in *observable dictionaries* (subclasses of
 :py:class:`imagine.observables.ObservableDict <imagine.observables.observable_dict.ObservableDict>`)
 which are used to exchange multiple observables between IMAGINE's components.
+There three main kinds of observable dictionaries: :ref:`Measurements`,
+:ref:`Simulations`, and :ref:`Covariances`.
+There is also an auxiliary observable dictionary: the :ref:`Masks`.
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Measurements and Simulations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. _Measurements:
+
+^^^^^^^^^^^^
+Measurements
+^^^^^^^^^^^^
 
 A
 :py:class:`imagine.observables.Measurements <imagine.observables.observable_dict.Measurements>`
 object is used, as the name implies, to hold a set of actual measured physical
 datasets (e.g. a set of intensity maps of the sky at different wavelengths).
+
+A :py:class:`imagine.observables.Measurements <imagine.observables.observable_dict.Measurements>`
+object must be provided to initialize :ref:`Simulators` (allowing them to know
+which datasets need to be computed) and :ref:`Likelihoods`.
 
 There are a number of ways data can be provided to
 :py:class:`Measurements <imagine.observables.observable_dict.Measurements>`.
@@ -570,11 +586,64 @@ elements in the dictionary. This has to have the following form::
   :py:data:`None` or other customized tags depending on the nature of the
   observable.
 
+The contents of a
+:py:class:`Measurements <imagine.observables.observable_dict.Measurements>`
+object can be accessed as a dictionary, using the keys with the above
+structure::
 
-.. _ObservableDictionaries:
+  observable = measurements[('sync', 30, 32, 'I')]
+
+Assuming that this key is present, the :py:data:`observable` object returned
+by the above line will be an instance of the
+:py:class:`imagine.observables.Observable <imagine.observables.observable.Observable>`
+class. The data contents and properties can be then accessed using its
+properties/attributes, for example::
+
+  data_array = observable.global_data
+  data_units = observable.unit
+
+Where the :py:data:`data_array` will be a (1, N)-array.
+
+:py:class:`Measurements <imagine.observables.observable_dict.Measurements>`,
+support the :py:meth:`show <imagine.observables.observable_dict.ObservableDict.show>`
+method (exemplified in :ref:`imagine_datasets`) which displays a summary of
+the data in the
+:py:obj:`ObservableDict <imagine.observables.observable_dict.ObservableDict>`.
+
+.. _Simulations:
+
+^^^^^^^^^^^
+Simulations
+^^^^^^^^^^^
+
+A :py:obt:`Simulations <imagine.observables.observable_dict.Simulations>`
+object is the
+:py:class:`ObservableDict <imagine.observables.observable_dict.ObservableDict>`
+that is returned when one runs an IMAGINE :ref:`Simulator <Simulators>`.
+
+
+In the case of a
+:py:class:`Simulations <imagine.observables.observable_dict.Simulations>` object, :py:data:`max_realizations` keyword argument can be used to limit the
+number of ensemble realisations that are shown (one realisation per line).
+
+.. _Covariances:
+
+^^^^^^^^^^^
+Covariances
+^^^^^^^^^^^
+
+:py:class:`imagine.observables.Covariances <imagine.observables.observable_dict.Covariances>`
 
 
 
+.. _Masks:
+
+
+^^^^^
+Masks
+^^^^^
+
+:py:class:`imagine.observables.Masks <imagine.observables.observable_dict.Masks>`
 
 
 .. _Simulators:
