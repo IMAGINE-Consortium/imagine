@@ -108,31 +108,3 @@ class TestEnsembleLikeli(object):
         rslt_ensemble = lh_ensemble(simdict)
         assert rslt_ensemble == rslt_simple
 
-    def test_without_cov(self):
-        simdict = Simulations()
-        meadict = Measurements()
-        # mock measurements
-        arr_a = np.random.rand(1, 12*mpisize**2)
-        comm.Bcast(arr_a, root=0)
-        mea = Observable(arr_a, 'measured')
-        meadict.append(name=('test', None, mpisize, None),
-                       data=mea, otype='HEALPix')
-        # mock observable with repeated single realisation
-        arr_b = np.random.rand(1, 12*mpisize**2)
-        comm.Bcast(arr_b, root=0)
-        if not mpirank:
-            arr_ens = np.zeros((3, 12*mpisize**2))
-        else:
-            arr_ens = np.zeros((2, 12*mpisize**2))
-        for i in range(len(arr_ens)):
-            arr_ens[i] = arr_b
-        sim = Observable(arr_ens, 'simulated')
-        simdict.append(name=('test', None, mpisize, None),
-                       data=sim, otype='HEALPix')
-        # simplelikelihood
-        lh_simple = SimpleLikelihood(meadict)
-        rslt_simple = lh_simple(simdict)
-        # ensemblelikelihood
-        lh_ensemble = EnsembleLikelihood(meadict)
-        rslt_ensemble = lh_ensemble(simdict)
-        assert rslt_ensemble == rslt_simple

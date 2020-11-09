@@ -69,17 +69,18 @@ class EnsembleLikelihood(Likelihood):
         assert  set(simulations_dict.keys()).issubset(self._measurement_dict.keys())
         assert  set(simulations_dict.keys()).issubset(self._covariance_dict.keys())
 
-        likelicache = 0
+        likelicache = 0.
         for name in simulations_dict.keys():
             # Estimated Galactic Covariance
             sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)
-
+            # Observed data/covariance
             meas_data, meas_cov = (self._measurement_dict[name].data,
                                    self._covariance_dict[name].data)
-            diff = meas_data - sim_mean
 
+            diff = meas_data - sim_mean
             full_cov = meas_cov + sim_cov
             sign, logdet = pslogdet(full_cov*2.*np.pi)
+
             likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff)) + sign*logdet)
 
         return likelicache
