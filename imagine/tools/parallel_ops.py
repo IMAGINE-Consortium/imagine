@@ -88,6 +88,17 @@ def ptrace(data):
     else:
         return np.trace(data)
 
+@add_to_all
+def pdiag(data):
+    """
+    :py:func:`imagine.tools.mpi_helper.mpi_diag` or :py:func:`numpy.diagonal`
+    depending on :py:data:`imagine.rc['distributed_arrays']`.
+    """
+    if rc['distributed_arrays']:
+        return m.mpi_diag(data)
+    else:
+        return data.diagonal
+
 
 @add_to_all
 def peye(size):

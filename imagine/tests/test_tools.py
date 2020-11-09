@@ -10,7 +10,8 @@ from imagine import rc
 from imagine.tools import (
     empirical_cov, oas_cov, oas_mcov, mpi_mean, mpi_arrange, mpi_trans,
     mpi_mult, mpi_eye, mpi_trace, mpi_shape, mpi_lu_solve, mpi_slogdet,
-    mpi_global, mpi_local, mask_obs, mask_cov, seed_generator, config)
+    mpi_global, mpi_local, mask_obs, mask_cov, seed_generator, mpi_diag,
+    config)
 
 # Globals
 comm = MPI.COMM_WORLD
@@ -142,6 +143,13 @@ class TestTools(object):
         full_arr = np.vstack(comm.allgather(arr))
         true_trace = np.trace(full_arr)
         assert np.allclose(test_trace, true_trace)
+
+    def test_mpi_diag(self):
+        arr = np.random.rand(2,2*mpisize)
+        test_diag = mpi_diag(arr)
+        full_arr = np.vstack(comm.allgather(arr))
+        true_diag = full_arr.diagonal()
+        assert np.allclose(test_diag, true_diag)
 
     def test_empirical_cov(self):
         # mock observable ensemble with identical realizations

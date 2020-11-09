@@ -276,6 +276,33 @@ def mpi_trace(data):
 
 
 @add_to_all
+def mpi_diag(data):
+    """
+    Gets the diagonal of a distributed matrix
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of data distributed over different processes.
+
+    Returns
+    -------
+    result : numpy.ndarray
+        Diagonal
+    """
+    log.debug('@ mpi_helper::mpi_diag')
+    assert (len(data.shape) == 2)
+    assert isinstance(data, np.ndarray)
+
+    local_row_begin, local_row_end = mpi_arrange(data.shape[1])
+    local_diagonal = data[:, local_row_begin:local_row_end].diagonal()
+
+    diagonal = comm.allgather(local_diagonal)
+
+    return np.concatenate(diagonal)
+
+
+@add_to_all
 def mpi_eye(size):
     """
     Produces an eye matrix according of shape (size,size)
