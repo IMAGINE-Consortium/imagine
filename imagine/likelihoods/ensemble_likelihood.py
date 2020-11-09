@@ -41,6 +41,10 @@ class EnsembleLikelihood(Likelihood):
 
         super().__init__(measurement_dict, covariance_dict=covariance_dict,
                          mask_dict=mask_dict)
+
+        # Requires covariaces to be present when using this type of Likelihood
+        assert self._covariance_dict is not None
+
         if cov_func is None:
             self.cov_func = oas_mcov
         else:
@@ -62,39 +66,22 @@ class EnsembleLikelihood(Likelihood):
         """
         log.debug('@ ensemble_likelihood::__call__')
         assert isinstance(simulations_dict, Simulations)
-        # check dict entries
         assert  set(simulations_dict.keys()).issubset(self._measurement_dict.keys())
+        assert  set(simulations_dict.keys()).issubset(self._covariance_dict.keys())
 
         likelicache = 0
+        for name in simulations_dict.keys():
+            # Estimated Galactic Covariance
+            sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)
 
-        if self._covariance_dict is None:
-            for name in simulations_dict.keys():
-                sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)  # to distributed data
-                data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-                diff = np.nan_to_num(data - sim_mean)
-                if (ptrace(sim_cov) < 1E-28):  # zero will not be reached, at most E-32
-                    likelicache += -0.5*np.vdot(diff, diff)
-                else:
-                    sign, logdet = pslogdet(sim_cov*2*np.pi)
-                    likelicache += -0.5*(np.vdot(diff, plu_solve(sim_cov, diff))+sign*logdet)
-        else:
-            for name in simulations_dict.keys():
-                sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)  # to distributed data
-                data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-                diff = np.nan_to_num(data - sim_mean)
-                if name in self._covariance_dict.keys():  # not all measurements have cov
-                    full_cov = deepcopy(self._covariance_dict[name].data) + sim_cov
-                    if (ptrace(full_cov) < 1E-28):  # zero will not be reached, at most E-32
-                        likelicache += -0.5*np.vdot(diff, diff)
-                    else:
-                        sign, logdet = pslogdet(full_cov*2.*np.pi)
-                        likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff))+sign*logdet)
-                else:
-                    if (ptrace(sim_cov) < 1E-28):  # zero will not be reached, at most E-32
-                        likelicache += -0.5*np.vdot(diff, diff)
-                    else:
-                        sign, logdet = pslogdet(sim_cov*2.*np.pi)
-                        likelicache += -0.5*(np.vdot(diff, plu_solve(sim_cov, diff))+sign*logdet)
+            meas_data, meas_cov = (self._measurement_dict[name].data,
+                                   self._covariance_dict[name].data)
+            diff = meas_data - sim_mean
+
+            full_cov = meas_cov + sim_cov
+            sign, logdet = pslogdet(full_cov*2.*np.pi)
+            likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff)) + sign*logdet)
+
         return likelicache
 
 
