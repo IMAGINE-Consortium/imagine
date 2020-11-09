@@ -7,7 +7,9 @@ import pytest
 # IMAGINE imports
 from imagine.observables import (
     Observable, Simulations, Measurements, Covariances)
-from imagine.likelihoods import SimpleLikelihood, EnsembleLikelihood
+from imagine.likelihoods import (
+  SimpleLikelihood, EnsembleLikelihood, EnsembleLikelihoodDiagonal)
+from imagine.tools.covariance_estimator import diagonal_mcov
 
 # Globals
 comm = MPI.COMM_WORLD
@@ -108,3 +110,31 @@ class TestEnsembleLikeli(object):
         rslt_ensemble = lh_ensemble(simdict)
         assert rslt_ensemble == rslt_simple
 
+    def test_diag(self):
+        simdict = Simulations()
+        meadict = Measurements()
+        covdict = Covariances()
+        # mock measurements
+        arr_a = np.random.rand(1, 40)
+        mea = Observable(arr_a, 'measured')
+        meadict.append(name=('test', None, 40, None),
+                       data=mea, otype='plain')
+        # mock (diagonal) covariance
+        arr_var = np.random.rand(40)
+        cov = Observable(np.diag(arr_var), 'covariance')
+        covdict.append(name=('test', None, 40, None),
+                       cov_data=cov)
+        # mock observable
+        arr_ens = np.random.rand(10, 40)
+
+        sim = Observable(arr_ens, 'simulated')
+        simdict.append(name=('test', None, 40, None),
+                       data=sim, otype='plain')
+        # ensemblelikelihood + diagonal_covcov
+        lh_ens = EnsembleLikelihood(meadict, covdict, cov_func=diagonal_mcov)
+        result_ens = lh_ens(simdict)
+        # EnsembleLikelihoodDiagonal
+        lh_diag = EnsembleLikelihoodDiagonal(meadict, covdict)
+        result_diag = lh_diag (simdict)
+
+        assert np.allclose(result_diag, result_ens)

@@ -54,6 +54,19 @@ def pmean(data):
 
 
 @add_to_all
+def pvar(data):
+    """
+    :py:func:`imagine.tools.mpi_helper.mpi_var` or :py:func:`numpy.var`
+    depending on :py:data:`imagine.rc['distributed_arrays']`.
+    """
+    if rc['distributed_arrays']:
+        # This will be done later!
+        raise NotImplementedError
+    else:
+        return data.var(axis=0)
+
+
+@add_to_all
 def ptrans(data):
     """
     :py:func:`imagine.tools.mpi_helper.mpi_mean` or :py:meth:`numpy.ndarray.T`
@@ -97,7 +110,7 @@ def pdiag(data):
     if rc['distributed_arrays']:
         return m.mpi_diag(data)
     else:
-        return data.diagonal
+        return data.diagonal()
 
 
 @add_to_all
