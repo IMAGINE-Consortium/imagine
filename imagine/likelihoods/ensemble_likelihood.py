@@ -18,7 +18,7 @@ __all__ = ['EnsembleLikelihood','EnsembleLikelihoodDiagonal']
 
 # %% CLASS DEFINITIONS
 class EnsembleLikelihood(Likelihood):
-    """
+    r"""
     Computes the likelihood accounting for the effects of stochastic fields
 
     This is done by estimating the covariance associated the stochastic fields
@@ -41,9 +41,15 @@ class EnsembleLikelihood(Likelihood):
         estimated covariance matrix.
         If absent, :py:func:`imagine.tools.covariance_estimator.oas_mcov` will
         be used.
+    use_trace_approximation : bool
+        If True, the determinant of the combined covariance matrix is
+        approximated using
+        :math:`\ln(|A+B)\approx \text{tr}\left[\ln\left(A+C\right)\right]`.
+        Otherwise, the determinant is calculated directly from the estimated
+        covariance matrix.
     """
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None,
-                 cov_func=None):
+                 cov_func=None, use_trace_approximation=True):
 
         super().__init__(measurement_dict, covariance_dict=covariance_dict,
                          mask_dict=mask_dict)
@@ -56,6 +62,7 @@ class EnsembleLikelihood(Likelihood):
         else:
             self.cov_func = cov_func
 
+        self.use_trace_approximation = use_trace_approximation
 
     def call(self, simulations_dict):
         """
@@ -86,7 +93,12 @@ class EnsembleLikelihood(Likelihood):
 
             diff = meas_data - sim_mean
             full_cov = meas_cov + sim_cov
-            sign, logdet = pslogdet(full_cov*2.*np.pi)
+
+            if not self.use_trace_approximation:
+                sign, logdet = pslogdet(full_cov*2.*np.pi)
+            else:
+                diag_sum = meas_data.diagonal() + simulations_dict[name].data.var(axis=0)
+                sign, logdet = 1, (np.log(diag_sum*2.*np.pi)).sum()
 
             likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff)) + sign*logdet)
 
