@@ -44,12 +44,13 @@ class EnsembleLikelihood(Likelihood):
     use_trace_approximation : bool
         If True, the determinant of the combined covariance matrix is
         approximated using
-        :math:`\ln(|A+B)\approx \text{tr}\left[\ln\left(A+C\right)\right]`.
-        Otherwise, the determinant is calculated directly from the estimated
-        covariance matrix.
+        :math:`\ln(|A+B)\approx \text{tr}\left[\ln\left(A+C\right)\right]`
+        (NB this assumes that the observed data covariance is diagonal).
+        Otherwise (default), the determinant is calculated directly from the
+        covariance matrix from the simulations.
     """
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None,
-                 cov_func=None, use_trace_approximation=True):
+                 cov_func=None, use_trace_approximation=False):
 
         super().__init__(measurement_dict, covariance_dict=covariance_dict,
                          mask_dict=mask_dict)
