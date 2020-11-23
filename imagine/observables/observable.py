@@ -34,7 +34,7 @@ import astropy.units as u
 import numpy as np
 
 # IMAGINE imports
-from imagine.tools import pmean, pshape, prosecutor, pglobal
+from imagine.tools import pmean, pshape, prosecutor, pglobal, pnewdiag, pdiag
 
 # All declaration
 __all__ = ['Observable']
@@ -72,10 +72,27 @@ class Observable(object):
         self.rw_flag = False
 
     @property
+    def var(self):
+        """
+        The stored variance, if the Observable is a variance or covariance
+        """
+        if self._dtype == 'variance':
+            return self._data
+        elif self._dtype == 'covariance':
+            return pdiag(self._data)
+        else:
+            TypeError("Needs 'variance' or 'covariance' observables for this")
+
+    @property
     def data(self):
         """
-        Data stored in the LOCAL processor (`numpy.ndarray`, read-only).
+        Data stored in the local processor
         """
+        if self._dtype == 'variance':
+            # Even when a variance was stored, data will still
+            # return a covariance, produced on-the-fly!
+            return pnewdiag(self._data)
+
         return self._data
 
     @data.setter
@@ -88,7 +105,8 @@ class Observable(object):
         if data is None:
             self._data = None
         else:
-            assert (len(data.shape) == 2)
+            if self._dtype != 'variance':
+                assert (len(data.shape) == 2)
             assert isinstance(data, np.ndarray)
             if (self._dtype == 'measured'):  # copy single-row data from memory
                 assert (data.shape[0] == 1)
@@ -145,7 +163,8 @@ class Observable(object):
         if dtype is None:
             raise ValueError('dtype cannot be None')
         else:
-            assert (dtype in ('measured', 'simulated', 'covariance'))
+            assert (dtype in ('measured', 'simulated',
+                              'variance', 'covariance'))
             self._dtype = str(dtype)
 
     @property
