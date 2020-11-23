@@ -227,7 +227,7 @@ def _key_formatter(key):
     return '{name} {tag} {freq}'.format(name=name, tag=tag, freq=freq)
 
 def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
-                    is_covariance=False, **kwargs):
+                    show_variances=False, is_covariance=False, **kwargs):
     """
     Displays the contents of a single realisation of an
     Observable object.
@@ -246,14 +246,28 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
         Parameters to be passed to the apropriate plotting routine
         (either `healpy.visufunc.mollview` or `matplotlib.pyplot.imshow`).
     """
-    if obs.otype == 'HEALPix':
+    if (is_covariance and (not show_variances)):
+        if 'sub' in kwargs:
+            ax = plt.subplot(*kwargs['sub'])
+        else:
+            ax = plt.gca()
+        ax.set_title(title)
+        # Makes the color interval symmetric
+        vmax = np.abs([obs.global_data.min(), obs.global_data.max()]).max()
+        im = ax.imshow(obs.global_data, cmap='cmr.fusion',
+                       vmin=-vmax, vmax=vmax)
+        plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
+    elif obs.otype == 'HEALPix':
         default_cmap = _choose_cmap(title=title)
         mollview_args = {'norm': 'hist',
                          'cmap': copy(default_cmap),
                          'unit': obs.unit._repr_latex_()}
         mollview_args.update(kwargs)
-        return hp.mollview(obs.global_data[realization], title=title,
-                           **mollview_args)
+        if not is_covariance:
+            plot_data = obs.global_data[realization]
+        else:
+            plot_data = obs.var
+        return hp.mollview(plot_data, title=title, **mollview_args)
 
     elif obs.otype == 'tabular':
         if 'sub' in kwargs:
@@ -285,23 +299,13 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
         ax.grid(alpha=0.2)
         plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
 
-    elif is_covariance:
-        if 'sub' in kwargs:
-            ax = plt.subplot(*kwargs['sub'])
-        else:
-            ax = plt.gca()
-        ax.set_title(title)
-        # Makes the color interval symmetric
-        vmax = np.abs([obs.global_data.min(), obs.global_data.max()]).max()
-        im = ax.imshow(obs.global_data, cmap='cmr.fusion',
-                       vmin=-vmax, vmax=vmax)
-        plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
     else:
         # Includes the title in the corresponding subplot, even in
         # the unsupported case (so that the user remembers it)
         print("Plotting observable type '{}' not yet implemented".format(obs.otype))
 
-def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
+def show_observable_dict(obs_dict, max_realizations=None, show_variances=False,
+                         **kwargs):
     """
     Plots the contents of an ObservableDict object.
 
@@ -312,6 +316,9 @@ def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
     max_realization : int
         Index of the maximum ensemble realization to be plotted. If None,
         the whole ensemble is shown.
+    show_variances : bool
+        If True and if `obs_dict` is a `Covariances` object, shows variance
+        maps instead of covariance matrix
     **kwargs
         Parameters to be passed to the apropriate plotting routine
         (either :py:func:`healpy.visufunc.mollview` or :py:func:`matplotlib.pyplot.imshow`).
@@ -345,5 +352,6 @@ def show_observable_dict(obs_dict, max_realizations=None, **kwargs):
             title = _key_formatter(key)
             show_observable(obs_dict[key], title=title, realization=j,
                             is_covariance=is_covariance,
+                            show_variances=show_variances,
                             sub=(nrows, ncols, i_subplot), **kwargs)
 
