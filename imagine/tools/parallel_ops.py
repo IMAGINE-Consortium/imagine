@@ -112,6 +112,17 @@ def pdiag(data):
     else:
         return data.diagonal()
 
+@add_to_all
+def pnewdiag(data):
+    """
+    :py:func:`imagine.tools.mpi_helper.mpi_new_diag` or :py:func:`numpy.diag`
+    depending on :py:data:`imagine.rc['distributed_arrays']`.
+    """
+    if rc['distributed_arrays']:
+        return m.mpi_new_diag(data)
+    else:
+        return np.diag(data)
+
 
 @add_to_all
 def peye(size):
