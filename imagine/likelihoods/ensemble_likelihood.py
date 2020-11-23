@@ -98,7 +98,8 @@ class EnsembleLikelihood(Likelihood):
             if not self.use_trace_approximation:
                 sign, logdet = pslogdet(full_cov*2.*np.pi)
             else:
-                diag_sum = meas_cov.diagonal() + simulations_dict[name].data.var(axis=0)
+                meas_var = self._covariance_dict[name].var
+                diag_sum = meas_var + simulations_dict[name].data.var(axis=0)
                 sign, logdet = 1, (np.log(diag_sum*2.*np.pi)).sum()
 
             likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff)) + sign*logdet)
@@ -159,7 +160,7 @@ class EnsembleLikelihoodDiagonal(Likelihood):
             sim_var = pvar(simulations_dict[name].data)
             # Observed data/covariance
             meas_data = self._measurement_dict[name].data
-            meas_var =  pdiag(self._covariance_dict[name].data)
+            meas_var =  self._covariance_dict[name].var
 
             diff = meas_data - sim_mean
             full_var = meas_var + sim_var
