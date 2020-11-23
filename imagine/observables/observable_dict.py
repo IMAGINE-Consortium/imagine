@@ -124,6 +124,8 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             name = dataset.key
             data = dataset.data
             cov_data = dataset.cov
+            if cov_data is None:
+                cov_data = dataset.var
             otype = dataset.otype
             coords = dataset.coords
 
@@ -312,12 +314,17 @@ class Covariances(ObservableDict):
         log.debug('@ observable_dict::Covariances::append')
         name, _, data, otype, _ = super().append(*args, **kwargs)
 
-        if isinstance(data, Observable):  # always rewrite
-            self._archive.update({name: data})  # rw
+        if isinstance(data, Observable):
+            self._archive.update({name: data})
         elif isinstance(data, np.ndarray):
-            if otype == 'HEALPix':
-                assert (data.shape[1] == _Nside_to_Npixels(name[2]))
-            self._archive.update({name: Observable(data, 'covariance')})
+            # Covariances case
+            if len(data.shape)==2:
+                if otype == 'HEALPix':
+                    assert (data.shape[1] == _Nside_to_Npixels(name[2]))
+                self._archive.update({name: Observable(data, 'covariance')})
+            # Variances case
+            else:
+                self._archive.update({name: Observable(data, 'variance')})
         else:
             raise TypeError('unsupported data type')
 
