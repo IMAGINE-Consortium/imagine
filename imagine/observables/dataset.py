@@ -30,7 +30,8 @@ class Dataset(BaseClass):
         self.Nside = None
         self.frequency = None
         self.tag = None
-        self._cov = None
+        self.cov = None
+        self._var = None
         self._error = None
         self._data = None
         self.otype = None
@@ -62,12 +63,12 @@ class Dataset(BaseClass):
         """Key used in the Observables_dictionary """
         return (self.name, self.frequency, self.Nside, self.tag)
 
+
     @property
-    def cov(self):
-        if (self._cov is None) and (self._error is not None):
-            variance = self._error**2
-            self._cov = variance * peye(self._data.size)
-        return self._cov
+    def var(self):
+        if (self.cov is None) and (self._error is not None):
+            self._var = np.ones_like(self._data) * self._error**2
+        return self._var
 
 
 class TabularDataset(Dataset):
@@ -205,7 +206,7 @@ class HEALPixDataset(Dataset):
         if cov is not None:
             assert error is None
 
-            self._cov = distribute_matrix(cov)
+            self.cov = distribute_matrix(cov)
         else:
             self._error = error
 

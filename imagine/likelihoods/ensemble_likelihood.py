@@ -85,7 +85,7 @@ class EnsembleLikelihood(Likelihood):
         assert  set(simulations_dict.keys()).issubset(self._covariance_dict.keys())
 
         likelicache = 0.
-        for name in simulations_dict.keys():
+        for name in simulations_dict:
             # Estimated Galactic Covariance
             sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)
             # Observed data/covariance
@@ -98,7 +98,8 @@ class EnsembleLikelihood(Likelihood):
             if not self.use_trace_approximation:
                 sign, logdet = pslogdet(full_cov*2.*np.pi)
             else:
-                diag_sum = meas_cov.diagonal() + simulations_dict[name].data.var(axis=0)
+                meas_var = self._covariance_dict[name].var
+                diag_sum = meas_var + simulations_dict[name].data.var(axis=0)
                 sign, logdet = 1, (np.log(diag_sum*2.*np.pi)).sum()
 
             likelicache += -0.5*(np.vdot(diff, plu_solve(full_cov, diff)) + sign*logdet)
@@ -143,7 +144,7 @@ class EnsembleLikelihoodDiagonal(Likelihood):
             Simulations object
 
         Returns
-        ------
+        -------
         likelicache : float
             log-likelihood value (copied to all nodes)
         """
@@ -159,7 +160,7 @@ class EnsembleLikelihoodDiagonal(Likelihood):
             sim_var = pvar(simulations_dict[name].data)
             # Observed data/covariance
             meas_data = self._measurement_dict[name].data
-            meas_var =  pdiag(self._covariance_dict[name].data)
+            meas_var =  self._covariance_dict[name].var
 
             diff = meas_data - sim_mean
             full_var = meas_var + sim_var
@@ -167,6 +168,6 @@ class EnsembleLikelihoodDiagonal(Likelihood):
             sign = np.sign(full_var).prod()
             logdet = np.log(full_var*2.*np.pi).sum()
 
-            likelicache += -0.5*(np.vdot(diff, 1./full_var * diff) + sign*logdet)
+            likelicache += -0.5*np.vdot(diff, 1./full_var * diff) - 0.5*sign*logdet
 
         return likelicache
