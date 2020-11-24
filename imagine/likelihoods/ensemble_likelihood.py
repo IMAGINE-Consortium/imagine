@@ -144,7 +144,7 @@ class EnsembleLikelihoodDiagonal(Likelihood):
             Simulations object
 
         Returns
-        ------
+        -------
         likelicache : float
             log-likelihood value (copied to all nodes)
         """
