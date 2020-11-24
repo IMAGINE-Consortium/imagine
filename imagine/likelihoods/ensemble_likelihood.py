@@ -168,6 +168,6 @@ class EnsembleLikelihoodDiagonal(Likelihood):
             sign = np.sign(full_var).prod()
             logdet = np.log(full_var*2.*np.pi).sum()
 
-            likelicache += -0.5*(np.vdot(diff, 1./full_var * diff) + sign*logdet)
+            likelicache += -0.5*np.vdot(diff, 1./full_var * diff) - 0.5*sign*logdet
 
         return likelicache

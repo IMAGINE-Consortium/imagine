@@ -64,7 +64,7 @@ class SimpleLikelihood(Likelihood):
                 cov = self._covariance_dict[name].data
                 sign, logdet = pslogdet(cov*2*np.pi)
 
-                likelicache += -0.5*(np.vdot(diff, plu_solve(cov, diff)) + sign*logdet)
+                likelicache += -0.5*np.vdot(diff, plu_solve(cov, diff)) - 0.5*sign*logdet
             else:
                 likelicache += -0.5*np.vdot(diff, diff)
 
