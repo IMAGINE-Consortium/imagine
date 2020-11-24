@@ -301,6 +301,35 @@ def mpi_diag(data):
 
     return np.concatenate(diagonal)
 
+@add_to_all
+def mpi_new_diag(data):
+    """
+    Constructs a distributed matrix with a given diagonal
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of data distributed over different processes.
+
+    Returns
+    -------
+    result : numpy.ndarray
+        Diagonal
+    """
+    log.debug('@ mpi_helper::mpi_diag')
+    assert (len(data.shape) == 1)
+    assert isinstance(data, np.ndarray)
+
+    size = data.size
+    local_row_begin, local_row_end = mpi_arrange(size)
+    local_matrix = np.zeros((local_row_end - local_row_begin, size))
+
+    for i in range(local_row_end - local_row_begin):
+        diag_pos = int(local_row_begin + i)
+        local_matrix[i, diag_pos] = data[diag_pos]
+
+    return local_matrix
+
 
 @add_to_all
 def mpi_eye(size):
@@ -319,10 +348,12 @@ def mpi_eye(size):
         Distributed eye matrix.
     """
     log.debug('@ mpi_helper::mpi_eye')
+
     local_row_begin, local_row_end = mpi_arrange(size)
-    local_matrix = np.zeros((local_row_end - local_row_begin, size), dtype=np.float64)
+    local_matrix = np.zeros((local_row_end - local_row_begin, size))
+
     for i in range(local_row_end - local_row_begin):
-        eye_pos = local_row_begin + np.uint64(i)
+        eye_pos = int(local_row_begin + i)
         local_matrix[i, eye_pos] = 1.0
     return local_matrix
 

@@ -124,6 +124,8 @@ class ObservableDict(BaseClass, metaclass=abc.ABCMeta):
             name = dataset.key
             data = dataset.data
             cov_data = dataset.cov
+            if cov_data is None:
+                cov_data = dataset.var
             otype = dataset.otype
             coords = dataset.coords
 
@@ -310,17 +312,34 @@ class Covariances(ObservableDict):
     """
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Covariances::append')
-        name, _, data, otype, _ = super().append(*args, **kwargs)
+        name, _, data, otype, coords = super().append(*args, **kwargs)
 
-        if isinstance(data, Observable):  # always rewrite
-            self._archive.update({name: data})  # rw
+        if isinstance(data, Observable):
+            self._archive.update({name: data})
         elif isinstance(data, np.ndarray):
-            if otype == 'HEALPix':
-                assert (data.shape[1] == _Nside_to_Npixels(name[2]))
-            self._archive.update({name: Observable(data, 'covariance')})
+            # Covariances case
+            if len(data.shape)==2:
+                if otype == 'HEALPix':
+                    assert (data.shape[1] == _Nside_to_Npixels(name[2]))
+                self._archive.update({name: Observable(data,
+                                                       dtype='covariance',
+                                                       coords=coords,
+                                                       otype=otype)})
+            # Variances case
+            else:
+                self._archive.update({name: Observable(data,
+                                                       dtype='variance',
+                                                       coords=coords,
+                                                       otype=otype)})
         else:
             raise TypeError('unsupported data type')
 
+    def show_variances(self, **kwargs):
+        """
+        Shows the contents of this ObservableDict using
+        :py:func:`imagine.tools.visualization.show_observable_dict`
+        """
+        return visu.show_observable_dict(self, show_variances=True, **kwargs)
 
 def _Nside_to_Npixels(Nside):
     return 12*int(Nside)**2

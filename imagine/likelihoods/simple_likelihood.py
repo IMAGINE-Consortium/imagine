@@ -30,40 +30,42 @@ class SimpleLikelihood(Likelihood):
         Masks
     """
 
-    def call(self, observable_dict):
+    def call(self, simulations_dict):
         """
         SimpleLikelihood object call function
 
         Parameters
         ----------
-        observable_dict : imagine.observables.observable_dict.Simulations
+        simulations_dict : imagine.observables.observable_dict.Simulations
             Simulations object
 
         Returns
-        ------
+        -------
         likelicache : float
             log-likelihood value (copied to all nodes)
         """
         log.debug('@ simple_likelihood::__call__')
-        assert isinstance(observable_dict, Simulations)
+        assert isinstance(simulations_dict, Simulations)
         # check dict entries
-        assert (observable_dict.keys() == self._measurement_dict.keys())
+        assert  set(simulations_dict.keys()).issubset(self._measurement_dict.keys())
+
+        if self.covariance_dict is not None:
+            covariance_dict = self._covariance_dict
+        else:
+            covariance_dict = {}
+
         likelicache = 0
-        if self._covariance_dict is None:  # no covariance matrix
-            for name in self._measurement_dict.keys():
-                obs_mean = deepcopy(observable_dict[name].ensemble_mean)  # use mpi_mean, copied to all nodes
-                data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-                diff = np.nan_to_num(data - obs_mean)
-                likelicache += -0.5*np.vdot(diff, diff)  # copied to all nodes
-        else:  # with covariance matrix
-            for name in self._measurement_dict.keys():
-                obs_mean = deepcopy(observable_dict[name].ensemble_mean)  # use mpi_mean, copied to all nodes
-                data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-                diff = np.nan_to_num(data - obs_mean)
-                if name in self._covariance_dict.keys():  # not all measreuments have cov
-                    cov = deepcopy(self._covariance_dict[name].data)  # to distributed data
-                    sign, logdet = pslogdet(cov*2*np.pi)
-                    likelicache += -0.5*(np.vdot(diff, plu_solve(cov, diff))+sign*logdet)
-                else:
-                    likelicache += -0.5*np.vdot(diff, diff)
+        for name in self._measurement_dict:
+            obs_mean = deepcopy(simulations_dict[name].ensemble_mean)
+            data = deepcopy(self._measurement_dict[name].data)  # to distributed data
+            diff = np.nan_to_num(data - obs_mean)
+
+            if name in covariance_dict:  # some measurement may not have cov
+                cov = self._covariance_dict[name].data
+                sign, logdet = pslogdet(cov*2*np.pi)
+
+                likelicache += -0.5*np.vdot(diff, plu_solve(cov, diff)) - 0.5*sign*logdet
+            else:
+                likelicache += -0.5*np.vdot(diff, diff)
+
         return likelicache
