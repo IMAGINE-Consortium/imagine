@@ -85,7 +85,7 @@ class EnsembleLikelihood(Likelihood):
         assert  set(simulations_dict.keys()).issubset(self._covariance_dict.keys())
 
         likelicache = 0.
-        for name in simulations_dict.keys():
+        for name in simulations_dict:
             # Estimated Galactic Covariance
             sim_mean, sim_cov = self.cov_func(simulations_dict[name].data)
             # Observed data/covariance
