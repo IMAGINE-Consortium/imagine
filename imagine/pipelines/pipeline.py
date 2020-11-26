@@ -104,13 +104,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.simulator = simulator
         self.likelihood = likelihood
         self.prior_correlations = prior_correlations
-        
+
         self.run_directory = run_directory
         self.chains_directory = chains_directory
         self.sampling_controllers = {}
 
         self._distribute_ensemble = rc['pipeline_distribute_ensemble']
-        
+
         # Random seed settings
         self.random_type = 'controllable'
         # This may change on every execution if random_type=='free'
@@ -145,7 +145,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.n_evals_report = n_evals_report
         self._likelihood_evaluations_counter = 0
         self.intermediate_results = defaultdict(lambda: None)
-        
+
 
     def __call__(self, *args, save_pipeline_state=True, **kwargs):
         if save_pipeline_state:
@@ -340,35 +340,45 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         return visualization.corner_plot(pipeline=self, **kwargs)
 
-
     def progress_report(self):
         """
         Reports the progress of the inference
         """
-        self.get_intermediate_results()
 
-
-        dead_samples = self.intermediate_results['rejected_points']
-        live_samples = self.intermediate_results['live_points']
-        likelihood = self.intermediate_results['logLikelihood']
-        lnX = self.intermediate_results['lnX']
-        if not ((dead_samples is None) or (likelihood is None) or (lnX is None)):
-            fig = visualization.trace_plot(parameter_names=self._active_parameters,
-                                  samples=dead_samples,
-                                  live_samples=live_samples,
-                                  likelihood=likelihood, lnX=lnX)
-            fig_filepath = os.path.join(self._run_directory, 'progress_report.pdf')
-            msg = 'Saving progress report to {}'.format(fig_filepath)
-            log.info(msg)
-            fig.savefig(fig_filepath)
-            if misc.is_notebook():
-                ipd.clear_output()
-                ipd.display(ipd.Markdown("\n**Progress report:**"
-                  '\nnumber of likelihood evaluations  {}'.format(
-                    self._likelihood_evaluations_counter)))
-                plt.show()
-            else:
-                print(msg)
+        # Try to call get_intermediate_results
+        try:
+            self.get_intermediate_results()
+        # If this method is not implemented, show error instead and continue
+        except NotImplementedError:
+            print("Progress reports can only be made if the "
+                  "'get_intermediate_results()'-method is overridden! "
+                  "Skipping report.")
+        # If this method is implemented, create progress report
+        else:
+            dead_samples = self.intermediate_results['rejected_points']
+            live_samples = self.intermediate_results['live_points']
+            likelihood = self.intermediate_results['logLikelihood']
+            lnX = self.intermediate_results['lnX']
+            if None not in (dead_samples, likelihood, lnX):
+                fig = visualization.trace_plot(
+                    parameter_names=self._active_parameters,
+                    samples=dead_samples,
+                    live_samples=live_samples,
+                    likelihood=likelihood, lnX=lnX)
+                fig_filepath = os.path.join(self._run_directory,
+                                            'progress_report.pdf')
+                msg = 'Saving progress report to {}'.format(fig_filepath)
+                log.info(msg)
+                fig.savefig(fig_filepath)
+                if misc.is_notebook():
+                    ipd.clear_output()
+                    ipd.display(ipd.Markdown(
+                        "\n**Progress report:**\nnumber of likelihood "
+                        "evaluations  {}".format(
+                            self._likelihood_evaluations_counter)))
+                    plt.show()
+                else:
+                    print(msg)
 
 
     def posterior_report(self, sdigits=2, **kwargs):
@@ -665,7 +675,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         assert (ensemble_size > 0)
         self._ensemble_size = ensemble_size
         log.debug('set ensemble size to %i' % int(ensemble_size))
-        
+
         if self._distribute_ensemble:
             # Sets pointer to the correct likelihood function
             self._likelihood_function = self._mpi_likelihood
@@ -680,7 +690,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # Sets effective ensemble size
             self.ensemble_size_actual = self.ensemble_size
         self._randomness()
-        
+
 
     @property
     def sampling_controllers(self):
@@ -873,7 +883,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             assert ((cube_pool == np.tile(cube_pool[:cube_local_size], mpisize)).all())
             return self._core_likelihood(cube)
 
-    @abc.abstractmethod
     def get_intermediate_results(self):
         raise NotImplementedError
 
