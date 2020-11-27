@@ -102,9 +102,10 @@ def likelihood_convergence_report(pipeline, min_Nens=4, max_Nens=40,
     results = defaultdict(list)
 
     # Samples the prior distributions
-    for i_point in range(1,n_points+1):
-        if (i_point == 1) and include_centre:
+    for i_point in range(n_points):
+        if (i_point == 0) and include_centre:
             values = get_central_value(pipeline)
+            i_point = 'centre'
         else:
             # Draws a random point from the prior distributions
             values = pipeline.prior_transform(np.random.random_sample(n_params))
