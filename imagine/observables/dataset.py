@@ -11,7 +11,7 @@ import numpy as np
 from imagine.tools import BaseClass, distribute_matrix, peye, req_attr
 
 # All declaration
-__all__ = ['Dataset', 'TabularDataset', 'HEALPixDataset',
+__all__ = ['Dataset', 'TabularDataset', 'HEALPixDataset', 'ImageDataset',
            'FaradayDepthHEALPixDataset', 'SynchrotronHEALPixDataset',
            'DispersionMeasureHEALPixDataset']
 
@@ -178,6 +178,39 @@ class TabularDataset(Dataset):
         # Set Nside
         self.Nside = "tab"
         self.otype = "tabular"
+
+class ImageDataset(Dataset):
+    """
+    Class for simple non-full-sky image data
+    """
+    def __init__(self, data, name, lon_min, lon_max, lat_min, lat_max,
+                 units=None, error=None, cov=None, frequency=None, tag=None):
+        self.NAME = name
+        super().__init__()
+
+
+        self.frequency = frequency
+        self.tag = tag
+
+        self.coords = {'type': 'galactic',
+                        'lon_min': lon_min << u.deg,
+                        'lon_max': lon_max << u.deg,
+                        'lat_min': lat_min << u.deg,
+                        'lat_max': lat_max << u.deg,
+                        'shape': data.shape}
+        self.otype = 'image'
+        self.Nside = 'image'
+
+        assert len(data.shape) == 2
+        self._data = data.ravel()
+
+        if cov is not None:
+            assert error is None
+
+            self._cov = distribute_matrix(cov)
+        else:
+            self._error = error
+
 
 
 class HEALPixDataset(Dataset):

@@ -257,6 +257,7 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
         im = ax.imshow(obs.global_data, cmap='cmr.fusion',
                        vmin=-vmax, vmax=vmax)
         plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
+
     elif obs.otype == 'HEALPix':
         default_cmap = _choose_cmap(title=title)
         mollview_args = {'norm': 'hist',
@@ -268,6 +269,29 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
         else:
             plot_data = obs.var
         return hp.mollview(plot_data, title=title, **mollview_args)
+
+    elif obs.otype == 'image':
+        if 'sub' in kwargs:
+            ax = plt.subplot(*kwargs['sub'])
+        else:
+            ax = plt.gca()
+
+        default_cmap = _choose_cmap(title=title)
+
+        if not is_covariance:
+            plot_data = obs.global_data[realization]
+        else:
+            plot_data = obs.var
+
+        plot_data = plot_data.reshape(obs.coords['shape'])
+        ax.set_xlabel('Gal. lon. [deg]')
+        ax.set_ylabel('Gal. lat. [deg]')
+
+        ax.set_title(title)
+        im = ax.imshow(plot_data, extent=(obs.coords['lon_min'].value,
+                                          obs.coords['lon_max'].value,
+                                          obs.coords['lat_min'].value,
+                                          obs.coords['lat_max'].value))
 
     elif obs.otype == 'tabular':
         if 'sub' in kwargs:
