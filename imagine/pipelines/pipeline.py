@@ -903,7 +903,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         return io.save_pipeline(self, **kwargs)
 
-    def load(directory_path='.'):
+    @classmethod
+    def load(cls, directory_path='.'):
         """
 
         Loads the state of a Pipeline object
