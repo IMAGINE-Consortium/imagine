@@ -891,7 +891,33 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     def save(self, **kwargs):
-        io.save_pipeline(self, **kwargs)
+        """
+        Saves the state of the Pipeline
+
+        The `run_directory` set in initialization is used. Any distributed
+        data is gathered and the pipeline is serialized and saved to disk.
+
+        Note
+        ----
+        This method uses :py:meth:`imagine.tools.io.save_pipeline`
+        """
+        return io.save_pipeline(self, **kwargs)
+
+    def load(directory_path='.'):
+        """
+
+        Loads the state of a Pipeline object
+
+        Parameters
+        ----------
+        directory_path : str
+          Path to the directory where the Pipeline state should be saved
+
+        Note
+        ----
+        This method uses :py:meth:`imagine.tools.io.load_pipeline`
+        """
+        return io.load_pipeline(directory_path)
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the
