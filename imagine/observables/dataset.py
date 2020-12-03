@@ -184,12 +184,14 @@ class ImageDataset(Dataset):
     Class for simple non-full-sky image data
     """
     def __init__(self, data, name, lon_min, lon_max, lat_min, lat_max,
-                 units=None, error=None, cov=None, frequency=None, tag=None):
+                 object_id=None, units=None, error=None, cov=None,
+                 frequency=None, tag=None):
         self.NAME = name
         super().__init__()
 
 
         self.frequency = frequency
+        self.object_id = object_id
         self.tag = tag
 
         self.coords = {'type': 'galactic',
@@ -210,7 +212,6 @@ class ImageDataset(Dataset):
             self._cov = distribute_matrix(cov)
         else:
             self._error = error
-
 
 
 class HEALPixDataset(Dataset):
