@@ -125,7 +125,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.likelihood_rescaler = 1
         # Checking likelihood threshold
         self.check_threshold = False
-        self.likelihood_threshold = 0
 
         # Place holders
         self.sampler = None
@@ -813,9 +812,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
-        # check likelihood value until negative (or no larger than given threshold)
-        if self.check_threshold and current_likelihood > self.likelihood_threshold:
-            raise ValueError('log-likelihood beyond threshold')
 
         # Logs the value
         log.info('Likelihood evaluation at point:'
