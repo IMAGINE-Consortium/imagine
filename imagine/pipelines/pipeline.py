@@ -758,8 +758,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     # This function returns all parameter names of all factories in order
     def get_par_names(self):
         # Create list of names
-        names = list(chain(*[factory.active_parameters
-                             for factory in self._factory_list]))
+        names = list(chain(*map(
+            lambda x: ["%s_%s" % (x.name, par) for par in x.active_parameters],
+            self._factory_list)))
 
         # Return them
         return(names)
@@ -899,7 +900,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         return io.save_pipeline(self, **kwargs)
 
-    def load(directory_path='.'):
+    @classmethod
+    def load(cls, directory_path='.'):
         """
 
         Loads the state of a Pipeline object
