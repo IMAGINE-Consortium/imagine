@@ -315,8 +315,7 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
         if 'cmap' in kwargs:
             cmap = kwargs['cmap']
         else:
-            cmap = 'cmr.chroma'
-        cmap = cmr.get_sub_cmap(cmap, 0.15, 0.85)
+            cmap = cmr.get_sub_cmap('cmr.chroma', 0.15, 0.85)
 
         ax.set_title(title)
         im = ax.scatter(x, y, c=values, cmap=cmap)
