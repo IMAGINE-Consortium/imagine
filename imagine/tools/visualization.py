@@ -293,6 +293,8 @@ def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
                                           obs.coords['lat_min'].value,
                                           obs.coords['lat_max'].value))
 
+        plt.colorbar(im, ax=ax, label=obs.unit._repr_latex_())
+
     elif obs.otype == 'tabular':
         if 'sub' in kwargs:
             ax = plt.subplot(*kwargs['sub'])
