@@ -56,16 +56,29 @@ class SimpleLikelihood(Likelihood):
 
         likelicache = 0
         for name in self._measurement_dict:
-            obs_mean = deepcopy(simulations_dict[name].ensemble_mean)
-            data = deepcopy(self._measurement_dict[name].data)  # to distributed data
-            diff = np.nan_to_num(data - obs_mean)
+            obs_data = simulations_dict[name].ensemble_mean
+            meas_data = self._measurement_dict[name].data
+            diff = meas_data - obs_data
 
-            if name in covariance_dict:  # some measurement may not have cov
-                cov = self._covariance_dict[name].data
-                sign, logdet = pslogdet(cov*2*np.pi)
+            if name in covariance_dict:  
+                if self._covariance_dict[name].dtype == 'variance':
+                    # If only the variance was originally specified, 
+                    # use it *without constructing the full covariance*
+                    meas_var =  self._covariance_dict[name].var
 
-                likelicache += -0.5*np.vdot(diff, plu_solve(cov, diff)) - 0.5*sign*logdet
+                    sign = np.sign(meas_var).prod()
+                    logdet = np.log(meas_var*2.*np.pi).sum()
+
+                    likelicache += -0.5*np.vdot(diff, 1./meas_var * diff) - 0.5*sign*logdet
+                else:
+                    # If a full covariance matrix was originally specified, use it!
+                    meas_cov = self._covariance_dict[name].data
+                    
+                    sign, logdet = pslogdet(meas_cov*2*np.pi)
+
+                    likelicache += -0.5*np.vdot(diff, plu_solve(meas_cov, diff)) - 0.5*sign*logdet
             else:
+                # some measurement may not have cov
                 likelicache += -0.5*np.vdot(diff, diff)
 
         return likelicache
