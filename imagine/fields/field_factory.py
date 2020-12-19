@@ -11,7 +11,7 @@ from imagine.fields.field import Field
 from imagine.priors import Prior
 from imagine.tools import BaseClass, unity_mapper
 # All declaration
-__all__ = ['FieldFactory','CustomFieldFactory']
+__all__ = ['FieldFactory']
 
 
 # %% CLASS DEFINITIONS
@@ -263,28 +263,3 @@ class FieldFactory(BaseClass):
     @staticmethod
     def _positive_interval(mean, sigma, n):
         return max(0, mean-n*sigma), mean+n*sigma
-
-
-class CustomFieldFactory(FieldFactory):
-    # Class attributes (unused in this case)
-    FIELD_CLASS = None
-    DEFAULT_PARAMETERS = {}
-    PRIORS = {}
-
-    def __init__(self, field_class, active_parameters=(),
-                 default_parameters={}, priors={}, grid=None, boxsize=None,
-                 resolution=None, field_kwargs={}):
-
-        self._field_class = field_class
-        self.active_parameters = active_parameters
-        self.default_parameters = default_parameters
-        self.priors = priors
-
-        super().__init__(grid=grid, boxsize=boxsize, resolution=resolution,
-                         active_parameters=active_parameters,
-                         field_kwargs=field_kwargs)
-
-    @property
-    def field_class(self):
-        """Python class whose instances are produced by the present factory"""
-        return self._field_class
