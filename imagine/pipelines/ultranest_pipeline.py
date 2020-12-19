@@ -163,7 +163,8 @@ class UltranestPipeline(Pipeline):
             vectorized=False,
             **init_params)
 
-        self.results = sampler.run(viz_callback=False, **run_params)
+        self.results = sampler.run(viz_callback=ultranest.viz.nicelogger,
+                                   **run_params)
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logz']
@@ -171,5 +172,3 @@ class UltranestPipeline(Pipeline):
 
         return self.results
 
-    def get_intermediate_results(self):
-        pass
