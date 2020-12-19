@@ -43,11 +43,17 @@ class FieldFactory(BaseClass):
     resolution : list/tuple of ints
         The discretization size in corresponding dimension
     """
-    def __init__(self, field_class, active_parameters=(),
+    def __init__(self, field_class=None, active_parameters=(),
                  default_parameters={}, priors={}, grid=None, boxsize=None,
                  resolution=None, field_kwargs={}):
 
         log.debug('@ field_factory::__init__')
+
+        if hasattr(self, 'FIELD_CLASS'):
+            assert field_class==None, 'For subclasses with an associated FIELD_CLASS attribute, no field_class argument should be supplied'
+            field_class = self.FIELD_CLASS
+            default_parameters = self.DEFAULT_PARAMETERS
+            priors = self.PRIORS
 
         # Call super constructor
         super().__init__()
