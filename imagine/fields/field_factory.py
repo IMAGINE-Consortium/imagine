@@ -17,7 +17,18 @@ __all__ = ['FieldFactory']
 # %% CLASS DEFINITIONS
 class FieldFactory(BaseClass):
     """
-    Generates a FieldFactory without subclassing
+    The `FieldFactory` object stores all the required information for the
+    :py:obj:`Pipeline <imagine.pipelines.pipeline.Pipeline>` to generate
+    multiple realisations of a given :py:obj:`Field <imagine.fields.field.Field>`
+    while sampling the parameter space.
+
+    To produce a `FieldFactory` one needs to supply the chosen
+    :py:class:`Field <imagine.fields.field.Field>` subclass, a list of active
+    parameters, the default values for the parameters (at least for the
+    inactive ones), the a dictionary of :py:obj:`Prior <imagine.priors.prior.Prior>`
+    objects, containing (at least) all the active parameters, and (if the `Field`
+    is not a *dummy*) a :py:obj:`Grid <imagine.fields.grid.Grid>` object,
+    with the grid where the instances should be evaluated.
 
     Parameters
     ----------
