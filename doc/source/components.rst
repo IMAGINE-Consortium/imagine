@@ -302,12 +302,12 @@ built-in field (see the :doc:`tutorial_hammurabi` tutorial for details).
 
 .. _Field Factory:
 
-^^^^^^^^^^^^^^^^^^^^
-Field Factory
-^^^^^^^^^^^^^^^^^^^^
+---------------
+Field Factories
+---------------
 
-Field Factories, represented in IMAGINE by a subclass of
-:py:class:`imagine.fields.field_factory.FieldFactory`
+Field Factories, represented in IMAGINE by a
+:py:obj:`imagine.fields.field_factory.FieldFactory` object
 are an additional layer of infrastructure used by the samplers
 to provide the connection between the sampling of points in the likelihood space
 and the field object that will be given to the simulator.
@@ -317,7 +317,7 @@ list of the subset of those that are to be varied in the sampler
 — the latter are called the **active parameters**.
 The Field Factory also holds the allowed value ranges for each parameter,
 the default values (which are used for inactive parameters) and the prior
-distribution associated with each parameter.
+distribution associated with each (active) parameter.
 
 At each step the
 `Pipeline`_ request the Field Factory for the next point in parameter space,
@@ -327,26 +327,49 @@ the Simulator, which computes simulated Observables for comparison
 with the measured observables in the Likelihood module.
 
 Given a Field `YourFieldClass` (which must be an instance of a class derived
-from :py:class:`Field <imagine.fields.field.Field>`)
-the following template can be used construct a field factory:
+from :py:class:`Field <imagine.fields.field.Field>`), one can easily construct
+a `FieldFactory` object following::
 
-.. literalinclude:: ../../imagine/templates/field_factory_template.py
+    from imagine import FieldFactory
+    my_factory = FieldFactory(field_class=YourFieldClass,
+                              grid=your_grid,
+                              active_parameters=['param_1_active'],
+                              default_parameters = {'param_2_inactive': value_2,
+                                                    'param_3_inactive': value_3},
+                              priors={'param_1_active': YourPriorChoice})
 
-The object `Prior A` must be an instance of
+
+The object `YourPriorChoice` must be an instance of
 :py:class:`imagine.priors.Prior <imagine.priors.prior.Prior>`
-(see section `Priors`_ for
-details). A flat prior (i.e. a uniform, where all parameter values are
+(see section `Priors`_ for details).
+A flat prior (i.e. a uniform, where all parameter values are
 equally likely) can be set using the
 :py:class:`imagine.priors.FlatPrior <imagine.priors.basic_priors.FlatPrior>`
 class.
 
-One can initialize the Field Factory supplying the grid on which the
-corresponding Field will be evaluated::
+Since re-using a FieldFactory associated with a given Field is not uncommon,
+it is sometimes convenient to create a specialized subclass for a particular
+field, where the typical/recommended choices of parameters and priors are
+saved.
+This can be done following the template below:
 
-      myFactory = YourField_Factory(grid=cartesian_grid)
+.. literalinclude:: ../../imagine/templates/field_factory_template.py
+
+One can initialize this specialized FieldFactory subclass by supplying the
+grid on which the corresponding Field will be evaluated::
+
+      myFactory = FieldFactoryTemplate(grid=cartesian_grid)
+
+The standard values defined in the subclass can be adjusted in the instance
+using the attributes :py:data:`myFactory.active_parameters`,
+:py:data:`myFactory.priors` and :py:data:`myFactory.default_parameters`
+(note that the latter are dictionaries, but the attribution `=` is modified so
+that it *updates* the corresponding internal dictionaries instead of replacing
+them).
 
 The factory object :py:obj:`myFactory` can now be handled to the `Pipeline`_,
-which will generate new fields by calling the :py:meth:`imagine.fields.field_factory.FieldFactory`.
+which will generate new fields by *calling* the :py:meth:`myFactory() <imagine.fields.field_factory.FieldFactory.__call__>`
+object.
 
 
 .. _Datasets:

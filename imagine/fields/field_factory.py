@@ -27,7 +27,7 @@ class FieldFactory(BaseClass):
     parameters, the default values for the parameters (at least for the
     inactive ones), the a dictionary of :py:obj:`Prior <imagine.priors.prior.Prior>`
     objects, containing (at least) all the active parameters, and (if the `Field`
-    is not a *dummy*) a :py:obj:`Grid <imagine.fields.grid.Grid>` object,
+    is not a *dummy*) a :py:obj:`Grid <imagine.fields.grid.BaseGrid>` object,
     with the grid where the instances should be evaluated.
 
     Parameters
