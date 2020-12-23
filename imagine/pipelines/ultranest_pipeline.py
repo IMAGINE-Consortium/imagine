@@ -124,7 +124,7 @@ class UltranestPipeline(Pipeline):
           'max_num_improvement_loops': -1,
           'min_num_live_points': 400,
           'cluster_num_live_points': 40,
-          'update_interval_iter_fraction': 0.2}
+          'update_interval_volume_fraction': 0.2}
 
         # Keyword arguments can alter the sampling controllers
         self.sampling_controllers = kwargs # Updates the dict
