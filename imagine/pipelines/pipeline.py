@@ -168,25 +168,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     @run_directory.setter
     def run_directory(self, run_directory):
-        if run_directory is None:
-            if mpirank == 0:
-                # Creates a safe temporary directory in the current working directory
-                self._run_dir_obj = tempfile.TemporaryDirectory(
-                    prefix='imagine_run_', dir=rc['temp_dir'])
-                # Note: this dir is automatically deleted together with the Pipeline object
-                dir_path = self._run_dir_obj.name
-            else:
-                dir_path = None
-
-            self._run_directory = comm.bcast(dir_path, root=0)
-        else:
-            # Removes previous temporary directory, if exists
-            if hasattr(self, '_run_dir_obj'):
-                del self._run_dir_obj
+        assert run_directory is not None, 'A valid run_directory must be specified'
+        if mpirank == 0:
             # Creates new directory (if needed)
             os.makedirs(run_directory, exist_ok=True)
-            assert path.isdir(run_directory)
-            self._run_directory = run_directory
+            assert path.isdir(run_directory), 'Unable to created run directory'
+        comm.Barrier()
+        self._run_directory = run_directory
 
     @property
     def chains_directory(self):
