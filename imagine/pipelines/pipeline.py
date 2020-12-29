@@ -906,7 +906,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return io.load_pipeline(directory_path)
 
     def likelihood_convergence_report(self, min_Nens=4, max_Nens=40,
-                                      n_seeds=10, n_points=1, include_centre=True,
+                                      n_bootstrap=20, n_seeds=10, n_points=1, include_centre=True,
                                       verbose=True):
         """
         Constructs a report dataset based on a given Pipeline setup, which can
@@ -945,7 +945,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         # Saves original choice for ensemble size
         original_size = self.ensemble_size
-
+        original_likelihood_dispersion_switch = self.likelihood.compute_dispersion
+        self.likelihood.compute_dispersion = True
         self.ensemble_size = max_Nens * n_seeds
 
         n_params = len(self.active_parameters)
@@ -975,11 +976,12 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                     indices = slice(i_seed*Nens, (i_seed+1)*Nens)
                     # Constructs the subset Simulations and computes likelihood
                     maps_subset = maps.sub_sim(indices)
-                    L_value = self.likelihood(maps_subset)
+                    L_value, L_std = self.likelihood(maps_subset)
 
                     # Stores everything
                     results['indices'].append(indices)
                     results['likelihood'].append(L_value)
+                    results['likelihood_std'].append(L_std)
                     results['ensemble_size'].append(Nens)
                     results['iseed'].append(i_seed)
                     results['ipoint'].append(i_point)
@@ -987,6 +989,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         # Restores original ensemble size
         self.ensemble_size = original_size
+        self.likelihood.compute_dispersion = original_likelihood_dispersion_switch
 
         return results
 
