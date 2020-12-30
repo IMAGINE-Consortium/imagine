@@ -63,7 +63,7 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         compute_dispersion is set to `True`.
     """
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None,
-                 compute_dispersion=False, n_bootstrap=500):
+                 compute_dispersion=False, n_bootstrap=150):
         # Call super constructor
         super().__init__()
 
