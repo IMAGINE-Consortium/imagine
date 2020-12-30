@@ -229,8 +229,7 @@ def _key_formatter(key):
 def show_observable(obs, realization=0, title=None, cartesian_axes='yz',
                     show_variances=False, is_covariance=False, **kwargs):
     """
-    Displays the contents of a single realisation of an
-    Observable object.
+    Displays the contents of a single realisation of an Observable object.
 
     Parameters
     ----------
@@ -354,3 +353,52 @@ def show_observable_dict(obs_dict, max_realizations=None, show_variances=False,
                             show_variances=show_variances,
                             sub=(nrows, ncols, i_subplot), **kwargs)
 
+
+def show_likelihood_convergence_report(rep, cmap='cmr.chroma'):
+    """
+    Prepares a standard set of plots of a likelihood convergence report
+    (produced by the :py:meth:`Pipeline.prepare_likelihood_convergence_report`
+    method).
+
+    Parameters
+    ----------
+    cmap : str
+        Colormap to be used for the lineplots
+    """
+    ipoints = rep.ipoint.unique()
+    nseeds = len(rep.iseed.unique())
+    rep['likelihood_var'] = rep.likelihood_std**2
+    colors = cmr.take_cmap_colors(cmap, ipoints.size, cmap_range=(0.15, 0.85),
+                                  return_fmt='hex')
+
+    fig, axs = plt.subplots(2,2, figsize=(10,6.2), dpi=200)
+    [[ax1, ax2], [ax3, ax4]] = axs
+
+    for (ipoint, color) in zip(ipoints, colors):
+        # Takes the average (over different master seeds) of the likelihood
+        l = rep.loc[rep.ipoint==ipoint].groupby('ensemble_size').likelihood.mean()
+        # Combines bootstrapped standard deviations associated with multiple master seeds
+        l_sd = np.sqrt(rep.loc[rep.ipoint==ipoint].groupby('ensemble_size').likelihood_var.sum()/nseeds)
+
+        ax1.plot(l.index, l, label=ipoint, color=color)
+        ax1.fill_between(l.index, l-l_sd, l+l_sd, alpha=0.1, color=color)
+        ax2.plot(l.index, np.gradient(l,edge_order=2), label=ipoint, color=color)
+        ax3.plot(l.index, l_sd, label=ipoint, color=color)
+        ax4.plot(l.index, np.abs(l_sd/l), label=ipoint, color=color)
+
+    ax1.set_title('Likelihood')
+    ax1.set_ylabel(r'$\mathcal{L}$')
+    ax2.set_title('Likelihood gradient')
+    ax2.set_ylabel(r'$\partial\mathcal{L}\,/\,\partial n_{\rm ens}$')
+    ax3.set_title('Likelihood dispersion')
+    ax3.set_ylabel(r'$\sigma_\mathcal{L}$')
+    ax4.set_title('Relative likelihood dispersion')
+    ax4.set_ylabel(r'$\sigma_\mathcal{L}\,/\,|\mathcal{L}|$')
+
+    for ax in axs.ravel():
+        ax.set_xlabel(r'$n_{\rm ens}$')
+        if nseeds>1:
+            ax.legend(frameon=False)
+
+    fig.tight_layout()
+    return fig

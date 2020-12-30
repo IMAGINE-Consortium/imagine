@@ -906,8 +906,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         return io.load_pipeline(directory_path)
 
-    def likelihood_convergence_report(self, min_Nens=10, max_Nens=40, n_seeds=1,
-                                      n_points=1, include_centre=True):
+    def prepare_likelihood_convergence_report(self, min_Nens=10, max_Nens=50,
+                                              n_seeds=1, n_points=5,
+                                              include_centre=True):
         """
         Constructs a report dataset based on a given Pipeline setup, which can
         be used for studying the *likelihood convergence* in a particular problem
@@ -994,6 +995,24 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.likelihood.compute_dispersion = original_likelihood_dispersion_switch
 
         return pd.DataFrame(data=results)
+
+    def likelihood_convergence_report(self, cmap='cmr.chroma', **kwargs):
+        """
+        Prepares a standard set of plots of a likelihood convergence report
+        (produced by the :py:meth:`Pipeline.prepare_likelihood_convergence_report`
+        method).
+
+        Parameters
+        ----------
+        cmap : str
+            Colormap to be used for the lineplots
+        **kwargs
+            Keyword arguments that will be supplied to
+            `prepare_likelihood_convergence_report` (see its docstring for
+            details).
+        """
+        rep = self.prepare_likelihood_convergence_report(**kwargs)
+        visualization.show_likelihood_convergence_report(rep, cmap)
 
     def parameter_central_value(self):
         """
