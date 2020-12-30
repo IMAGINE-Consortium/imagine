@@ -29,7 +29,7 @@ from imagine.fields import FieldFactory
 from imagine.priors import Prior
 from imagine.simulators import Simulator
 from imagine.tools import BaseClass, ensemble_seed_generator, misc, visualization
-from imagine.tools import io
+from imagine.tools import io, Timer
 
 # GLOBALS
 comm = MPI.COMM_WORLD
@@ -780,6 +780,52 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         observables = self._simulator(field_list)
 
         return(observables)
+
+    def test(self, n_points=3, include_centre=True):
+        """
+        Tests the present IMAGINE pipeline evaluating the likelihood on
+        a small number of points and reporting the run-time.
+
+        Paramters
+        ---------
+        n_points : int
+          Number of points to evaluate the likelihood on. The first point
+          corresponds to the centre of the active parameter ranges (unless
+          `include_centre` is set to `False`) and the other are randomly
+          sampled from the prior distributions.
+        include_centre : bool
+          If True, the initial point will be obtained from the centre of the
+          active parameter ranges.
+
+        Returns
+        -------
+        mean_time : astropy.units.Quantity
+          The average execution time of a single likelihood evaluation
+        """
+        n_params = len(self.active_parameters)
+        timer = Timer()
+        times = []
+
+        for i_point in range(n_points):
+            timer.tick(i_point)
+            if (i_point == 0) and include_centre:
+                print('Sampling centres of the parameter ranges.')
+                values = self.parameter_central_value()
+            else:
+                print('Randomly sampling from prior.')
+                # Draws a random point from the prior distributions
+                values = self.prior_transform(np.random.random_sample(n_params))
+
+            print('\tEvaluating point:', values)
+            L = self._likelihood_function(values)
+            time = timer.tock(i_point)
+            print('\tLog-likelihood', L)
+            print('\tTotal execution time: ', time,'s\n')
+            times.append(time)
+
+        mean_time = np.mean(times) * apu.s
+        print('Average execution time:', mean_time)
+        return mean_time
 
     def _core_likelihood(self, cube):
         """

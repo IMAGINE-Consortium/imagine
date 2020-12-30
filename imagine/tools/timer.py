@@ -42,7 +42,6 @@ class Timer(object):
         event : str
             Event name (will be key of the record attribute).
         """
-        assert isinstance(event, str)
         self._record[event] = time.perf_counter()
 
     def tock(self, event):
@@ -54,7 +53,6 @@ class Timer(object):
         event : str
             Event name (will be key of the record attribute).
         """
-        assert isinstance(event, str)
         assert (event in self._record.keys())
         self._record[event] = time.perf_counter() - self._record[event]
         return self._record[event]
