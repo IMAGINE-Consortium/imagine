@@ -20,6 +20,7 @@ from scipy.stats import pearsonr as scipy_pearsonr
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import hickle as hkl
+import pandas as pd
 
 # IMAGINE imports
 from imagine import rc
@@ -905,9 +906,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         return io.load_pipeline(directory_path)
 
-    def likelihood_convergence_report(self, min_Nens=4, max_Nens=40,
-                                      n_bootstrap=20, n_seeds=10, n_points=1, include_centre=True,
-                                      verbose=True):
+    def likelihood_convergence_report(self, min_Nens=10, max_Nens=40, n_seeds=1,
+                                      n_points=1, include_centre=True):
         """
         Constructs a report dataset based on a given Pipeline setup, which can
         be used for studying the *likelihood convergence* in a particular problem
@@ -918,8 +918,16 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         Subsets of this simulations object are then produced and the likelihood
         computed.
 
-        The end result is a dictionary containing the likelihood values for:
-        different choices of seed, ensemble size and points.
+        The end result is a :py:obj:`pandas.DataFrame` containing the following
+        columns:
+            * `likelihood` - The likelihood value.
+            * `likelihood_std` - The likelihood dispersion, estimated by
+              bootstrapping the available ensemble and computing the standard
+              deviation.
+            * `ensemble_size` - Size of the ensemble of simulations used.
+            * `ipoint` - Index of the point used.
+            * `iseed` - Index of the random (master) seed used.
+            * `param_values` - Values of the parameters at a given point.
 
         Parameters
         ----------
@@ -938,10 +946,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         Returns
         -------
-        results : dict
-            A dictionary containing the report data in the form of aligned lists.
-            For easier manipulation, consider using this to generate a
-            `pandas.DataFrame` object.
+        results : pandas.DataFrame
+            A `pandas.DataFrame` object containing the report data.
         """
         # Saves original choice for ensemble size
         original_size = self.ensemble_size
@@ -962,9 +968,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 # Draws a random point from the prior distributions
                 values = self.prior_transform(np.random.random_sample(n_params))
 
-            if verbose:
-                print('Working on point:', values, flush=True)
-
             # Produces max_Nens*n_seeds outputs from this
             maps = self._get_observables(values)
 
@@ -979,19 +982,18 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                     L_value, L_std = self.likelihood(maps_subset)
 
                     # Stores everything
-                    results['indices'].append(indices)
                     results['likelihood'].append(L_value)
                     results['likelihood_std'].append(L_std)
                     results['ensemble_size'].append(Nens)
-                    results['iseed'].append(i_seed)
                     results['ipoint'].append(i_point)
+                    results['iseed'].append(i_seed)
                     results['param_values'].append(values)
 
-        # Restores original ensemble size
+        # Restores original pipeline settings
         self.ensemble_size = original_size
         self.likelihood.compute_dispersion = original_likelihood_dispersion_switch
 
-        return results
+        return pd.DataFrame(data=results)
 
     def parameter_central_value(self):
         """

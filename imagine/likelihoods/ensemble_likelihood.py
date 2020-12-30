@@ -50,10 +50,10 @@ class EnsembleLikelihood(Likelihood):
         covariance matrix from the simulations.
     """
     def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None,
-                 cov_func=None, use_trace_approximation=False):
+                 cov_func=None, use_trace_approximation=False, **kwargs):
 
         super().__init__(measurement_dict, covariance_dict=covariance_dict,
-                         mask_dict=mask_dict)
+                         mask_dict=mask_dict, **kwargs)
 
         # Requires covariaces to be present when using this type of Likelihood
         assert self._covariance_dict is not None
@@ -125,10 +125,10 @@ class EnsembleLikelihoodDiagonal(Likelihood):
         Masks which will be applied to the Measurements, Covariances and
         Simulations, before computing the likelihood
     """
-    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
+    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None, **kwargs):
 
         super().__init__(measurement_dict, covariance_dict=covariance_dict,
-                         mask_dict=mask_dict)
+                         mask_dict=mask_dict, **kwargs)
 
         # Requires covariaces to be present when using this type of Likelihood
         assert self._covariance_dict is not None
