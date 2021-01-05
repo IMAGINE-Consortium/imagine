@@ -814,6 +814,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         # add up individual log-likelihood terms
         current_likelihood = self.likelihood(observables)
+        current_likelihood *= self.likelihood_rescaler
+
         # check likelihood value until negative (or no larger than given threshold)
         if self.check_threshold and current_likelihood > self.likelihood_threshold:
             raise ValueError('log-likelihood beyond threshold')
@@ -829,7 +831,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             if mpirank==0:
                 self.progress_report()
 
-        return current_likelihood * self.likelihood_rescaler
+        return current_likelihood
 
     def _mpi_likelihood(self, cube):
         """
