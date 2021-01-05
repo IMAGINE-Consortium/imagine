@@ -342,7 +342,7 @@ a `FieldFactory` object following::
 The object `YourPriorChoice` must be an instance of
 :py:class:`imagine.priors.Prior <imagine.priors.prior.Prior>`
 (see section `Priors`_ for details).
-A flat prior (i.e. a uniform, where all parameter values are
+A flat prior (i.e. a uniform distribution, where all parameter values are
 equally likely) can be set using the
 :py:class:`imagine.priors.FlatPrior <imagine.priors.basic_priors.FlatPrior>`
 class.
