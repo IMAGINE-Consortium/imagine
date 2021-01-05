@@ -88,8 +88,8 @@ def test_field_factory_template():
     """
     grid = img_fields.UniformGrid(box=[[-1*u.kpc, 1*u.kpc]]*3,
                                   resolution=[2]*3)
-    field_factory = FieldFactoryTemplate(grid=grid,
-                                         active_parameters=['Parameter_B'])
+    field_factory = FieldFactoryTemplate(active_parameters=['Parameter_B'],
+                                         grid=grid)
 
     field = field_factory(variables={'Parameter_B': 0.65})
 
@@ -128,22 +128,6 @@ def test_simulator_template():
 
 
 
-class ConstantBFactory(img_fields.FieldFactory):
-    """Example: field factory for YourFieldClass"""
-
-    # Class attributes
-    # Field class this factory uses
-    FIELD_CLASS = img_fields.ConstantMagneticField
-
-    # Default values are used for inactive parameters
-    DEFAULT_PARAMETERS = {'Bx': 1.*muG, 'By': 2.*muG, 'Bz': 3.*muG}
-
-    # All parameters need a range and a prior
-    # this tests: FlatPrior, GaussianPrior, GaussianPrior (truncated)
-    PRIORS = {'Bx': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG,
-                                             xmin=0*muG, xmax=5.0*muG),
-              'By': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG),
-              'Bz': img_priors.FlatPrior(xmin=0*muG, xmax=1.*muG)}
 
 
 class FakeRandomTE(img_fields.ThermalElectronDensityField):
@@ -157,12 +141,6 @@ class FakeRandomTE(img_fields.ThermalElectronDensityField):
     def compute_field(self, seed):
         # One can access the parameters supplied in the following way
         return np.ones(self.data_shape)*u.cm**(-3)
-
-class FakeRandomTEFactory(img_fields.FieldFactory):
-    """Example: field factory for YourFieldClass"""
-    FIELD_CLASS = FakeRandomTE
-    DEFAULT_PARAMETERS = {'param':2}
-    PRIORS = {'param': img_priors.FlatPrior(xmin=0, xmax=10.)}
 
 
 def test_pipeline_template():
@@ -198,11 +176,20 @@ def test_pipeline_template():
                                        [0,0]*u.kpc],
                                   resolution=[30,1,1])
     # Field factories
-    TE_factory = FakeRandomTEFactory(grid=grid)
-    TE_factory.active_parameters = ['param']
-    B_factory = ConstantBFactory(grid=grid)
-    B_factory.active_parameters = ['Bx', 'By']
+    TE_factory = img_fields.FieldFactory(
+        field_class=FakeRandomTE,
+        grid=grid,
+        active_parameters=['param'],
+        priors={'param': img_priors.FlatPrior(xmin=0, xmax=10.)})
 
+    B_factory = img_fields.FieldFactory(
+      field_class=img_fields.ConstantMagneticField,
+      grid=grid,
+      active_parameters=['Bx', 'By'],
+      default_parameters={'Bz': 3.*muG},
+      priors={'Bx': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG,
+                                             xmin=0*muG, xmax=5.0*muG),
+              'By': img_priors.GaussianPrior(mu=1.5*muG, sigma=0.5*muG)})
     # Simulator
     simulator = TestSimulator(measurements)
 

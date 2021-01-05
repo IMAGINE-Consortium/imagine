@@ -124,7 +124,7 @@ class UltranestPipeline(Pipeline):
           'max_num_improvement_loops': -1,
           'min_num_live_points': 400,
           'cluster_num_live_points': 40,
-          'update_interval_iter_fraction': 0.2}
+          'update_interval_volume_fraction': 0.2}
 
         # Keyword arguments can alter the sampling controllers
         self.sampling_controllers = kwargs # Updates the dict
@@ -163,7 +163,8 @@ class UltranestPipeline(Pipeline):
             vectorized=False,
             **init_params)
 
-        self.results = sampler.run(viz_callback=False, **run_params)
+        self.results = sampler.run(viz_callback=ultranest.viz.nicelogger,
+                                   **run_params)
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logz']
@@ -171,5 +172,3 @@ class UltranestPipeline(Pipeline):
 
         return self.results
 
-    def get_intermediate_results(self):
-        pass
