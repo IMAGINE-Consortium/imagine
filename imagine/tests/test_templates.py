@@ -18,6 +18,7 @@ import imagine.observables as img_obs
 from imagine.likelihoods import SimpleLikelihood
 from imagine.simulators import TestSimulator
 from imagine import load_pipeline
+from imagine import rc
 
 # imports templates
 from imagine.templates.magnetic_field_template import MagneticFieldTemplate
@@ -193,7 +194,9 @@ def test_pipeline_template():
     simulator = TestSimulator(measurements)
 
     # Sets the pipeline
-    pipeline = PipelineTemplate(simulator=simulator,
+    run_directory = os.path.join(rc['temp_dir'], 'test_templates')
+    pipeline = PipelineTemplate(run_directory=run_directory,
+                                simulator=simulator,
                                 factory_list=[TE_factory, B_factory],
                                 likelihood=likelihood,
                                 ensemble_size=2)

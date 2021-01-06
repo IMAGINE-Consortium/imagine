@@ -20,6 +20,7 @@ from scipy.stats import pearsonr as scipy_pearsonr
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import hickle as hkl
+import pandas as pd
 
 # IMAGINE imports
 from imagine import rc
@@ -28,7 +29,7 @@ from imagine.fields import FieldFactory
 from imagine.priors import Prior
 from imagine.simulators import Simulator
 from imagine.tools import BaseClass, ensemble_seed_generator, misc, visualization
-from imagine.tools import io
+from imagine.tools import io, Timer
 
 # GLOBALS
 comm = MPI.COMM_WORLD
@@ -125,7 +126,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.likelihood_rescaler = 1
         # Checking likelihood threshold
         self.check_threshold = False
-        self.likelihood_threshold = 0
 
         # Place holders
         self.sampler = None
@@ -169,25 +169,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
     @run_directory.setter
     def run_directory(self, run_directory):
-        if run_directory is None:
-            if mpirank == 0:
-                # Creates a safe temporary directory in the current working directory
-                self._run_dir_obj = tempfile.TemporaryDirectory(
-                    prefix='imagine_run_', dir=rc['temp_dir'])
-                # Note: this dir is automatically deleted together with the Pipeline object
-                dir_path = self._run_dir_obj.name
-            else:
-                dir_path = None
-
-            self._run_directory = comm.bcast(dir_path, root=0)
-        else:
-            # Removes previous temporary directory, if exists
-            if hasattr(self, '_run_dir_obj'):
-                del self._run_dir_obj
+        assert run_directory is not None, 'A valid run_directory must be specified'
+        if mpirank == 0:
             # Creates new directory (if needed)
             os.makedirs(run_directory, exist_ok=True)
-            assert path.isdir(run_directory)
-            self._run_directory = run_directory
+            assert path.isdir(run_directory), 'Unable to created run directory'
+        comm.Barrier()
+        self._run_directory = run_directory
 
     @property
     def chains_directory(self):
@@ -793,6 +781,52 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         return(observables)
 
+    def test(self, n_points=3, include_centre=True):
+        """
+        Tests the present IMAGINE pipeline evaluating the likelihood on
+        a small number of points and reporting the run-time.
+
+        Paramters
+        ---------
+        n_points : int
+          Number of points to evaluate the likelihood on. The first point
+          corresponds to the centre of the active parameter ranges (unless
+          `include_centre` is set to `False`) and the other are randomly
+          sampled from the prior distributions.
+        include_centre : bool
+          If True, the initial point will be obtained from the centre of the
+          active parameter ranges.
+
+        Returns
+        -------
+        mean_time : astropy.units.Quantity
+          The average execution time of a single likelihood evaluation
+        """
+        n_params = len(self.active_parameters)
+        timer = Timer()
+        times = []
+
+        for i_point in range(n_points):
+            timer.tick(i_point)
+            if (i_point == 0) and include_centre:
+                print('Sampling centres of the parameter ranges.')
+                values = self.parameter_central_value()
+            else:
+                print('Randomly sampling from prior.')
+                # Draws a random point from the prior distributions
+                values = self.prior_transform(np.random.random_sample(n_params))
+
+            print('\tEvaluating point:', values)
+            L = self._likelihood_function(values)
+            time = timer.tock(i_point)
+            print('\tLog-likelihood', L)
+            print('\tTotal execution time: ', time,'s\n')
+            times.append(time)
+
+        mean_time = np.mean(times) * apu.s
+        print('Average execution time:', mean_time)
+        return mean_time
+
     def _core_likelihood(self, cube):
         """
         core log-likelihood calculator
@@ -922,6 +956,141 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         This method uses :py:meth:`imagine.tools.io.load_pipeline`
         """
         return io.load_pipeline(directory_path)
+
+    def prepare_likelihood_convergence_report(self, min_Nens=10, max_Nens=50,
+                                              n_seeds=1, n_points=5,
+                                              include_centre=True):
+        """
+        Constructs a report dataset based on a given Pipeline setup, which can
+        be used for studying the *likelihood convergence* in a particular problem
+
+        The pipeline's ensemble size is temporarily set to `Nens*n_seeds`, and
+        (for each point) the present pipeline setup is used to compute a
+        Simulations dictionary object.
+        Subsets of this simulations object are then produced and the likelihood
+        computed.
+
+        The end result is a :py:obj:`pandas.DataFrame` containing the following
+        columns:
+            * `likelihood` - The likelihood value.
+            * `likelihood_std` - The likelihood dispersion, estimated by
+              bootstrapping the available ensemble and computing the standard
+              deviation.
+            * `ensemble_size` - Size of the ensemble of simulations used.
+            * `ipoint` - Index of the point used.
+            * `iseed` - Index of the random (master) seed used.
+            * `param_values` - Values of the parameters at a given point.
+
+        Parameters
+        ----------
+        min_Nens : int
+            Minimum ensemble size to be considered
+        max_Nens : int
+            Maximum ensemble size to be examined
+        n_seeds : int
+            Number of different (master) random seeds to be used
+        n_points : int
+            Number of points to be evaluated. Points are randomly drawn
+            from the *prior* distribution (but see `include_centre`).
+        include_centre : bool
+            If `True`, the first point is taken as the value corresponding to
+            the centre of each parameter range.
+
+        Returns
+        -------
+        results : pandas.DataFrame
+            A `pandas.DataFrame` object containing the report data.
+        """
+        # Saves original choice for ensemble size
+        original_size = self.ensemble_size
+        original_likelihood_dispersion_switch = self.likelihood.compute_dispersion
+        self.likelihood.compute_dispersion = True
+        self.ensemble_size = max_Nens * n_seeds
+
+        n_params = len(self.active_parameters)
+
+        results = defaultdict(list)
+
+        # Samples the prior distributions
+        for i_point in range(n_points):
+            if (i_point == 0) and include_centre:
+                values = self.parameter_central_value()
+                i_point = 'centre'
+            else:
+                # Draws a random point from the prior distributions
+                values = self.prior_transform(np.random.random_sample(n_params))
+
+            # Produces max_Nens*n_seeds outputs from this
+            maps = self._get_observables(values)
+
+            # Now, we construct smaller Simulations dicts based on a
+            # subset of `maps`
+            for i_seed in range(n_seeds):
+                for Nens in range(min_Nens,max_Nens+1):
+                    # Constructs a slice corresponding to a subset
+                    indices = slice(i_seed*Nens, (i_seed+1)*Nens)
+                    # Constructs the subset Simulations and computes likelihood
+                    maps_subset = maps.sub_sim(indices)
+                    L_value, L_std = self.likelihood(maps_subset)
+
+                    # Stores everything
+                    results['likelihood'].append(L_value)
+                    results['likelihood_std'].append(L_std)
+                    results['ensemble_size'].append(Nens)
+                    results['ipoint'].append(i_point)
+                    results['iseed'].append(i_seed)
+                    results['param_values'].append(values)
+
+        # Restores original pipeline settings
+        self.ensemble_size = original_size
+        self.likelihood.compute_dispersion = original_likelihood_dispersion_switch
+
+        return pd.DataFrame(data=results)
+
+    def likelihood_convergence_report(self, cmap='cmr.chroma', **kwargs):
+        """
+        Prepares a standard set of plots of a likelihood convergence report
+        (produced by the :py:meth:`Pipeline.prepare_likelihood_convergence_report`
+        method).
+
+        Parameters
+        ----------
+        cmap : str
+            Colormap to be used for the lineplots
+        **kwargs
+            Keyword arguments that will be supplied to
+            `prepare_likelihood_convergence_report` (see its docstring for
+            details).
+        """
+        rep = self.prepare_likelihood_convergence_report(**kwargs)
+        visualization.show_likelihood_convergence_report(rep, cmap)
+
+    def parameter_central_value(self):
+        """
+        Gets central point in the parameter space of a given pipeline
+
+        The ranges are extracted from each prior. The result is a pure list of
+        numbers corresponding to the values in the native units of each prior.
+
+        For non-finite ranges (e.g. [-inf,inf]), a zero central value is assumed.
+
+        Returns
+        -------
+        central_values : list
+            A list of parameter values at the centre of each
+            parameter range
+        """
+        central_values = []
+        for param in self.active_parameters:
+            centre = np.mean(self.priors[param].range)
+            # Removes units
+            if hasattr(centre,'value'):
+                centre = centre.value
+            # Deals with priors with undefined ranges
+            if not np.isfinite(centre):
+                centre = 0.
+            central_values.append(centre)
+        return central_values
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the

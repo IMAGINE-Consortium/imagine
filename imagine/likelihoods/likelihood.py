@@ -21,6 +21,9 @@ call
 # Built-in imports
 import abc
 
+# Package imports
+import numpy as np
+
 # IMAGINE imports
 from imagine.observables.observable_dict import (
     Measurements, Covariances, Masks)
@@ -50,27 +53,56 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
     mask_dict : imagine.observables.observable_dict.Masks
         A :py:obj:`Masks <imagine.observables.observable_dict.Masks>` dictionary
         which should be applied to the measured and simulated data.
+    compute_dispersion : bool
+        If True, calling the Likelihood object will return the likelihood value
+        and the dispersion estimated by bootstrapping the simulations object
+        and computing the sample standard deviation.
+        If False (default), only the likelihood value is returned.
+    n_bootstrap : int
+        Number of resamples used in the bootstrapping of the simulations if
+        compute_dispersion is set to `True`.
     """
-
-    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None):
+    def __init__(self, measurement_dict, covariance_dict=None, mask_dict=None,
+                 compute_dispersion=False, n_bootstrap=150):
         # Call super constructor
         super().__init__()
 
+        self._check_units(measurement_dict, covariance_dict)
         self.mask_dict = mask_dict
         self.measurement_dict = measurement_dict
         if covariance_dict is None:
             covariance_dict = measurement_dict.cov
         self.covariance_dict = covariance_dict
+        self.compute_dispersion = compute_dispersion
+        self.n_bootstrap = n_bootstrap
 
     def __call__(self, observable_dict, **kwargs):
         if self.mask_dict is not None:
             observable_dict = self.mask_dict(observable_dict)
-        return(self.call(observable_dict, **kwargs))
+
+        likelihood = self.call(observable_dict, **kwargs)
+
+        if not self.compute_dispersion:
+            return likelihood
+        else:
+            bootstrap_sample = [self._bootstrapped_likelihood(observable_dict,
+                                                              **kwargs)
+                                for _ in range(self.n_bootstrap)]
+            dispersion = np.std(bootstrap_sample)
+            return likelihood, dispersion
+
+    def _bootstrapped_likelihood(self, simulations, **kwargs):
+        # Gets ensemble size from first entry in the ObservableDict
+        size, _ = simulations[list(simulations.keys())[0]].shape
+        # Resamples with replacement
+        idx = np.random.randint(0, size, size)
+        sims_new = simulations.sub_sim(idx)
+        return self.call(sims_new, **kwargs)
 
     @property
     def mask_dict(self):
         """
-        :py:obj:`Masks <imagine.observables.observable_dict.Masks>` dictionary associated with 
+        :py:obj:`Masks <imagine.observables.observable_dict.Masks>` dictionary associated with
         this object
         """
         return self._mask_dict
@@ -84,9 +116,9 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
     @property
     def measurement_dict(self):
         """
-        :py:obj:`Measurements <imagine.observables.observable_dict.Measurements>` dictionary associated with 
+        :py:obj:`Measurements <imagine.observables.observable_dict.Measurements>` dictionary associated with
         this object
-        
+
         NB If a mask is used, only the masked version is stored
         """
         return self._measurement_dict
@@ -101,9 +133,9 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
     @property
     def covariance_dict(self):
         """
-        :py:obj:`Covariances <imagine.observables.observable_dict.Covariances>` dictionary associated with 
+        :py:obj:`Covariances <imagine.observables.observable_dict.Covariances>` dictionary associated with
         this object
-        
+
         NB If a mask is used, only the masked version is stored
         """
         return self._covariance_dict
@@ -125,3 +157,16 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         variables
         """
         raise NotImplementedError
+
+    @staticmethod
+    def _check_units(measurements, covariances):
+        """
+        Makes sure that measurements and covariances units are compatible
+        """
+        if covariances is None:
+            return
+        for k in measurements:
+            if measurements[k].unit is None:
+                assert covariances[k].unit is None
+            else:
+                assert (measurements[k].unit)**2 == covariances[k].unit

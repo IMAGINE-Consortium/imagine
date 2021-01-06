@@ -43,7 +43,7 @@ import numpy as np
 # IMAGINE imports
 from imagine.observables.dataset import Dataset, HEALPixDataset
 from imagine.observables.observable import Observable
-from imagine.tools import BaseClass, mask_cov, mask_obs, req_attr
+from imagine.tools import BaseClass, mask_cov, mask_obs, req_attr, oas_cov
 import imagine.tools.visualization as visu
 
 # All declaration
@@ -283,7 +283,6 @@ class Simulations(ObservableDict):
     See `imagine.observables.observable_dict` module documentation for
     further details.
     """
-
     def append(self, *args, **kwargs):
         log.debug('@ observable_dict::Simulations::append')
         name, data, _, otype, coords = super().append(*args, **kwargs)
@@ -301,6 +300,56 @@ class Simulations(ObservableDict):
                                                        otype=otype)})
             else:
                 raise TypeError('unsupported data type')
+
+
+    def estimate_covariances(self, cov_est=oas_cov):
+        """
+        Produces a Covariances object based on the present Simulations
+
+        Parameters
+        ----------
+        cov_est : func
+            A function that computes the covariance given a
+            matrix of data
+
+        Returns
+        -------
+        covs : imagine.observables.Covariances
+            IMAGINE Covariances object
+        """
+        covs = Covariances()
+
+        for k in self:
+            obs = self[k]
+            d = cov_est(obs.data)*(obs.unit)**2
+            covs.append(name=k, cov_data=d, otype=obs.otype)
+
+        return covs
+
+
+    def sub_sim(self, indices):
+        """
+        Creates a new :py:obj:`Simulations <imagine.observables.Simulations>` object
+        based on a subset of the ensemble of a larger :py:obj:`Simulations <imagine.observables.Simulations>`.
+
+        Parameters
+        ----------
+        indices
+            A tuple of indices numbers, a slice object or a boolean array which
+            will be used to select the data for the sub-simulation
+
+        Returns
+        -------
+        sims_subset : imagine.observables.Simulations
+            The selected sub-simulation
+        """
+        sims_subset = Simulations()
+
+        for k in self:
+            sims_subset.append(name=k,
+                               data=self[k].global_data[indices,:],
+                               otype=self[k].otype)
+        return sims_subset
 
 
 class Covariances(ObservableDict):
