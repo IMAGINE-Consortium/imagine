@@ -321,7 +321,7 @@ class Simulations(ObservableDict):
 
         for k in self:
             obs = self[k]
-            d = cov_est(obs.data)*obs.unit
+            d = cov_est(obs.data)*(obs.unit)**2
             covs.append(name=k, cov_data=d, otype=obs.otype)
 
         return covs
