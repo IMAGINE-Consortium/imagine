@@ -67,7 +67,7 @@ class Dataset(BaseClass):
     @property
     def var(self):
         if (self.cov is None) and (self._error is not None):
-            self._var = np.ones_like(self._data) * self._error**2
+            self._var = np.ones(self._data.shape) * self._error**2
         return self._var
 
 

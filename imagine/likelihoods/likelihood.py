@@ -67,6 +67,7 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         # Call super constructor
         super().__init__()
 
+        self._check_units(measurement_dict, covariance_dict)
         self.mask_dict = mask_dict
         self.measurement_dict = measurement_dict
         if covariance_dict is None:
@@ -156,3 +157,16 @@ class Likelihood(BaseClass, metaclass=abc.ABCMeta):
         variables
         """
         raise NotImplementedError
+
+    @staticmethod
+    def _check_units(measurements, covariances):
+        """
+        Makes sure that measurements and covariances units are compatible
+        """
+        if covariances is None:
+            return
+        for k in measurements:
+            if measurements[k].unit is None:
+                assert covariances[k].unit is None
+            else:
+                assert (measurements[k].unit)**2 == covariances[k].unit
