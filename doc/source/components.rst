@@ -644,10 +644,29 @@ object is the
 :py:class:`ObservableDict <imagine.observables.observable_dict.ObservableDict>`
 that is returned when one runs an IMAGINE :ref:`Simulator <Simulators>`.
 
+If the model does not involve any stochastic fields (or if the ensemble size is
+chosen to be 1), the `Simulations` object produced by a simulator has exactly
+the same structure as `Measurements` object.
 
-In the case of a
-:py:class:`Simulations <imagine.observables.observable_dict.Simulations>` object, :py:data:`max_realizations` keyword argument can be used to limit the
-number of ensemble realisations that are shown (one realisation per line).
+For larger ensemble sizes the behaviour is slightly different. The
+:py:data:`global_data` attribute will return an array of shape (N_ens, N),
+containing one realisation per row. The
+:py:meth:`show <imagine.observables.observable_dict.ObservableDict.show>`
+method will display the simulated results for the full ensemble, with one
+realisation per row (this can be limited using :py:data:`max_realizations`
+keyword, which sets the maximum number of rows to be displayed).
+
+`Simulations` objects provide two specialized convenience methods to
+manipulate the simulated data in the case of `ensemble_size>1`. The
+:py:meth:`sub_sim <imagine.observables.observable_dict.Simulations.sub_sim>`
+method allows one to construct a new `Simulations` object using only a subset
+of the original ensemble (note that this can also be used prepare resamplings
+for *bootstrapping*). The
+:py:meth:`estimate_covariances <imagine.observables.observable_dict.Simulations.estimate_covariances>`
+method uses the finite ensemble in the `Simulations` object to estimate the
+covariance matrices associated with each observable, which are returned as
+:py:obj:`Covariances <imagine.observables.observable_dict.Covariances>` object.
+
 
 .. _Covariances:
 
