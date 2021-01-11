@@ -13,3 +13,4 @@ numpy>=1.18.0
 pymultinest>=2.10.0
 scipy>=1.1.0
 ultranest>=3.2.0
+pandas>=1.1.5

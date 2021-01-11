@@ -972,14 +972,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         The end result is a :py:obj:`pandas.DataFrame` containing the following
         columns:
-            * `likelihood` - The likelihood value.
-            * `likelihood_std` - The likelihood dispersion, estimated by
-              bootstrapping the available ensemble and computing the standard
-              deviation.
-            * `ensemble_size` - Size of the ensemble of simulations used.
-            * `ipoint` - Index of the point used.
-            * `iseed` - Index of the random (master) seed used.
-            * `param_values` - Values of the parameters at a given point.
+
+          * `likelihood` - The likelihood value.
+          * `likelihood_std` - The likelihood dispersion, estimated by
+            bootstrapping the available ensemble and computing the standard
+            deviation.
+          * `ensemble_size` - Size of the ensemble of simulations used.
+          * `ipoint` - Index of the point used.
+          * `iseed` - Index of the random (master) seed used.
+          * `param_values` - Values of the parameters at a given point.
 
         Parameters
         ----------
