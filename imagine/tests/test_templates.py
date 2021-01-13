@@ -226,3 +226,12 @@ def test_pipeline_template():
     assert (pipeline_copy.log_evidence,
             pipeline_copy.log_evidence_err) == (42.0, 17.0)
     assert pipeline_copy.posterior_summary['constant_B_By']['median']==0.5*muG
+
+    # Tests the separate loading and saving of observable dictionaries
+    assert np.all(pipeline.likelihood.measurement_dict[dset.key].data ==
+                  pipeline_copy.likelihood.measurement_dict[dset.key].data )
+    # Also checks the construction of covariance matrix
+    assert np.all(pipeline.likelihood.covariance_dict[dset.key].data ==
+                  pipeline_copy.likelihood.covariance_dict[dset.key].data )
+
+
