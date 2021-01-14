@@ -21,7 +21,7 @@ comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
 
 # %% FUNCTION DEFINITIONS
-def save_pipeline(pipeline, save_obs_data_separately=False):
+def save_pipeline(pipeline, save_obs_data_separately=True):
     """
     Saves the state of a Pipeline object
 
@@ -29,9 +29,11 @@ def save_pipeline(pipeline, save_obs_data_separately=False):
     ----------
     pipeline : imagine.pipelines.pipeline.Pipeline
         The pipeline object one would like to save
-    use_hickle : bool
-        If `False` (default) the state is saved using the `cloudpickle` package.
-        Otherwise, experimental support to `hickle` is enabled.
+    save_obs_data_separately : bool
+        If `True` (default) observable dictionaries (the Measurements,
+        Covariances and Masks objects linked to the pipeline's Likelihood
+        object) are saved separately and compressed. Otherwise, they are
+        serialized together with the remainder of the Pipeline object.
     """
     # Works on a (shallow) copy
     pipeline = copy(pipeline)
@@ -50,15 +52,17 @@ def save_pipeline(pipeline, save_obs_data_separately=False):
         # Covariances need to be "undistributed"
         pipeline.likelihood.covariance_dict = deepcopy(pipeline.likelihood.covariance_dict)
 
-        # Gathers all distributed data -- i.e. turns global (distributed) into local
+        # Gathers distributed covariance data
+        # i.e. turns global (distributed) into local
         for k in pipeline.likelihood.covariance_dict:
-            pipeline.likelihood.covariance_dict[k]._data = pipeline.likelihood.covariance_dict[k].global_data
-            # NB any process with mpirank!=0 will store None in the above operation
+            if pipeline.likelihood.covariance_dict[k].dtype == 'covariance':
+                pipeline.likelihood.covariance_dict[k]._data = pipeline.likelihood.covariance_dict[k].global_data
+                # NB any process with mpirank!=0 will store None in the above operation
 
     # Stores measurements, covariances and masks separately
-    if save_obs_data_separately:
+    if save_obs_data_separately and mpirank==0:
         for obs_dict_name in ('covariance', 'measurement','mask'):
-            print('Saving', obs_dict_name)
+
             obs_dict = getattr(pipeline.likelihood, obs_dict_name + '_dict')
 
             if obs_dict is not None:
@@ -96,7 +100,6 @@ def save_pipeline(pipeline, save_obs_data_separately=False):
     if mpirank == 0:
         with open(os.path.join(run_directory,'pipeline.pkl'), 'wb') as f:
             cloudpickle.dump(pipeline, f)
-
 
     return pipeline
 
