@@ -86,10 +86,10 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
 
     # Computes the signal
     signal = ((1+np.cos(x)) *
-              np.random.normal(loc=a0,scale=b0,size=size))
+              np.random.normal(loc=a0, scale=b0,size=size))
 
     # Includes the error
-    fd = signal + np.random.normal(loc=0.,scale=error,size=size)
+    fd = signal + np.random.normal(loc=0., scale=error,size=size)
 
     # Prepares a data dictionary
     data_dict = {'meas' : u.Quantity(fd, u.microgauss*u.cm**-3),
@@ -99,21 +99,17 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
                  'z': np.zeros_like(fd)}
 
     dataset = img.observables.TabularDataset(data_dict, name='test',
-                                             data_col='meas',
-                                             err_col='err')
+                                             data_col='meas', err_col='err')
     return dataset
-
-
 
 def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
                        sampling_controllers = {}, ensemble_size=48,
                        true_parameters={'a0':3, 'b0': 6},
                        run_directory='basic_pipeline_run'):
 
-    # Creates a directory for storing the chains and log
-    chains_dir = os.path.join(run_directory, 'chains')
+    # Creates a run directory for storing the log
     if mpirank==0:
-        os.makedirs(chains_dir, exist_ok=True)
+        os.makedirs(run_directory, exist_ok=True)
     comm.Barrier()
 
     # Sets up logging
@@ -128,16 +124,13 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
     mockDataset = prepare_mock_dataset(**true_parameters)
 
     # Prepares Measurements and Covariances objects
-    measurements = img.observables.Measurements()
-    measurements.append(dataset=mockDataset)
-    covariances = img.observables.Covariances()
-    covariances.append(dataset=mockDataset)
+    measurements = img.observables.Measurements(mockDataset)
 
     # Generates the grid
     one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc,
-                                      [0, 0]*u.kpc,
-                                      [0, 0]*u.kpc],
-                                resolution=[100, 1, 1])
+                                             [0, 0]*u.kpc,
+                                             [0, 0]*u.kpc],
+                                        resolution=[100, 1, 1])
 
     # Prepares the thermal electron field factory
     ne_factory = testFields.CosThermalElectronDensityFactory(grid=one_d_grid)
@@ -147,7 +140,7 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
-    B_factory.active_parameters = ('a0','b0')
+    B_factory.active_parameters = ('a0', 'b0')
     B_factory.priors ={'a0': img.priors.FlatPrior(-5*u.microgauss, 5*u.microgauss),
                        'b0': img.priors.FlatPrior(2*u.microgauss, 10*u.microgauss)}
 
@@ -158,7 +151,7 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
     simer = TestSimulator(measurements)
 
     # Initializes the likelihood
-    likelihood = img.likelihoods.EnsembleLikelihood(measurements, covariances)
+    likelihood = img.likelihoods.EnsembleLikelihood(measurements)
 
     # Defines the pipeline using the UltraNest sampler, giving it the required elements
     pipeline = pipeline_class(simulator=simer,
@@ -166,7 +159,7 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
                               likelihood=likelihood,
                               ensemble_size=ensemble_size,
                               show_progress_reports=True,
-                              chains_directory=chains_dir)
+                              run_directory=run_directory)
     pipeline.sampling_controllers = sampling_controllers
 
     # RUNS THE PIPELINE
@@ -222,7 +215,7 @@ if __name__ == '__main__':
         sampling_controllers = {'n_live_points': 500, 'verbose': True}
         # Starts the run
         if mpirank == 0:
-            print('\n\nRunning using MultiNest')
+            print('\n\nRunning using MultiNest', flush=True)
             timer.tick('MultiNest')
 
         basic_pipeline_run(run_directory=run_directory,
@@ -244,7 +237,7 @@ if __name__ == '__main__':
                                 'min_ess': 1000}
         # Starts the run
         if mpirank == 0:
-            print('Running using UltraNest')
+            print('Running using UltraNest', flush=True)
             timer.tick('UltraNest')
 
         basic_pipeline_run(run_directory=run_directory,
@@ -267,7 +260,7 @@ if __name__ == '__main__':
                                 'dynamic': True}
         # Starts the run
         if mpirank == 0:
-            print('\n\nRunning using Dynesty')
+            print('\n\nRunning using Dynesty', flush=True)
             timer.tick('Dynesty')
 
         basic_pipeline_run(run_directory=run_directory,
