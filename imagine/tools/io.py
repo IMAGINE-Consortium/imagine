@@ -24,13 +24,13 @@ mpirank = comm.Get_rank()
 def save_pipeline(pipeline, use_hickle=False):
     """
     Saves the state of a Pipeline object
-    
+
     Parameters
     ----------
     pipeline : imagine.pipelines.pipeline.Pipeline
         The pipeline object one would like to save
     use_hickle : bool
-        If `False` (default) the state is saved using the `cloudpickle` package. 
+        If `False` (default) the state is saved using the `cloudpickle` package.
         Otherwise, experimental support to `hickle` is enabled.
     """
     # Works on a (shallow) copy
@@ -57,13 +57,13 @@ def save_pipeline(pipeline, use_hickle=False):
 
     # Hammurabi-specific path adjustment
     if hasattr(pipeline.simulator, 'hamx_path'):
-        # In the case hamx path is the system default, it will use the 
+        # In the case hamx path is the system default, it will use the
         # system default the next time it is loaded.
         pipeline.simulator = copy(pipeline.simulator)
         if pipeline.simulator.hamx_path == rc['hammurabi_hamx_path']:
             pipeline.simulator._hamx_path = None
             pipeline.simulator._ham._exe_path = None
-    
+
     if mpirank == 0:
         if not use_hickle:
             with open(os.path.join(run_directory,'pipeline.pkl'), 'wb') as f:
@@ -76,7 +76,7 @@ def save_pipeline(pipeline, use_hickle=False):
 def load_pipeline(directory_path='.'):
     """
     Loads the state of a Pipeline object
-    
+
     Parameters
     ----------
     directory_path : str
@@ -87,7 +87,7 @@ def load_pipeline(directory_path='.'):
     else:
         with open(os.path.join(directory_path,'pipeline.pkl'), 'rb') as f:
             pipeline = cloudpickle.load(f)
-    
+
     # Adjusts paths (hidden variables are used to avoid checks)
     pipeline._run_directory = os.path.join(directory_path, pipeline._run_directory)
     pipeline._chains_directory = os.path.join(directory_path, pipeline._chains_directory)
@@ -101,7 +101,7 @@ def load_pipeline(directory_path='.'):
 
     # Hammurabi-specific path adjustment
     if hasattr(pipeline.simulator, 'hamx_path'):
-        # In the case hamx path is the system default, it will use the 
+        # In the case hamx path is the system default, it will use the
         # system default the next time it is loaded.
         if pipeline.simulator.hamx_path is None:
             pipeline.simulator.hamx_path = rc['hammurabi_hamx_path']
@@ -109,5 +109,8 @@ def load_pipeline(directory_path='.'):
         # using the xml_path property setter
         if pipeline.simulator.hamx_path is None:
             pipeline.xml_path = None
-    
+
+    # Avoids synchronization problems after loading the pipeline when using MPI
+    comm.Barrier()
+
     return pipeline

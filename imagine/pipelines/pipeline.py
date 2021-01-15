@@ -781,7 +781,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         return(observables)
 
-    def test(self, n_points=3, include_centre=True):
+    def test(self, n_points=3, include_centre=True, verbose=True):
         """
         Tests the present IMAGINE pipeline evaluating the likelihood on
         a small number of points and reporting the run-time.
@@ -809,22 +809,27 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         for i_point in range(n_points):
             timer.tick(i_point)
             if (i_point == 0) and include_centre:
-                print('Sampling centres of the parameter ranges.')
+                if verbose:
+                    print('Sampling centres of the parameter ranges.')
                 values = self.parameter_central_value()
             else:
-                print('Randomly sampling from prior.')
+                if verbose:
+                    print('Randomly sampling from prior.')
                 # Draws a random point from the prior distributions
                 values = self.prior_transform(np.random.random_sample(n_params))
 
-            print('\tEvaluating point:', values)
+            if verbose:
+                print('\tEvaluating point:', values)
             L = self._likelihood_function(values)
             time = timer.tock(i_point)
-            print('\tLog-likelihood', L)
-            print('\tTotal execution time: ', time,'s\n')
+            if verbose:
+                print('\tLog-likelihood', L)
+                print('\tTotal execution time: ', time,'s\n')
             times.append(time)
 
         mean_time = np.mean(times) * apu.s
-        print('Average execution time:', mean_time)
+        if verbose:
+            print('Average execution time:', mean_time)
         return mean_time
 
     def _core_likelihood(self, cube):
