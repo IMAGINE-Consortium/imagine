@@ -416,6 +416,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
 
     def evidence_report(self, sdigits=4):
+        if not np.isfinite(self.log_evidence):
+              return
+
         if misc.is_notebook():
             ipd.display(ipd.Markdown("**Evidence report:**"))
             out = r"\log\mathcal{{ Z }} = "
@@ -589,14 +592,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         Returns
         -------
-        cube_rtn
-            The modified cube
+        rtn : float
+            Prior probability of the parameter choice specified by `cube`
         """
-        cube_rtn = np.empty_like(cube)
+        rtn = 1.
         for i, parameter in enumerate(self._active_parameters):
             prior = self._priors[parameter]
-            cube_rtn[i] = prior.pdf(cube[i]*prior.unit)
-        return cube_rtn
+            rtn *= prior.pdf(cube[i]*prior.unit)
+        return rtn
 
     def prior_transform(self, cube):
         """

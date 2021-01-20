@@ -36,7 +36,7 @@ class FlatPrior(Prior):
         # already dealt with units
         self.vol = self.range[1] - self.range[0]
         # Constant pdf (for illustration)
-        self._pdf = lambda x: np.ones_like(x)/self.vol.value
+        self._pdf = lambda x: np.ones(x.shape)/self.vol.value
 
     def __call__(self, cube):
         log.debug('@ flat_prior::__call__')
