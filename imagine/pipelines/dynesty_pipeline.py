@@ -214,9 +214,6 @@ class DynestyPipeline(Pipeline):
         """
         log.debug('@ dynesty_pipeline::__call__')
 
-        # Resets internal state
-        self.tidy_up()
-
         # Common parameters for NestedSampler and DynamicNestedSampler
         default_init_params = {'bound': 'multi',
                                'sample': 'auto',

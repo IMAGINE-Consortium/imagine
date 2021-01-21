@@ -44,9 +44,6 @@ class EmceePipeline(Pipeline):
             A dictionary containing the sampler results
             (usually in its native format)
         """
-        # Resets internal state and adjusts random seed
-        self.tidy_up()
-
         n_pars = len(self.active_parameters)
         # Prepares the initial positions of the priors
         pos = [self.prior_transform(np.random.sample(n_pars))

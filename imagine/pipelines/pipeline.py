@@ -148,14 +148,21 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
 
     def __call__(self, *args, save_pipeline_state=True, **kwargs):
+        # Keeps the setup safe
         if save_pipeline_state:
-            self.save()  # Keeps the setup safe
+            self.save()
+
+        # Resets internal state and adjusts random seed
+        self.tidy_up()
         result = self.call(*args, **kwargs)
+
         if self.show_summary_reports and (mpirank == 0):
             self.posterior_report()
             self.evidence_report()
+
+        # Stores the final results
         if save_pipeline_state:
-            self.save()  # Keeps the results safe
+            self.save()
 
         return result
 

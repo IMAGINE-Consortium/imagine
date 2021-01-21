@@ -101,9 +101,6 @@ class MultinestPipeline(Pipeline):
         """
         log.debug('@ multinest_pipeline::__call__')
 
-        # Resets internal state
-        self.tidy_up()
-
         default_solve_params = {'resume': True,
                                 'n_live_points': 400,
                                 'evidence_tolerance': 0.5,
