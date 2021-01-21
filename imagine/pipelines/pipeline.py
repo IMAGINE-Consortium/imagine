@@ -354,7 +354,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             live_samples = self.intermediate_results['live_points']
             likelihood = self.intermediate_results['logLikelihood']
             lnX = self.intermediate_results['lnX']
-            if None not in (dead_samples, likelihood, lnX):
+
+            if dead_samples is not None:
                 fig = visualization.trace_plot(
                     parameter_names=self._active_parameters,
                     samples=dead_samples,

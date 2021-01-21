@@ -25,7 +25,8 @@ class EmceePipeline(Pipeline):
 
         return log_prob
 
-    def call(self, max_iterations=10000, nwalkers=32, **kwargs):
+    def call(self, max_iterations=10000, nwalkers=32, n_corr_times=100,
+             **kwargs):
         """
         Runs the IMAGINE pipeline
 
@@ -51,38 +52,37 @@ class EmceePipeline(Pipeline):
 
         ndim = len(self._active_parameters)
 
-
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_probability)
+        self.sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_probability)
 
         old_tau = np.inf
         index = 0
-        autocorr = np.empty(max_iterations)
-        for sample in sampler.sample(pos, iterations=max_iterations,
-                                     progress=True):
-            if sampler.iteration % 100:
+        self._autocorr = np.empty(max_iterations)
+        for sample in self.sampler.sample(pos, iterations=max_iterations,
+                                     progress=True, store=True):
+            if self.sampler.iteration % 100:
                 continue
 
             # Compute the autocorrelation time so far
             # Using tol=0 means that we'll always get an estimate even
             # if it isn't trustworthy
-            tau = sampler.get_autocorr_time(tol=0)
-            autocorr[index] = np.mean(tau)
+            tau = self.sampler.get_autocorr_time(tol=0)
+            self._autocorr[index] = np.mean(tau)
             index += 1
 
             # Check convergence
-            converged = np.all(tau * 100 < sampler.iteration)
+            converged = np.all(tau * n_corr_times < self.sampler.iteration)
             converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
             if converged:
                 break
             old_tau = tau
 
-        tau = sampler.get_autocorr_time(tol=0)
+        tau = self.sampler.get_autocorr_time(tol=0)
         burnin = int(2 * np.max(tau))
         thin = int(0.5 * np.min(tau))
 
         # Extract the flattened samples
         self._samples_array = sampler.get_chain(discard=burnin,
-                                                     thin=thin, flat=True)
+                                                thin=thin, flat=True)
 
         # The log of the computed evidence and its error estimate
         # should also be stored in the following way
@@ -93,19 +93,16 @@ class EmceePipeline(Pipeline):
 
 
     def get_intermediate_results(self):
-        # If the sampler saves intermediate results on disk or internally,
-        # these should be read here, so that a progress report can be produced
-        # every `pipeline.n_evals_report` likelihood evaluations.
-        # For this to work, the following should be added to the
-        # `intermediate_results` dictionary (currently commented out):
 
-        ## Sets current rejected/dead points, as a numpy array of shape (n, npar)
-        #self.intermediate_results['rejected_points'] = rejected
-        ## Sets likelihood value of *rejected* points
-        #self.intermediate_results['logLikelihood'] = likelihood_rejected
-        ## Sets the prior volume/mass associated with each rejected point
-        #self.intermediate_results['lnX'] = rejected_data[:, nPar+1]
-        ## Sets current live nested sampling points (optional)
-        #self.intermediate_results['live_points'] = live
+        chain = self.sampler.get_chain(flat=True)
 
-        pass
+        # Reconstructs likelihood
+        posterior = log_prob = self.sampler.get_log_prob(flat=True)
+        prior = np.array([self.prior_pdf(point) for point in chain])
+        logLikelihood = self.sampler.get_log_prob(flat=True) - np.log(prior)
+
+        # Sets current rejected/dead points, as a numpy array of shape (n, npar)
+        self.intermediate_results['rejected_points'] = chain
+        # Sets likelihood value of *rejected* points
+        self.intermediate_results['logLikelihood'] = logLikelihood
+
