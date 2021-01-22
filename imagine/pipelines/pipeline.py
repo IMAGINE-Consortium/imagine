@@ -17,6 +17,7 @@ from mpi4py import MPI
 import numpy as np
 from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
+from scipy.optimize import minimize as scipy_minimize
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import hickle as hkl
@@ -148,14 +149,21 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
 
     def __call__(self, *args, save_pipeline_state=True, **kwargs):
+        # Keeps the setup safe
         if save_pipeline_state:
-            self.save()  # Keeps the setup safe
+            self.save()
+
+        # Resets internal state and adjusts random seed
+        self.tidy_up()
         result = self.call(*args, **kwargs)
+
         if self.show_summary_reports and (mpirank == 0):
             self.posterior_report()
             self.evidence_report()
+
+        # Stores the final results
         if save_pipeline_state:
-            self.save()  # Keeps the results safe
+            self.save()
 
         return result
 
@@ -347,7 +355,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             live_samples = self.intermediate_results['live_points']
             likelihood = self.intermediate_results['logLikelihood']
             lnX = self.intermediate_results['lnX']
-            if None not in (dead_samples, likelihood, lnX):
+
+            if dead_samples is not None:
                 fig = visualization.trace_plot(
                     parameter_names=self._active_parameters,
                     samples=dead_samples,
@@ -1100,6 +1109,115 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                 centre = 0.
             central_values.append(centre)
         return central_values
+
+    def log_probability_unnormalized(self, theta):
+        """
+        The log of the unnormalized posterior probability -- i.e. the sum of
+        the log-likelihood and the log of the prior probability.
+
+        Parameters
+        ----------
+        theta : np.ndarray
+            Array of parameter values (in their default units)
+
+        Returns
+        -------
+        log_prob : float
+            log(likelihood(theta))+log(prior(theta))
+        """
+        # Checks whether the range is sane
+        for pname, v in zip(self.active_parameters, theta):
+            pmin, pmax = self.priors[pname].range.value
+            if not (pmin < v < pmax):
+                return -np.inf
+
+        # Computes the (log) prior
+        lp = np.log(self.prior_pdf(theta))
+        if not np.isfinite(lp):
+            return -np.inf
+
+        # Multiplies by the likelihood
+        log_prob = lp + self._likelihood_function(theta)
+
+        return log_prob
+
+
+    def get_MAP(self, include_units=True, return_optimizer_result=False, **kwargs):
+        """
+        Computes the parameter values at the Maximum A Posteriori.
+
+        This method uses `scipy.optimize.minimize' for the calculation. By
+        default, it will use the
+        `'Powell' <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-powell.html#optimize-minimize-powell>` (which does not require the
+        calculation of gradients or the assumption of continuity).
+        Also by default the `bounds` keywords use the ranges specified in the
+        priors.
+
+        By default, the initial guess for the MAP search will use the centre
+        of the ranges (obtained from :py:meth:`parameter_central_value`.
+
+        Parameters
+        ----------
+        include_units : bool
+            If `True` (default), returns the result as list of
+            `Quantities <astropy.units.Quantity>`. Otherwise, returns a single
+            numpy array with the parameter values in their default units.
+        return_optimizer_result : bool
+            If `False` (default) only the MAP values are returned. Otherwise,
+            a tuple containing the values and the output of
+            `scipy.optimize.minimize` is returned instead.
+        **kwargs
+            Any other keyword arguments are passed directly to
+            `scipy.optimize.minimize`.
+
+        Returns
+        -------
+        MAP : list or array
+            Parameter values at the position of the maximum of the posterior
+            distribution
+        result : scipy.optimize.OptimizeResult
+            If `return_optimizer_result` is set to `True`, this is returned
+            together with the MAP
+        """
+        # By default, uses Powell which does not require calculation
+        # of gradients and uses the 'bounds' information
+        if 'method' not in kwargs:
+            kwargs['method'] = 'Powell'
+
+        # Finds ranges
+        if 'bounds' not in kwargs:
+            kwargs['bounds'] = [self.priors[k].range.value
+                                for k in self.active_parameters]
+
+        # Sets function to minimize
+        fun = lambda theta: -np.nan_to_num(self.log_probability_unnormalized(theta))
+
+        # Avoid a (sampling) progress report to appear during the minimization
+        progress_reports_state = self.show_progress_reports
+        self.show_progress_reports = False
+
+        # Finds the MAP
+        result = scipy_minimize(fun, self.parameter_central_value(), **kwargs)
+        if not result.success:
+            print('Unable to find MAP! Check your settings.')
+            return result
+
+        MAP = result.x
+
+        # Restores the original setup
+        self.show_progress_reports = progress_reports_state
+
+        if include_units:
+            MAP = list(MAP)
+            # Adds units to parameters
+            for i, pname in enumerate(self.active_parameters):
+                MAP[i] *= self.priors[pname].unit
+
+        if not return_optimizer_result:
+            return MAP
+        else:
+            return MAP, result
+
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the
