@@ -18,6 +18,7 @@ import numpy as np
 from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
 from scipy.optimize import minimize as scipy_minimize
+from scipy.optimize import OptimizeResult as OptimizeResult
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import hickle as hkl
@@ -139,6 +140,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.correlated_priors = None
         self._median_simulation = None
         self._median_model = None
+        self._MAP = None
 
         # Report settings
         self.show_summary_reports = show_summary_reports
@@ -1141,10 +1143,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         return log_prob
 
-
-    def get_MAP(self, include_units=True, return_optimizer_result=False, **kwargs):
+    def get_MAP(self, initial_guess='auto', include_units=True,
+                return_optimizer_result=False, **kwargs):
         """
-        Computes the parameter values at the Maximum A Posteriori.
+        Computes the parameter values at the Maximum A Posteriori
 
         This method uses `scipy.optimize.minimize' for the calculation. By
         default, it will use the
@@ -1166,6 +1168,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             If `False` (default) only the MAP values are returned. Otherwise,
             a tuple containing the values and the output of
             `scipy.optimize.minimize` is returned instead.
+        initial_guess : str or numpy.ndarray
+            The initial guess used by the optimizer. If set to 'centre', the
+            centre of each parameter range is used. If set to 'samples', the
+            median values of the samples produced by a previous posterior
+            sampling are used (the Pipeline has to have been run before).
+            If set to 'auto' (default), use 'samples' if available, and
+            'centre' otherwise. Alternatively, an array of active parameter
+            values with the starting position may be provided.
         **kwargs
             Any other keyword arguments are passed directly to
             `scipy.optimize.minimize`.
@@ -1196,8 +1206,19 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         progress_reports_state = self.show_progress_reports
         self.show_progress_reports = False
 
+        # If the pipeline had previously run, the posterior median as the
+        # initial guess, otherwise, uses the centres of the ranges
+        if ((initial_guess == 'samples') or
+            (initial_guess ==  'auto' and (self._samples_array is not None))):
+            initial_guess = [self.posterior_summary[k]['median'].value
+                      for k in self.active_parameters]
+        elif (initial_guess == 'centre') or (initial_guess ==  'auto'):
+            initial_guess = self.parameter_central_value()
+        else:
+            initial_guess = np.array(initial_guess)
+
         # Finds the MAP
-        result = scipy_minimize(fun, self.parameter_central_value(), **kwargs)
+        result = scipy_minimize(fun, initial_guess, **kwargs)
         if not result.success:
             print('Unable to find MAP! Check your settings.')
             return result
@@ -1218,6 +1239,20 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         else:
             return MAP, result
 
+    @property
+    def MAP(self):
+        """
+        Maximum a posteriori estimate
+
+        This convenience property calls the :py:meth:`Pipeline.get_MAP` method
+        with default arguments and stores the result internally.
+        See :py:meth:`Pipeline.get_MAP` for details.
+        """
+        if self._MAP is None:
+            MAP_result = self.get_MAP()
+            assert not isinstance(MAP_result, OptimizeResult), 'Try running get_MAP directly, with different parameters'
+            self._MAP = MAP_result
+        return self._MAP
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the
