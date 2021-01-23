@@ -1154,9 +1154,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         Also by default the `bounds` keywords use the ranges specified in the
         priors.
 
-        By default, the initial guess for the MAP search will use the centre
-        of the ranges (obtained from :py:meth:`parameter_central_value`.
-
         Parameters
         ----------
         include_units : bool
@@ -1169,7 +1166,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             `scipy.optimize.minimize` is returned instead.
         initial_guess : str or numpy.ndarray
             The initial guess used by the optimizer. If set to 'centre', the
-            centre of each parameter range is used. If set to 'samples', the
+            centre of each parameter range is used (obtained using
+            :py:meth:`parameter_central_value`). If set to 'samples', the
             median values of the samples produced by a previous posterior
             sampling are used (the Pipeline has to have been run before).
             If set to 'auto' (default), use 'samples' if available, and
@@ -1185,8 +1183,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             Parameter values at the position of the maximum of the posterior
             distribution
         result : scipy.optimize.OptimizeResult
-            If `return_optimizer_result` is set to `True`, this is returned
-            together with the MAP
+            Only if `return_optimizer_result` is set to `True`, this is
+            returned together with the MAP.
         """
         # By default, uses Powell which does not require calculation
         # of gradients and uses the 'bounds' information
