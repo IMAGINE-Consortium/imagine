@@ -17,8 +17,7 @@ from mpi4py import MPI
 import numpy as np
 from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
-from scipy.optimize import minimize as scipy_minimize
-from scipy.optimize import OptimizeResult as OptimizeResult
+import scipy.optimize as scipy_optimize
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import hickle as hkl
@@ -1218,7 +1217,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             initial_guess = np.array(initial_guess)
 
         # Finds the MAP
-        result = scipy_minimize(fun, initial_guess, **kwargs)
+        result = scipy_optimize.minimize(fun, initial_guess, **kwargs)
         if not result.success:
             print('Unable to find MAP! Check your settings.')
             return result
@@ -1250,7 +1249,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         if self._MAP is None:
             MAP_result = self.get_MAP()
-            assert not isinstance(MAP_result, OptimizeResult), 'Try running get_MAP directly, with different parameters'
+            assert not isinstance(MAP_result, scipy_optimize.OptimizeResult), 'Try running get_MAP directly, with different parameters'
             self._MAP = MAP_result
         return self._MAP
 

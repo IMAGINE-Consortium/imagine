@@ -20,9 +20,6 @@ class PipelineTemplate(Pipeline):
             A dictionary containing the sampler results
             (usually in its native format)
         """
-        # Resets internal state and adjusts random seed
-        self.tidy_up()
-
         # Initializes a sampler object
         # Here we provide a list of common options
         self.sampler = MY_SAMPLER.Sampler(

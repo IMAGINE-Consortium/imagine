@@ -104,9 +104,6 @@ class UltranestPipeline(Pipeline):
         """
         log.debug('@ ultranest_pipeline::__call__')
 
-        # Resets internal state
-        self.tidy_up()
-
         default_init_params = {
           'resume': True,
           'num_test_samples': 2,
