@@ -139,7 +139,8 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.correlated_priors = None
         self._median_simulation = None
         self._median_model = None
-        self._MAP = None
+        self._MAP_simulation = None
+        self._MAP_model = None
 
         # Report settings
         self.show_summary_reports = show_summary_reports
@@ -474,8 +475,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     @property
     def median_model(self):
         """
+        Posterior median model
+
         List of Field objects corresponding to the median values of the
-        distributions of parameter values found after a Pipeline run.
+        distributions of parameter values found *after a Pipeline run*.
         """
         if self._median_model is None:
             self._median_model = []
@@ -492,6 +495,35 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._median_model
 
     @property
+    def MAP_model(self):
+        """
+        Maximum a posteriori (MAP) model
+
+        List of Field objects corresponding to the mode of the posterior
+        distribution. This does not require a previous run of the Pipeline,
+        as the MAP is computed by maximizing the unnormalized posterior
+        distribution.
+
+        This convenience property calls the :py:meth:`Pipeline.get_MAP` method
+        with default arguments and stores the result internally.
+        See :py:meth:`Pipeline.get_MAP` for details.
+        """
+        if self._MAP_model is None:
+            MAP = self.get_MAP()
+            assert not isinstance(MAP, scipy_optimize.OptimizeResult), 'Try running get_MAP directly, with different parameters'
+
+            self._MAP_model = []
+            for factory in self.factory_list:
+                parameters = {}
+                for pname, MAP_val in zip(self.active_parameters, MAP):
+                    if factory.name in pname:
+                        parameters[pname.replace(factory.name+'_','')] = MAP_val
+
+                self._MAP_model.append(factory(variables=parameters))
+
+        return self._MAP_model
+
+    @property
     def median_simulation(self):
         """
         Simulation corresponding to the
@@ -500,6 +532,16 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         if self._median_simulation is None:
             self._median_simulation = self.simulator(self.median_model)
         return self._median_simulation
+
+    @property
+    def MAP_simulation(self):
+        """
+        Simulation corresponding to the
+        :py:data:`median_model <Pipeline.median_model>`.
+        """
+        if self._MAP_simulation is None:
+            self._MAP_simulation = self.simulator(self.MAP_model)
+        return self._MAP_simulation
 
     @property
     def samples(self):
@@ -1236,21 +1278,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             return MAP
         else:
             return MAP, result
-
-    @property
-    def MAP(self):
-        """
-        Maximum a posteriori estimate
-
-        This convenience property calls the :py:meth:`Pipeline.get_MAP` method
-        with default arguments and stores the result internally.
-        See :py:meth:`Pipeline.get_MAP` for details.
-        """
-        if self._MAP is None:
-            MAP_result = self.get_MAP()
-            assert not isinstance(MAP_result, scipy_optimize.OptimizeResult), 'Try running get_MAP directly, with different parameters'
-            self._MAP = MAP_result
-        return self._MAP
 
     def __del__(self):
         # This MPI barrier ensures that all the processes reached the
