@@ -158,6 +158,7 @@ class UltranestPipeline(Pipeline):
             transform=self.prior_transform,
             log_dir=ultranest_dir,
             vectorized=False,
+            wrapped_params=self.wrapped_parameters,
             **init_params)
 
         self.results = sampler.run(viz_callback=ultranest.viz.nicelogger,

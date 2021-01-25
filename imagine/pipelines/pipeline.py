@@ -227,6 +227,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._active_parameters
 
     @property
+    def wrapped_parameters(self):
+        """
+        List of parameters which are periodic or "wrapped around"
+        """
+        return [self._priors[k].wrapped for k in self._active_parameters]
+
+    @property
     def priors(self):
         """
         Dictionary containing priors for all active parameters
@@ -1189,7 +1196,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         Computes the parameter values at the Maximum A Posteriori
 
-        This method uses `scipy.optimize.minimize' for the calculation. By
+        This method uses `scipy.optimize.minimize` for the calculation. By
         default, it will use the
         `'Powell' <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-powell.html#optimize-minimize-powell>`_
         (which does not require the calculation of gradients or the assumption

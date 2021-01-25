@@ -29,9 +29,9 @@ class FlatPrior(Prior):
         If present, sets the units used for this parameter. If absent, this
         is inferred from `xmin` and `xmax`.
     """
-    def __init__(self, xmin, xmax, unit=None):
+    def __init__(self, xmin, xmax, unit=None, wrapped=False):
         # Updates ranges
-        super().__init__(xmin=xmin, xmax=xmax, unit=unit)
+        super().__init__(xmin=xmin, xmax=xmax, wrapped=wrapped, unit=unit)
         # Computes this from `range`, after the base Prior class has
         # already dealt with units
         self.vol = self.range[1] - self.range[0]

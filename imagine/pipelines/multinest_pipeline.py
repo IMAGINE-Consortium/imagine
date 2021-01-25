@@ -141,11 +141,10 @@ class MultinestPipeline(Pipeline):
         self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
                                          Prior=self.prior_transform,
                                          n_dims=len(self._active_parameters),
-                                         wrapped_params=None,
                                          write_output=True,
                                          seed=self.master_seed,
+                                         wrapped_params=self.wrapped_parameters,
                                          **solve_params)
-
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logZ']

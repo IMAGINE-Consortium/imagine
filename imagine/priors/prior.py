@@ -24,7 +24,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
     scipy, please look at `ScipyPrior`. If you want to construct a prior from
     a sample, see `CustomPrior`.
     """
-    def __init__(self, xmin=None, xmax=None, unit=None, pdf_npoints=1500):
+    def __init__(self, xmin=None, xmax=None, wrapped=False, unit=None, pdf_npoints=1500):
 
         # Ensures interval is quantity with consistent units
         unit, [xmin_val, xmax_val] = unit_checker(unit, [xmin, xmax])
@@ -44,6 +44,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         self._inv_cdf = None
         self._distr = None
         self._pdf = None
+        self.wrapped = wrapped
         self.samples = None
 
     def pdf(self, x):
@@ -142,6 +143,9 @@ class CustomPrior(Prior):
     unit : astropy.units.Unit
         If present, sets the units used for this parameter. If absent, this
         is inferred from `xmin` and `xmax`.
+    wrapped : bool
+        Specify whether the parameter is periodic (i.e. the range is supposed
+        to "wrap-around").
     bw_method: scalar or str
         Used by :py:class:`scipy.stats.gaussian_kde` to select the bandwidth
         employed to estimate the PDF from provided samples. Can be a number,
@@ -155,7 +159,8 @@ class CustomPrior(Prior):
         correlations to be computed by the Pipeline.
     """
     def __init__(self, samples=None, pdf_fun=None, xmin=None, xmax=None,
-                 unit=None, bw_method=None, pdf_npoints=1500, samples_ref=True):
+                 unit=None, wrapped=False, bw_method=None, pdf_npoints=1500,
+                 samples_ref=True):
         # If needed, constructs a pdf function from samples, using KDE
         if samples is not None:
             unit, [xmin_val, xmax_val, samples_val] = unit_checker(unit, [xmin, xmax, samples])
@@ -181,7 +186,7 @@ class CustomPrior(Prior):
             pdf_y = pdf_fun(pdf_x)
 
         super().__init__(xmin=xmin_val, xmax=xmax_val, unit=unit,
-                         pdf_npoints=pdf_npoints)
+                         wrapped=wrapped, pdf_npoints=pdf_npoints)
         dx = (xmax_val - xmin_val) / pdf_npoints
         inv_norm = pdf_y.sum() * dx
         pdf_y = (pdf_y / inv_norm)
