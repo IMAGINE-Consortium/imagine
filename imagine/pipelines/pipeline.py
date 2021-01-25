@@ -1191,7 +1191,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         This method uses `scipy.optimize.minimize' for the calculation. By
         default, it will use the
-        `'Powell' <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-powell.html#optimize-minimize-powell>`
+        `'Powell' <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-powell.html#optimize-minimize-powell>`_
         (which does not require the calculation of gradients or the assumption
         of continuity).
         Also by default the `bounds` keywords use the ranges specified in the
