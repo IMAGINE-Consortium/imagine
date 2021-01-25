@@ -28,6 +28,10 @@ class FlatPrior(Prior):
     unit : astropy.units.Unit, optional
         If present, sets the units used for this parameter. If absent, this
         is inferred from `xmin` and `xmax`.
+    wrapped : bool
+        Specify whether the parameter is periodic (i.e. the range is supposed
+        to "wrap-around").
+
     """
     def __init__(self, xmin, xmax, unit=None, wrapped=False):
         # Updates ranges
@@ -72,10 +76,14 @@ class GaussianPrior(ScipyPrior):
     unit : astropy.units.Unit, optional
         If present, sets the units used for this parameter. If absent, this
         is inferred from `mu` and `sigma`.
+    wrapped : bool
+        Specify whether the parameter is periodic (i.e. the range is supposed
+        to "wrap-around").
+
     """
 
     def __init__(self, mu=None, sigma=None, xmin=None, xmax=None, unit=None,
-                 **kwargs):
+                 wrapped=False, **kwargs):
 
         assert mu is not None, 'A value for mu must be provided'
         assert sigma is not None, 'A value for sigma must be provided'

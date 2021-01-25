@@ -232,10 +232,13 @@ class ScipyPrior(Prior):
     unit : astropy.units.Unit
         If present, sets the units used for this parameter. If absent, this
         is inferred from `xmin` and `xmax`.
+    wrapped : bool
+        Specify whether the parameter is periodic (i.e. the range is supposed
+        to "wrap-around").
     """
     def __init__(self, distr, *args, loc=0.0, scale=1.0, xmin=None, xmax=None,
-                 unit=None, pdf_npoints=1500, **kwargs):
-        super().__init__(xmin=xmin, xmax=xmax, unit=unit,
+                 unit=None, wrapped=False, pdf_npoints=1500, **kwargs):
+        super().__init__(xmin=xmin, xmax=xmax, unit=unit, wrapped=wrapped,
                          pdf_npoints=pdf_npoints)
 
         assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
