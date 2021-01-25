@@ -537,7 +537,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     def MAP_simulation(self):
         """
         Simulation corresponding to the
-        :py:data:`median_model <Pipeline.median_model>`.
+        :py:data:`MAP_model <Pipeline.MAP_model>`.
         """
         if self._MAP_simulation is None:
             self._MAP_simulation = self.simulator(self.MAP_model)
