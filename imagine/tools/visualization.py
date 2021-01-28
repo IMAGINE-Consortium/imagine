@@ -169,7 +169,7 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
             ax.plot(-lnX, y, **plot_settings)
             ax.set_xlabel('$-\ln X$')
         else:
-            ax.plot(y, **plot_settings)
+            ax.plot(y, alpha=0.35, **plot_settings)
 
     # Works on the histograms
     for i, ax in enumerate(axs[:,1]):

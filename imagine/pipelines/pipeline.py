@@ -349,7 +349,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         Reports the progress of the inference
         """
-
         # Try to call get_intermediate_results
         try:
             self.get_intermediate_results()
@@ -360,6 +359,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                   "Skipping report.")
         # If this method is implemented, create progress report
         else:
+            if mpirank!=0:
+                return
+
             dead_samples = self.intermediate_results['rejected_points']
             live_samples = self.intermediate_results['live_points']
             likelihood = self.intermediate_results['logLikelihood']
@@ -1258,7 +1260,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         if ((initial_guess == 'samples') or
             (initial_guess ==  'auto' and (self._samples_array is not None))):
             initial_guess = [self.posterior_summary[k]['median'].value
-                      for k in self.active_parameters]
+                             for k in self.active_parameters]
         elif (initial_guess == 'centre') or (initial_guess ==  'auto'):
             initial_guess = self.parameter_central_value()
         else:
@@ -1286,7 +1288,3 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         else:
             return MAP, result
 
-    def __del__(self):
-        # This MPI barrier ensures that all the processes reached the
-        # same point before deleting the temporary directories
-        comm.Barrier()
