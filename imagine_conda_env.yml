@@ -22,4 +22,5 @@ dependencies:
   - python=3.7.*
   - pymultinest=2.10
   - scipy=1.*
+  - schwimmbad=0.3.*
   - ultranest=3.2.*
