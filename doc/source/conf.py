@@ -42,7 +42,7 @@ for mod_name in names:
 # -- Project information -----------------------------------------------------
 
 project = 'IMAGINE'
-copyright = '2019-2020, IMAGINE Consortium'
+copyright = '2019-2021, IMAGINE Consortium'
 author = 'IMAGINE Consortium'
 
 
@@ -104,8 +104,8 @@ napoleon_include_special_with_doc = True
 napoleon_use_param = False
 napoleon_custom_sections = [('Sampling controllers', 'Other Parameters')]
 
-intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                      'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+intersphinx_mapping = {'numpy': ('https://numpy.org/doc/stable/', None),
+                      'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
                       'astropy': ('https://docs.astropy.org/en/stable/', None),
                       'python': ('https://docs.python.org/3', None),
                       'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
