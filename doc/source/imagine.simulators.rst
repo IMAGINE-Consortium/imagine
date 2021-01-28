@@ -28,7 +28,6 @@ imagine.simulators.test\_simulator module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

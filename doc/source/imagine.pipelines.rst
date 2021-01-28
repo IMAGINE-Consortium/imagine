@@ -12,6 +12,14 @@ imagine.pipelines.dynesty\_pipeline module
    :undoc-members:
    :show-inheritance:
 
+imagine.pipelines.emcee\_pipeline module
+----------------------------------------
+
+.. automodule:: imagine.pipelines.emcee_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imagine.pipelines.multinest\_pipeline module
 --------------------------------------------
 
@@ -35,7 +43,6 @@ imagine.pipelines.ultranest\_pipeline module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

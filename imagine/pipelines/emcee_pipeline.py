@@ -51,7 +51,6 @@ class EmceePipeline(Pipeline):
         Number of autocorrelation times to be discarded from main results
     thin_factor : float
         Factor used to choose how the chain will be "thinned" after running
-
     """
 
     # Class attributes
@@ -59,7 +58,6 @@ class EmceePipeline(Pipeline):
 
     def call(self, **kwargs):
         """
-
         Returns
         -------
         results : dict

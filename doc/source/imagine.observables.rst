@@ -28,7 +28,6 @@ imagine.observables.observable\_dict module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 
