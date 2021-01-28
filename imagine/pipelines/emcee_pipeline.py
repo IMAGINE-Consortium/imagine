@@ -5,9 +5,9 @@ import logging
 
 
 # Package imports
-import schwimmbad
 import numpy as np
 import emcee
+import schwimmbad
 from mpi4py import MPI
 
 # IMAGINE imports
