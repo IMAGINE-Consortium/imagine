@@ -195,7 +195,7 @@ if __name__ == '__main__':
     cmd, args = sys.argv[0], sys.argv[1:]
     if len(args)==0:
         choice = 'multinest'
-    elif args[0].lower() in ('multinest', 'ultranest', 'dynesty'):
+    elif args[0].lower() in ('multinest', 'ultranest', 'emcee', 'dynesty'):
         choice = args[0].lower()  # Supports any capitalization
     else:
         if mpirank == 0:
@@ -245,6 +245,27 @@ if __name__ == '__main__':
                           pipeline_class=pipeline_class)
         if mpirank == 0:
             print('Finished. Ellapsed time:', timer.tock('UltraNest'))
+
+    elif choice == 'emcee':
+        # ------ UltraNest -------
+        # Sets run directory name
+        run_directory=os.path.join('runs','basic_pipeline_run_emcee')
+        # Sets up the sampler to be used
+        pipeline_class = img.pipelines.EmceePipeline
+        # Set some controller parameters that are specific to Emcee.
+        sampling_controllers = {'max_nsteps': 2000,
+                                'nwalkers': 16,
+                                'nsteps_check': 100}
+        # Starts the run
+        if mpirank == 0:
+            print('Running using emcee', flush=True)
+            timer.tick('emcee')
+
+        basic_pipeline_run(run_directory=run_directory,
+                          sampling_controllers=sampling_controllers,
+                          pipeline_class=pipeline_class)
+        if mpirank == 0:
+            print('Finished. Ellapsed time:', timer.tock('emcee'))
 
     elif choice == 'dynesty':
         # ------ Dynesty -------
