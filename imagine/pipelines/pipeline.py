@@ -523,12 +523,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
             self._MAP_model = []
             for factory in self.factory_list:
-                parameters = {}
+                params_dict = {}
                 for pname, MAP_val in zip(self.active_parameters, MAP):
                     if factory.name in pname:
-                        parameters[pname.replace(factory.name+'_','')] = MAP_val
-
-                self._MAP_model.append(factory(variables=parameters))
+                        params_dict[pname.replace(factory.name+'_','')] = MAP_val
+                field = factory(ensemble_seeds=self.ensemble_seeds[factory],
+                                variables=params_dict)
+                self._MAP_model.append(field)
 
         return self._MAP_model
 
