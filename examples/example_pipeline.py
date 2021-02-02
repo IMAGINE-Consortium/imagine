@@ -79,7 +79,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     brnd_es = BrndES(parameters={'rms': rms, 'k0': 0.5, 'a0': 1.7,
                                  'k1': 0.5, 'a1': 0.0,
                                  'rho': 0.5, 'r0': 8., 'z0': 1.},
-                     grid_nx=100, grid_ny=100, grid_nz=60 )
+                     grid_nx=100, grid_ny=100, grid_nz=60)
 
     ## Generate mock data (run hammurabi)
     outputs = mock_generator([breg_lsa, brnd_es, cre_ana, tereg_ymw16])
@@ -123,7 +123,7 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Setting up of the pipeline
     ## Use an ensemble to estimate the galactic variance
-    likelihood = img.likelihoods.EnsembleLikelihood(mock_data)
+    likelihood = img.likelihoods.EnsembleLikelihoodDiagonal(mock_data)
 
     ## WMAP B-field, vary only b0 and psi0
     breg_factory = BregLSAFactory()
@@ -201,7 +201,7 @@ def show_usage(cmd):
     print('IMAGINE example run\n')
     print('Usage: ')
     print('\t{} prepare\t   Prepares (or tests) an example Pipeline'.format(cmd))
-    print('\t{} run\t   Runs an example Pipeline (preparing if necessary'.format(cmd))
+    print('\t{} run\t   Runs an example Pipeline (preparing if necessary)'.format(cmd))
     exit()
 
 if __name__ == '__main__':
@@ -249,5 +249,6 @@ if __name__ == '__main__':
 
     pipeline.test(**test_args)
 
+    # Runs the sampler
     if not prepare_only:
         run_pipeline(pipeline, true_pars=true_pars)
