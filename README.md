@@ -1,6 +1,7 @@
 [![Documentation Status](https://readthedocs.org/projects/imagine-code/badge/?version=latest)](https://imagine-code.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.com/IMAGINE-Consortium/imagine.svg?branch=master)](https://travis-ci.com/IMAGINE-Consortium/imagine)
 [![Docker](https://github.com/IMAGINE-Consortium/imagine/workflows/Docker/badge.svg)](https://github.com/IMAGINE-Consortium/imagine/actions?query=workflow%3ADocker)
+[![Release Version](https://img.shields.io/github/release/IMAGINE-Consortium/imagine.svg)](https://github.com/IMAGINE-Consortium/imagine/releases)
 
 # IMAGINE
 
@@ -10,7 +11,7 @@ analysing the Galactic components with observables.
 It is a modular framework for doing inference on generic (non)parametric models of the Galaxy.
 The analysing pipeline works with MPI support and MultiNest sampler.
 
-The Galactic magnetic field (GMF) has a huge impact on the evolution of the Milky Way,
+The Galactic magnetic field (GMF) has significant impact on the evolution of the Milky Way,
 yet currently there exists no standard model for it as its structure is not fully understood.
 In the past many parametric GMF models of varying complexity have been developed that
 all have been fitted to an individual set of observational data complicating comparability.
