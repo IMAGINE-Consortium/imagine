@@ -141,6 +141,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._median_model = None
         self._MAP_simulation = None
         self._MAP_model = None
+        self._MAP = None
 
         # Report settings
         self.show_summary_reports = show_summary_reports
@@ -513,18 +514,22 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         as the MAP is computed by maximizing the unnormalized posterior
         distribution.
 
-        This convenience property calls the :py:meth:`Pipeline.get_MAP` method
-        with default arguments and stores the result internally.
+        This convenience property uses the results from the latest call of the
+        :py:meth:`Pipeline.get_MAP` method. If :py:meth:`Pipeline.get_MAP` has
+        never been called, the MAP is found calling it with with default
+        arguments.
+
         See :py:meth:`Pipeline.get_MAP` for details.
         """
         if self._MAP_model is None:
-            MAP = self.get_MAP()
-            assert not isinstance(MAP, scipy_optimize.OptimizeResult), 'Try running get_MAP directly, with different parameters'
+            if self._MAP is None:
+                self.get_MAP()
+            assert not isinstance(self._MAP, scipy_optimize.OptimizeResult), 'Try running get_MAP directly, with different parameters'
 
             self._MAP_model = []
             for factory in self.factory_list:
                 params_dict = {}
-                for pname, MAP_val in zip(self.active_parameters, MAP):
+                for pname, MAP_val in zip(self.active_parameters, self._MAP):
                     if factory.name in pname:
                         params_dict[pname.replace(factory.name+'_','')] = MAP_val
                 field = factory(ensemble_seeds=self.ensemble_seeds[factory],
@@ -1207,6 +1212,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         Also by default the `bounds` keywords use the ranges specified in the
         priors.
 
+        The MAP estimate is stored internally to be used by the properties:
+        :py:data:`MAP_model` and :py:data:`MAP_simulation`.
+
         Parameters
         ----------
         include_units : bool
@@ -1283,6 +1291,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             # Adds units to parameters
             for i, pname in enumerate(self.active_parameters):
                 MAP[i] *= self.priors[pname].unit
+        # Stores for later use
+        self._MAP = MAP
+        self._MAP_model = None
+        self._MAP_simulation = None
 
         if not return_optimizer_result:
             return MAP

@@ -51,6 +51,10 @@ class EmceePipeline(Pipeline):
         Number of autocorrelation times to be discarded from main results
     thin_factor : float
         Factor used to choose how the chain will be "thinned" after running
+    custom_initial_positions : list
+        List containig the the starting positions to be used for the walkers.
+        If absent (default), initial positions are randomly sampled from the
+        prior distribution.
     """
 
     # Class attributes
@@ -106,14 +110,19 @@ class EmceePipeline(Pipeline):
             backend = emcee.backends.HDFBackend(filename)
 
             # Prepares the initial positions of the priors
-            pos = [self.prior_transform(np.random.sample(ndim))
-                  for _ in range(params['nwalkers'])]
+            if 'custom_initial_positions' in params:
+                pos = params['custom_initial_positions']
+                assert len(pos) == params['nwalkers'], 'Number of initial positions does not match number of walkers'
+            else:
+                # Randomly samples from
+                pos = [self.prior_transform(np.random.sample(ndim))
+                       for _ in range(params['nwalkers'])]
             # Only uses this if not resuming
             if os.path.isfile(filename):
                 if self.sampling_controllers['resume']:
                     pos = None
                 else:
-                    backend.reset()
+                    backend.reset(params['nwalkers'], ndim)
 
             # Sets up the sampler
             self.sampler = emcee.EnsembleSampler(params['nwalkers'], ndim,
