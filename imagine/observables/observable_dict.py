@@ -204,8 +204,12 @@ class Masks(ObservableDict):
             if name not in self._archive:
                 # Saves reference to any observables where the masks are
                 # not available
-                masked_dict.append(name=name,
-                                   data=observable)
+                if isinstance(observable_dict, Covariances):
+                    masked_dict.append(name=name,
+                                       cov_data=observable)
+                else:
+                    masked_dict.append(name=name,
+                                       data=observable)
             else:
                 # Reads the mask
                 mask = self._archive[name].data
