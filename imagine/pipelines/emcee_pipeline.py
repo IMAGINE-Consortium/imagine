@@ -131,6 +131,7 @@ class EmceePipeline(Pipeline):
 
             old_tau = np.inf
             nsteps = 0
+            nsteps_0 = self.sampler.iteration
 
             # Iterates trying to reach convergence
             while nsteps < params['max_nsteps']:
@@ -145,9 +146,10 @@ class EmceePipeline(Pipeline):
                   self.tau * params['convergence_factor'] < self.sampler.iteration)
                 self.converged &= np.all(np.abs(old_tau - self.tau) / self.tau < 0.01)
                 if self.converged:
+                    print('pipeline converged')
                     break
                 old_tau = self.tau
-                nsteps = self.sampler.iteration
+                nsteps = self.sampler.iteration -nsteps_0
 
             burnin = int(params['burnin_factor'] * np.max(self.tau))
             thin = int(params['thin_factor'] * np.min(self.tau))

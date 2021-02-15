@@ -292,7 +292,7 @@ class DynestyPipeline(Pipeline):
         self.results = self.sampler.results
 
         self._samples_array = self.results['samples']
-        self._evidence = self.results['logz']
-        self._evidence_err = self.results['logzerr']
+        self._evidence = self.results['logz'][-1]
+        self._evidence_err = self.results['logzerr'][-1]
 
         return self.results
