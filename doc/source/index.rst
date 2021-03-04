@@ -42,7 +42,7 @@ please refer to the
    installation
    design
    components
-   posterior
+   tutorial_fitting
    evidence
    parallel
 
