@@ -17,6 +17,7 @@ from mpi4py import MPI
 import numpy as np
 from scipy.stats import norm as scipy_norm
 from scipy.stats import pearsonr as scipy_pearsonr
+import scipy.optimize as scipy_optimize
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import hickle as hkl
@@ -138,6 +139,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self.correlated_priors = None
         self._median_simulation = None
         self._median_model = None
+        self._MAP_simulation = None
+        self._MAP_model = None
+        self._MAP = None
 
         # Report settings
         self.show_summary_reports = show_summary_reports
@@ -148,14 +152,21 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
 
     def __call__(self, *args, save_pipeline_state=True, **kwargs):
+        # Keeps the setup safe
         if save_pipeline_state:
-            self.save()  # Keeps the setup safe
+            self.save()
+
+        # Resets internal state and adjusts random seed
+        self.tidy_up()
         result = self.call(*args, **kwargs)
+
         if self.show_summary_reports and (mpirank == 0):
             self.posterior_report()
             self.evidence_report()
+
+        # Stores the final results
         if save_pipeline_state:
-            self.save()  # Keeps the results safe
+            self.save()
 
         return result
 
@@ -215,6 +226,13 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         # The user should not be able to set this attribute manually
         return self._active_parameters
+
+    @property
+    def wrapped_parameters(self):
+        """
+        List of parameters which are periodic or "wrapped around"
+        """
+        return [self._priors[k].wrapped for k in self._active_parameters]
 
     @property
     def priors(self):
@@ -332,7 +350,6 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         """
         Reports the progress of the inference
         """
-
         # Try to call get_intermediate_results
         try:
             self.get_intermediate_results()
@@ -343,11 +360,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
                   "Skipping report.")
         # If this method is implemented, create progress report
         else:
+            if mpirank!=0:
+                return
+
             dead_samples = self.intermediate_results['rejected_points']
             live_samples = self.intermediate_results['live_points']
             likelihood = self.intermediate_results['logLikelihood']
             lnX = self.intermediate_results['lnX']
-            if None not in (dead_samples, likelihood, lnX):
+
+            if dead_samples is not None:
                 fig = visualization.trace_plot(
                     parameter_names=self._active_parameters,
                     samples=dead_samples,
@@ -416,6 +437,9 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
 
     def evidence_report(self, sdigits=4):
+        if not np.isfinite(self.log_evidence):
+              return
+
         if misc.is_notebook():
             ipd.display(ipd.Markdown("**Evidence report:**"))
             out = r"\log\mathcal{{ Z }} = "
@@ -461,8 +485,10 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
     @property
     def median_model(self):
         """
+        Posterior median model
+
         List of Field objects corresponding to the median values of the
-        distributions of parameter values found after a Pipeline run.
+        distributions of parameter values found *after a Pipeline run*.
         """
         if self._median_model is None:
             self._median_model = []
@@ -479,6 +505,40 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         return self._median_model
 
     @property
+    def MAP_model(self):
+        """
+        Maximum a posteriori (MAP) model
+
+        List of Field objects corresponding to the mode of the posterior
+        distribution. This does not require a previous run of the Pipeline,
+        as the MAP is computed by maximizing the unnormalized posterior
+        distribution.
+
+        This convenience property uses the results from the latest call of the
+        :py:meth:`Pipeline.get_MAP` method. If :py:meth:`Pipeline.get_MAP` has
+        never been called, the MAP is found calling it with with default
+        arguments.
+
+        See :py:meth:`Pipeline.get_MAP` for details.
+        """
+        if self._MAP_model is None:
+            if self._MAP is None:
+                self.get_MAP()
+            assert not isinstance(self._MAP, scipy_optimize.OptimizeResult), 'Try running get_MAP directly, with different parameters'
+
+            self._MAP_model = []
+            for factory in self.factory_list:
+                params_dict = {}
+                for pname, MAP_val in zip(self.active_parameters, self._MAP):
+                    if factory.name in pname:
+                        params_dict[pname.replace(factory.name+'_','')] = MAP_val
+                field = factory(ensemble_seeds=self.ensemble_seeds[factory],
+                                variables=params_dict)
+                self._MAP_model.append(field)
+
+        return self._MAP_model
+
+    @property
     def median_simulation(self):
         """
         Simulation corresponding to the
@@ -487,6 +547,16 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         if self._median_simulation is None:
             self._median_simulation = self.simulator(self.median_model)
         return self._median_simulation
+
+    @property
+    def MAP_simulation(self):
+        """
+        Simulation corresponding to the
+        :py:data:`MAP_model <Pipeline.MAP_model>`.
+        """
+        if self._MAP_simulation is None:
+            self._MAP_simulation = self.simulator(self.MAP_model)
+        return self._MAP_simulation
 
     @property
     def samples(self):
@@ -589,14 +659,14 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         Returns
         -------
-        cube_rtn
-            The modified cube
+        rtn : float
+            Prior probability of the parameter choice specified by `cube`
         """
-        cube_rtn = np.empty_like(cube)
+        rtn = 1.
         for i, parameter in enumerate(self._active_parameters):
             prior = self._priors[parameter]
-            cube_rtn[i] = prior.pdf(cube[i]*prior.unit)
-        return cube_rtn
+            rtn *= prior.pdf(cube[i]*prior.unit)
+        return rtn
 
     def prior_transform(self, cube):
         """
@@ -781,7 +851,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         return(observables)
 
-    def test(self, n_points=3, include_centre=True):
+    def test(self, n_points=3, include_centre=True, verbose=True):
         """
         Tests the present IMAGINE pipeline evaluating the likelihood on
         a small number of points and reporting the run-time.
@@ -809,22 +879,27 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         for i_point in range(n_points):
             timer.tick(i_point)
             if (i_point == 0) and include_centre:
-                print('Sampling centres of the parameter ranges.')
+                if verbose:
+                    print('Sampling centres of the parameter ranges.')
                 values = self.parameter_central_value()
             else:
-                print('Randomly sampling from prior.')
+                if verbose:
+                    print('Randomly sampling from prior.')
                 # Draws a random point from the prior distributions
                 values = self.prior_transform(np.random.random_sample(n_params))
 
-            print('\tEvaluating point:', values)
+            if verbose:
+                print('\tEvaluating point:', values)
             L = self._likelihood_function(values)
             time = timer.tock(i_point)
-            print('\tLog-likelihood', L)
-            print('\tTotal execution time: ', time,'s\n')
+            if verbose:
+                print('\tLog-likelihood', L)
+                print('\tTotal execution time: ', time,'s\n')
             times.append(time)
 
         mean_time = np.mean(times) * apu.s
-        print('Average execution time:', mean_time)
+        if verbose:
+            print('Average execution time:', mean_time)
         return mean_time
 
     def _core_likelihood(self, cube):
@@ -972,14 +1047,15 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         The end result is a :py:obj:`pandas.DataFrame` containing the following
         columns:
-            * `likelihood` - The likelihood value.
-            * `likelihood_std` - The likelihood dispersion, estimated by
-              bootstrapping the available ensemble and computing the standard
-              deviation.
-            * `ensemble_size` - Size of the ensemble of simulations used.
-            * `ipoint` - Index of the point used.
-            * `iseed` - Index of the random (master) seed used.
-            * `param_values` - Values of the parameters at a given point.
+
+          * `likelihood` - The likelihood value.
+          * `likelihood_std` - The likelihood dispersion, estimated by
+            bootstrapping the available ensemble and computing the standard
+            deviation.
+          * `ensemble_size` - Size of the ensemble of simulations used.
+          * `ipoint` - Index of the point used.
+          * `iseed` - Index of the random (master) seed used.
+          * `param_values` - Values of the parameters at a given point.
 
         Parameters
         ----------
@@ -1092,7 +1168,136 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             central_values.append(centre)
         return central_values
 
-    def __del__(self):
-        # This MPI barrier ensures that all the processes reached the
-        # same point before deleting the temporary directories
-        comm.Barrier()
+    def log_probability_unnormalized(self, theta):
+        """
+        The log of the unnormalized posterior probability -- i.e. the sum of
+        the log-likelihood and the log of the prior probability.
+
+        Parameters
+        ----------
+        theta : np.ndarray
+            Array of parameter values (in their default units)
+
+        Returns
+        -------
+        log_prob : float
+            log(likelihood(theta))+log(prior(theta))
+        """
+        # Checks whether the range is sane
+        for pname, v in zip(self.active_parameters, theta):
+            pmin, pmax = self.priors[pname].range.value
+            if not (pmin < v < pmax):
+                return -np.inf
+
+        # Computes the (log) prior
+        lp = np.log(self.prior_pdf(theta))
+        if not np.isfinite(lp):
+            return -np.inf
+
+        # Multiplies by the likelihood
+        log_prob = lp + self._likelihood_function(theta)
+
+        return log_prob
+
+    def get_MAP(self, initial_guess='auto', include_units=True,
+                return_optimizer_result=False, **kwargs):
+        """
+        Computes the parameter values at the Maximum A Posteriori
+
+        This method uses `scipy.optimize.minimize` for the calculation. By
+        default, it will use the
+        `'Powell' <https://docs.scipy.org/doc/scipy/reference/optimize.minimize-powell.html#optimize-minimize-powell>`_
+        (which does not require the calculation of gradients or the assumption
+        of continuity).
+        Also by default the `bounds` keywords use the ranges specified in the
+        priors.
+
+        The MAP estimate is stored internally to be used by the properties:
+        :py:data:`MAP_model` and :py:data:`MAP_simulation`.
+
+        Parameters
+        ----------
+        include_units : bool
+            If `True` (default), returns the result as list of
+            `Quantities <astropy.units.Quantity>`. Otherwise, returns a single
+            numpy array with the parameter values in their default units.
+        return_optimizer_result : bool
+            If `False` (default) only the MAP values are returned. Otherwise,
+            a tuple containing the values and the output of
+            `scipy.optimize.minimize` is returned instead.
+        initial_guess : str or numpy.ndarray
+            The initial guess used by the optimizer. If set to 'centre', the
+            centre of each parameter range is used (obtained using
+            :py:meth:`parameter_central_value`). If set to 'samples', the
+            median values of the samples produced by a previous posterior
+            sampling are used (the Pipeline has to have been run before).
+            If set to 'auto' (default), use 'samples' if available, and
+            'centre' otherwise. Alternatively, an array of active parameter
+            values with the starting position may be provided.
+        **kwargs
+            Any other keyword arguments are passed directly to
+            `scipy.optimize.minimize`.
+
+        Returns
+        -------
+        MAP : list or array
+            Parameter values at the position of the maximum of the posterior
+            distribution
+        result : scipy.optimize.OptimizeResult
+            Only if `return_optimizer_result` is set to `True`, this is
+            returned together with the MAP.
+        """
+        # By default, uses Powell which does not require calculation
+        # of gradients and uses the 'bounds' information
+        if 'method' not in kwargs:
+            kwargs['method'] = 'Powell'
+
+        # Finds ranges
+        if 'bounds' not in kwargs:
+            kwargs['bounds'] = [self.priors[k].range.value
+                                for k in self.active_parameters]
+
+        # Sets function to minimize
+        fun = lambda theta: -np.nan_to_num(self.log_probability_unnormalized(theta))
+
+        # Avoid a (sampling) progress report to appear during the minimization
+        progress_reports_state = self.show_progress_reports
+        self.show_progress_reports = False
+
+        # If the pipeline had previously run, the posterior median as the
+        # initial guess, otherwise, uses the centres of the ranges
+        if ((initial_guess == 'samples') or
+            (initial_guess ==  'auto' and (self._samples_array is not None))):
+            initial_guess = [self.posterior_summary[k]['median'].value
+                             for k in self.active_parameters]
+        elif (initial_guess == 'centre') or (initial_guess ==  'auto'):
+            initial_guess = self.parameter_central_value()
+        else:
+            initial_guess = np.array(initial_guess)
+
+        # Finds the MAP
+        result = scipy_optimize.minimize(fun, initial_guess, **kwargs)
+        if not result.success:
+            print('Unable to find MAP! Check your settings.')
+            return result
+
+        MAP = result.x
+
+        # Restores the original setup
+        self.show_progress_reports = progress_reports_state
+
+        if include_units:
+            MAP = list(MAP)
+            # Adds units to parameters
+            for i, pname in enumerate(self.active_parameters):
+                MAP[i] *= self.priors[pname].unit
+        # Stores for later use
+        self._MAP = MAP
+        self._MAP_model = None
+        self._MAP_simulation = None
+
+        if not return_optimizer_result:
+            return MAP
+        else:
+            return MAP, result
+

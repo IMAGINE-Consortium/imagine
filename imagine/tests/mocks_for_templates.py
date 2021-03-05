@@ -105,8 +105,8 @@ class MY_SAMPLER_Sampler:
         assert np.allclose(self.prior_transform(np.array([0.5,0.15,0.25])),
                            [5., 0.98587462, 1.16275512])
         # Checks the prior_pdf
-        assert np.allclose(self.prior_pdf([1.5,1.5,1.5]),
-                           [0.1, 0.79788083, 0.79788456])
+        print('thingy!', self.prior_pdf([1.5,1.5,1.5]))
+        assert np.isclose(self.prior_pdf([1.5,1.5,1.5]), 0.0636616797)
         # Checks likelihood_function
         assert np.allclose(self.loglike(np.array([0.5, 10.5, 0.5])),
                            -55.581767201053125)

@@ -43,7 +43,7 @@ import numpy as np
 # IMAGINE imports
 from imagine.observables.dataset import Dataset, HEALPixDataset
 from imagine.observables.observable import Observable
-from imagine.tools import BaseClass, mask_cov, mask_obs, req_attr, oas_cov
+from imagine.tools import BaseClass, mask_cov, mask_var, mask_obs, req_attr, oas_cov
 import imagine.tools.visualization as visu
 
 # All declaration
@@ -148,14 +148,14 @@ class Masks(ObservableDict):
     >>> import numpy as np
     >>> meas, cov, mask = obs.Measurements(), obs.Covariances(), obs.Masks()
     >>> key = ('test','nan','4','nan')
-    >>> meas.append(('test','nan','4','nan'), np.array([[1,2,3,4.]]), plain=True)
-    >>> mask.append(('test','nan','4','nan'), np.array([[1,1,0,0.]]), plain=True)
+    >>> meas.append(name=key, data=np.array([[1,2,3,4.]]), otype='plain')
+    >>> mask.append(name=key, data=np.array([[1,2,3,4.]]), otype='plain')
     >>> masked_meas = mask(meas)
     >>> print(masked_meas[('test','nan','2','nan')].data)
     [[1. 2.]]
-    >>> cov.append(('test','nan','4','nan'), np.diag((1,2,3,4.)), plain=True)
+    >>> cov.append(name=key, cov_data=np.diag((1,2,3,4.)), otype='plain')
     >>> masked_cov = mask(cov)
-    >>> print(masked_cov[('test','nan','2','nan')].data)
+    >>> print(masked_cov[('test',None, 2 ,None)].data)
     [[1. 0.]
      [0. 2.]]
     """
@@ -204,18 +204,30 @@ class Masks(ObservableDict):
             if name not in self._archive:
                 # Saves reference to any observables where the masks are
                 # not available
-                masked_dict.append(name=name,
-                                   data=observable)
+                if isinstance(observable_dict, Covariances):
+                    masked_dict.append(name=name,
+                                       cov_data=observable)
+                else:
+                    masked_dict.append(name=name,
+                                       data=observable)
             else:
                 # Reads the mask
                 mask = self._archive[name].data
                 # Applies appropriate function
                 if isinstance(observable_dict, Covariances):
-                    masked_data = mask_cov(observable_dict[name].data, mask)
+                    if observable_dict[name].dtype == 'variance':
+                        masked_data = mask_var(observable_dict[name].var, mask)
+                    else:
+                        masked_data = mask_cov(observable_dict[name].data, mask)
                 else:
                     masked_data = mask_obs(observable_dict[name].data, mask)
                 # Prepares key
-                new_name = (name[0], name[1], masked_data.shape[1], name[3])
+                if observable_dict[name].dtype != 'variance':
+                    masked_shape = masked_data.shape[1]
+                else:
+                    masked_shape = masked_data.size
+
+                new_name = (name[0], name[1], masked_shape, name[3])
                 # Appends the masked Observable
                 if isinstance(observable_dict, Covariances):
                     masked_dict.append(name=new_name, cov_data=masked_data,

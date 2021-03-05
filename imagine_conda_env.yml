@@ -12,12 +12,15 @@ dependencies:
   - dynesty=1.0.*
   - dill=0.3.*
   - e13tools=0.9.*
+  - emcee=3.0.*
   - healpy=1.*
   - h5py=2.10.*=mpi*
   - ipykernel
   - mpi4py=3.*
   - numpy=1.18.*
+  - pandas=1.1.*
   - python=3.7.*
   - pymultinest=2.10
   - scipy=1.*
+  - schwimmbad=0.3.*
   - ultranest=3.2.*

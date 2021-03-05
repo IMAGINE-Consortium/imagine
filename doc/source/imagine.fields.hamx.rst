@@ -36,7 +36,6 @@ imagine.fields.hamx.tereg\_ymw16 module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

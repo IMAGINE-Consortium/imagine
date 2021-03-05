@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 
 # Built-in imports
-import os
-import sys
-import logging
+import os, sys, logging
 from mpi4py import MPI
 # External packages
 import numpy as np
-import healpy as hp
 import astropy.units as u
-import corner
 import matplotlib
 import matplotlib.pyplot as plt
 # IMAGINE
@@ -22,6 +18,7 @@ from imagine.fields.hamx import CREAna, CREAnaFactory
 from imagine.fields.hamx import BrndES, BrndESFactory
 
 matplotlib.use('Agg')
+
 # Sets up MPI variables
 comm = MPI.COMM_WORLD
 mpirank = comm.Get_rank()
@@ -65,9 +62,7 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     fd_dset = img_obs.FaradayDepthHEALPixDataset(data=np.empty(size)*u.rad/u.m**2)
 
     # Appends them to an Observables Dictionary
-    trigger = img_obs.Measurements()
-    trigger.append(dataset=sync_dset)
-    trigger.append(dataset=fd_dset)
+    trigger = img_obs.Measurements(sync_dset, fd_dset)
 
     # Prepares the Hammurabi simmulator for the mock generation
     mock_generator = img.simulators.Hammurabi(measurements=trigger)
@@ -84,34 +79,32 @@ def prepare_mock_obs_data(b0=3, psi0=27, rms=4, err=0.01, nside=2):
     brnd_es = BrndES(parameters={'rms': rms, 'k0': 0.5, 'a0': 1.7,
                                  'k1': 0.5, 'a1': 0.0,
                                  'rho': 0.5, 'r0': 8., 'z0': 1.},
-                     grid_nx=25, grid_ny=25, grid_nz=15)
+                     grid_nx=100, grid_ny=100, grid_nz=60)
 
     ## Generate mock data (run hammurabi)
     outputs = mock_generator([breg_lsa, brnd_es, cre_ana, tereg_ymw16])
 
     ## Collect the outputs
     mockedI = outputs[('sync', 23., nside, 'I')].global_data[0]
+    noiseI = err * mockedI.mean()
     mockedRM = outputs[('fd', None, nside, None)].global_data[0]
-    dm=np.mean(mockedI)
-    dv=np.std(mockedI)
+    noiseRM = err * np.mean(np.abs(mockedRM))
 
-    ## Add some noise that's just proportional to the average sync I by the factor err
-    dataI = (mockedI + np.random.normal(loc=0, scale=err*dm, size=size)) << u.K
-    errorI = (err*dm) << u.K
-    sync_dset = img_obs.SynchrotronHEALPixDataset(data=dataI, error=errorI,
+    dataI = mockedI + np.random.normal(loc=0, scale=noiseI, size=size)
+    sync_dset = img_obs.SynchrotronHEALPixDataset(data=dataI << u.K,
+                                                  error=noiseI << u.K,
                                                   frequency=23*u.GHz, typ='I')
-    ## Just 0.01*50 rad/m^2 of error for noise.
-    dataRM = (mockedRM + np.random.normal(loc=0, scale=err*50,
-                                          size=12*nside**2))*u.rad/u.m/u.m
-    errorRM = (err*50.) << (u.rad/u.m**2)
-    fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM, error=errorRM)
+
+    dataRM = mockedRM + np.random.normal(loc=0, scale=noiseRM, size=size)
+    fd_dset = img_obs.FaradayDepthHEALPixDataset(data=dataRM << u.rad/u.m/u.m,
+                                                 error=noiseRM << u.rad/u.m/u.m)
 
     mock_data = img_obs.Measurements(sync_dset, fd_dset)
 
     return mock_data
 
 def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
-                     sampling_controllers={}, ensemble_size=10,
+                     sampling_controllers={}, ensemble_size=20,
                      run_directory='example_pipeline',
                      n_evals_report=50, nside=4,
                      true_pars={'b0': 3, 'psi0': 27, 'rms': 4},
@@ -124,13 +117,13 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Creates the mock dataset based on "true" parameters provided
     msg('Generating mock data')
-    mock_data, mock_cov = prepare_mock_obs_data(err=obs_err, nside=nside,
+    mock_data = prepare_mock_obs_data(err=obs_err, nside=nside,
                                                 **true_pars)
     msg('Preparing pipeline')
 
     # Setting up of the pipeline
     ## Use an ensemble to estimate the galactic variance
-    likelihood = img.likelihoods.EnsembleLikelihood(mock_data)
+    likelihood = img.likelihoods.EnsembleLikelihoodDiagonal(mock_data)
 
     ## WMAP B-field, vary only b0 and psi0
     breg_factory = BregLSAFactory()
@@ -138,7 +131,7 @@ def prepare_pipeline(pipeline_class=img.pipelines.MultinestPipeline,
                            'psi0': img.priors.FlatPrior(xmin=0., xmax=50.)}
     breg_factory.active_parameters = ('b0', 'psi0')
     ## Random B-field, vary only RMS amplitude
-    brnd_factory = BrndESFactory(grid_nx=25, grid_ny=25, grid_nz=15)
+    brnd_factory = BrndESFactory(grid_nx=100, grid_ny=100, grid_nz=60)
     brnd_factory.active_parameters = ('rms',)
     brnd_factory.priors = {'rms': img.priors.FlatPrior(xmin=2., xmax=8.)}
     brnd_factory.default_parameters = {'k0': 0.5, 'a0': 1.7, 'k1': 0.5,
@@ -208,7 +201,7 @@ def show_usage(cmd):
     print('IMAGINE example run\n')
     print('Usage: ')
     print('\t{} prepare\t   Prepares (or tests) an example Pipeline'.format(cmd))
-    print('\t{} run\t   Runs an example Pipeline (preparing if necessary'.format(cmd))
+    print('\t{} run\t   Runs an example Pipeline (preparing if necessary)'.format(cmd))
     exit()
 
 if __name__ == '__main__':
@@ -234,8 +227,8 @@ if __name__ == '__main__':
         msg('Preparing Pipeline')
         pipeline = prepare_pipeline(
           ensemble_size=15,
-          nside=8,
-          sampling_controllers={ 'n_live_points': 1000},
+          nside=32,
+          sampling_controllers={ 'n_live_points': 300},
           run_directory=run_directory,
           true_pars=true_pars)
     else:
@@ -247,12 +240,15 @@ if __name__ == '__main__':
       filename=os.path.join(run_directory, 'example_pipeline.log'),
       level=logging.INFO)
 
-    # Checks the runtime
+    # Tests and checks the runtime
     msg('Testing pipeline')
-    timer.tick('likelihood')
-    pipeline._likelihood_function([3,3,3])
-    test_time = timer.tock('likelihood')
-    msg('Single likelihood evaluation: {0:.2f} s'.format(test_time), banner=False)
+    if prepare_only:
+        test_args = {'n_points': 3}
+    else:
+        test_args = {'n_points': 1, 'include_centre': False}
 
+    pipeline.test(**test_args)
+
+    # Runs the sampler
     if not prepare_only:
         run_pipeline(pipeline, true_pars=true_pars)
