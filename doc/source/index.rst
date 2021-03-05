@@ -43,7 +43,7 @@ please refer to the
    design
    components
    tutorial_fitting
-   evidence
+   tutorial_comparison
    parallel
 
 .. toctree::
