@@ -138,13 +138,13 @@ class MultinestPipeline(Pipeline):
         # Runs pyMultinest
         log.info('Calling pymultinest.solve')
 
-        log.info('Master seed:', self.master_seed)
+        log.info('Master seed: {}'.format(self.master_seed))
         # Adjusts the seed to the correct interval, if needed
         if 0 < self.master_seed < 30081:
             seed = self.master_seed
         else:
             seed = np.random.randint(0, 30081)
-        log.info('MultiNest random seed:', seed)
+        log.info('MultiNest random seed: {}'.format(seed))
 
         self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
                                          Prior=self.prior_transform,
