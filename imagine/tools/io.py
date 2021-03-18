@@ -13,6 +13,7 @@ import numpy as np
 
 # IMAGINE imports
 from imagine.tools import rc
+from imagine.tools.parallel_ops import distribute_matrix
 
 __all__ = ['save_pipeline', 'load_pipeline']
 
