@@ -558,6 +558,42 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self._MAP_simulation = self.simulator(self.MAP_model)
         return self._MAP_simulation
 
+    def get_BIC(self):
+        r"""
+        Computes the Bayesian Information Criterion (BIC), this is done
+        using the simple expression
+
+        .. math::
+
+            BIC = k \ln n - 2 \ln L(\theta_{\rm MAP})
+
+        where :math:`k` is the number of parameters, :math:`n` is the total
+        number of data points, and :math:`\hat{L}` is the likelihood function
+        at a reference point :math:`\theta_{\rm MAP}.
+
+        Traditionally, this information criterion uses maximum likelihood as
+        a reference point (i.e. :math:`\theta_{\rm MLE}`).
+        By default, however, this method uses the likelihod
+        at the MAP as the reference. motivated by the heuristic that, if the
+        choice of prior is a sensible one, the MAP a better representation of
+        the model performance than the MLE.
+        """
+        k = len(self._active_parameters)
+
+        # Counts the total number of datapoints/pixels
+        n = 0
+        for key in self.likelihood.measurements:
+            obs = self.likelihood.measurements[key]
+            n += obs.shape[1]
+
+        # Gets MAP
+        if self._MAP is None:
+            self.get_MAP()
+        # Evaluates the log likelihood at that value
+        logL = self._likelihood_function(self._MAP)
+
+        return k*np.log(n) - 2*np.log(L)
+
     @property
     def samples(self):
         """
