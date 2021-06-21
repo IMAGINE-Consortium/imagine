@@ -142,6 +142,7 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
         self._MAP_simulation = None
         self._MAP_model = None
         self._MAP = None
+        self._BIC = None
 
         # Report settings
         self.show_summary_reports = show_summary_reports
@@ -558,6 +559,12 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             self._MAP_simulation = self.simulator(self.MAP_model)
         return self._MAP_simulation
 
+    @property
+    def BIC(self):
+        if self._BIC is None:
+            self.get_BIC()
+        return self._BIC
+        
     def get_BIC(self):
         r"""
         Computes the Bayesian Information Criterion (BIC), this is done
@@ -582,17 +589,21 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
 
         # Counts the total number of datapoints/pixels
         n = 0
-        for key in self.likelihood.measurements:
-            obs = self.likelihood.measurements[key]
+        for key in self.likelihood.measurement_dict:
+            obs = self.likelihood.measurement_dict[key]
             n += obs.shape[1]
 
         # Gets MAP
         if self._MAP is None:
             self.get_MAP()
         # Evaluates the log likelihood at that value
-        logL = self._likelihood_function(self._MAP)
+        # (the units need to be removed)
+        MAP = [param.value for param in self._MAP]
+        logL = self._likelihood_function(MAP)
 
-        return k*np.log(n) - 2*np.log(L)
+        self._BIC = k*np.log(n) - 2*logL
+        
+        return self._BIC
 
     @property
     def samples(self):
