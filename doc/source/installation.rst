@@ -33,14 +33,14 @@ using:
 
 .. code-block:: console
 
-    sudo docker pull docker.pkg.github.com/imagine-consortium/imagine/imagine:latest
+    sudo docker pull ghcr.io/imagine-consortium/imagine/imagine:latest
 
 If you would like to start working (or testing IMAGINE) immediately, a
 jupyter-lab session can be launched using:
 
 .. code-block:: console
 
-    sudo docker run -i -t -p 8888:8888 docker.pkg.github.com/imagine-consortium/imagine/imagine:latest /bin/bash -c "source ~/jupyterlab.bash"
+    sudo docker run -i -t -p 8888:8888 ghcr.io/imagine-consortium/imagine/imagine:latest /bin/bash -c "source ~/jupyterlab.bash"
 
 After running this, you may copy and paste the link with a token to a browser,
 which will allow you to access the jupyter-lab session. From there you may,
