@@ -42,7 +42,8 @@ jupyter-lab session can be launched using:
 
     sudo docker run -i -t -p 8888:8888 ghcr.io/imagine-consortium/imagine/imagine:latest /bin/bash -c "source ~/jupyterlab.bash"
 
-After running this, you may copy and paste the link with a token to a browser,
+After running this, you will see a link to a file and an URL at the end of the terminal output.
+You may copy and paste the link with a token to a browser,
 which will allow you to access the jupyter-lab session. From there you may,
 for instance, navigate to the `imagine/tutorials` directory.
 
