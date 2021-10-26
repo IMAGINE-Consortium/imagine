@@ -214,6 +214,9 @@ class DynestyPipeline(Pipeline):
         """
         log.debug('@ dynesty_pipeline::__call__')
 
+        # Resets internal state
+        self.tidy_up()
+
         # Common parameters for NestedSampler and DynamicNestedSampler
         default_init_params = {'bound': 'multi',
                                'sample': 'auto',
@@ -296,3 +299,6 @@ class DynestyPipeline(Pipeline):
         self._evidence_err = self.results['logzerr']
 
         return self.results
+
+    def get_intermediate_results(self):
+        pass

@@ -1,0 +1,11 @@
+astropy>=4.0.0
+e13tools>=0.9.0
+ipython
+nbsphinx
+nbsphinx-link
+numpy>=1.18.0
+scipy>=1.1.0
+sphinx_rtd_theme
+sphinx>=1.8
+Pygments==2.7.4
+pandas>=1.1.5

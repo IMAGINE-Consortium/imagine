@@ -103,14 +103,26 @@ class ThermalElectronDensityField(Field):
 
 class CosmicRayElectronDensityField(Field):
     """
-    Not yet implemented
+    First attempt at implementing CRE field
+    - 3d scalar field
+
+
+    What do we need for eventual synchrotron emissivity?
+    - number density
+    - cr spectrum as a function of position or effective energy function as function of posisiton and observing frequency
     """
 
     # Class attributes
     TYPE = 'cosmic_ray_electron_density'
+    UNITS = u.cm**(-3)
 
-    def __init__():
-        raise NotImplementedError
+    @property
+    def data_description(self):
+        return(['grid_x', 'grid_y', 'grid_z'])
+
+    @property
+    def data_shape(self):
+        return tuple(self.grid.shape)
 
 
 class DummyField(Field, metaclass=abc.ABCMeta):

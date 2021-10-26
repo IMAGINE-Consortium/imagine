@@ -5,11 +5,12 @@ import scipy.stats as stats
 
 # IMAGINE imports
 from imagine.fields.base_fields import (
-    MagneticField, ThermalElectronDensityField)
+    MagneticField, ThermalElectronDensityField, CosmicRayElectronDensityField)
 
 # All declaration
 __all__ = ['ConstantMagneticField', 'ConstantThermalElectrons',
-           'ExponentialThermalElectrons', 'RandomThermalElectrons']
+           'ExponentialThermalElectrons', 'RandomThermalElectrons',
+	   'ExponentialCosmicRayElectrons']
 
 
 # %% CLASS DEFINITIONS
@@ -73,7 +74,7 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
     """
 
     # Class attributes
-    NAME = 'exponential_disc_thermal_electrons'
+    NAME            = 'exponential_disc_thermal_electrons'
     PARAMETER_NAMES = ['central_density',
                        'scale_radius',
                        'scale_height']
@@ -104,9 +105,9 @@ class RandomThermalElectrons(ThermalElectronDensityField):
     """
 
     # Class attributes
-    NAME = 'random_thermal_electrons'
+    NAME             = 'random_thermal_electrons'
     STOCHASTIC_FIELD = True
-    PARAMETER_NAMES = ['mean', 'std', 'min_ne']
+    PARAMETER_NAMES  = ['mean', 'std', 'min_ne']
 
     def compute_field(self, seed):
         # Converts dimensional parameters into numerical values
@@ -125,3 +126,63 @@ class RandomThermalElectrons(ThermalElectronDensityField):
             result[result < minimum_density] = minimum_density
 
         return result << self.units  # Restores units
+
+# ================== new from here ========================================================
+
+class ExponentialCosmicRayElectrons(CosmicRayElectronDensityField):
+    """
+    Cosmic ray electron distribution in a double exponential disc
+    characterized by a scale-height and a scale-radius, i.e.
+
+    ..math::
+
+        n_e(R) = n_0 e^{-R/R_e} e^{-|z|/h_e}
+
+    where :math:`R` is the cylindrical radius and :math:`z` is the vertical
+    coordinate.
+
+    The field parameters are: the 'central_density', `n_0`;
+    'scale_radius`, :math:`R_e`; and 'scale_height', :math:`h_e`.
+    """
+
+    # Class attributes
+    NAME            = 'exponential_disc_cosmic_ray_electrons'
+    PARAMETER_NAMES = ['central_density',
+                       'scale_radius',
+                       'scale_height']
+
+    def compute_field(self, seed):
+        R = self.grid.r_cylindrical
+        z = self.grid.z
+        Re = self.parameters['scale_radius']
+        he = self.parameters['scale_height']
+        n0 = self.parameters['central_density']
+
+        return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

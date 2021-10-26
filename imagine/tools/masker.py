@@ -18,7 +18,7 @@ import numpy as np
 from imagine.tools.mpi_helper import mpi_arrange
 
 # All declaration
-__all__ = ['mask_cov', 'mask_var', 'mask_obs']
+__all__ = ['mask_cov', 'mask_obs']
 
 
 # %% FUNCTION DEFINITIONS
@@ -49,32 +49,6 @@ def mask_obs(obs, mask):
     bool_mask = mask[0].astype(bool)
 
     return obs[:, bool_mask]
-
-def mask_var(var, mask):
-    """
-    Applies a mask to an observable.
-
-    Parameters
-    ----------
-    var : numpy.ndarray
-        Variance data
-
-    mask : numpy.ndarray
-        Copied mask map in shape (1, data size) on each node.
-
-    Returns
-    -------
-    numpy.ndarray
-        Masked observable of shape (masked data size).
-    """
-    log.debug('@ masker::mask_var')
-    assert (mask.shape[0] == 1)
-    assert (var.size == mask.shape[1])
-
-    # Creates a boolean mask
-    bool_mask = mask[0].astype(bool)
-
-    return var[bool_mask]
 
 
 def mask_cov(cov, mask):

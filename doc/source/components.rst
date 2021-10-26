@@ -644,29 +644,10 @@ object is the
 :py:class:`ObservableDict <imagine.observables.observable_dict.ObservableDict>`
 that is returned when one runs an IMAGINE :ref:`Simulator <Simulators>`.
 
-If the model does not involve any stochastic fields (or if the ensemble size is
-chosen to be 1), the `Simulations` object produced by a simulator has exactly
-the same structure as `Measurements` object.
 
-For larger ensemble sizes the behaviour is slightly different. The
-:py:data:`global_data` attribute will return an array of shape (N_ens, N),
-containing one realisation per row. The
-:py:meth:`show <imagine.observables.observable_dict.ObservableDict.show>`
-method will display the simulated results for the full ensemble, with one
-realisation per row (this can be limited using :py:data:`max_realizations`
-keyword, which sets the maximum number of rows to be displayed).
-
-`Simulations` objects provide two specialized convenience methods to
-manipulate the simulated data in the case of `ensemble_size>1`. The
-:py:meth:`sub_sim <imagine.observables.observable_dict.Simulations.sub_sim>`
-method allows one to construct a new `Simulations` object using only a subset
-of the original ensemble (note that this can also be used prepare resamplings
-for *bootstrapping*). The
-:py:meth:`estimate_covariances <imagine.observables.observable_dict.Simulations.estimate_covariances>`
-method uses the finite ensemble in the `Simulations` object to estimate the
-covariance matrices associated with each observable, which are returned as
-:py:obj:`Covariances <imagine.observables.observable_dict.Covariances>` object.
-
+In the case of a
+:py:class:`Simulations <imagine.observables.observable_dict.Simulations>` object, :py:data:`max_realizations` keyword argument can be used to limit the
+number of ensemble realisations that are shown (one realisation per line).
 
 .. _Covariances:
 
@@ -675,55 +656,6 @@ Covariances
 ^^^^^^^^^^^
 
 :py:class:`imagine.observables.Covariances <imagine.observables.observable_dict.Covariances>`
-are a special type of
-:py:class:`ObservableDict <imagine.observables.observable_dict.ObservableDict>`
-which stores the set of covariance matrices associated with set of observables.
-Its behavour is similar to the
-:py:class:`Measurements <imagine.observables.observable_dict.Measurements>`,
-the main difference being that the :py:data:`global_data` attribute returns a
-(N,N) covariance matrix instead of (1,N)-array.
-
-In practice, one rarely needs to initialize or work with an independent
-:py:obj:`Covariances <imagine.observables.observable_dict.Covariances>` object.
-This is because a `Covariances` object is *automatically generated* when one
-initializes a :py:class:`Measurements <imagine.observables.observable_dict.Measurements>`
-a :py:obj:`Dataset <imagine.observables.dataset.Dataset>`, and stored in the
-`Measurements` object
-:py:data:`cov <imagine.observables.observable_dict.Measurements.cov>` attribute::
-
-  # The covariances associated with a measurements object
-  covariances = measurements.cov
-
-When the original dataset only contained *variance* information (e.g. specified
-using the :py:data:`error` keyword when preparing a :py:obj:`Dataset <imagine.observables.dataset.Dataset>`) the full covariance matrix is *not*
-constructed on initialization. Instead, the variance alone is stored internally
-and the covariance matrix construction is delayed until the first time the
-properties :py:data:`global_data` or :py:data:`data`
-are requested. If :py:data:`imagine.rc['distributed_arrays'] <imagine.tools.config>`
-is set to :py:data:`True` (not the default),
-the covariance matrix is spread among the available MPI processes.
-
-As many observational datasets are very large (i.e. very large N), and only
-contain known variance information, it often unnecessary (or simply impractical)
-to operate with full (sparse) covariance matrices. Instead, one can access
-the variance stored in the `Covariances` object using the :py:data:`var`
-property::
-
-  # An Observable object containing covariance information for a given key
-  cov_observable = covariances[('sync', 30, 32, 'I')]
-  # Reads the N-array containing the variances
-  variances = cov_observable.var
-  # Reads the (N,N)-array containing the covariance matrix
-  # (constructing it, if necessary)
-  cov_matrix = cov_observable.global_data
-
-Thus, when working with large datasets some care should be take when choosing
-(or designining) the :py:class:`Likelihood <imagine.likelihoods.likelihood>`
-class which will manipulate the `Covariances` object: some of the likelihoods
-(e.g. :py:class:`EnsembleLikelihoodDiagonal <imagine.likelihoods.ensemble_likelihood.EnsembleLikelihoodDiagonal>`)
-only access the `var` attribute, keeping the RAM memory usage under control
-even in the case of very large maps, while others will try construct the full
-covariance matrix, potentially leading out-of-memory errors.
 
 
 
@@ -735,8 +667,7 @@ Masks
 ^^^^^
 
 :py:class:`imagine.observables.Masks <imagine.observables.observable_dict.Masks>`
-which stores masks which can be applied to HEALPix maps. The mask itself is
-specified in the form of an array of zeros and ones.
+
 
 .. _Simulators:
 

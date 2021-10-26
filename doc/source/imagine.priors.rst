@@ -20,6 +20,7 @@ imagine.priors.prior module
    :undoc-members:
    :show-inheritance:
 
+
 Module contents
 ---------------
 

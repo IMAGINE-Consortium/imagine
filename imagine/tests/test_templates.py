@@ -213,15 +213,7 @@ def test_pipeline_template():
     assert pipeline.posterior_summary['constant_B_Bx']['median']==0.5*muG
     assert pipeline.posterior_summary['constant_B_By']['median']==0.5*muG
 
-    # Test MAP method
-    assert np.allclose(pipeline.get_MAP(include_units=False,
-                                        initial_guess=[9,1,1]),
-                       [9.99994039, 1.50098424, 1.00396825])
-
-    # Tests MAP_model property
-    assert np.isclose(pipeline.MAP_model[0].parameters['param'], 9.99994039)
-
-    # Tests chains and run directory creation
+    # Tests (temporary) chains and run directory creation
     run_dir = pipeline.run_directory
     assert os.path.isdir(pipeline.chains_directory)
     assert os.path.isdir(run_dir)

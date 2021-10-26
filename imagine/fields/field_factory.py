@@ -73,9 +73,6 @@ class FieldFactory(BaseClass):
         # and save the class (this is very convenient sometimes)
         if isinstance(field_class, Field):
             parameters = field_class.parameters.copy()
-            # Uses the original object's field, if none is provided
-            if grid is None:
-                grid = field_class.grid
             parameters.update(default_parameters)
             default_parameters = parameters
             field_class = type(field_class)

@@ -28,19 +28,15 @@ class FlatPrior(Prior):
     unit : astropy.units.Unit, optional
         If present, sets the units used for this parameter. If absent, this
         is inferred from `xmin` and `xmax`.
-    wrapped : bool
-        Specify whether the parameter is periodic (i.e. the range is supposed
-        to "wrap-around").
-
     """
-    def __init__(self, xmin, xmax, unit=None, wrapped=False):
+    def __init__(self, xmin, xmax, unit=None):
         # Updates ranges
-        super().__init__(xmin=xmin, xmax=xmax, wrapped=wrapped, unit=unit)
+        super().__init__(xmin=xmin, xmax=xmax, unit=unit)
         # Computes this from `range`, after the base Prior class has
         # already dealt with units
         self.vol = self.range[1] - self.range[0]
         # Constant pdf (for illustration)
-        self._pdf = lambda x: np.ones(x.shape)/self.vol.value
+        self._pdf = lambda x: np.ones_like(x)/self.vol.value
 
     def __call__(self, cube):
         log.debug('@ flat_prior::__call__')
@@ -76,14 +72,10 @@ class GaussianPrior(ScipyPrior):
     unit : astropy.units.Unit, optional
         If present, sets the units used for this parameter. If absent, this
         is inferred from `mu` and `sigma`.
-    wrapped : bool
-        Specify whether the parameter is periodic (i.e. the range is supposed
-        to "wrap-around").
-
     """
 
     def __init__(self, mu=None, sigma=None, xmin=None, xmax=None, unit=None,
-                 wrapped=False, **kwargs):
+                 **kwargs):
 
         assert mu is not None, 'A value for mu must be provided'
         assert sigma is not None, 'A value for sigma must be provided'

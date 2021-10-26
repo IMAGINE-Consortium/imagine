@@ -165,11 +165,8 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
                 ax.set_ylabel(i)
 
         plot_settings['color'] = colors[i]
-        if lnX is not None:
-            ax.plot(-lnX, y, **plot_settings)
-            ax.set_xlabel('$-\ln X$')
-        else:
-            ax.plot(y, alpha=0.35, **plot_settings)
+        ax.plot(-lnX, y, **plot_settings)
+        ax.set_xlabel('$-\ln X$')
 
     # Works on the histograms
     for i, ax in enumerate(axs[:,1]):
@@ -194,8 +191,7 @@ def trace_plot(samples=None, live_samples=None, likelihood=None,
 
                 ax.plot(edges_live[:-1], hist_live, color=color_live,
                         drawstyle='steps-pre', label='live')
-
-                ax.legend(frameon=False)
+            ax.legend(frameon=False)
 
     plt.tight_layout()
     return fig

@@ -39,7 +39,7 @@ WORKDIR /home/lab
 # HAMMURABI X
 RUN mkdir /home/lab/hamx
 WORKDIR /home/lab/hamx
-RUN wget https://github.com/hammurabi-dev/hammurabiX/archive/v2.4.2.tar.gz && tar -xzf v2.4.2.tar.gz --strip-components 1 && rm v2.4.2.tar.gz
+RUN wget https://github.com/hammurabi-dev/hammurabiX/archive/v2.4.1.tar.gz && tar -xzf v2.4.1.tar.gz --strip-components 1 && rm v2.4.1.tar.gz
 # Deactivates testing (and together with it, the google tests dependency)
 RUN sed -E 's/(OPTION.ENABLE_TESTING .+) ON/\1 OFF/g' CMakeLists.txt > CMakeLists_new.txt
 RUN mv CMakeLists_new.txt CMakeLists.txt

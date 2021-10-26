@@ -101,6 +101,9 @@ class MultinestPipeline(Pipeline):
         """
         log.debug('@ multinest_pipeline::__call__')
 
+        # Resets internal state
+        self.tidy_up()
+
         default_solve_params = {'resume': True,
                                 'n_live_points': 400,
                                 'evidence_tolerance': 0.5,
@@ -138,21 +141,14 @@ class MultinestPipeline(Pipeline):
         # Runs pyMultinest
         log.info('Calling pymultinest.solve')
 
-        log.info('Master seed: {}'.format(self.master_seed))
-        # Adjusts the seed to the correct interval, if needed
-        if 0 < self.master_seed < 30081:
-            seed = self.master_seed
-        else:
-            seed = np.random.randint(0, 30081)
-        log.info('MultiNest random seed: {}'.format(seed))
-
         self.results = pymultinest.solve(LogLikelihood=self._likelihood_function,
                                          Prior=self.prior_transform,
                                          n_dims=len(self._active_parameters),
+                                         wrapped_params=None,
                                          write_output=True,
-                                         seed=seed,
-                                         wrapped_params=self.wrapped_parameters,
+                                         seed=self.master_seed,
                                          **solve_params)
+
 
         self._samples_array = self.results['samples']
         self._evidence = self.results['logZ']
