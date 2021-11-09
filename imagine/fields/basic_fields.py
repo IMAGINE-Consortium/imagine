@@ -2,6 +2,7 @@
 # Package imports
 import numpy as np
 import scipy.stats as stats
+import astropy.units as u
 
 # IMAGINE imports
 from imagine.fields.base_fields import (
@@ -10,7 +11,7 @@ from imagine.fields.base_fields import (
 # All declaration
 __all__ = ['ConstantMagneticField', 'ConstantThermalElectrons',
            'ExponentialThermalElectrons', 'RandomThermalElectrons',
-	   'ExponentialCosmicRayElectrons']
+	   'PowerlawCosmicRayElectrons']
 
 
 # %% CLASS DEFINITIONS
@@ -129,7 +130,7 @@ class RandomThermalElectrons(ThermalElectronDensityField):
 
 # ================== new from here ========================================================
 
-class ExponentialCosmicRayElectrons(CosmicRayElectronDensityField):
+class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
     """
     Cosmic ray electron distribution in a double exponential disc
     characterized by a scale-height and a scale-radius, i.e.
@@ -147,21 +148,24 @@ class ExponentialCosmicRayElectrons(CosmicRayElectronDensityField):
 
     # Class attributes
     NAME            = 'exponential_disc_cosmic_ray_electrons'
-    PARAMETER_NAMES = ['central_density',
-                       'scale_radius',
-                       'scale_height']
-
+    PARAMETER_NAMES = ['scale_radius',
+                       'scale_height',
+                       'spectral_index']
+    
     def compute_field(self, seed):
+        
+        #normalization
+        R_earth = 8.5 * u.kpc
+        n_earth = 314.15 * u.cm**(-3)
+        
+        #calculate entire grid
         R = self.grid.r_cylindrical
         z = self.grid.z
         Re = self.parameters['scale_radius']
         he = self.parameters['scale_height']
-        n0 = self.parameters['central_density']
-
+        n0 = n_earth*np.exp(R_earth/Re)
+        
         return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
-
-
-
 
 
 
