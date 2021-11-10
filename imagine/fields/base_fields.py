@@ -27,7 +27,7 @@ from imagine.fields import Field
 from imagine.tools import req_attr
 
 # All declaration
-__all__ = ['MagneticField', 'ThermalElectronDensityField', 'DummyField']
+__all__ = ['MagneticField', 'ThermalElectronDensityField', 'CosmicRayElectronDensityField' ,'DummyField']
 
 
 # %% CLASS DEFINITIONS

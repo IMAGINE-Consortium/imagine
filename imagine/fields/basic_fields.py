@@ -144,29 +144,69 @@ class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
 
     The field parameters are: the 'central_density', `n_0`;
     'scale_radius`, :math:`R_e`; and 'scale_height', :math:`h_e`.
+    
+    
+    The powerlay spectrum of the electrons, which is set by the parameter
+    'spectral_index', can either have a constant value or be of type 
+    <type 'function'> where this function specifies the positional dependance 
+    of the spectral index.
     """
 
     # Class attributes
-    NAME            = 'exponential_disc_cosmic_ray_electrons'
+    NAME            = 'powerlaw_cosmicray_electrons'
     PARAMETER_NAMES = ['scale_radius',
                        'scale_height',
-                       'spectral_index']
+                       'spectral_index']  
     
-    def compute_field(self, seed):
+    def __init__(self, grid, parameters=None):
+        print(parameters)
+        super().__init__(grid)
+        if parameters is not None:
+            self.parameters = parameters
         
+        # iniate grid of alphas as attribute when alpha is not const        
+        # also write a short test for the spectral index function
+        
+        spectral_index = self.parameters['spectral_index']
+        if callable(spectral_index):           
+            self.spectral_index_grid = np.zeros(self.grid.shape)
+            
+            # coordinates
+            x = grid.x[:,0,0].to_value(u.kpc)
+            y = grid.y[0,:,0].to_value(u.kpc)
+            z = grid.z[0,0,:].to_value(u.kpc)          
+            print(np.shape(x))            
+            
+            # caculate full grid of spectral indices
+            for i in range(len(x)):
+                for j in range(len(y)):
+                    for k in range(len(z)):
+                        #print(x[i],y[j],z[k])
+                        #print(spectral_index(x[i],y[j],z[k]),'\n')
+                        self.spectral_index_grid[i,j,k] = spectral_index(x[i],y[j],z[k])
+            
+            # after calculating this grid as a new class attribute set constant index to None
+            self.parameters['spectral_index']  = None 
+
+
+    def compute_field(self, seed):
+            
         #normalization
         R_earth = 8.5 * u.kpc
         n_earth = 314.15 * u.cm**(-3)
-        
-        #calculate entire grid
-        R = self.grid.r_cylindrical
+            
+        #coordinates
         z = self.grid.z
+        R = self.grid.r_cylindrical
+        
+        #calculate density
         Re = self.parameters['scale_radius']
         he = self.parameters['scale_height']
         n0 = n_earth*np.exp(R_earth/Re)
+        nCRE = n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
         
-        return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
-
+        return nCRE
+    
 
 
 
