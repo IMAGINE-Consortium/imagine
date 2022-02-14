@@ -165,7 +165,13 @@ class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
         # iniate grid of alphas as attribute when alpha is not const        
         # also write a short test for the spectral index function
         
+        # !!! we will later throw away the part in the code that eables this option
+        # !!! It is just that there is no better place for these lines right now
+        
+        # spectral index as a parameter
         spectral_index = self.parameters['spectral_index']
+        
+        # spectral index function used to make a grid of indices
         if callable(spectral_index):           
             self.spectral_index_grid = np.zeros(self.grid.shape)
             
