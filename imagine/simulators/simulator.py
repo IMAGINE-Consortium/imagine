@@ -53,6 +53,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
         self.fields = None
         self.field_checklist = {}
         self.field_parameters = {}
+        self.field_parameter_values = {} # temporary fix such that simulator has acces to field parameters
         self.controllist = {}
         self.observables = []
         self.output_coords = {}
@@ -168,6 +169,10 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                     self.fields[field.type] = field.get_data(i, dependencies)
                     # Stores the parameters list
                     self.field_parameters[field.type] = field.parameter_names
+                    
+                    # temporary fix such that the simulator can acces field parameter values           
+                    self.field_parameter_values[field.type] = field.parameters
+                    
                     # Stores the checklist (for dummies only)
                     if field.type == 'dummy':
                         self.field_checklist = field.field_checklist.copy()
