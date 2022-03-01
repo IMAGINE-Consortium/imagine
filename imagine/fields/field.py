@@ -214,6 +214,6 @@ class Field(BaseClass, metaclass=abc.ABCMeta):
     @parameters.setter
     def parameters(self, parameters):
         for k in parameters:
-            assert (k in self.parameter_names)
+            assert (k in self.parameter_names), '{} is not in {}'.format(k, self.parameter_names)
         self._parameters.update(parameters)
         log.debug('update full-set parameters %s' % (parameters))

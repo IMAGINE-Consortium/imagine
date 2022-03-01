@@ -42,7 +42,7 @@ def get_random_model(domain, fixed_values):
         return ht @ (prior_sigma @ ift.ducktape(harmonic_domain, None, 'random_xi'))
 
 
-def get_spiral_model(domain, fixed_values):
+def get_spiral_model(domain, absolute, k_key, amp_key):
     def get_phi_and_r_array(dom):
         dom = ift.makeDomain(dom)
         assert len(dom.shape) == 2, 'Spiral can only be defined in 2D'
@@ -56,15 +56,18 @@ def get_spiral_model(domain, fixed_values):
         return ift.Field(dom, phi_array), \
                ift.Field(dom, np.mod(r_array, np.pi))
 
-    log_a_mean = ift.Adder(ift.Field.full(ift.DomainTuple.scalar_domain(), 2.))
-    log_a_sigma = ift.makeOp(ift.Field.full(ift.DomainTuple.scalar_domain(), 1.))
-    a = (log_a_mean @ log_a_sigma @ ift.FieldAdapter(ift.DomainTuple.scalar_domain(), 'log_a')).ptw('exp')
     expander = ift.VdotOperator(ift.Field.full(domain, 1)).adjoint
 
     phi_field, r_field = get_phi_and_r_array(domain)
     r_op = ift.makeOp(r_field)
     phi_op = ift.Adder(-phi_field)
-    return (phi_op @ r_op @ expander @ a).ptw('sin').ptw('abs')
+
+    k = ift.FieldAdapter(ift.DomainTuple.scalar_domain(), k_key).ptw('exp')
+    amplitude = ift.FieldAdapter(ift.DomainTuple.scalar_domain(), amp_key).ptw('exp')
+
+    if absolute:
+        return (expander @ amplitude)*(phi_op @ r_op @ expander @ k).ptw('sin').ptw('abs')
+    return (expander @ amplitude)*(phi_op @ r_op @ expander @ k).ptw('sin')
 
 
 def get_mask_response(domain, mask_op):
@@ -88,7 +91,7 @@ def get_mock_truth(model, truth_dict):
             position_dict.update({key: ift.Field(ift.makeDomain(ift.DomainTuple.scalar_domain()), truth_dict[key])})
         else:
             position_dict.update({key: ift.from_random(domain)})
-    truth = model(ift.MultiField.from_dict(position_dict))
+    truth = model.force(ift.MultiField.from_dict(position_dict))
     return truth, position_dict
 
 
