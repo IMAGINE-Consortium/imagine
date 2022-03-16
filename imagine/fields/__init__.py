@@ -16,13 +16,15 @@ from .test_field import *
 
 # Import subpackages
 from . import hamx
+from . import cwrapped
 
 # All declaration
 __all__ = ['base_fields', 'basic_fields', 'field', 'field_factory', 'grid',
-           'hamx', 'test_field']
+           'hamx', 'test_field', 'cwrapped']
 __all__.extend(base_fields.__all__)
 __all__.extend(basic_fields.__all__)
 __all__.extend(field.__all__)
 __all__.extend(field_factory.__all__)
 __all__.extend(grid.__all__)
 __all__.extend(test_field.__all__)
+__all__.extend(cwrapped.__all__)
