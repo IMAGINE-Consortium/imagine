@@ -131,47 +131,52 @@ class RandomThermalElectrons(ThermalElectronDensityField):
 
 class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
     """
-    Cosmic ray electron distribution in a double exponential disc
-    characterized by a scale-height and a scale-radius, i.e.
-
-    ..math::
-
-        n_e(R) = n_0 e^{-R/R_e} e^{-|z|/h_e}
-
-    where :math:`R` is the cylindrical radius and :math:`z` is the vertical
-    coordinate.
-
-    The field parameters are: the 'central_density', `n_0`;
-    'scale_radius`, :math:`R_e`; and 'scale_height', :math:`h_e`.
-    
-    
-    The powerlay spectrum of the electrons, which is set by the parameter
-    'spectral_index', can either have a constant value or be of type 
-    <type 'function'> where this function specifies the positional dependance 
-    of the spectral index.
+  
     """
 
     # Class attributes
     NAME            = 'powerlaw_cosmicray_electrons'
     PARAMETER_NAMES = ['scale_radius',
                        'scale_height',
+                       'central_density',
                        'spectral_index']  
     
     def __init__(self, grid, parameters=None):
         super().__init__(grid)
         if parameters is not None:
             self.parameters = parameters
-        
-        # iniate grid of alphas as attribute when alpha is not const        
-        # also write a short test for the spectral index function
-        
-        # !!! we will later throw away the part in the code that eables this option
-        # !!! It is just that there is no better place for these lines right now
-        
-        # spectral index as a parameter
-        spectral_index = self.parameters['spectral_index']
-        
-        # spectral index function used to make a grid of indices
+
+    def compute_field(self, seed):
+        #coordinates
+        z = self.grid.z
+        R = self.grid.r_cylindrical
+        #calculate density
+        Re = self.parameters['scale_radius']
+        he = self.parameters['scale_height']
+        nc = self.parameters['central_density']
+        nCRE = nc*np.exp(-R/Re)*np.exp(-np.abs(z/he))
+        return nCRE
+
+
+class CosmicRayElectronEnergyDensity(CosmicRayElectronDensityField):
+    """
+    4D grid 
+    
+    """
+    
+    # Class attributes
+    NAME            = 'arbitrary_spectrum_cosmicray_electrons'
+    PARAMETER_NAMES = ['scale_radius',
+                       'scale_height',
+                       'central_density']  
+    
+    
+    def __init__(self, grid, parameters=None):
+        super().__init__(grid)
+        if parameters is not None:
+            self.parameters = parameters
+    
+    
         if callable(spectral_index):           
             self.spectral_index_grid = np.zeros(self.grid.shape)
             
@@ -190,36 +195,7 @@ class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
                         self.spectral_index_grid[i,j,k] = spectral_index(x[i],y[j],z[k])
             
             # after calculating this grid as a new class attribute set constant index to None
-            self.parameters['spectral_index']  = None 
-
-    def compute_field(self, seed):
-        #normalization
-        R_earth = 8.5 * u.kpc
-        n_earth = 314.15 * u.cm**(-3)
-        #coordinates
-        z = self.grid.z
-        R = self.grid.r_cylindrical
-        #calculate density
-        Re = self.parameters['scale_radius']
-        he = self.parameters['scale_height']
-        n0 = n_earth*np.exp(R_earth/Re) #pin normalization to earth spectrum
-        nCRE = n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
-        return nCRE
-    
-
-class BrokenPowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
-    """
-
-    """
-
-    # Class attributes
-    NAME            = 'broken_powerlaw_cosmicray_electrons'
-    PARAMETER_NAMES = ['scale_radius',
-                       'scale_height',
-                       'central_density',
-                       'lowE_spectral_index',
-                       'highE_spectral_index',
-                       'break_energy']  
+            self.parameters['spectral_index'] = None     
     
     def compute_field(self, seed):
         R = self.grid.r_cylindrical
@@ -228,6 +204,14 @@ class BrokenPowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
         he = self.parameters['scale_height']
         n0 = self.parameters['central_density']
         return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he)) 
+
+
+
+
+
+class BrokenPowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
+    def compute_field(self, seed):
+        return 
 
 
 
