@@ -11,7 +11,7 @@ from imagine.fields.base_fields import (
 # All declaration
 __all__ = ['ConstantMagneticField', 'ConstantThermalElectrons',
            'ExponentialThermalElectrons', 'RandomThermalElectrons',
-	   'PowerlawCosmicRayElectrons']
+	   'PowerlawCosmicRayElectrons', 'ConstantCosmicRayElectrons']
 
 
 # %% CLASS DEFINITIONS
@@ -129,13 +129,34 @@ class RandomThermalElectrons(ThermalElectronDensityField):
 
 # ================== new from here ========================================================
 
-class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
+class ConstantCosmicRayElectrons(CosmicRayElectronDensityField):
     """
   
     """
 
     # Class attributes
     NAME            = 'powerlaw_cosmicray_electrons'
+    PARAMETER_NAMES = ['density',
+                       'spectral_index']  
+    
+    def __init__(self, grid, parameters=None):
+        super().__init__(grid)
+        if parameters is not None:
+            self.parameters = parameters
+
+    def compute_field(self, seed):
+        return self.parameters['density'] * np.ones(self.grid.shape)
+
+
+
+
+class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
+    """
+  
+    """
+
+    # Class attributes
+    NAME            = 'powerlaw_cosmicray_electrons_profile'
     PARAMETER_NAMES = ['scale_radius',
                        'scale_height',
                        'central_density',
