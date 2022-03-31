@@ -137,12 +137,7 @@ class ConstantCosmicRayElectrons(CosmicRayElectronDensityField):
     # Class attributes
     NAME            = 'powerlaw_cosmicray_electrons'
     PARAMETER_NAMES = ['density',
-                       'spectral_index']  
-    
-    def __init__(self, grid, parameters=None):
-        super().__init__(grid)
-        if parameters is not None:
-            self.parameters = parameters
+                       'spectral_index']
 
     def compute_field(self, seed):
         return self.parameters['density'] * np.ones(self.grid.shape)
@@ -162,11 +157,6 @@ class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
                        'central_density',
                        'spectral_index']  
     
-    def __init__(self, grid, parameters=None):
-        super().__init__(grid)
-        if parameters is not None:
-            self.parameters = parameters
-
     def compute_field(self, seed):
         #coordinates
         z = self.grid.z
