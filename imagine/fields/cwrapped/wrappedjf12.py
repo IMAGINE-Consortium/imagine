@@ -17,13 +17,13 @@ class WrappedJF12(MagneticField):
         # TODO: tolist (and hence unnecessary copy) is needed due to wrapper implementation, should change in the future
 
         res = self.grid.resolution
-
-        x = self.grid.box[0].to_value()
-        x = np.linspace(x[0], x[1], res[0]).tolist()
-        y = self.grid.box[1].to_value()
-        y = np.linspace(y[0], y[1], res[1]).tolist()
-        z = self.grid.box[2].to_value()
-        z = np.linspace(z[0], z[1], res[2]).tolist()
+        
+        x = self.grid.box[0]#.to_value()
+        x = np.linspace(x[0].value, x[1].value, res[0]).tolist()
+        y = self.grid.box[1]#.to_value()
+        y = np.linspace(y[0].value, y[1].value, res[1]).tolist()
+        z = self.grid.box[2]#.to_value()
+        z = np.linspace(z[0].value, z[1].value, res[2]).tolist()
         # Creates an empty array to store the result
 
         wrapped_jf12 = im.JF12MagneticField()
