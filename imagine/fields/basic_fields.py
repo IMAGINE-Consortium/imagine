@@ -6,12 +6,14 @@ import astropy.units as u
 
 # IMAGINE imports
 from imagine.fields.base_fields import (
-    MagneticField, ThermalElectronDensityField, CosmicRayElectronDensityField)
+    MagneticField, ThermalElectronDensityField, CosmicRayElectronDensityField,
+    CosmicRayElectronSpectralIndexField)
 
 # All declaration
 __all__ = ['ConstantMagneticField', 'ConstantThermalElectrons',
-           'ExponentialThermalElectrons', 'RandomThermalElectrons',
-	   'PowerlawCosmicRayElectrons', 'ConstantCosmicRayElectrons']
+    'ExponentialThermalElectrons', 'RandomThermalElectrons',
+    'PowerlawCosmicRayElectrons', 'ConstantCosmicRayElectrons','CRENumberDensity',
+    'SpectralIndexLinearVerticalProfile']
 
 
 # %% CLASS DEFINITIONS
@@ -144,7 +146,6 @@ class ConstantCosmicRayElectrons(CosmicRayElectronDensityField):
 
 
 
-
 class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
     """
   
@@ -168,6 +169,50 @@ class PowerlawCosmicRayElectrons(CosmicRayElectronDensityField):
         nCRE = nc*np.exp(-R/Re)*np.exp(-np.abs(z/he))
         return nCRE
 
+class CRENumberDensity(CosmicRayElectronDensityField):
+    """ 
+    
+    """    
+    
+    # Class attributes
+    NAME            = 'cosmicray_electron_numberdensity_profile'
+    PARAMETER_NAMES = ['scale_radius',
+                       'scale_height',
+                       'central_density']  
+    
+    def compute_field(self, seed):
+        #coordinates
+        z = self.grid.z
+        R = self.grid.r_cylindrical
+        #calculate density
+        Re = self.parameters['scale_radius']
+        he = self.parameters['scale_height']
+        nc = self.parameters['central_density']
+        nCRE = nc*np.exp(-R/Re)*np.exp(-np.abs(z/he))
+        return nCRE
+
+class SpectralIndexLinearVerticalProfile(CosmicRayElectronSpectralIndexField):
+    
+    """
+    CRE spectral hardening as a function of distance to the Galatic disk
+    """    
+    
+    # Class attributes
+    NAME            = 'spectral_index_linear_vertical_profile'
+    PARAMETER_NAMES = ['soft_index', 'hard_index', 'slope']  
+    
+    def compute_field(self, seed):
+        # coordinates and parameters
+        z = self.grid.z
+        s = self.parameters['soft_index'] # number like -4
+        h = self.parameters['hard_index'] # number like -2.2
+        slope = self.parameters['slope']
+        # calculate spectral index
+        alpha = s + slope*np.abs(z)
+        alpha[alpha>h] = h
+        return np.full(shape=self.grid.shape,fill_value=alpha)*u.dimensionless_unscaled
+
+# ========================= Not functional from here ========================
 
 class CosmicRayElectronEnergyDensity(CosmicRayElectronDensityField):
     """

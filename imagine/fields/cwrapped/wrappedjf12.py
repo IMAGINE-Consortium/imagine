@@ -34,7 +34,13 @@ class WrappedJF12(MagneticField):
 
         # TODO: npasarray is needed due to wrapper implementation, should change in the future
         B = np.asarray(wrapped_jf12.evaluate_grid(grid_x=x, grid_y=y, grid_z=z))*self.UNITS
-
+        #print("Found {} nans inside JF12 field".format(np.sum(np.isnan(B))))
+        
+        # Test B for nans
+        #if np.sum(np.isnan(B)) != 0:
+            #print("Setting {} nans to 0".format(np.sum(np.isnan(B))))
+            #B[np.isnan(B)] = 0*self.UNITS
+        
         return B
 
 

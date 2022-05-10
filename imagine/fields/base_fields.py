@@ -27,7 +27,8 @@ from imagine.fields import Field
 from imagine.tools import req_attr
 
 # All declaration
-__all__ = ['MagneticField', 'ThermalElectronDensityField', 'CosmicRayElectronDensityField' ,'DummyField']
+__all__ = ['MagneticField','ThermalElectronDensityField','CosmicRayElectronDensityField',
+           'CosmicRayElectronSpectralIndexField','DummyField']
 
 
 # %% CLASS DEFINITIONS
@@ -101,10 +102,11 @@ class ThermalElectronDensityField(Field):
         return tuple(self.grid.shape)
 
 
+
+
 class CosmicRayElectronDensityField(Field):
     """
-    First attempt at implementing CRE field
-    - 3d scalar field
+
 
     """
 
@@ -120,9 +122,32 @@ class CosmicRayElectronDensityField(Field):
     def data_shape(self):
         return tuple(self.grid.shape)
 
+class CosmicRayElectronSpectralIndexField(Field):
+    """
+    
+    
+    """
+        
+    # Class attributes
+    TYPE = 'cosmic_ray_electron_spectral_index'
+    UNITS = u.dimensionless_unscaled
+
+    @property
+    def data_description(self):
+        return(['grid_x', 'grid_y', 'grid_z'])
+
+    @property
+    def data_shape(self):
+        return tuple(self.grid.shape)
+    
+    
+    
+
 
 class CosmicRayElectronEnergyDensityField(Field):
     """
+    
+    UNFINISHED!!    
     
     """
 
