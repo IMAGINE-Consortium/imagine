@@ -171,6 +171,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         ncre  = ncre.to(u.cm**-3)*u.cm**3
         Bper  = Bper.to(u.G)/u.G
         # Handle two spectral index cases:
+	# -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
         try: # alpha is a constant spectral index globally 
             alpha = self.field_parameter_values['cosmic_ray_electron_density']['spectral_index']
         except: pass
