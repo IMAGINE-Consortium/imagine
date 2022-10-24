@@ -1,19 +1,23 @@
 # %% IMPORTS
 # Built-in imports
-import logging as log
-from os import path
 import tempfile
-
-# Package imports
+from os import path
+import logging as log
 import astropy.units as u
-import hampyx
-from hampyx import Hampyx
 import numpy as np
-
-# IMAGINE imports
 import imagine as img
 from imagine.simulators import Simulator
 from imagine.observables import Masks
+import importlib.util
+
+spec = importlib.util.find_spec('hampyx')
+if spec is None:
+    raise ImportError("Hampyx is not installed")
+
+
+# Package imports
+
+# IMAGINE imports
 
 # All declaration
 __all__ = ['Hammurabi']
@@ -55,13 +59,14 @@ class Hammurabi(Simulator):
     # Class attributes
     SIMULATED_QUANTITIES = ['fd', 'dm', 'sync']
     REQUIRED_FIELD_TYPES = []
-    OPTIONAL_FIELD_TYPES = ['dummy','magnetic_field',
+    OPTIONAL_FIELD_TYPES = ['dummy', 'magnetic_field',
                             'thermal_electron_density',
                             'cosmic_ray_electron_density']
     ALLOWED_GRID_TYPES = ['cartesian']
 
-
     def __init__(self, measurements, xml_path=None, hamx_path=None, masks=None):
+        import hampyx
+        from hampyx import Hampyx
         log.debug('@ hammurabi::__init__')
         super().__init__(measurements)
 
@@ -70,9 +75,9 @@ class Hammurabi(Simulator):
         else:
             # Uses standard hamx path
             self._hamx_path = img.rc['hammurabi_hamx_path']
-        
+
         self._xml_path = xml_path
-        
+
         if xml_path is None:
             # Uses standard hammurabi template
             hampydir = path.dirname(hampyx.__file__)
@@ -88,38 +93,38 @@ class Hammurabi(Simulator):
         # List of files containing evaluations of fields
         self._field_dump_files = []
 
-        self.masks=masks
+        self.masks = masks
 
     @property
     def hamx_path(self):
         """Path to HammurabiX executable"""
         return self._hamx_path
-    
+
     @hamx_path.setter
     def hamx_path(self, hamx_path):
         # Note: this setter should be used only after initialization
         # as it relies on _ham
         self._hamx_path = hamx_path
         self._ham.exe_path = hamx_path
-        
+
     @property
     def xml_path(self):
         """Path to HammurabiX template XML"""
         return self._xml_path
-    
+
     @xml_path.setter
     def xml_path(self, xml_path):
         # Note: this setter should be used only after initialization
         # as it relies on _ham
         self._xml_path = xml_path
-        
+
         if xml_path is None:
             # Uses standard hammurabi template
             hampydir = path.dirname(hampyx.__file__)
             xml_path = path.join(hampydir, '../templates/params_template.xml')
-            
+
         self._ham.xml_path = xml_path
-        
+
     def initialize_ham_xml(self):
         """
         Modify hammurabi XML tree according to the requested measurements.
@@ -291,7 +296,7 @@ class Hammurabi(Simulator):
 
             # Gets the keys of the relevant quantities
             mask_keys = [k for k in masks.keys()
-                        if k[0] in self.simulated_quantities]
+                         if k[0] in self.simulated_quantities]
             # Checks whether the all observables are covered
             # (as Hammurabi always applies its masks to everything)
             for obs in self.observables:
@@ -304,20 +309,20 @@ class Hammurabi(Simulator):
 
             # Generates temporary file
             self._mask_dump_file = tempfile.NamedTemporaryFile(prefix='mask_',
-                                                        suffix='.bin',
-                                                        dir=img.rc['temp_dir'])
+                                                               suffix='.bin',
+                                                               dir=img.rc['temp_dir'])
             # Dumps the mask
             mask_data[0].tofile(self._mask_dump_file)
 
             # Adjusts Hammurabi's settings
             Nside = str(mask_keys[0][2])
-            self._ham.mod_par(['mask'], {'cue':'1',
-                                              'filename': self._mask_dump_file.name,
-                                              'nside': Nside})
+            self._ham.mod_par(['mask'], {'cue': '1',
+                                         'filename': self._mask_dump_file.name,
+                                         'nside': Nside})
         else:
             # Resets XML if something was previously set
             if hasattr(self, '_masks'):
-                self._ham.mod_par(['mask'], {'cue':'0',
+                self._ham.mod_par(['mask'], {'cue': '0',
                                              'filename': "mask.bin",
                                              'nside': "32"})
                 del self._mask_dump_file

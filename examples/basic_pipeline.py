@@ -15,7 +15,8 @@ Run suggestion (from the IMAGINE path):
 """
 
 # Built-in imports
-import os, sys
+import os
+import sys
 import logging
 from mpi4py import MPI
 # External packages
@@ -80,19 +81,19 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
         An IMAGINE dataset object
     """
     # Sets the x coordinates of the observations
-    x = np.linspace(0.01,2.*np.pi-0.01,size)
+    x = np.linspace(0.01, 2.*np.pi-0.01, size)
     # Sets the seed for signal field
     np.random.seed(seed)
 
     # Computes the signal
-    signal = ((1+np.cos(x)) *
-              np.random.normal(loc=a0,scale=b0,size=size))
+    signal = ((1+np.cos(x))
+              * np.random.normal(loc=a0, scale=b0, size=size))
 
     # Includes the error
-    fd = signal + np.random.normal(loc=0.,scale=error,size=size)
+    fd = signal + np.random.normal(loc=0., scale=error, size=size)
 
     # Prepares a data dictionary
-    data_dict = {'meas' : u.Quantity(fd, u.microgauss*u.cm**-3),
+    data_dict = {'meas': u.Quantity(fd, u.microgauss*u.cm**-3),
                  'err': np.ones_like(fd)*error,
                  'x': x,
                  'y': np.zeros_like(fd),
@@ -104,15 +105,14 @@ def prepare_mock_dataset(a0=3., b0=6., size=10,
     return dataset
 
 
-
 def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
-                       sampling_controllers = {}, ensemble_size=48,
-                       true_parameters={'a0':3, 'b0': 6},
+                       sampling_controllers={}, ensemble_size=48,
+                       true_parameters={'a0': 3, 'b0': 6},
                        run_directory='basic_pipeline_run'):
 
     # Creates a directory for storing the chains and log
     chains_dir = os.path.join(run_directory, 'chains')
-    if mpirank==0:
+    if mpirank == 0:
         os.makedirs(chains_dir, exist_ok=True)
     comm.Barrier()
 
@@ -135,21 +135,21 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     # Generates the grid
     one_d_grid = img.fields.UniformGrid(box=[[0, 2*np.pi]*u.kpc,
-                                      [0, 0]*u.kpc,
-                                      [0, 0]*u.kpc],
-                                resolution=[100, 1, 1])
+                                             [0, 0]*u.kpc,
+                                             [0, 0]*u.kpc],
+                                        resolution=[100, 1, 1])
 
     # Prepares the thermal electron field factory
     ne_factory = testFields.CosThermalElectronDensityFactory(grid=one_d_grid)
-    ne_factory.default_parameters= {'a': 1*u.rad/u.kpc,
-                                    'beta':  np.pi/2*u.rad,
-                                    'gamma': np.pi/2*u.rad}
+    ne_factory.default_parameters = {'a': 1*u.rad/u.kpc,
+                                     'beta':  np.pi/2*u.rad,
+                                     'gamma': np.pi/2*u.rad}
 
     # Prepares the random magnetic field factory
     B_factory = testFields.NaiveGaussianMagneticFieldFactory(grid=one_d_grid)
-    B_factory.active_parameters = ('a0','b0')
-    B_factory.priors ={'a0': img.priors.FlatPrior(-5*u.microgauss, 5*u.microgauss),
-                       'b0': img.priors.FlatPrior(2*u.microgauss, 10*u.microgauss)}
+    B_factory.active_parameters = ('a0', 'b0')
+    B_factory.priors = {'a0': img.priors.FlatPrior(-5*u.microgauss, 5*u.microgauss),
+                        'b0': img.priors.FlatPrior(2*u.microgauss, 10*u.microgauss)}
 
     # Sets the field factory list
     factory_list = [ne_factory, B_factory]
@@ -174,8 +174,8 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
 
     if mpirank == 0:
         # Reports the evidence (to file)
-        with open(output_text,'w+') as f:
-            f.write('log evidence: {}'.format( pipeline.log_evidence))
+        with open(output_text, 'w+') as f:
+            f.write('log evidence: {}'.format(pipeline.log_evidence))
             f.write('log evidence error: {}'.format(pipeline.log_evidence_err))
 
         # Reports the posterior
@@ -193,15 +193,15 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
         for parameter in pipeline.active_parameters:
             print(parameter)
             constraints = pipeline.posterior_summary[parameter]
-            for k in ['median','errup','errlo']:
+            for k in ['median', 'errup', 'errlo']:
                 print('\t', k, constraints[k])
 
 
 if __name__ == '__main__':
     # Checks command line arguments
     cmd, args = sys.argv[0], sys.argv[1:]
-    if len(args)==0:
-        choice = 'multinest'
+    if len(args) == 0:
+        choice = 'dynesty'
     elif args[0].lower() in ('multinest', 'ultranest', 'dynesty'):
         choice = args[0].lower()  # Supports any capitalization
     else:
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     if choice == 'multinest':
         #------ MultiNest -------
         # Sets run directory name
-        run_directory=os.path.join('runs','basic_pipeline_run_multinest')
+        run_directory = os.path.join('runs', 'basic_pipeline_run_multinest')
         # Sets up the sampler to be used
         pipeline_class = img.pipelines.MultinestPipeline
         # Set some controller parameters that are specific to MultiNest.
@@ -226,20 +226,20 @@ if __name__ == '__main__':
             timer.tick('MultiNest')
 
         basic_pipeline_run(run_directory=run_directory,
-                          sampling_controllers=sampling_controllers,
-                          pipeline_class=pipeline_class)
+                           sampling_controllers=sampling_controllers,
+                           pipeline_class=pipeline_class)
         if mpirank == 0:
             print('Finished. Ellapsed time:', timer.tock('MultiNest'))
 
     elif choice == 'ultranest':
         # ------ UltraNest -------
         # Sets run directory name
-        run_directory=os.path.join('runs','basic_pipeline_run_ultranest')
+        run_directory = os.path.join('runs', 'basic_pipeline_run_ultranest')
         # Sets up the sampler to be used
         pipeline_class = img.pipelines.UltranestPipeline
         # Set some controller parameters that are specific to UltraNest.
         sampling_controllers = {'dlogz': 0.5,
-                                'dKL':0.1,
+                                'dKL': 0.1,
                                 'min_num_live_points': 500,
                                 'min_ess': 1000}
         # Starts the run
@@ -248,8 +248,8 @@ if __name__ == '__main__':
             timer.tick('UltraNest')
 
         basic_pipeline_run(run_directory=run_directory,
-                          sampling_controllers=sampling_controllers,
-                          pipeline_class=pipeline_class)
+                           sampling_controllers=sampling_controllers,
+                           pipeline_class=pipeline_class)
         if mpirank == 0:
             print('Finished. Ellapsed time:', timer.tock('UltraNest'))
 
@@ -258,7 +258,9 @@ if __name__ == '__main__':
         img.rc['pipeline_distribute_ensemble'] = True
 
         # Sets run directory name
-        run_directory=os.path.join('imagine_runs','basic_pipeline_run_dynesty')
+        run_directory = os.path.join('imagine_runs', 'basic_pipeline_run_dynesty')
+        if not os.path.exists(run_directory):
+            os.makedirs(run_directory)
         # Sets up the sampler to be used
         pipeline_class = img.pipelines.DynestyPipeline
         # Set some controller parameters that are specific to Dynesty.
@@ -271,7 +273,7 @@ if __name__ == '__main__':
             timer.tick('Dynesty')
 
         basic_pipeline_run(run_directory=run_directory,
-                          sampling_controllers=sampling_controllers,
-                          pipeline_class=pipeline_class)
+                           sampling_controllers=sampling_controllers,
+                           pipeline_class=pipeline_class)
         if mpirank == 0:
             print('Finished. Ellapsed time:', timer.tock('Dynesty'))
