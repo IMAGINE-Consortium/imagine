@@ -27,8 +27,8 @@ from imagine.fields import Field
 from imagine.tools import req_attr
 
 # All declaration
-__all__ = ['MagneticField','ThermalElectronDensityField','CosmicRayElectronDensityField',
-           'CosmicRayElectronSpectralIndexField','DummyField']
+__all__ = ['MagneticField', 'ThermalElectronDensityField', 'CosmicRayElectronDensityField',
+           'CosmicRayElectronSpectralIndexField', 'DummyField']
 
 
 # %% CLASS DEFINITIONS
@@ -67,6 +67,22 @@ class MagneticField(Field):
         return(*self.grid.shape, 3)
 
 
+class ArrayField(Field):
+    def __init__(self, grid, name, field_type, unit, array):
+        self.array = array
+        self.NAME = name
+        self.PARAMETER_NAMES = [name + '_scale']
+        self.UNITS = unit
+        self.TYPE = field_type
+
+        super().__init__(self, grid, parameters={}, ensemble_size=None,
+                         ensemble_seeds=None, dependencies={})
+
+    def compute_field(self, seed):
+        # Creates an empty array to store the result
+        return self.parameters['scale']*self.array*self.UNIT
+
+
 class ThermalElectronDensityField(Field):
     """
     Base class for the inclusion of models for spatial distribution of thermal
@@ -102,8 +118,6 @@ class ThermalElectronDensityField(Field):
         return tuple(self.grid.shape)
 
 
-
-
 class CosmicRayElectronDensityField(Field):
     """
 
@@ -122,12 +136,13 @@ class CosmicRayElectronDensityField(Field):
     def data_shape(self):
         return tuple(self.grid.shape)
 
+
 class CosmicRayElectronSpectralIndexField(Field):
     """
-    
-    
+
+
     """
-        
+
     # Class attributes
     TYPE = 'cosmic_ray_electron_spectral_index'
     UNITS = u.dimensionless_unscaled
@@ -139,16 +154,13 @@ class CosmicRayElectronSpectralIndexField(Field):
     @property
     def data_shape(self):
         return tuple(self.grid.shape)
-    
-    
-    
 
 
 class CosmicRayElectronEnergyDensityField(Field):
     """
-    
-    UNFINISHED!!    
-    
+
+    UNFINISHED!!
+
     """
 
     # Class attributes
@@ -162,6 +174,7 @@ class CosmicRayElectronEnergyDensityField(Field):
     @property
     def data_shape(self):
         return tuple(self.grid.shape)
+
 
 class DummyField(Field, metaclass=abc.ABCMeta):
     """

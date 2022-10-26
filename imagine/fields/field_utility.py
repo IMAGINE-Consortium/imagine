@@ -18,14 +18,16 @@ from imagine.fields import MagneticField
 from imagine.tools import req_attr
 
 # All declaration
-__all__ = ['FieldAdder', 'ArrayMagneticField']
+__all__ = ['MagneticFieldAdder', 'ArrayMagneticField']
 
 
-class FieldAdder(Field):
+class MagneticFieldAdder(MagneticField):
+    UNITS = MagneticField.UNITS
+    TYPE = MagneticField.TYPE
 
     def __init__(self, grid, summand_1, summand_2, parameters={}, ensemble_size=None,
                  ensemble_seeds=None, dependencies={}):
-        
+
         if summand_1.grid != summand_2.grid:
             raise ValueError('Fields can only be added if defined on the same grid')
         if summand_1.TYPE != summand_2.TYPE:
@@ -35,13 +37,12 @@ class FieldAdder(Field):
                 raise KeyError('The two summands may not have the same parameter names')
         self.summand_1 = summand_1
         self.summand_2 = summand_2
-        self.UNITS = summand_1.UNITS
-        self.TYPE  = summand_1.TYPE
+
         self.PARAMETER_NAMES = summand_1.parameter_names+summand_2.parameter_names
         self.NAME = summand_1.NAME + '_plus_' + summand_2.NAME
 
         super().__init__(grid,  parameters={}, ensemble_size=None,
-                    ensemble_seeds=None, dependencies={})
+                         ensemble_seeds=None, dependencies={})
 
     @property
     def data_description(self):
@@ -61,12 +62,14 @@ class ArrayMagneticField(MagneticField):
                  ensemble_seeds=None, dependencies={}):
 
 	# Possible checks:
-		# grid must be used the generate the array
+	# grid must be used the generate the array
         self.array_field = array_field
-        self.NAME        = name
+        self.NAME = name
         self.PARAMETER_NAMES = [name+'_scale']
+        self.TYPE = MagneticField.TYPE
+        self.UNITS = MagneticField.UNITS
 
-        super().__init__(grid, parameters={name+'_scale':scale}, ensemble_size=None,
+        super().__init__(grid, parameters={name+'_scale': scale}, ensemble_size=None,
                          ensemble_seeds=None, dependencies={})
 
     @property
@@ -75,6 +78,7 @@ class ArrayMagneticField(MagneticField):
 
     def compute_field(self, seed):
         return self.parameters[self.NAME+'_scale']*self.array_field
+
 
 """
 
@@ -92,7 +96,7 @@ class ArrayField(Field):
         self.TYPE  = config['type']
         self.NAME  = config['field_name']
         self.PARAMETER_NAMES = [config['field_name']+'_scale']
-        
+
         # problem here is that we need the method data_discription from base_fields
         # and we only know what type the field is upon init so need ugly tests
         self._data_description = field.data_description
@@ -141,6 +145,5 @@ class ArrayField(Field):
 
     def compute_field(self, seed):
         return self.parameters[self.PARAMETER_NAMES[0]]*self.array
-        
-"""
 
+"""
