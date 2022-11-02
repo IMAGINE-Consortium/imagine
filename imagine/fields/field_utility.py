@@ -24,9 +24,17 @@ __all__ = ['MagneticFieldAdder', 'ArrayMagneticField']
 class MagneticFieldAdder(MagneticField):
     UNITS = MagneticField.UNITS
     TYPE = MagneticField.TYPE
+    NAME = "MagneticFieldAdder"
 
-    def __init__(self, grid, summand_1, summand_2, parameters={}, ensemble_size=None,
+    def __init__(self, grid, field_1, field_2, parameters={}, ensemble_size=None,
                  ensemble_seeds=None, dependencies={}):
+
+
+        # Unpack and assign parameters
+        param_field1 = {key:parameters[key] for key in field_1.PARAMETER_NAMES}
+        param_field2 = {key:parameters[key] for key in field_2.PARAMETER_NAMES}
+        summand_1 = field_1(grid=grid, parameters=param_field1)
+        summand_2 = field_2(grid=grid, parameters=param_field2)
 
         if summand_1.grid != summand_2.grid:
             raise ValueError('Fields can only be added if defined on the same grid')
@@ -39,10 +47,14 @@ class MagneticFieldAdder(MagneticField):
         self.summand_2 = summand_2
 
         self.PARAMETER_NAMES = summand_1.parameter_names+summand_2.parameter_names
+        
+        #print("Initializing MagneticFieldAdder")
+        #print("Changing: "+ self.NAME)
         self.NAME = summand_1.NAME + '_plus_' + summand_2.NAME
+        #print("New name: "+ self.NAME)
 
-        super().__init__(grid,  parameters={}, ensemble_size=None,
-                         ensemble_seeds=None, dependencies={})
+        super().__init__(grid,  parameters=parameters, ensemble_size=ensemble_size,
+                         ensemble_seeds=ensemble_seeds, dependencies=dependencies)
 
     @property
     def data_description(self):
@@ -56,28 +68,61 @@ class MagneticFieldAdder(MagneticField):
         return self.summand_1.compute_field(seed) + self.summand_2.compute_field(seed)
 
 
-class ArrayMagneticField(MagneticField):
+"""
+class MagneticFieldAdder(MagneticField):
+    UNITS = MagneticField.UNITS
+    TYPE = MagneticField.TYPE
+    NAME = "MagneticFieldAdder"
 
-    def __init__(self, grid, array_field, scale, name, parameters={}, ensemble_size=None,
+    def __init__(self, grid, summand_1, summand_2, parameters={}, ensemble_size=None,
                  ensemble_seeds=None, dependencies={}):
 
-	# Possible checks:
-	# grid must be used the generate the array
-        self.array_field = array_field
-        self.NAME = name
-        self.PARAMETER_NAMES = [name+'_scale']
-        self.TYPE = MagneticField.TYPE
-        self.UNITS = MagneticField.UNITS
+        print("MF Adder__init__: ", parameters)
+        if summand_1.grid != summand_2.grid:
+            raise ValueError('Fields can only be added if defined on the same grid')
+        if summand_1.TYPE != summand_2.TYPE:
+            raise ValueError('Fields can only be added if having the same units')
+        for pn in summand_1.parameter_names:
+            if pn in summand_2.parameter_names:
+                raise KeyError('The two summands may not have the same parameter names')
+        self.summand_1 = summand_1
+        self.summand_2 = summand_2
 
-        super().__init__(grid, parameters={name+'_scale': scale}, ensemble_size=None,
+        self.PARAMETER_NAMES = summand_1.parameter_names+summand_2.parameter_names
+        
+        #print("Initializing MagneticFieldAdder")
+        #print("Changing: "+ self.NAME)
+        self.NAME = summand_1.NAME + '_plus_' + summand_2.NAME
+        #print("New name: "+ self.NAME)
+
+        super().__init__(grid,  parameters={}, ensemble_size=None,
                          ensemble_seeds=None, dependencies={})
+
+    @property
+    def data_description(self):
+        return(self.summand_1.data_description())
+
+    @property
+    def data_shape(self):
+        return(self.summand_1.data_shape)
+
+    def compute_field(self, seed):
+        print("MagneticField is computed! b1, b2: ", self.summand_1.parameters['b_arm_1'],self.summand_1.parameters['b_arm_2'])
+        return self.summand_1.compute_field(seed) + self.summand_2.compute_field(seed)
+"""
+
+class ArrayMagneticField(MagneticField):
+    UNITS = MagneticField.UNITS
+    TYPE = MagneticField.TYPE
+    NAME = "ArrayMagneticField"
+    PARAMETER_NAMES = ['array_field','array_field_amplitude']
 
     @property
     def data_shape(self):
         return(self.array_field.shape)
 
     def compute_field(self, seed):
-        return self.parameters[self.NAME+'_scale']*self.array_field
+        return self.parameters['array_field_amplitude']*self.parameters['array_field']
 
 
 """

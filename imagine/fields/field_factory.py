@@ -75,7 +75,10 @@ class FieldFactory(BaseClass):
             parameters = field_class.parameters.copy()
             parameters.update(default_parameters)
             default_parameters = parameters
-            field_class = type(field_class)
+            #print("inside init of factory: ", field_class.NAME)
+            #self.field_class_name = field_class.NAME
+            field_class = type(field_class) #now the field class instance is lost
+
 
         assert issubclass(field_class, Field), 'Need to supply IMAGINE Field class!'
 
@@ -137,6 +140,7 @@ class FieldFactory(BaseClass):
         # update is safe
         work_parameters.update(variables)
         # generate fields
+        #print("work_parameters: ", work_parameters)
         result_field = self.field_class(grid=self.grid,
                                         parameters=work_parameters,
                                         ensemble_size=ensemble_size,
@@ -154,6 +158,7 @@ class FieldFactory(BaseClass):
     def field_name(self):
         """Name of the physical field"""
         return self.field_class.NAME
+        #return self.field_class_name
 
     @property
     def name(self):

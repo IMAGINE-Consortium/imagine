@@ -10,7 +10,7 @@ __all__ = ['WrappedJF12', 'WrappedJF12Factory', ]
 class WrappedJF12(MagneticField):
     NAME = 'WrappedJF12'
     STOCHASTIC_FIELD = False
-    PARAMETER_NAMES = ['b_arm_1', 'b_arm_2', 'b_arm_3', ' b_arm_4', 'b_arm_5', 'b_arm_6',  'b_arm_7', 'b_ring', 'h_disk',
+    PARAMETER_NAMES = ['b_arm_1', 'b_arm_2', 'b_arm_3', 'b_arm_4', 'b_arm_5', 'b_arm_6',  'b_arm_7', 'b_ring', 'h_disk',
                        'w_disk', 'Bn', 'Bs', 'rn', 'rs', 'wh', 'z0', 'B0_X', 'Xtheta_const', 'rpc_X', 'r0_X', ]
 
     def compute_field(self, seed):
@@ -28,7 +28,7 @@ class WrappedJF12(MagneticField):
 
         wrapped_jf12 = im.JF12MagneticField()
 
-        for key, val in self.parameters:
+        for key, val in self.parameters.items():
             if hasattr(wrapped_jf12, key):
                 setattr(wrapped_jf12, key, val)
 
