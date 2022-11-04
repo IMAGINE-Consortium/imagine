@@ -6,13 +6,23 @@ from . import simulator
 from .simulator import *
 
 # Import base modules
-from . import (
-    hammurabi, test_simulator)
-from .hammurabi import *
+hammurabi_installed = True
+try:
+    from . import hammurabi
+    from .hammurabi import *
+
+except ImportError:
+    print('No Hammurabi installation found, hammurabi models not available')
+    hammurabi_installed = False
+
+from . import test_simulator
 from .test_simulator import *
 
 # All declaration
-__all__ = ['hammurabi', 'simulator', 'test_simulator']
-__all__.extend(hammurabi.__all__)
+__all__ = ['simulator', 'test_simulator']
 __all__.extend(simulator.__all__)
 __all__.extend(test_simulator.__all__)
+
+if hammurabi_installed:
+    all.append('hammurabi')
+    __all__.extend(hammurabi.__all__)
