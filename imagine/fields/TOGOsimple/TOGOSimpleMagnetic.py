@@ -14,12 +14,12 @@ class ConstantMagneticField(MagneticField):
 
     def __init__(self, grid):
 
-        super().__init__(self, grid, ['Bx', 'By', 'Bz'], call_by_subclass=True)
+        super().__init__(grid, ['Bx', 'By', 'Bz'], call_by_method=True)
 
 
-    def compute_field(self, parameters):
+    def compute_model(self, parameters):
         # Creates an empty array to store the result
-        B = np.empty(self.data_shape) * parameters['Bx']*self.unit
+        B = np.empty(self.data_shape) * parameters['Bx']
         # For a magnetic field, the output must be of shape:
         # (Nx,Ny,Nz,Nc) where Nc is the index of the component.
         # Computes Bx

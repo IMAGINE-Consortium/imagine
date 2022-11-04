@@ -3,7 +3,7 @@ import numpy as np
 from ..TOGOBaseModels import ThermalElectronDensityField
 
 
-class ConstantThermalElectrons(ThermalElectronDensityField):
+class ConstantThermalElectron(ThermalElectronDensityField):
     """
     Constant thermal electron density field
 
@@ -11,11 +11,15 @@ class ConstantThermalElectrons(ThermalElectronDensityField):
     'ne', the number density of thermal electrons
     """
 
-    def compute_field(self, seed):
-        return np.ones(self.data_shape)*self.parameters['ne']*self.unit
+    def __init__(self, grid):
+
+        super().__init__(grid, ['ne'], call_by_method=True)
+
+    def compute_model(self, parameters):
+        return np.ones(self.data_shape)*parameters['ne']
 
 
-class ExponentialThermalElectrons(ThermalElectronDensityField):
+class ExponentialThermalElectron(ThermalElectronDensityField):
     """
     Thermal electron distribution in a double exponential disc
     characterized by a scale-height and a scale-radius, i.e.
@@ -31,17 +35,14 @@ class ExponentialThermalElectrons(ThermalElectronDensityField):
     'scale_radius`, :math:`R_e`; and 'scale_height', :math:`h_e`.
     """
 
-    # Class attributes
-    NAME = 'exponential_disc_thermal_electrons'
-    PARAMETER_NAMES = ['central_density',
-                       'scale_radius',
-                       'scale_height']
+    def __init__(self, grid):
+        super().__init__(grid, ['central_density', 'scale_radius', 'scale_height'], call_by_method=True)
 
-    def compute_field(self, seed):
+    def compute_model(self, parameters):
         R = self.grid.r_cylindrical
         z = self.grid.z
-        Re = self.parameters['scale_radius']
-        he = self.parameters['scale_height']
-        n0 = self.parameters['central_density']
+        Re = parameters['scale_radius']
+        he = parameters['scale_height']
+        n0 = parameters['central_density']
 
         return n0*np.exp(-R/Re)*np.exp(-np.abs(z/he))
