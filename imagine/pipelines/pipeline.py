@@ -1300,4 +1300,3 @@ class Pipeline(BaseClass, metaclass=abc.ABCMeta):
             return MAP
         else:
             return MAP, result
-

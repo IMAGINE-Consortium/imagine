@@ -20,10 +20,11 @@ __all__ = ['Prior', 'ScipyPrior', 'CustomPrior']
 class Prior(BaseClass, metaclass=abc.ABCMeta):
     """
     This is the base class which can be used to include a new type of prior
-    to the IMAGINE pipeline. If you are willing to use a distribution from
+    to the IMAGINE pipeline. If you want to use a distribution from
     scipy, please look at `ScipyPrior`. If you want to construct a prior from
     a sample, see `CustomPrior`.
     """
+
     def __init__(self, xmin=None, xmax=None, wrapped=False, unit=None, pdf_npoints=1500):
 
         # Ensures interval is quantity with consistent units
@@ -67,7 +68,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
             xmin_val = self.range[0].value
             dx = (self.range[1].value-self.range[0].value)/self._pdf_npoints
             cdf_y = np.append(0, np.cumsum(self._pdf_y * dx))
-            cdf_y /= cdf_y.max() # Avoids potential problems due to truncation
+            cdf_y /= cdf_y.max()  # Avoids potential problems due to truncation
             cdf_x = np.append(xmin_val, self._pdf_x + dx)
             self._cdf = interp1d(cdf_x, cdf_y)
         return self._cdf
@@ -78,7 +79,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
             xmin_val = self.range[0].value
             dx = (self.range[1].value-self.range[0].value)/self._pdf_npoints
             cdf_y = np.append(0, np.cumsum(self._pdf_y * dx))
-            cdf_y /= cdf_y.max() # Avoids potential problems due to truncation
+            cdf_y /= cdf_y.max()  # Avoids potential problems due to truncation
             cdf_x = np.append(xmin_val, self._pdf_x + dx)
             self._inv_cdf = interp1d(cdf_y, cdf_x)
 
@@ -106,8 +107,10 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
 
                 def _pdf(self, x):
                     return pdf(x)
+
                 def _cdf(self, x):
                     return cdf(x)
+
                 def _ppf(self, x):
                     return ppf(x)
 
@@ -115,7 +118,6 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
                 interval = [None, None]
             self._distr = Distr(a=interval[0], b=interval[1])
         return self._distr
-
 
 
 class CustomPrior(Prior):
@@ -158,6 +160,7 @@ class CustomPrior(Prior):
         If True (default), a reference to the samples is stored, allowing prior
         correlations to be computed by the Pipeline.
     """
+
     def __init__(self, samples=None, pdf_fun=None, xmin=None, xmax=None,
                  unit=None, wrapped=False, bw_method=None, pdf_npoints=1500,
                  samples_ref=True):
@@ -236,6 +239,7 @@ class ScipyPrior(Prior):
         Specify whether the parameter is periodic (i.e. the range is supposed
         to "wrap-around").
     """
+
     def __init__(self, distr, *args, loc=0.0, scale=1.0, xmin=None, xmax=None,
                  unit=None, wrapped=False, pdf_npoints=1500, **kwargs):
         super().__init__(xmin=xmin, xmax=xmax, unit=unit, wrapped=wrapped,

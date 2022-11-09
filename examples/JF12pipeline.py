@@ -5,8 +5,6 @@ import imagine as img
 from imagine.simulators.synchrotronlos import SpectralSynchrotronEmissivitySimulator
 from imagine.fields.cwrapped.wrappedjf12 import WrappedJF12
 from imagine.fields.cwrapped.wrappedjf12 import WrappedJF12Factory
-from imagine.fields.field_utility import FieldAdder
-from imagine.fields.field_utility import ArrayMagneticField
 
 # Utility
 import os
@@ -96,7 +94,7 @@ def JF12pipeline():
 
     # Setup observing configuration
     observer = np.array([-8.5,0,0])*u.kpc
-    dist_err = hIIdist/5
+    dist_err = hIIdist/50000
     FB       = get_label_FB(Ndata)
     config = {'grid'    :cartesian_grid,
               'observer':observer,

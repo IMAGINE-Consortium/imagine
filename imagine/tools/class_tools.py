@@ -12,7 +12,10 @@ __all__ = ['BaseClass', 'req_attr']
 # %% CLASS DEFINITIONS
 # Define a base class that automatically checks for missing attributes
 class BaseClass(object):
-    # Class attributes
+    # Class attributes#
+    @classmethod
+    def derived(cls):
+        return [c.__name__ for c in cls.__subclasses__()]
     REQ_ATTRS = []
 
     def __init__(self):

@@ -84,6 +84,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         """
         The "prior mapping", i.e. returns the value of the
         inverse of the CDF at point(s) `x`.
+        This only returns a fair sample of the prior if x is uniformly distributed.
         """
         return self.inv_cdf(x) << self.unit
 
