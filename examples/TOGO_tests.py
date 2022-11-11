@@ -9,6 +9,8 @@ from imagine.fields.grid import UniformGrid
 
 parameters = {'Bx': 1.*u.microgauss, 'By': -1.*u.microgauss, 'Bz': 0.*u.microgauss, 'ne': 5*u.cm**(-3)}
 
+
+
 xlims = [0, 4] * u.kpc
 ylims = [1, 2] * u.kpc
 zlims = [1, 1] * u.kpc
@@ -28,7 +30,9 @@ print(isinstance(n2, Model))
 b3 = b1 + b2
 print(type(b3))
 b4 = b1.vec_abs()
+b5 = b1.radial_component()
 print(type(b4))
+print(type(b5))
 bn1 = b4*n1
 print(type(bn1)) #TODO Why is this not a scalar field
 #print(b1.compute_model(parameters))

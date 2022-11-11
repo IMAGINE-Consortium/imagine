@@ -1,9 +1,10 @@
 import numpy as np
+import astropy.units as apu
 
-from ..TOGOBaseModels import ThermalElectronDensityField
+from ..TOGOBaseModels import ScalarField
 
 
-class ConstantThermalElectron(ThermalElectronDensityField):
+class ConstantThermalElectron(ScalarField):
     """
     Constant thermal electron density field
 
@@ -12,14 +13,13 @@ class ConstantThermalElectron(ThermalElectronDensityField):
     """
 
     def __init__(self, grid):
-
-        super().__init__(grid, ['ne'], call_by_method=True)
+        super().__init__(grid, {'ne': apu.cm**(-3)}, apu.cm**(-3), call_by_method=True)
 
     def compute_model(self, parameters):
         return np.ones(self.data_shape)*parameters['ne']
 
 
-class ExponentialThermalElectron(ThermalElectronDensityField):
+class ExponentialThermalElectron(ScalarField):
     """
     Thermal electron distribution in a double exponential disc
     characterized by a scale-height and a scale-radius, i.e.
@@ -36,7 +36,8 @@ class ExponentialThermalElectron(ThermalElectronDensityField):
     """
 
     def __init__(self, grid):
-        super().__init__(grid, ['central_density', 'scale_radius', 'scale_height'], call_by_method=True)
+        param_def = {'central_density': apu.cm**(-3), 'scale_radius': apu.kpc, 'scale_height': apu.kpc}
+        super().__init__(grid, param_def, apu.cm**(-3), call_by_method=True)
 
     def compute_model(self, parameters):
         R = self.grid.r_cylindrical
