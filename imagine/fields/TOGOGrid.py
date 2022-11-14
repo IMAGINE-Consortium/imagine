@@ -14,18 +14,57 @@ import abc
 import astropy.units as u
 import numpy as np
 
-# IMAGINE imports
-from imagine.tools import BaseClass
 
 # All declaration
 __all__ = ['BaseGrid', 'UniformGrid']
 
-class ParameterSpace()
-class ParameterSpaceTuple()
-
 
 # %% CLASS DEFINITIONS
-class BaseGrid(BaseClass, metaclass=abc.ABCMeta):
+class ParameterSpace(object):
+    def __init__(self, n, name):
+        if not isinstance(n, int):
+            raise TypeError()
+        self._n = n  # degrees of freedom
+
+        if isinstance(name, list) or isinstance(name, tuple):
+            for vval in name:
+                if not isinstance(vval, str):
+                    raise TypeError('Imagine.ParameterSpace: name must be provided as a string type or list/tuple of string types')
+        else:
+            if not isinstance(name, str):
+                raise TypeError('Imagine.ParameterSpace: name must be provided as a string type or list/tuple of string types')
+
+        self._name = name
+
+    @property
+    def n(self):
+        return self._n
+
+    @property
+    def name(self):
+        return self._name
+
+
+class ParameterSpaceDict(ParameterSpace, dict):
+    def __init__(self, dictionary_of_spaces, generate_from_param_dict=False):
+        if generate_from_param_dict:
+            dictionary_of_spaces = {name: ScalarSpace(name) for name in dictionary_of_spaces.keys()}
+        self.update(dictionary_of_spaces)
+        super().__init__(sum([s.n for s in dictionary_of_spaces.values()]), list(dictionary_of_spaces.keys()))
+
+    def update(self, dictable):
+        for v in dictable.values():
+            if not isinstance(v, ParameterSpace):
+                raise TypeError
+        super().update(dictable)
+
+
+class ScalarSpace(ParameterSpace):
+    def __init__(self, name):
+        super().__init__(1, name)
+
+
+class BaseGrid(ParameterSpace, metaclass=abc.ABCMeta):
     """
     Defines a 3D grid object for a given choice of box dimensions
     and resolution.
@@ -53,14 +92,19 @@ class BaseGrid(BaseClass, metaclass=abc.ABCMeta):
     resolution : 3-array_like
          Containing the resolution along each axis (the *shape* of the grid).
     """
-    def __init__(self, box, resolution):
+    def __init__(self, box, resolution, name=None):
         # Call super constructor
         super().__init__()
+
+        if name is None:
+            name = 'Grid'
+        self.name = name
 
         self.box = box
 
         self.resolution = np.empty((3,), dtype=np.int)
         self.resolution[:] = resolution
+        self.n = np.product(self.resolution())
 
         self._coordinates = None
         self._prototype_source = None
@@ -254,8 +298,8 @@ class UniformGrid(BaseGrid):
         ubox = [row[0].unit for row in self.box]
         # Constructs a dimensionless version (to enforce consistent dimensions
         # in the intervals and avoid problems in mgrid)
-        box_vals = [ [b.to_value(unit) for b in row]
-                     for row, unit in zip(self.box, ubox) ]
+        box_vals = [[b.to_value(unit) for b in row]
+                    for row, unit in zip(self.box, ubox) ]
 
         local_slice = (slice(box_vals[0][0], box_vals[0][1], self.resolution[0]*1j),
                        slice(box_vals[1][0], box_vals[1][1], self.resolution[1]*1j),
@@ -263,14 +307,14 @@ class UniformGrid(BaseGrid):
 
         local_coordinates = np.mgrid[local_slice]
 
-        if self.grid_type=='cartesian':
-            selected_coords = ['x','y','z']
-        elif self.grid_type=='spherical':
-            selected_coords = ['r_spherical','theta','phi']
-        elif self.grid_type=='cylindrical':
-            selected_coords = ['r_cylindrical','phi','z']
+        if self.grid_type == 'cartesian':
+            selected_coords = ['x', 'y', 'z']
+        elif self.grid_type == 'spherical':
+            selected_coords = ['r_spherical', 'theta', 'phi']
+        elif self.grid_type == 'cylindrical':
+            selected_coords = ['r_cylindrical', 'phi', 'z']
         else:
-            raise ValueError
+            raise KeyError
 
         coordinates_dict = {k: cgrid*unit for k, cgrid, unit in zip(selected_coords,
                                                                     local_coordinates,

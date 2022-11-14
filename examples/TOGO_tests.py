@@ -4,8 +4,10 @@ import astropy.units as u
 from imagine.fields.TOGOModel import Model
 from imagine.fields.TOGOsimple.TOGOSimpleMagnetic import ConstantMagneticField
 from imagine.fields.TOGOsimple.TOGOSimpleThermalElectron import ConstantThermalElectron, ExponentialThermalElectron
+from imagine.simulators.TOGOSimpleResponse import SimpleIntegrator
 
-from imagine.fields.grid import UniformGrid
+
+from imagine.fields.TOGOGrid import UniformGrid, ParameterSpace
 
 parameters = {'Bx': 1.*u.microgauss, 'By': -1.*u.microgauss, 'Bz': 0.*u.microgauss, 'ne': 5*u.cm**(-3)}
 
@@ -23,9 +25,10 @@ b2 = ConstantMagneticField(grid)
 n1 = ConstantThermalElectron(grid)
 n2 = ExponentialThermalElectron(grid)
 
-print(isinstance(n2, Model))
+s1 = SimpleIntegrator(grid, 0)
+print(isinstance(grid, ParameterSpace))
 
-
+print(s1(n1.compute_model(parameters)))
 
 b3 = b1 + b2
 print(type(b3))

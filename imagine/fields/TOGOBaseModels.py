@@ -1,6 +1,7 @@
 import numpy as np
 
 from .TOGOModel import Model
+from .TOGOGrid import ParameterSpace, ParameterSpaceDict, ScalarSpace
 
 
 class Field(Model):
@@ -11,10 +12,12 @@ class Field(Model):
         self.internal_shape = internal_shape
         if not isinstance(parameter_def_dict, dict):
             raise TypeError('parameter_names must be dictionary of units')
+        input_space = ParameterSpaceDict(parameter_def_dict, generate_from_param_dict=True)
+
         # missing unit check
         self._unit = unit
         self.grid = grid
-        super().__init__(input_param_space=parameter_def_dict, output_param_space=grid, call_by_method=call_by_method)
+        super().__init__(input_param_space=input_space, output_param_space=grid, call_by_method=call_by_method)
 
     @property
     def data_shape(self):

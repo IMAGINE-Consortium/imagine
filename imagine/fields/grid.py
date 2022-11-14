@@ -186,6 +186,7 @@ class BaseGrid(BaseClass, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError(("Subclasses should implement this!"))
 
+
 class UniformGrid(BaseGrid):
     r"""
     Defines a 3D grid object for a given choice of box dimensions

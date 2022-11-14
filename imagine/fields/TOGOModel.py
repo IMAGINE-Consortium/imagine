@@ -8,7 +8,8 @@ import numpy as np
 import nifty8 as ift
 
 # IMAGINE imports
-from imagine.tools import BaseClass, req_attr
+from imagine.tools import BaseClass
+from .TOGOGrid import ParameterSpace
 
 # All declaration
 __all__ = ['Model']
@@ -40,7 +41,12 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
     def __init__(self, input_param_space, output_param_space, call_by_method=False):
         log.debug('@ model::__init__')
 
+        if not isinstance(input_param_space, ParameterSpace):
+            raise TypeError
         self._input_param_space = input_param_space
+        
+        if not isinstance(output_param_space, ParameterSpace):
+            raise TypeError
         self._output_param_space = output_param_space
 
         if not call_by_method:
@@ -48,6 +54,14 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
 
         # Call super constructor
         super().__init__()
+
+    @property
+    def input_param_space(self):
+        return self._input_param_space
+
+    @property
+    def output_param_space(self):
+        return self._output_param_space
 
     def __add__(self, ModelToAdd):
         raise NotImplementedError
