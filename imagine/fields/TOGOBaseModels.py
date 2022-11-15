@@ -1,7 +1,7 @@
 import numpy as np
 
 from .TOGOModel import Model
-from .TOGOGrid import ParameterSpace, ParameterSpaceDict, ScalarSpace
+from ..grid.TOGOGrid import ParameterSpace, ParameterSpaceDict, ScalarSpace
 
 
 class Field(Model):

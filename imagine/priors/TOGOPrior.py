@@ -1,6 +1,7 @@
 # %% IMPORTS
 # Built-in imports
 import abc
+import collections
 import logging as log
 
 # Package imports
@@ -12,12 +13,99 @@ from scipy.interpolate import interp1d
 # IMAGINE imports
 from imagine.tools import BaseClass, req_attr
 from imagine.tools import unit_checker
-# All declaration
-__all__ = ['Prior', 'ScipyPrior', 'CustomPrior']
 
+from imagine.fields.TOGOModel import Model
+from imagine.grid.TOGOGrid import ParameterSpace
+
+# All declaration
+__all__ = ['Prior', 'CustomPrior']
+
+
+class Prior(Model):
+    def __init__(self, pdf, parameter_name, unit=None, pdf_n_points=1000, numerical_range=None, **distr_kwargs):
+        if unit is None:
+            unit = u.Unit(s='')
+        param_space = ParameterSpace(1, parameter_name)
+        super().__init__(param_space, param_space, call_by_method=True)
+        self._pdf_n_points = pdf_n_points
+        self._numerical_range = numerical_range
+
+        self.distr = self.set_distr(pdf, distr_kwargs)
+
+        self._cdf = None
+        self._inv_cdf = None
+        self._pdf = None
+        self._unit = unit
+
+    def draw_sample(self):
+        self._distr.rvs(self.n) << self.unit
+
+    def compute_field(self, u):
+        return self.inv_cdf(u) << self.unit
+
+    @property
+    def distr(self):
+        """
+        Constructs a scipy distribution based on an IMAGINE prior
+        """
+
+        return self._distr
+
+    def set_distr(self, f, distr_kwargs):
+        if isinstance(f, stats.rv_continuous):
+            self._distr = getattr(stats, f)(**distr_kwargs)
+        elif isinstance(f, str):
+            self._distr = getattr(stats, f)(**distr_kwargs)
+
+        elif isinstance(f, collections.Callable):
+            xmin_val = self._numerical_range[0].value
+            dx = (self._numerical_range[1].value-self._numerical_range[0].value)/self._pdf_npoints
+            cdf_y = np.append(0, np.cumsum(self._pdf_y * dx))
+            cdf_y /= cdf_y.max()  # Avoids potential problems due to truncation
+            cdf_x = np.append(xmin_val, self._pdf_x + dx)
+            cdf = interp1d(cdf_x, cdf_y)
+            ppf = interp1d(cdf_y, cdf_x)
+
+            class Distr(stats.rv_continuous):
+
+                def _pdf(self, x):
+                    return f(x)
+
+                def _cdf(self, x):
+                    return cdf(x)
+
+                def _ppf(self, x):
+                    return ppf(x)
+
+            self._distr = Distr(**distr_kwargs)
+        else:
+            raise TypeError('Prior must me set with either a scipy distr object, string indicating a scipy distr object or a callable for the pdf')
 
 # %% CLASS DEFINITIONS
-class Prior(BaseClass, metaclass=abc.ABCMeta):
+
+
+class MultidimensionalPrior():
+
+    def __init__(self, dict_of_priors, correlator):
+
+        self._parameter_names = list(dict_of_priors.keys())
+        self.correlator = None
+        self.dict_of_priors = dict_of_priors
+
+    def __call__(self, cube):
+        for i, (key, prior) in enumerate(self.dict_of_priors.items()):
+            cube[i] = prior(cube[i])
+
+        if self.correlator is not None:
+            cube[i] = self.correlator()
+        return cube
+
+    def sample(self, cube):
+        cube = self(cube)
+        return {key: cube[i] for i, key in enumerate(self._parameter_names)}
+
+
+class OldPrior(BaseClass, metaclass=abc.ABCMeta):
     """
     This is the base class which can be used to include a new type of prior
     to the IMAGINE pipeline. If you want to use a distribution from
@@ -89,12 +177,12 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
         return self.inv_cdf(x) << self.unit
 
     @property
-    def scipy_distr(self):
+    def distr(self, distr):
         """
         Constructs a scipy distribution based on an IMAGINE prior
         """
 
-        if self._distr is None:
+        if distr is None:
             pdf = self.pdf
             cdf = self.cdf
             ppf = self.inv_cdf
@@ -110,8 +198,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
                 def _ppf(self, x):
                     return ppf(x)
 
-            self._distr = Distr(a=self.interval[0], b=self.interval[1])
-        return self._distr
+        return Distr(a=self.interval[0], b=self.interval[1])
 
 
 class CustomPrior(Prior):
@@ -195,83 +282,3 @@ class CustomPrior(Prior):
             # If requested, stores the samples to allow later (in the Pipeline)
             # determination of correlations between parameters
             self.samples = samples << self.unit  # Adjusts units to avoid errors
-
-
-class ScipyPrior(Prior):
-    """
-    Constructs a prior from a continuous distribution defined in
-    `scipy.stats <https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions>`_.
-
-    Parameters
-    -----------
-    distr : scipy.stats.rv_continuous
-        A distribution function expressed as an instance of
-        :py:class:`scipy.stats.rv_continuous`.
-    *args :
-        Any positional arguments required by the function selected in
-        :py:data:`distr` (e.g for `scipy.
-        .chi2 <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2.html>`_, one needs to
-        supply the number of degrees of freedom, :py:data:`df`)
-    loc : float
-        Same meaning as in :py:class:`scipy.stats.rv_continuous`: sets the
-        centre of the distribution (generally, the mean or mode).
-    scale : float
-        Same meaning as in :py:class:`scipy.stats.rv_continuous`: sets the
-        width of the distribution (e.g. the standard deviation in the normal
-        case).
-    xmin, xmax : float
-        A pair of points representing, respectively, the minimum/maximum
-        parameter values to be considered (note that this will truncate the
-        original scipy distribution provided).
-        If these are not provided (or set to `None`), the prior range is
-        assumed to run from -infinity to infinity (in this case, `unit`
-        *must* be provided).
-    unit : astropy.units.Unit
-        If present, sets the units used for this parameter. If absent, this
-        is inferred from `xmin` and `xmax`.
-    wrapped : bool
-        Specify whether the parameter is periodic (i.e. the range is supposed
-        to "wrap-around").
-    """
-
-    def __init__(self, distr, *args, loc=0.0, scale=1.0, xmin=None, xmax=None,
-                 unit=None, pdf_npoints=1500, **kwargs):
-        super().__init__(xmin=xmin, xmax=xmax, unit=unit,
-                         pdf_npoints=pdf_npoints)
-
-        assert isinstance(distr, stats.rv_continuous), 'distr must be instance of scipy.stats.rv_continuous'
-
-        distr_instance = distr(*args, loc=loc, scale=scale, **kwargs)
-
-        if (xmin is None) and (xmax is None):
-            self._pdf = distr_instance.pdf
-            self._cdf = distr_instance.cdf
-            self._inv_cdf = distr_instance.ppf
-            self._distr = distr_instance
-        else:
-            # If a trucated distribution is required, proceed as in
-            # the empirical case
-            unit, [xmin_val, xmax_val] = unit_checker(unit, [xmin, xmax])
-            self._pdf_x = np.linspace(xmin_val, xmax_val, pdf_npoints)
-            self._pdf_y = distr_instance.pdf(self._pdf_x)
-
-
-class MultidimensionalPrior():
-
-    def __init__(self, dict_of_priors, correlator):
-
-        self._parameter_names = list(dict_of_priors.keys())
-        self.correlator = None
-        self.dict_of_priors = dict_of_priors
-
-    def __call__(self, cube):
-        for i, (key, prior) in enumerate(self.dict_of_priors.items()):
-            cube[i] = prior(cube[i])
-
-        if self.correlator is not None:
-            cube[i] = self.correlator()
-        return cube
-
-    def sample(self, cube):
-        cube = self(cube)
-        return {key: cube[i] for i, key in enumerate(self._parameter_names)}

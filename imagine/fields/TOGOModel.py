@@ -9,7 +9,7 @@ import nifty8 as ift
 
 # IMAGINE imports
 from imagine.tools import BaseClass
-from .TOGOGrid import ParameterSpace
+from ..grid.TOGOGrid import ParameterSpace
 
 # All declaration
 __all__ = ['Model']

@@ -3,7 +3,7 @@ import astropy.units as apu
 
 from .TOGOResponse import Response
 from ..fields.TOGOModel import Model
-from ..fields.TOGOGrid import ParameterSpace, UniformGrid
+from ..grid.TOGOGrid import ParameterSpace, UniformGrid
 
 
 class SimpleIntegrator(Response):

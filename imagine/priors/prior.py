@@ -114,7 +114,7 @@ class Prior(BaseClass, metaclass=abc.ABCMeta):
                 def _ppf(self, x):
                     return ppf(x)
 
-            if interval is None:
+            if self.range is None:
                 interval = [None, None]
             self._distr = Distr(a=interval[0], b=interval[1])
         return self._distr
