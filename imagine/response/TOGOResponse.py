@@ -18,11 +18,9 @@ __all__ = ['Response']
 # %% CLASS DEFINITIONS
 class Response(Model):
 
-    def __init__(self, grid, parameter_def_dict, unit, output_shape, call_by_method=False):
+    def __init__(self, grid,  parameter_def_dict, output_space, call_by_method=False):
         # Call super constructor
         input_param_space = grid if parameter_def_dict is None else (grid, parameter_def_dict)
-        super().__init__(input_param_space, output_shape)
+        super().__init__(input_param_space, output_space, call_by_method)
 
-        self._input_grid = grid
-        self._data_space = output_shape
         self._parameter_names = parameter_def_dict

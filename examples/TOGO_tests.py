@@ -11,14 +11,11 @@ from imagine.fields.TOGOGrid import UniformGrid, ParameterSpace
 
 parameters = {'Bx': 1.*u.microgauss, 'By': -1.*u.microgauss, 'Bz': 0.*u.microgauss, 'ne': 5*u.cm**(-3)}
 
-
-
 xlims = [0, 4] * u.kpc
 ylims = [1, 2] * u.kpc
 zlims = [1, 1] * u.kpc
 
-grid = UniformGrid([xlims, ylims, zlims], [5,2,1])
-
+grid = UniformGrid([xlims, ylims, zlims], [5, 2, 1])
 
 b1 = ConstantMagneticField(grid)
 b2 = ConstantMagneticField(grid)

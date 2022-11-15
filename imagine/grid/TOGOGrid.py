@@ -22,11 +22,11 @@ __all__ = ['BaseGrid', 'UniformGrid']
 # %% CLASS DEFINITIONS
 class ParameterSpace(object):
     def __init__(self, n, name):
-        if not isinstance(n, int):
-            raise TypeError()
+        if not isinstance(n, (int, np.integer)):
+            raise TypeError('Imagine.ParameterSpace: number of degrees n of freedom must be of integer type, but is {}'.format(type(n)))
         self._n = n  # degrees of freedom
 
-        if isinstance(name, list) or isinstance(name, tuple):
+        if isinstance(name, (list, tuple)):
             for vval in name:
                 if not isinstance(vval, str):
                     raise TypeError('Imagine.ParameterSpace: name must be provided as a string type or list/tuple of string types')
@@ -55,7 +55,7 @@ class ParameterSpaceDict(ParameterSpace, dict):
     def update(self, dictable):
         for v in dictable.values():
             if not isinstance(v, ParameterSpace):
-                raise TypeError
+                raise TypeError('Imagine.ParameterSpaceDict.update: One of the values is not a ParameterSpace')
         super().update(dictable)
 
 
@@ -94,17 +94,14 @@ class BaseGrid(ParameterSpace, metaclass=abc.ABCMeta):
     """
     def __init__(self, box, resolution, name=None):
         # Call super constructor
-        super().__init__()
 
         if name is None:
             name = 'Grid'
-        self.name = name
-
-        self.box = box
-
         self.resolution = np.empty((3,), dtype=np.int)
         self.resolution[:] = resolution
-        self.n = np.product(self.resolution())
+        super().__init__(np.product(self.resolution), name)
+
+        self.box = box
 
         self._coordinates = None
         self._prototype_source = None

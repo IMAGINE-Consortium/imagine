@@ -44,7 +44,7 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
         if not isinstance(input_param_space, ParameterSpace):
             raise TypeError
         self._input_param_space = input_param_space
-        
+
         if not isinstance(output_param_space, ParameterSpace):
             raise TypeError
         self._output_param_space = output_param_space
@@ -81,6 +81,9 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
             return self.compute_model(ModelToConnect.compute_model(parameters))
         setattr(m, 'compute_model', _new_compute_model)
         return m
+
+    def __call__(self, parameters):
+        return self.compute_model(parameters)
 
     def compute_model(self, parameters):
         """
