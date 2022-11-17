@@ -26,4 +26,4 @@ class SimpleIntegrator(Response):
     def compute_model(self, field):
         if not isinstance(field, np.ndarray):
             raise TypeError('Imagine.SimpleIntegrator: Can only be applied on numpy arrays, was applied on {}'.format(type(field)))
-        return np.cumsum(field, axis=self.direction).flatten()*self.dx
+        return np.cumsum(field, axis=self.direction).flatten()*self.dx << self.unit_adaptor(field.unit)

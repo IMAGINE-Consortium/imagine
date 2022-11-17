@@ -15,9 +15,11 @@ class Field(Model):
         input_space = ParameterSpaceDict(parameter_def_dict, generate_from_param_dict=True)
 
         # missing unit check
-        self._unit = unit
-        self.grid = grid
+
         super().__init__(input_param_space=input_space, output_param_space=grid, call_by_method=call_by_method)
+        self.unit = unit
+        self._parameter_units = parameter_def_dict
+        self.grid = grid
 
     @property
     def data_shape(self):
@@ -27,12 +29,11 @@ class Field(Model):
             return(*self.grid.shape, *self.internal_shape)
 
     @property
-    def unit(self):
-        return self._unit
-
-    @property
     def parameter_units(self):
-        return self._input_param_space
+        return self._parameter_units
+
+    def unit_adaptor(self, other_unit):
+        return self.unit
 
 
 class VectorField(Field):

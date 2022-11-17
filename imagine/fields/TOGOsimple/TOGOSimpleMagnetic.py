@@ -1,8 +1,11 @@
 import numpy as np
-import astropy.units as apu
+import astropy.units as u
 
 from ..TOGOBaseModels import VectorField
 
+
+gauss_B = (u.g/u.cm)**(0.5)/u.s
+equiv_B = [(u.G, gauss_B, lambda x: x, lambda x: x)]
 
 class ConstantMagneticField(VectorField):
     """
@@ -14,8 +17,8 @@ class ConstantMagneticField(VectorField):
     """
 
     def __init__(self, grid):
-        parameter_def = {'Bx': apu.microgauss, 'By': apu.microgauss, 'Bz': apu.microgauss}
-        super().__init__(grid, parameter_def, apu.microgauss, 3, call_by_method=True)
+        parameter_def = {'Bx': gauss_B, 'By': gauss_B, 'Bz': gauss_B}
+        super().__init__(grid, parameter_def, gauss_B, 3, call_by_method=True)
 
     def compute_model(self, parameters):
         # Creates an empty array to store the result

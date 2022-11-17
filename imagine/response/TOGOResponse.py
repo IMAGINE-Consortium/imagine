@@ -24,3 +24,7 @@ class Response(Model):
         super().__init__(input_param_space, output_space, call_by_method)
 
         self._parameter_names = parameter_def_dict
+        self._unit = grid.box[0].unit
+
+    def unit_adaptor(self, other_unit):
+        return self.unit*other_unit

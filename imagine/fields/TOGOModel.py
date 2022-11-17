@@ -49,11 +49,27 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
             raise TypeError
         self._output_param_space = output_param_space
 
+        self._unit = None
+
         if not call_by_method:
             raise KeyError('This is is an abstract class, which should not be instantiated by the user')
 
         # Call super constructor
         super().__init__()
+
+    @property
+    def unit(self):
+        return self._unit
+
+    @unit.setter
+    def unit(self, other_unit):
+        if self.unit is not None:
+            raise ValueError('Imagine.Model.unit already set')
+
+        self._unit = other_unit
+
+    def unit_adaptor(self, other_unit):
+        return self.unit
 
     @property
     def input_param_space(self):
@@ -72,10 +88,12 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
     def __matmul__(self, ModelToConnect):
         if not isinstance(ModelToConnect, Model):
             raise TypeError()
-        if not ModelToConnect._output_param_space == self._input_param_space:
-            raise TypeError('Imagine.Model: Only Models with fitting output and input can be connected, you tried {} (input) and {} (output)'.format(self._input_param_space, ModelToConnect._output_param_space))
+        if not isinstance(ModelToConnect._output_param_space,  type(self._input_param_space)):
+            raise TypeError('Imagine.Model: Only Models with fitting output and input can be connected, you tried {} (input) and {} (output)'.format(type(self._input_param_space), type(ModelToConnect._output_param_space)))
 
         m = Model(ModelToConnect._input_param_space, self._output_param_space, call_by_method=True)
+
+        m.unit = self.unit_adaptor(ModelToConnect.unit)
 
         def _new_compute_model(parameters):
             return self.compute_model(ModelToConnect.compute_model(parameters))
@@ -98,6 +116,7 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
         parameters : dictionary
         """
         raise NotImplementedError
+
 
     @staticmethod
     def return_first_common_base(o1, o2):

@@ -21,6 +21,8 @@ call
 # Built-in imports
 import abc
 
+import astropy.units as u
+
 # Package imports
 import numpy as np
 
@@ -41,9 +43,11 @@ __all__ = ['Likelihood']
 
 class TOGOLogLikelihood(Model):
     def __init__(self, data, simulator=None, name=None,  call_by_method=False ):
-        if not isinstance(data, np.nd_array):
+        if not isinstance(data, np.ndarray):
             raise TypeError()
         self._data = data
+        name = 'Likelihood' if name is None else name
+
         if simulator is None:
             input_param_space = ParameterSpace(len(data), name)
 
@@ -51,10 +55,10 @@ class TOGOLogLikelihood(Model):
                 return par
             self._simulate = sim
         else:
-            input_param_space = simulator.input_space
+            input_param_space = simulator.output_param_space
             self._simulate = simulator.compute_model
 
-        super().__init(ScalarSpace('Energy'), input_param_space)
+        super().__init__( input_param_space, ScalarSpace('Energy'), call_by_method)
 
     @property
     def data(self):
@@ -65,26 +69,42 @@ class TOGOGaussianLogLikelihood(TOGOLogLikelihood):
     def __init__(self, data, noise_cov, simulator=None, name=None):
         super().__init__(data, simulator, name, True)
 
+        if isinstance(data, u.Quantity):
+            unit = data.unit
+            if not isinstance(noise_cov, u.Quantity) and unit != u.Unit(''):
+                raise TypeError()
+            if not noise_cov.unit == unit**2:
+                raise TypeError()
+        else:
+            unit = u.Unit('')
+            if isinstance(noise_cov, u.Quantity):
+                if not unit == noise_cov.unit:
+                    raise TypeError()
+        if simulator is not None:
+            if not unit == simulator.unit:
+                raise TypeError()
+
         self._noise_cov = noise_cov
-        if isinstance(noise_cov, (int, float, np.int, np.float)):
+        if isinstance(noise_cov.value, (int, float)):
             if noise_cov <= 0:
                 raise ValueError('Imagine.GaussianLogLikelihood: scalar noise_cov must be positive')
-            logdet = len(self.data)*np.log(noise_cov*2.*np.pi)
+            logdet = len(self.data)*np.log(noise_cov.value*2.*np.pi)
 
             def apply(vec):
-                return -0.5*np.vdot(vec, 1./noise_cov * vec) - logdet
+                return -0.5*np.vdot(vec, vec)/noise_cov - logdet
             self._apply_noise_cov = apply
 
-        elif len(noise_cov.shape()) == 1:
+        elif len(noise_cov.shape) == 1:
             # Diagonal
             if not (noise_cov >= 0).all():
                 raise ValueError('Imagine.GaussianLogLikelihood: diagonal noise_cov must be positive definite')
             logdet = np.log(noise_cov*2.*np.pi).sum()
+
             def apply(vec):
                 return -0.5*np.vdot(vec, 1./noise_cov * vec) - logdet
             self._apply_noise_cov = apply
 
-        elif len(noise_cov.shape()) == 2:
+        elif len(noise_cov.shape) == 2:
             # Full matrix
             if not (noise_cov == noise_cov.T).all():
                 raise ValueError('Imagine.GaussianLogLikelihood: inverse_noise_cov must be symmetric')
@@ -109,7 +129,7 @@ class TOGOGaussianLogLikelihood(TOGOLogLikelihood):
 
     def compute_model(self, parameters):
         residual = self.data - self._simulate(parameters)
-        return self.apply(residual)
+        return self._apply_noise_cov(residual)
 
 
 class Likelihood(BaseClass, metaclass=abc.ABCMeta):
