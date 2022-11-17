@@ -73,7 +73,7 @@ class Model(BaseClass, metaclass=abc.ABCMeta):
         if not isinstance(ModelToConnect, Model):
             raise TypeError()
         if not ModelToConnect._output_param_space == self._input_param_space:
-            raise TypeError('Imagine.Model: Only Models with fitting output and input can be connected')
+            raise TypeError('Imagine.Model: Only Models with fitting output and input can be connected, you tried {} (input) and {} (output)'.format(self._input_param_space, ModelToConnect._output_param_space))
 
         m = Model(ModelToConnect._input_param_space, self._output_param_space, call_by_method=True)
 

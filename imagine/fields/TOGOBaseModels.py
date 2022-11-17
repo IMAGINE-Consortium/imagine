@@ -99,12 +99,14 @@ class VectorField(Field):
 
         if component is None:  # return only the coefficients is cheaper in this case
             return sin_theta, cos_theta, sin_phi, sin_theta
+        # TODO Move axis below is inefficient, try to build array the right shape immediatley
         if component == 'parallel':
-            return np.swapaxes(np.array([sin_theta * cos_phi, cos_theta * cos_phi, -sin_phi]), 0, -1)
+            return np.moveaxis(np.array([sin_theta * cos_phi, cos_theta * cos_phi, -sin_phi]), 0, -1)
+            # return np.array([sin_theta * cos_phi, cos_theta * cos_phi, -sin_phi])
         if component == 'theta':
-            return np.swapaxes(np.array([sin_theta * sin_phi, cos_theta * sin_phi,  cos_phi]), 0, -1)
+            return np.moveaxis(np.array([sin_theta * sin_phi, cos_theta * sin_phi,  cos_phi]), 0, -1)
         if component == 'phi':
-            return np.swapaxes(np.array([cos_theta,          -sin_theta,            0.]), 0, -1)
+            return np.moveaxis(np.array([cos_theta,          -sin_theta,            0.]), 0, -1)
 
     def spherical_project(self):
         raise NotImplementedError()

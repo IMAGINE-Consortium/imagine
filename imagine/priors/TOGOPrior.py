@@ -15,14 +15,14 @@ from imagine.tools import BaseClass, req_attr
 from imagine.tools import unit_checker
 
 from imagine.fields.TOGOModel import Model
-from imagine.grid.TOGOGrid import ParameterSpace
+from imagine.grid.TOGOGrid import ParameterSpace, ParameterSpaceDict, ScalarSpace
 
 # All declaration
-__all__ = ['Prior', 'CustomPrior']
+__all__ = ['Prior', 'CustomPrior', 'MultivariatePrior']
 
 
 class Prior(Model):
-    def __init__(self, pdf, parameter_name, unit=None, pdf_n_points=1000, numerical_range=None, **distr_kwargs):
+    def __init__(self, pd_info, parameter_name, unit=None, pdf_n_points=1000, numerical_range=None, **distr_kwargs):
         if unit is None:
             unit = u.Unit(s='')
         param_space = ParameterSpace(1, parameter_name)
@@ -30,26 +30,19 @@ class Prior(Model):
         self._pdf_n_points = pdf_n_points
         self._numerical_range = numerical_range
 
-        self.distr = self.set_distr(pdf, distr_kwargs)
+        self.set_distr(pd_info, distr_kwargs)
 
-        self._cdf = None
-        self._inv_cdf = None
-        self._pdf = None
         self._unit = unit
 
-    def draw_sample(self):
-        self._distr.rvs(self.n) << self.unit
-
-    def compute_field(self, u):
-        return self.inv_cdf(u) << self.unit
-
     @property
-    def distr(self):
-        """
-        Constructs a scipy distribution based on an IMAGINE prior
-        """
+    def unit(self):
+        return self._unit
 
-        return self._distr
+    def draw_sample(self):
+        return self._distr.rvs() << self.unit
+
+    def compute_model(self, parameters):
+        return self._distr.ppf(u) << self.unit
 
     def set_distr(self, f, distr_kwargs):
         if isinstance(f, stats.rv_continuous):
@@ -57,14 +50,14 @@ class Prior(Model):
         elif isinstance(f, str):
             self._distr = getattr(stats, f)(**distr_kwargs)
 
-        elif isinstance(f, collections.Callable):
-            xmin_val = self._numerical_range[0].value
-            dx = (self._numerical_range[1].value-self._numerical_range[0].value)/self._pdf_npoints
-            cdf_y = np.append(0, np.cumsum(self._pdf_y * dx))
-            cdf_y /= cdf_y.max()  # Avoids potential problems due to truncation
-            cdf_x = np.append(xmin_val, self._pdf_x + dx)
-            cdf = interp1d(cdf_x, cdf_y)
-            ppf = interp1d(cdf_y, cdf_x)
+        elif isinstance(f, (collections.Callable, np.ndarray,)):
+            if isinstance(f, np.nd_array):
+                raise NotImplementedError
+            x = np.linspace(*self._numerical_range, self._pdf_n_points)
+            cdf_y = np.append(0, np.cumsum(x))
+            cdf_y /= cdf_y.max()  # Slight rescaling to avoid potential problems due to truncation
+            cdf = interp1d(x, cdf_y)
+            ppf = interp1d(cdf_y, x)
 
             class Distr(stats.rv_continuous):
 
@@ -84,121 +77,20 @@ class Prior(Model):
 # %% CLASS DEFINITIONS
 
 
-class MultidimensionalPrior():
+class MultivariatePrior(Model):
 
-    def __init__(self, dict_of_priors, correlator):
+    def __init__(self, dict_of_priors, correlator=None):
 
-        self._parameter_names = list(dict_of_priors.keys())
-        self.correlator = None
+        self.correlator = correlator
         self.dict_of_priors = dict_of_priors
+        param_space = ParameterSpaceDict({n: ScalarSpace(n) for n in dict_of_priors})
+        super().__init__(param_space, param_space, call_by_method=True)
 
-    def __call__(self, cube):
-        for i, (key, prior) in enumerate(self.dict_of_priors.items()):
-            cube[i] = prior(cube[i])
+    def draw_sample(self):
+        return {n: prior.draw_sample() for n, prior in self.dict_of_priors.items()}
 
-        if self.correlator is not None:
-            cube[i] = self.correlator()
-        return cube
-
-    def sample(self, cube):
-        cube = self(cube)
-        return {key: cube[i] for i, key in enumerate(self._parameter_names)}
-
-
-class OldPrior(BaseClass, metaclass=abc.ABCMeta):
-    """
-    This is the base class which can be used to include a new type of prior
-    to the IMAGINE pipeline. If you want to use a distribution from
-    scipy, please look at `ScipyPrior`. If you want to construct a prior from
-    a sample, see `CustomPrior`.
-    """
-
-    def __init__(self, unit=None, interval=None, pdf_npoints=1500):
-
-        if unit is None:
-            unit = u.Unit(s='')
-
-        self.unit = unit
-        if interval is None:
-            self._interval = [None, None]
-        else:
-            self._interval = interval
-        self._pdf_npoints = pdf_npoints
-        # Placeholders
-        self._cdf = None
-        self._inv_cdf = None
-        self._distr = None
-        self._pdf = None
-        self.samples = None
-
-    def pdf(self, x):
-        """
-        Probability density function (PDF) associated with this prior.
-        """
-        if self._pdf is None:
-            self._pdf = interp1d(x=self._pdf_x, y=self._pdf_y)
-
-        unit, [x_val] = unit_checker(self.unit, [x])
-
-        return self._pdf(x)
-
-    @property
-    def cdf(self):
-        """
-        Cumulative distribution function (CDF) associated with this prior.
-        """
-        if self._cdf is None:
-            xmin_val = self.range[0].value
-            dx = (self.range[1].value-self.range[0].value)/self._pdf_npoints
-            cdf_y = np.append(0, np.cumsum(self._pdf_y * dx))
-            cdf_y /= cdf_y.max()  # Avoids potential problems due to truncation
-            cdf_x = np.append(xmin_val, self._pdf_x + dx)
-            self._cdf = interp1d(cdf_x, cdf_y)
-        return self._cdf
-
-    @property
-    def inv_cdf(self):
-        if self._inv_cdf is None:
-            xmin_val = self.range[0].value
-            dx = (self.range[1].value-self.range[0].value)/self._pdf_npoints
-            cdf_y = np.append(0, np.cumsum(self._pdf_y * dx))
-            cdf_y /= cdf_y.max()  # Avoids potential problems due to truncation
-            cdf_x = np.append(xmin_val, self._pdf_x + dx)
-            self._inv_cdf = interp1d(cdf_y, cdf_x)
-
-        return self._inv_cdf
-
-    def __call__(self, x):
-        """
-        The "prior mapping", i.e. returns the value of the
-        inverse of the CDF at point(s) `x`.
-        This only returns a fair sample of the prior if x is uniformly distributed.
-        """
-        return self.inv_cdf(x) << self.unit
-
-    @property
-    def distr(self, distr):
-        """
-        Constructs a scipy distribution based on an IMAGINE prior
-        """
-
-        if distr is None:
-            pdf = self.pdf
-            cdf = self.cdf
-            ppf = self.inv_cdf
-
-            class Distr(stats.rv_continuous):
-
-                def _pdf(self, x):
-                    return pdf(x)
-
-                def _cdf(self, x):
-                    return cdf(x)
-
-                def _ppf(self, x):
-                    return ppf(x)
-
-        return Distr(a=self.interval[0], b=self.interval[1])
+    def compute_model(self, parameters):
+        return {n: prior(parameters[n]) for n, prior in self.dict_of_priors.items()}
 
 
 class CustomPrior(Prior):
