@@ -21,6 +21,8 @@ from imagine.tools import req_attr
 __all__ = ['MagneticFieldAdder', 'ArrayMagneticField']
 
 
+import numpy as np
+
 class MagneticFieldAdder(MagneticField):
     UNITS = MagneticField.UNITS
     TYPE = MagneticField.TYPE
@@ -65,6 +67,8 @@ class MagneticFieldAdder(MagneticField):
         return(self.summand_1.data_shape)
 
     def compute_field(self, seed):
+        #print(np.max(self.summand_1.compute_field(seed)))
+        #print(np.max(self.summand_2.compute_field(seed)))
         return self.summand_1.compute_field(seed) + self.summand_2.compute_field(seed)
 
 
@@ -119,9 +123,10 @@ class ArrayMagneticField(MagneticField):
 
     @property
     def data_shape(self):
-        return(self.array_field.shape)
+        return(self.parameters['array_field'].shape)
 
     def compute_field(self, seed):
+        #print("\narray_field_amplitude: ", self.parameters['array_field_amplitude'])
         return self.parameters['array_field_amplitude']*self.parameters['array_field']
 
 

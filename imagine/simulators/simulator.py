@@ -170,7 +170,7 @@ class Simulator(BaseClass, metaclass=abc.ABCMeta):
                     # Stores the parameters list
                     self.field_parameters[field.type] = field.parameter_names
                     
-                    # temporary fix such that the simulator can acces field parameter values           
+                    # Temporary fix such that the simulator can acces field parameter values           
                     self.field_parameter_values[field.type] = field.parameters
                     
                     # Stores the checklist (for dummies only)
