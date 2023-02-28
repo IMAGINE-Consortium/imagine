@@ -23,7 +23,6 @@ ugauss_B = 1e-6 * gauss_B
 
 
 #%% Define the Simulator class
-
 class SpectralSynchrotronEmissivitySimulator(Simulator):
     """
     Simulator for Galactic synchrotron emissivity.
@@ -81,7 +80,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         
         
         # Asses field types and set data-acces function
-        #self.get_field_data()        
+        #self.get_field_data()  
         
         # Stores class-specific attributes (and for now double definitions)
         for key in measurements.keys(): self.observing_frequency = key[1] * GHz
@@ -223,7 +222,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         v_perpendicular      = vectorfield - v_parallel
         v_perp_amplitude     = np.sqrt(np.sum(v_perpendicular*v_perpendicular,axis=3))
         return v_perp_amplitude
-    
+
     def simulate(self, key, coords_dict, realization_id, output_units): 
         # Acces field data
         ncre_grid = self.fields['cosmic_ray_electron_density']  # in units cm^-3
