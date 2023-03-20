@@ -59,9 +59,8 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         Output units used in the simulator
     """
 
-    
     # Class attributes
-    SIMULATED_QUANTITIES = ['average_los_brightness']
+    SIMULATED_QUANTITIES = ['los_brightness_temperature']
     REQUIRED_FIELD_TYPES = ['magnetic_field','cosmic_ray_electron_density']
     OPTIONAL_FIELD_TYPES = ['cosmic_ray_electron_spectral_index']
     ALLOWED_GRID_TYPES   = ['cartesian']
@@ -114,8 +113,6 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         hIIdist    = sim_config['dist'].to(u.kpc)
         if sim_config['e_dist'] != None:
             e_hIIdist  = sim_config['e_dist'].to(u.kpc)
-            #print("Simulator distances:\n", hIIdist)
-            #print("Simulator rel error:\n", e_hIIdist/hIIdist)
         else:
             e_hIIdist = None
             #print("Working with relative distance error: None")
@@ -126,22 +123,18 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         translation = np.array([xmax,ymax,zmax])/2 * unit
         translated_observer = sim_config['observer'] + translation
 
-        # Cast start and end points in a Nifty compatible format
-        starts = []
-        for o in translated_observer:
-            starts.append(np.full(shape=(nlos,), fill_value=o)*u.kpc)
-        start_points = np.vstack(starts).T
-
+        # Get endpoints (HII region locations)
         ends = []
         los  = spherical_to_cartesian(r=hIIdist, lat=lat, lon=lon)
         for i,axis in enumerate(los):
             ends.append(axis+translated_observer[i])
         end_points = np.vstack(ends).T
 
-        #print("Simulator translated starts:\n", start_points)
-        #print("Simulator translated ends:\n", end_points)
-
-        # Do Front-Behind selection
+        # Get start points (do Front-Behind selection)
+        starts = []
+        for o in translated_observer:
+            starts.append(np.full(shape=(nlos,), fill_value=o)*u.kpc)
+        start_points = np.vstack(starts).T
         deltas = end_points - start_points
         clims  = box * np.sign(deltas) * unit
         clims[clims<0]=0 # if los goes in negative direction clim of xyz=0-plane
@@ -149,26 +142,13 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
             all_lambdas = (clims-end_points)/deltas   # possibly divide by zero 
         lambdas = np.min(np.abs(all_lambdas), axis=1) # will drop any inf here
         start_points[behind] = end_points[behind] + np.reshape(lambdas[behind], newshape=(np.size(behind),1))*deltas[behind]     
-        
-        # Final integration distances
-        self.los_distances = np.linalg.norm(end_points-start_points, axis=1)
-   
-        # convenience for bugfixing:
-        behindTF = np.zeros(nlos)*u.kpc
-        behindTF[behind] = 1*u.kpc
-        #print("Simulator starts after FB (1=behind):\n", np.vstack((np.round(start_points,1).T,behindTF)).T)
-        #print("Simulator ends after FB:\n", np.round(end_points,1))
-        #print("Simulator distances after FB:\n", self.los_distances)
-        #print("Simulator translated_observer\n", translated_observer)
-        #print("Simulator start_points\n", start_points)
-        #print("Simulator end_points\n", end_points)
-        self.start_points = start_points
-        self.behindTF = behindTF
+
+        # Cast numpy starts and ends into nifty compatible format
         nstarts = self._make_nifty_points(start_points)
         nends   = self._make_nifty_points(end_points)
-
+        
+        # Define nitfy integration operator
         self.response = ift.LOSResponse(self.domain, nstarts, nends, sigmas=e_hIIdist, truncation=3.) # domain doesnt know about its units but starts/ends do?
-    
     
     def _make_nifty_points(self, points, dim=3):
         rows,cols = np.shape(points)
@@ -193,7 +173,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         ncre  = ncre.to(u.cm**-3)*u.cm**3
         Bper  = Bper.to(u.G)/u.G
         # Handle two spectral index cases:
-	# -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
+	    # -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
         try: # alpha is a constant spectral index globally 
             alpha = self.field_parameter_values['cosmic_ray_electron_density']['spectral_index']
         except: pass
@@ -227,23 +207,15 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         # Acces field data
         ncre_grid = self.fields['cosmic_ray_electron_density']  # in units cm^-3
         B_grid    = self.fields['magnetic_field'] # fixing is now done inside emissivity calculation
-        #print("Simulator zeros in cre_grid:\n",sum(ncre_grid.flatten()==0))
         # Project to perpendicular component to line of sight
         Bperp_amplitude_grid = self._project_to_perpendicular(B_grid)
-        #print("Simulator zeros in Bper_amp_grid\n",sum(Bperp_amplitude_grid.flatten()==0))
         # Calculate grid of emissivity values
         emissivity_grid = self._spectral_total_emissivity(Bperp_amplitude_grid, ncre_grid)
-        #emissivity_grid = np.ones(np.shape(emissivity_grid))
-        #print("Simulator emissivity_grid:\n", emissivity_grid)
-        #print("Simulator number of zero pixels in grid:\n",sum(emissivity_grid.flatten()==0))
         # Do the los integration on the domain defined in init with the new emissivity grid
-        HII_LOSemissivities = self.response(ift.Field(self.domain, emissivity_grid)).val_rw()
-        HII_LOSemissivities *= emissivity_grid.unit * u.kpc # restore units: domain is assumed to be in kpc
-        # Need units to be in K/kpc, average brightness temperature allong the line of sight
-        HII_LOSbrightness = c**2/(2*kb*self.observing_frequency**2)*HII_LOSemissivities/self.los_distances
-        #print("Simulator final brightness before rounding:\n",HII_LOSbrightness)
-        #print("Simulator coordinate-brightness summary:\n", np.vstack((np.round(self.start_points,1).T,self.behindTF,HII_LOSbrightness/(u.K/u.kpc)*u.kpc)).T)
+        HII_LOSintensity = self.response(ift.Field(self.domain, emissivity_grid)).val_rw()
+        HII_LOSintensity *= emissivity_grid.unit * u.kpc # restore units: domain is assumed to be in kpc
+        # Convert radio intensity to brightness temperature
+        HII_LOSbrightness = c**2/(2*kb*self.observing_frequency**2)*HII_LOSintensity
         return HII_LOSbrightness
-        #print("Simulator los_disntaces:\n", self.los_distances)
-        #return HII_LOSemissivities *u.K/u.kpc
+
 
