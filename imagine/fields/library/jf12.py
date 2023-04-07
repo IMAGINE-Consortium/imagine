@@ -21,16 +21,15 @@ class WrappedJF12(MagneticField):
                       'Xtheta_const': u.rad, 'rpc_X': u.kpc, 'r0_X': u.kpc, }
 
     def compute_field(self, seed):
-        # TODO: tolist (and hence unnecessary copy) is needed due to wrapper implementation, should change in the future
-
+        
         res = self.grid.resolution
 
         x = self.grid.box[0]#.to_value()
-        x = np.linspace(x[0].value, x[1].value, res[0]).tolist()
+        x = np.linspace(x[0].value, x[1].value, res[0])
         y = self.grid.box[1]#.to_value()
-        y = np.linspace(y[0].value, y[1].value, res[1]).tolist()
+        y = np.linspace(y[0].value, y[1].value, res[1])
         z = self.grid.box[2]#.to_value()
-        z = np.linspace(z[0].value, z[1].value, res[2]).tolist()
+        z = np.linspace(z[0].value, z[1].value, res[2])
         # Creates an empty array to store the result
 
         wrapped_jf12 = im.JF12MagneticField()
@@ -41,8 +40,7 @@ class WrappedJF12(MagneticField):
                     val = val.to(self.DEFAULT_UNITS[key]).value
                 setattr(wrapped_jf12, key, val)
 
-        # TODO: npasarray is needed due to wrapper implementation, should change in the future
-        B = np.asarray(wrapped_jf12.evaluate_grid(grid_x=x, grid_y=y, grid_z=z))*self.UNITS
+        B = wrapped_jf12.evaluate_grid(grid_x=x, grid_y=y, grid_z=z)*self.UNITS
         #print("Found {} nans inside JF12 field".format(np.sum(np.isnan(B))))
 
         # Test B for nans

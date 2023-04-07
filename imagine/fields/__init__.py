@@ -17,6 +17,15 @@ from .test_field import *
 # Import subpackages
 from . import hamx
 
+# Import base modules
+model_library_installed = True
+try:
+    from . import library
+    
+except ImportError:
+    print('No ImagineModels installation found, model library not available')
+    model_library_installed = False
+
 # All declaration
 __all__ = ['base_fields', 'basic_fields', 'field', 'field_factory', 'grid',
            'hamx', 'test_field']
