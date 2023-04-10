@@ -200,9 +200,9 @@ def basic_pipeline_run(pipeline_class=img.pipelines.MultinestPipeline,
 if __name__ == '__main__':
     # Checks command line arguments
     cmd, args = sys.argv[0], sys.argv[1:]
-    if len(args) == 0:
-        choice = 'dynesty'
-    elif args[0].lower() in ('multinest', 'ultranest', 'dynesty'):
+    if len(args)==0:
+        choice = 'multinest'
+    elif args[0].lower() in ('multinest', 'ultranest', 'emcee', 'dynesty'):
         choice = args[0].lower()  # Supports any capitalization
     else:
         if mpirank == 0:
@@ -244,7 +244,7 @@ if __name__ == '__main__':
                                 'min_ess': 1000}
         # Starts the run
         if mpirank == 0:
-            print('Running using UltraNest')
+            print('Running using UltraNest', flush=True)
             timer.tick('UltraNest')
 
         basic_pipeline_run(run_directory=run_directory,
@@ -252,6 +252,27 @@ if __name__ == '__main__':
                            pipeline_class=pipeline_class)
         if mpirank == 0:
             print('Finished. Ellapsed time:', timer.tock('UltraNest'))
+
+    elif choice == 'emcee':
+        # ------ UltraNest -------
+        # Sets run directory name
+        run_directory=os.path.join('runs','basic_pipeline_run_emcee')
+        # Sets up the sampler to be used
+        pipeline_class = img.pipelines.EmceePipeline
+        # Set some controller parameters that are specific to Emcee.
+        sampling_controllers = {'max_nsteps': 2000,
+                                'nwalkers': 16,
+                                'nsteps_check': 100}
+        # Starts the run
+        if mpirank == 0:
+            print('Running using emcee', flush=True)
+            timer.tick('emcee')
+
+        basic_pipeline_run(run_directory=run_directory,
+                          sampling_controllers=sampling_controllers,
+                          pipeline_class=pipeline_class)
+        if mpirank == 0:
+            print('Finished. Ellapsed time:', timer.tock('emcee'))
 
     elif choice == 'dynesty':
         # ------ Dynesty -------
@@ -269,7 +290,7 @@ if __name__ == '__main__':
                                 'dynamic': True}
         # Starts the run
         if mpirank == 0:
-            print('\n\nRunning using Dynesty')
+            print('\n\nRunning using Dynesty', flush=True)
             timer.tick('Dynesty')
 
         basic_pipeline_run(run_directory=run_directory,

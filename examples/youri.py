@@ -1,7 +1,7 @@
 import imagine as img
 from imagine.simulators.synchrotronlos import SpectralSynchrotronEmissivitySimulator
-from imagine.fields.cwrapped.wrappedjf12 import WrappedJF12
-from imagine.fields.cwrapped.wrappedjf12 import WrappedJF12Factory
+from imagine.fields.library.jf12 import WrappedJF12
+from imagine.fields.library.jf12 import WrappedJF12Factory
 from imagine.fields.field_utility import FieldAdder
 from imagine.fields.field_utility import ArrayMagneticField
 

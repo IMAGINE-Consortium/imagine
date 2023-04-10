@@ -104,9 +104,6 @@ class UltranestPipeline(Pipeline):
         """
         log.debug('@ ultranest_pipeline::__call__')
 
-        # Resets internal state
-        self.tidy_up()
-
         default_init_params = {
           'resume': True,
           'num_test_samples': 2,
@@ -161,6 +158,7 @@ class UltranestPipeline(Pipeline):
             transform=self.prior_transform,
             log_dir=ultranest_dir,
             vectorized=False,
+            wrapped_params=self.wrapped_parameters,
             **init_params)
 
         self.results = sampler.run(viz_callback=ultranest.viz.nicelogger,

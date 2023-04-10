@@ -130,8 +130,6 @@ class RandomThermalElectrons(ThermalElectronDensityField):
         return result << self.units  # Restores units
 
 
-# ================== new from here ========================================================
-
 class ConstantCosmicRayElectrons(CosmicRayElectronDensityField):
     """
 

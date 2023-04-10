@@ -75,6 +75,9 @@ class Hammurabi(Simulator):
         else:
             # Uses standard hamx path
             self._hamx_path = img.rc['hammurabi_hamx_path']
+            
+        if self._hamx_path is None: 
+            raise FileNotFoundError("Hammurabi executable not found")
 
         self._xml_path = xml_path
 

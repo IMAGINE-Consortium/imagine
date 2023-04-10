@@ -9,7 +9,6 @@ import numpy as np
 from imagine.observables import Measurements, Simulations
 from imagine.tools import BaseClass, req_attr
 
-# All declaration
 __all__ = ['Simulator']
 
 

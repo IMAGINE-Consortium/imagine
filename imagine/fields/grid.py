@@ -56,7 +56,7 @@ class BaseGrid(BaseClass, metaclass=abc.ABCMeta):
 
         self.box = box
 
-        self.resolution = np.empty((3,), dtype=np.int)
+        self.resolution = np.empty((3,), dtype=int)
         self.resolution[:] = resolution
 
         self._coordinates = None

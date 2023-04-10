@@ -6,11 +6,11 @@ import astropy as ap
 from imagine.fields.base_fields import MagneticField
 from imagine.fields.field_factory import FieldFactory
 
-__all__ = ['JF12Regular', 'JF12Factory', ]
+__all__ = ['YMW16', 'YMW16Factory', ]
 
 
-class JF12Regular(MagneticField):
-    NAME = 'JF12Regular'
+class YMW16(MagneticField):
+    NAME = 'YMW16'
     STOCHASTIC_FIELD = False
     PARAMETER_NAMES = ['b_arm_1', 'b_arm_2', 'b_arm_3', 'b_arm_4', 'b_arm_5', 'b_arm_6',  'b_arm_7', 'b_ring', 'h_disk',
                        'w_disk', 'Bn', 'Bs', 'rn', 'rs', 'wh', 'z0', 'B0_X', 'Xtheta_const', 'rpc_X', 'r0_X', ]
@@ -32,29 +32,20 @@ class JF12Regular(MagneticField):
         z = np.linspace(z[0].value, z[1].value, res[2])
         # Creates an empty array to store the result
 
-        jf12 = im.JF12MagneticField()
+        model = im.YMW16()
 
         for key, val in self.parameters.items():
-            if hasattr(jf12, key):
+            if hasattr(model, key):
                 if isinstance(val, ap.Quantity):
                     val = val.to(self.DEFAULT_UNITS[key]).value
-                setattr(jf12, key, val)
+                setattr(model, key, val)
 
-        B = jf12.on_grid(grid_x=x, grid_y=y, grid_z=z)*self.UNITS
-        #print("Found {} nans inside JF12 field".format(np.sum(np.isnan(B))))
+        m = model.evaluate_grid(grid_x=x, grid_y=y, grid_z=z)*self.UNITS
 
-        # Test B for nans
-        #if np.sum(np.isnan(B)) != 0:
-            #print("Setting {} nans to 0".format(np.sum(np.isnan(B))))
-            #B[np.isnan(B)] = 0*self.UNITS
-
-        return B
+        return m
 
 
-class JF12Factory(FieldFactory):
-    FIELD_CLASS = JF12Regular
-    DEFAULT_PARAMETERS = {'b_arm_1': .1, 'b_arm_2': 3.0, 'b_arm_3': -.9, 'b_arm_4': -.8, 'b_arm_5': -2.,
-                          'b_arm_6': -4.2, 'b_arm_7': .0, 'b_ring': .1, 'h_disk': .4, 'w_disk': .27,
-                          'Bn': 1.4, 'Bs': -1.1, 'rn': 9.22, 'rs': 16.7, 'wh': .2, 'z0': 5.3, 'B0_X': 4.6,
-                          'Xtheta_const': 49, 'rpc_X': 4.8, 'r0_X': 2.9, }
+class YMW16Factory(FieldFactory):
+    FIELD_CLASS = YMW16
+    DEFAULT_PARAMETERS = { }
     PRIORS = {}

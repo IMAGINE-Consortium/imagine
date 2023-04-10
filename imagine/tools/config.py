@@ -19,7 +19,7 @@ one can either do::
 or, alternatively, set this as an environment variable
 before the exectution of the script::
 
-    export IMAGINE_HAMMURABI_HAMX_PATH='my_desired_path'
+    
 
 The following list describes all the available global settings variables.
 
