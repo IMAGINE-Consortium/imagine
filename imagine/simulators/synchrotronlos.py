@@ -29,7 +29,6 @@ ugauss_B = 1e-6 * gauss_B
 __all__ = ['SpectralSynchrotronEmissivitySimulator']
 
 #%% Define the Simulator class
-
 class SpectralSynchrotronEmissivitySimulator(Simulator):
     """
     Simulator for Galactic synchrotron emissivity.
@@ -66,9 +65,8 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         Output units used in the simulator
     """
 
-    
     # Class attributes
-    SIMULATED_QUANTITIES = ['average_los_brightness']
+    SIMULATED_QUANTITIES = ['los_brightness_temperature']
     REQUIRED_FIELD_TYPES = ['magnetic_field','cosmic_ray_electron_density']
     OPTIONAL_FIELD_TYPES = ['cosmic_ray_electron_spectral_index']
     ALLOWED_GRID_TYPES   = ['cartesian']
@@ -87,7 +85,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         
         
         # Asses field types and set data-acces function
-        #self.get_field_data()        
+        #self.get_field_data()  
         
         # Stores class-specific attributes (and for now double definitions)
         for key in measurements.keys(): self.observing_frequency = key[1] * GHz
@@ -135,7 +133,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         ncre  = ncre.to(u.cm**-3)*u.cm**3
         Bper  = Bper.to(u.G) / u.G
         # Handle two spectral index cases:
-	# -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
+	    # -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
         try: # alpha is a constant spectral index globally 
             alpha = self.field_parameter_values['cosmic_ray_electron_density']['spectral_index']
         except: pass
@@ -178,9 +176,10 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         # Calculate grid of emissivity values
         emissivity_grid = self._spectral_total_emissivity(Bperp_amplitude_grid, ncre_grid)
         # Do the los integration on the domain defined in init with the new emissivity grid
-        HII_LOSemissivities = apply_response(self.response, emissivity_grid)
-        HII_LOSemissivities *= emissivity_grid.unit * u.kpc # restore units: domain is assumed to be in kpc
-        # Need units to be in K/kpc, average brightness temperature allong the line of sight
-        HII_LOSbrightness = c**2/(2*kb*self.observing_frequency**2)*HII_LOSemissivities/self.distances
+        HII_LOSintensity = apply_response(self.response, emissivity_grid)
+        HII_LOSintensity *= emissivity_grid.unit * u.kpc # restore units: domain is assumed to be in kpc
+        # Convert radio intensity to brightness temperature
+        HII_LOSbrightness = c**2/(2*kb*self.observing_frequency**2)*HII_LOSintensity
         return HII_LOSbrightness
+
 

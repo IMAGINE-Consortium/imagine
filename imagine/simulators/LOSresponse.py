@@ -29,7 +29,7 @@ def build_nifty_los(grid, behind, unit, observer, dist, lon, lat, dist_error):
     box  = np.array([xmax,ymax,zmax])
     grid_distances = tuple([b/r for b,r in zip(box, grid.resolution)])
     domain = ift.makeDomain(ift.RGSpace(grid.resolution, grid_distances)) # need this later for the los integration 
-    
+
     # Remember the translation
     translation = np.array([xmax,ymax,zmax])/2 * unit
     translated_observer = observer + translation
@@ -43,7 +43,6 @@ def build_nifty_los(grid, behind, unit, observer, dist, lon, lat, dist_error):
     los  = spherical_to_cartesian(r=dist, lat=lat, lon=lon)
     for i,axis in enumerate(los): ends.append(axis+translated_observer[i])
     end_points = np.vstack(ends).T
-
     deltas = end_points - start_points
     clims  = box * np.sign(deltas) * unit
     clims[clims<0]=0 # if los goes in negative direction clim of xyz=0-plane
