@@ -23,7 +23,6 @@ ugauss_B = 1e-6 * gauss_B
 
 
 #%% Define the Simulator class
-
 class SpectralSynchrotronEmissivitySimulator(Simulator):
     """
     Simulator for Galactic synchrotron emissivity.
@@ -60,9 +59,8 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         Output units used in the simulator
     """
 
-    
     # Class attributes
-    SIMULATED_QUANTITIES = ['average_los_brightness']
+    SIMULATED_QUANTITIES = ['los_brightness_temperature']
     REQUIRED_FIELD_TYPES = ['magnetic_field','cosmic_ray_electron_density']
     OPTIONAL_FIELD_TYPES = ['cosmic_ray_electron_spectral_index']
     ALLOWED_GRID_TYPES   = ['cartesian']
@@ -81,7 +79,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         
         
         # Asses field types and set data-acces function
-        #self.get_field_data()        
+        #self.get_field_data()  
         
         # Stores class-specific attributes (and for now double definitions)
         for key in measurements.keys(): self.observing_frequency = key[1] * GHz
@@ -113,7 +111,11 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         lat        = sim_config['lat'].to(u.rad)
         lon        = sim_config['lon'].to(u.rad)
         hIIdist    = sim_config['dist'].to(u.kpc)
-        e_hIIdist  = sim_config['e_dist'].to(u.kpc)
+        if sim_config['e_dist'] != None:
+            e_hIIdist  = sim_config['e_dist'].to(u.kpc)
+        else:
+            e_hIIdist = None
+            #print("Working with relative distance error: None")
         behind     = np.where(np.array(sim_config['FB'])=='B')
         nlos       = len(hIIdist)
         
@@ -121,32 +123,32 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         translation = np.array([xmax,ymax,zmax])/2 * unit
         translated_observer = sim_config['observer'] + translation
 
-        # Cast start and end points in a Nifty compatible format
-        starts = []
-        for o in translated_observer: starts.append(np.full(shape=(nlos,), fill_value=o)*u.kpc)
-        start_points = np.vstack(starts).T
-
+        # Get endpoints (HII region locations)
         ends = []
         los  = spherical_to_cartesian(r=hIIdist, lat=lat, lon=lon)
-        for i,axis in enumerate(los): ends.append(axis+translated_observer[i])
+        for i,axis in enumerate(los):
+            ends.append(axis+translated_observer[i])
         end_points = np.vstack(ends).T
 
+        # Get start points (do Front-Behind selection)
+        starts = []
+        for o in translated_observer:
+            starts.append(np.full(shape=(nlos,), fill_value=o)*u.kpc)
+        start_points = np.vstack(starts).T
         deltas = end_points - start_points
         clims  = box * np.sign(deltas) * unit
         clims[clims<0]=0 # if los goes in negative direction clim of xyz=0-plane
-        
         with np.errstate(divide='ignore'):
             all_lambdas = (clims-end_points)/deltas   # possibly divide by zero 
         lambdas = np.min(np.abs(all_lambdas), axis=1) # will drop any inf here
-
         start_points[behind] = end_points[behind] + np.reshape(lambdas[behind], newshape=(np.size(behind),1))*deltas[behind]     
-        
-        self.los_distances = np.linalg.norm(end_points-start_points, axis=1)
-   
+
+        # Cast numpy starts and ends into nifty compatible format
         nstarts = self._make_nifty_points(start_points)
         nends   = self._make_nifty_points(end_points)
+        
+        # Define nitfy integration operator
         self.response = ift.LOSResponse(self.domain, nstarts, nends, sigmas=e_hIIdist, truncation=3.) # domain doesnt know about its units but starts/ends do?
-    
     
     def _make_nifty_points(self, points, dim=3):
         rows,cols = np.shape(points)
@@ -171,7 +173,7 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         ncre  = ncre.to(u.cm**-3)*u.cm**3
         Bper  = Bper.to(u.G)/u.G
         # Handle two spectral index cases:
-	# -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
+	    # -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
         try: # alpha is a constant spectral index globally 
             alpha = self.field_parameter_values['cosmic_ray_electron_density']['spectral_index']
         except: pass
@@ -200,20 +202,20 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
         v_perpendicular      = vectorfield - v_parallel
         v_perp_amplitude     = np.sqrt(np.sum(v_perpendicular*v_perpendicular,axis=3))
         return v_perp_amplitude
-    
-    
+
     def simulate(self, key, coords_dict, realization_id, output_units): 
         # Acces field data
         ncre_grid = self.fields['cosmic_ray_electron_density']  # in units cm^-3
         B_grid    = self.fields['magnetic_field'] # fixing is now done inside emissivity calculation
         # Project to perpendicular component to line of sight
-        Bperp_amplitude_grid = self._project_to_perpendicular(B_grid)        
+        Bperp_amplitude_grid = self._project_to_perpendicular(B_grid)
         # Calculate grid of emissivity values
         emissivity_grid = self._spectral_total_emissivity(Bperp_amplitude_grid, ncre_grid)
         # Do the los integration on the domain defined in init with the new emissivity grid
-        HII_LOSemissivities = self.response(ift.Field(self.domain, emissivity_grid)).val_rw()
-        HII_LOSemissivities *= emissivity_grid.unit * u.kpc # restore units: domain is assumed to be in kpc
-        # Need units to be in K/kpc, average brightness temperature allong the line of sight
-        HII_LOSbrightness = c**2/(2*kb*self.observing_frequency**2)*HII_LOSemissivities/self.los_distances
+        HII_LOSintensity = self.response(ift.Field(self.domain, emissivity_grid)).val_rw()
+        HII_LOSintensity *= emissivity_grid.unit * u.kpc # restore units: domain is assumed to be in kpc
+        # Convert radio intensity to brightness temperature
+        HII_LOSbrightness = c**2/(2*kb*self.observing_frequency**2)*HII_LOSintensity
         return HII_LOSbrightness
+
 
