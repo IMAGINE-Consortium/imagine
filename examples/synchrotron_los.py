@@ -1,8 +1,7 @@
 import imagine as img
 from imagine.simulators.synchrotronlos import SpectralSynchrotronEmissivitySimulator
-from imagine.fields.library.jf12 import WrappedJF12
-from imagine.fields.library.jf12 import WrappedJF12Factory
-from imagine.fields.field_utility import FieldAdder
+from imagine.fields.library.jf12 import JF12Regular
+from imagine.fields.library.jf12 import JF12Factory
 from imagine.fields.field_utility import ArrayMagneticField
 
 import os
@@ -95,7 +94,8 @@ def JF12pipeline():
                                                             'scale_height': 1*u.kpc,
                                                             'central_density': 1e-5*u.cm**-3,
                                                             'spectral_index': -3})
-    Bfield = WrappedJF12(grid=cartesian_grid)
+    Bfield = JF12Regular(grid=cartesian_grid) # using default parameters
+    # Bfield = WrappedJF12(grid=cartesian_grid)
     # Setup observing configuration
     observer = np.array([-8.5, 0, 0])*u.kpc
     dist_err = hIIdist/1000000
@@ -120,7 +120,7 @@ def JF12pipeline():
 
     # Setup field factories and their active parameters
     CRE_factory = img.fields.FieldFactory(field_class=cre, grid=cartesian_grid)
-    B_factory = WrappedJF12Factory(grid=cartesian_grid)
+    B_factory = JF12Factory(grid=cartesian_grid)
     """
     B_factory   = img.fields.FieldFactory(field_class = Bfield, grid=config['grid'])
     B_factory.active_parameters = ('b_arm_1','b_arm_2')

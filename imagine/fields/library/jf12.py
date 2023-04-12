@@ -32,11 +32,11 @@ class JF12Regular(MagneticField):
         z = np.linspace(z[0].value, z[1].value, res[2])
         # Creates an empty array to store the result
 
-        jf12 = im.JF12MagneticField()
+        jf12 = im.JF12RegularField()
 
         for key, val in self.parameters.items():
             if hasattr(jf12, key):
-                if isinstance(val, ap.Quantity):
+                if isinstance(val, ap.units.Quantity):
                     val = val.to(self.DEFAULT_UNITS[key]).value
                 setattr(jf12, key, val)
 
@@ -48,7 +48,7 @@ class JF12Regular(MagneticField):
             #print("Setting {} nans to 0".format(np.sum(np.isnan(B))))
             #B[np.isnan(B)] = 0*self.UNITS
 
-        return B
+        return B.reshape((len(x), len(y), len(z), 3))
 
 
 class JF12Factory(FieldFactory):
