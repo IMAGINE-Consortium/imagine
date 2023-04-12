@@ -24,7 +24,7 @@ class DynestyPipeline(Pipeline):
 
     This pipeline may use
     :py:class:`DynamicNestedSampler <dynesty.DynamicNestedSampler>` if the
-    sampling parameter 'dynamic' is set to `True` or
+    sampling parameter 'dynamic' is set to `True` (default) or
     :py:class:`NestedSampler <dynesty.NestedSampler>`
     if 'dynamic` is False (default).
 
@@ -37,9 +37,9 @@ class DynestyPipeline(Pipeline):
     Sampling controllers
     --------------------
     dynamic : bool
-        If `True`, use
+        If `True` (default), use
         :py:class:`dynesty.DynamicNestedSampler` otherwise uses
-        :py:class:`dynesty.NestedSampler`
+        :py:class:`dynesty.NestedSampler`.
     dlogz : float
         Iteration will stop, in the `dynamic==False` case,
         when the estimated contribution of the
@@ -291,8 +291,12 @@ class DynestyPipeline(Pipeline):
 
         self.results = self.sampler.results
 
-        self._samples_array = self.results['samples']
-        self._evidence = self.results['logz']
-        self._evidence_err = self.results['logzerr']
+        # Creates equal weighted samples from the weighted samples
+        samples = self.results.samples
+        weights = np.exp(self.results.logwt - self.results.logz[-1])
+
+        self._samples_array = dynesty.utils.resample_equal(samples, weights)
+        self._evidence = self.results['logz'][-1]
+        self._evidence_err = self.results['logzerr'][-1]
 
         return self.results

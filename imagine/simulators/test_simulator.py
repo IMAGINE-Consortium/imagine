@@ -25,7 +25,7 @@ class TestSimulator(Simulator):
     performing the integration, i.e. computes:
 
     .. math ::
-        $t(x,y,z) = B_y\,n_e\,$
+        t(x,y,z) = B_y\,n_e\,
 
     """
 
