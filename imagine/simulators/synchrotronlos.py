@@ -136,10 +136,11 @@ class SpectralSynchrotronEmissivitySimulator(Simulator):
 	    # -> fieldlist is not provided on initialization so we opt for a runtime check of alpha type
         try: # alpha is a constant spectral index globally 
             alpha = self.field_parameter_values['cosmic_ray_electron_density']['spectral_index']
-        except: pass
-        try: # alpha is an instance of a 3D scalar field
-            alpha = self.fields['cosmic_ray_electron_spectral_index']
-        except: pass
+        except: 
+            try: # alpha is an instance of a 3D scalar field
+                alpha = self.fields['cosmic_ray_electron_spectral_index']
+            except: 
+                raise KeyError('SYNCLOSSIMULATOR: alpha not provided')
         # Calculate emissivity grid
         fraction1 = (np.sqrt(3)*e**3*ncre/(8*np.pi*me*c**2))
         fraction2 = (4*np.pi*vobs*me*c/(3*e))

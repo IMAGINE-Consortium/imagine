@@ -100,6 +100,7 @@ class RMSimulator(Simulator):
         """
         This function takes in a 3D vector field and uses the initialized unitvector_grid
         to project each vector on the unit vector perpendicular to the los to that position.
+        It returns either the prependicular or parallel component to the LoS, or the amplitudes thereof. 
         """
         v_return      = np.zeros(np.shape(vectorfield)) * vectorfield.unit
         amplitudes      = np.sum(vectorfield * self.unitvector_grid, axis=3)
@@ -109,7 +110,7 @@ class RMSimulator(Simulator):
         if not parallel:
             v_return = vectorfield - v_return
         if return_only_amplitude:
-            v_return = np.sqrt(np.sum(v_return*v_return, axis=3))
+                v_return = np.sqrt(np.sum(v_return*v_return, axis=3))
         return v_return
     
     
@@ -120,6 +121,8 @@ class RMSimulator(Simulator):
         Bf    = self.fields['magnetic_field'] # fixing is now done inside emissivity calculation
         # Project to perpendicular component to line of sight
         Bpar = self._project_to_LOS(Bf, parallel=True, return_only_amplitude=False)        
+        Bpar_sign = np.sign(Bpar[:, : , : , 0] + Bpar[:, : , : , 1] + Bpar[:, : , : , 2])
+        B_par = Bpar_sign*(np.sqrt(np.sum(B_par*B_par, axis=3)))
         # Calculate grid of emissivity values
         nth  = nth.to(u.cm**-3)*u.cm**3
         Bpar  = Bpar.to(u.G) / u.G
