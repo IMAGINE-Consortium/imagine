@@ -6,7 +6,7 @@ import astropy as ap
 from imagine.fields.base_fields import MagneticField
 from imagine.fields.field_factory import FieldFactory
 
-__all__ = ['YMW16',]
+__all__ = ['YMW16', 'YMW16Factory', ]
 
 
 class YMW16(MagneticField):
@@ -41,6 +41,11 @@ class YMW16(MagneticField):
         m = model.on_grid(grid_x=x, grid_y=y, grid_z=z)*self.UNITS
 
         return m
+    
+class YMW16Factory(FieldFactory):
+    FIELD_CLASS = YMW16
+    DEFAULT_PARAMETERS = { }
+    PRIORS = {}
 
 '''
 
@@ -88,8 +93,5 @@ class YMW16(MagneticField):
    t7_thetali = 40.0;
 
 
-class YMW16Factory(FieldFactory):
-    FIELD_CLASS = YMW16
-    DEFAULT_PARAMETERS = { }
-    PRIORS = {}
+
 '''
