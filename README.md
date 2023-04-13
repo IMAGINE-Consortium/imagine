@@ -27,6 +27,11 @@ The IMAGINE software package is developed and maintained by the [technical workg
 Please check the [**documentation**](https://imagine-code.readthedocs.io/) for a usage guide and
 detailed technical information.
 
+For installation of this development branch use (potentially with the --user flag):
+
+`pip install git+https://github.com/IMAGINE-Consortium/imagine.git@imagine_dev`
+
+
 [IMAGINE Consortium]: https://www.astro.ru.nl/imagine/
 [technical workgroup]: https://www.astro.ru.nl/imagine/imagineprojects.html
 
