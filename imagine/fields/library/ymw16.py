@@ -6,7 +6,7 @@ import astropy as ap
 from imagine.fields.base_fields import MagneticField
 from imagine.fields.field_factory import FieldFactory
 
-__all__ = ['YMW16', 'YMW16Factory', ]
+__all__ = ['YMW16',]
 
 
 class YMW16(MagneticField):
