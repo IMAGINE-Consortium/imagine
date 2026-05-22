@@ -13,7 +13,6 @@ from imagine.pipelines import Pipeline
 # All declaration
 __all__ = ['UltranestPipeline']
 
-
 # %% CLASS DEFINITIONS
 class UltranestPipeline(Pipeline):
     """
@@ -151,6 +150,10 @@ class UltranestPipeline(Pipeline):
         # Creates directory, if needed
         os.makedirs(ultranest_dir, exist_ok=True)
 
+        # Adjusts UltraNest's logger
+        ultranest_logger = log.getLogger("ultranest")
+        ultranest_logger.setLevel(log.INFO)
+
         # Runs UltraNest
         sampler = ultranest.ReactiveNestedSampler(
             param_names=list(self.active_parameters),
@@ -160,6 +163,7 @@ class UltranestPipeline(Pipeline):
             vectorized=False,
             wrapped_params=self.wrapped_parameters,
             **init_params)
+
 
         self.results = sampler.run(viz_callback=ultranest.viz.nicelogger,
                                    **run_params)

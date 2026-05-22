@@ -42,8 +42,8 @@ please refer to the
    installation
    design
    components
-   posterior
-   evidence
+   tutorial_fitting
+   tutorial_comparison
    parallel
 
 .. toctree::
